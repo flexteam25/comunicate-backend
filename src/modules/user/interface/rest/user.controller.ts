@@ -25,15 +25,22 @@ import {
 } from '../../../../shared/decorators/current-user.decorator';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
 import { UploadService, UploadResult, MulterFile } from '../../../../shared/services/upload';
+import { ConfigService } from '@nestjs/config';
+import { buildFullUrl } from '../../../../shared/utils/url.util';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UserController {
+  private readonly apiServiceUrl: string;
+
   constructor(
     private readonly changePasswordUseCase: ChangePasswordUseCase,
     private readonly updateProfileUseCase: UpdateProfileUseCase,
     private readonly uploadService: UploadService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
 
   @Put('change-password')
   @HttpCode(HttpStatus.OK)
@@ -69,7 +76,7 @@ export class UserController {
       id: updatedUser.id,
       email: updatedUser.email,
       displayName: updatedUser.displayName || undefined,
-      avatarUrl: updatedUser.avatarUrl || undefined,
+      avatarUrl: buildFullUrl(this.apiServiceUrl, updatedUser.avatarUrl),
       isActive: updatedUser.isActive,
       lastLoginAt: updatedUser.lastLoginAt || undefined,
       createdAt: updatedUser.createdAt,

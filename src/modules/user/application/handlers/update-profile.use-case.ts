@@ -23,9 +23,6 @@ export class UpdateProfileUseCase {
     if (command.displayName !== undefined) {
       user.displayName = command.displayName || null;
     }
-    if (command.avatarUrl !== undefined) {
-      user.avatarUrl = command.avatarUrl || null;
-    }
 
     // Update user
     return this.userRepository.update(user);

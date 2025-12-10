@@ -12,7 +12,7 @@ import { CurrentUser, CurrentUserPayload } from '../../../../shared/decorators/c
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
-
+import { buildFullUrl } from '../../../../shared/utils/url.util';
 @Controller('auth')
 export class AuthController {
   private readonly apiServiceUrl: string;
@@ -30,7 +30,9 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: RegisterDto): Promise<ApiResponse<AuthResponse>> {
+  async register(@Body() dto: RegisterDto, @Req() req: any): Promise<ApiResponse<AuthResponse>> {
+    const ipAddress = req.ip || req.connection?.remoteAddress;
+
     await this.registerUseCase.execute({
       email: dto.email,
       password: dto.password,
@@ -41,6 +43,7 @@ export class AuthController {
     const result = await this.loginUseCase.execute({
       email: dto.email,
       password: dto.password,
+      ipAddress,
     });
 
     const authResponse: AuthResponse = {
@@ -48,7 +51,7 @@ export class AuthController {
         id: result.user.id,
         email: result.user.email,
         displayName: result.user.displayName || undefined,
-        avatarUrl: this.apiServiceUrl + (result.user.avatarUrl || undefined),
+        avatarUrl: buildFullUrl(this.apiServiceUrl, result.user.avatarUrl),
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -72,7 +75,7 @@ export class AuthController {
         id: result.user.id,
         email: result.user.email,
         displayName: result.user.displayName || undefined,
-        avatarUrl: result.user.avatarUrl || undefined,
+        avatarUrl: buildFullUrl(this.apiServiceUrl, result.user.avatarUrl),
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -93,7 +96,7 @@ export class AuthController {
         id: result.user.id,
         email: result.user.email,
         displayName: result.user.displayName || undefined,
-        avatarUrl: result.user.avatarUrl || undefined,
+        avatarUrl: buildFullUrl(this.apiServiceUrl, result.user.avatarUrl),
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -115,7 +118,7 @@ export class AuthController {
       id: dbUser.id,
       email: dbUser.email,
       displayName: dbUser.displayName || undefined,
-      avatarUrl: this.apiServiceUrl + (dbUser.avatarUrl || undefined),
+      avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser.avatarUrl),
       isActive: dbUser.isActive,
       lastLoginAt: dbUser.lastLoginAt || undefined,
       createdAt: dbUser.createdAt,

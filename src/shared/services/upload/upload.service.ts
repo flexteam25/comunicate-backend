@@ -4,6 +4,8 @@ import sharp from 'sharp';
 import * as crypto from 'crypto';
 import * as path from 'path';
 import { StorageProvider, STORAGE_PROVIDER } from './storage-provider.interface';
+import { LoggerService } from '../../logger/logger.service';
+import { buildFullUrl as buildUrl } from '../../utils/url.util';
 
 // Multer file type (exported for reuse)
 export interface MulterFile {
@@ -49,6 +51,7 @@ export class UploadService {
     @Inject(STORAGE_PROVIDER)
     private readonly storageProvider: StorageProvider,
     private configService: ConfigService,
+    private readonly logger: LoggerService,
   ) {
     // Default: 5MB max file size
     this.maxFileSize =
@@ -69,38 +72,47 @@ export class UploadService {
     userId: string,
     options?: UploadOptions,
   ): Promise<UploadResult> {
-    this.validateFile(file);
+    try {
+      this.validateFile(file);
 
-    const { maxWidth = 400, maxHeight = 400, quality = this.defaultQuality } = options || {};
+      const { maxWidth = 400, maxHeight = 400, quality = this.defaultQuality } = options || {};
 
-    // Process image: resize and convert to WebP
-    const processedBuffer = await this.processImage(file.buffer, {
-      maxWidth,
-      maxHeight,
-      quality,
-    });
+      // Process image: resize and convert to WebP
+      const processedBuffer = await this.processImage(file.buffer, {
+        maxWidth,
+        maxHeight,
+        quality,
+      });
 
-    // Generate short unique filename
-    const filename = this.generateFilename('av', '.webp');
+      // Generate short unique filename
+      const filename = this.generateFilename('av', '.webp');
 
-    // Save to storage with userId as subfolder: avatars/{userId}/
-    const folder = `avatars/${userId}`;
-    const relativePath = await this.storageProvider.save(
-      processedBuffer,
-      filename,
-      folder,
-    );
+      // Save to storage with userId as subfolder: avatars/{userId}/
+      const folder = `avatars/${userId}`;
+      const relativePath = await this.storageProvider.save(
+        processedBuffer,
+        filename,
+        folder,
+      );
 
-    // Build full URL with API_SERVICE_URL prefix
-    const url = this.buildFullUrl(relativePath);
+      // Build full URL with API_SERVICE_URL prefix
+      const url = buildUrl(this.apiServiceUrl, relativePath) || relativePath;
 
-    return {
-      url,
-      filename,
-      originalName: file.originalname,
-      size: processedBuffer.length,
-      mimeType: 'image/webp',
-    };
+      return {
+        url,
+        filename,
+        originalName: file.originalname,
+        size: processedBuffer.length,
+        mimeType: 'image/webp',
+      };
+    } catch (error) {
+      this.logger.error('Avatar upload failed', {
+        userId,
+        originalName: file?.originalname,
+        error: (error as Error).message,
+      }, 'upload');
+      throw error;
+    }
   }
 
   /**
@@ -110,42 +122,50 @@ export class UploadService {
     file: MulterFile,
     options?: UploadOptions,
   ): Promise<UploadResult> {
-    this.validateFile(file);
+    try {
+      this.validateFile(file);
 
-    const {
-      maxWidth = 1920,
-      maxHeight = 1080,
-      quality = this.defaultQuality,
-      folder = 'images',
-    } = options || {};
+      const {
+        maxWidth = 1920,
+        maxHeight = 1080,
+        quality = this.defaultQuality,
+        folder = 'images',
+      } = options || {};
 
-    // Process image
-    const processedBuffer = await this.processImage(file.buffer, {
-      maxWidth,
-      maxHeight,
-      quality,
-    });
+      // Process image
+      const processedBuffer = await this.processImage(file.buffer, {
+        maxWidth,
+        maxHeight,
+        quality,
+      });
 
-    // Generate short unique filename
-    const filename = this.generateFilename('img', '.webp');
+      // Generate short unique filename
+      const filename = this.generateFilename('img', '.webp');
 
-    // Save to storage
-    const relativePath = await this.storageProvider.save(
-      processedBuffer,
-      filename,
-      folder,
-    );
+      // Save to storage
+      const relativePath = await this.storageProvider.save(
+        processedBuffer,
+        filename,
+        folder,
+      );
 
-    // Build full URL with API_SERVICE_URL prefix
-    const url = this.buildFullUrl(relativePath);
+      // Build full URL with API_SERVICE_URL prefix
+      const url = buildUrl(this.apiServiceUrl, relativePath) || relativePath;
 
-    return {
-      url,
-      filename,
-      originalName: file.originalname,
-      size: processedBuffer.length,
-      mimeType: 'image/webp',
-    };
+      return {
+        url,
+        filename,
+        originalName: file.originalname,
+        size: processedBuffer.length,
+        mimeType: 'image/webp',
+      };
+    } catch (error) {
+      this.logger.error('Image upload failed', {
+        originalName: file?.originalname,
+        error: (error as Error).message,
+      }, 'upload');
+      throw error;
+    }
   }
 
   /**
@@ -214,19 +234,6 @@ export class UploadService {
     // Use 6 random chars (enough for uniqueness)
     const random = crypto.randomBytes(3).toString('hex');
     return `${prefix}_${timestamp}_${random}${extension}`;
-  }
-
-  /**
-   * Build full URL with API_SERVICE_URL prefix
-   */
-  private buildFullUrl(relativePath: string): string {
-    if (!this.apiServiceUrl) {
-      return relativePath;
-    }
-    // Remove trailing slash from apiServiceUrl and leading slash from relativePath
-    const baseUrl = this.apiServiceUrl.replace(/\/$/, '');
-    const path = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
-    return `${baseUrl}${path}`;
   }
 
   /**

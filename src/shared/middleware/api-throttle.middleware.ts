@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware, HttpException, HttpStatus } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { Logger } from '@nestjs/common';
+import { LoggerService } from '../logger/logger.service';
 
 /**
  * API Throttle Middleware
@@ -11,7 +11,7 @@ import { Logger } from '@nestjs/common';
  */
 @Injectable()
 export class ApiThrottleMiddleware implements NestMiddleware {
-  private readonly logger = new Logger(ApiThrottleMiddleware.name);
+  constructor(private readonly logger: LoggerService) {}
 
   // Rate limit stores: IP -> { count, resetTime, method }
   private readonly rateLimitStore = new Map<
@@ -52,7 +52,7 @@ export class ApiThrottleMiddleware implements NestMiddleware {
     if (method === 'GET') {
       entry.getCount++;
       if (entry.getCount > this.GET_LIMIT) {
-        this.logger.warn(`GET rate limit exceeded for IP: ${ip}`);
+        this.logger.warn('GET rate limit exceeded', { ip, path: req.path, count: entry.getCount }, 'throttle');
         res.setHeader('X-RateLimit-Limit', this.GET_LIMIT.toString());
         res.setHeader('X-RateLimit-Remaining', '0');
         res.setHeader('X-RateLimit-Reset', new Date(entry.resetTime).toISOString());
@@ -70,7 +70,7 @@ export class ApiThrottleMiddleware implements NestMiddleware {
     } else if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
       entry.postCount++;
       if (entry.postCount > this.POST_LIMIT) {
-        this.logger.warn(`POST rate limit exceeded for IP: ${ip}`);
+        this.logger.warn('POST rate limit exceeded', { ip, path: req.path, method, count: entry.postCount }, 'throttle');
         res.setHeader('X-RateLimit-Limit', this.POST_LIMIT.toString());
         res.setHeader('X-RateLimit-Remaining', '0');
         res.setHeader('X-RateLimit-Reset', new Date(entry.resetTime).toISOString());

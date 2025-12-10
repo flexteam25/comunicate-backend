@@ -4,9 +4,11 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Inject,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ApiResponseUtil } from '../dto/api-response.dto';
+import { LoggerService } from '../logger/logger.service';
 
 interface HttpExceptionResponse {
   message?: string | string[];
@@ -19,9 +21,12 @@ interface HttpExceptionResponse {
  */
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
+  constructor(@Inject(LoggerService) private readonly logger: LoggerService) {}
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
     // Check if debug mode is enabled (show detailed error messages)
     const isDebugMode =
@@ -57,6 +62,22 @@ export class ApiExceptionFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       message = exception.message || 'An error occurred';
+    }
+
+    // Log error with details
+    const logData = {
+      status,
+      message,
+      path: request.url,
+      method: request.method,
+      ip: request.ip,
+      stack: exception instanceof Error ? exception.stack : undefined,
+    };
+
+    if (status >= 500) {
+      this.logger.error('Server error', logData, 'error');
+    } else if (status >= 400) {
+      this.logger.warn('Client error', logData, 'error');
     }
 
     // For 500 errors, hide detailed message in production unless debug mode is enabled

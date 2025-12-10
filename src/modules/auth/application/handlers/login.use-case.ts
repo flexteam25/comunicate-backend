@@ -5,7 +5,6 @@ import { PasswordService } from '../../../../shared/services/password.service';
 import { JwtService, TokenPair } from '../../../../shared/services/jwt.service';
 import { UserToken } from '../../domain/entities/user-token.entity';
 import { User } from '../../../user/domain/entities/user.entity';
-
 export interface LoginCommand {
   email: string;
   password: string;

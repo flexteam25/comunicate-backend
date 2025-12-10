@@ -8,8 +8,10 @@ import {
 import { Request } from 'express';
 import { JwtService, JwtPayload } from '../services/jwt.service';
 import { IUserTokenRepository } from '../../modules/auth/infrastructure/persistence/repositories/user-token.repository';
-
-interface RequestWithUser extends Request {
+interface RequestWithUser {
+  headers: { authorization?: string };
+  ip?: string;
+  url: string;
   user?: {
     userId: string;
     email: string;
@@ -28,6 +30,8 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const authHeader = request.headers.authorization;
+    const ip = request.ip;
+    const path = request.url;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Missing or invalid authorization header');
@@ -39,7 +43,7 @@ export class JwtAuthGuard implements CanActivate {
     let payload: JwtPayload;
     try {
       payload = this.jwtService.verifyAccessToken(token);
-    } catch {
+    } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');
     }
 

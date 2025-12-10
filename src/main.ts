@@ -4,6 +4,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { ApiExceptionFilter } from './shared/filters/api-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { LoggerService } from './shared/logger/logger.service';
 
 async function bootstrap() {
   // CORS is handled by CorsTrustMiddleware
@@ -18,8 +19,9 @@ async function bootstrap() {
   // Set global API prefix
   app.setGlobalPrefix('api');
 
-  // Enable global exception filter
-  app.useGlobalFilters(new ApiExceptionFilter());
+  // Enable global exception filter with LoggerService
+  const loggerService = app.get(LoggerService);
+  app.useGlobalFilters(new ApiExceptionFilter(loggerService));
 
   // Enable validation pipe
   app.useGlobalPipes(

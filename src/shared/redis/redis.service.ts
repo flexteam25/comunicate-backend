@@ -1,6 +1,7 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, RedisClientType } from 'redis';
+import { LoggerService } from '../logger/logger.service';
 
 export interface RedisConfig {
   host: string;
@@ -11,10 +12,12 @@ export interface RedisConfig {
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(RedisService.name);
   private client: RedisClientType;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly logger: LoggerService,
+  ) {}
 
   async onModuleInit() {
     const config: RedisConfig = {
@@ -28,10 +31,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       url: `redis://${config.password ? `:${config.password}@` : ''}${config.host}:${config.port}/${config.db}`,
     });
 
-    this.client.on('error', (err) => this.logger.error('Redis Client Error', err));
-    this.client.on('connect', () => this.logger.log('Redis connecting...'));
-    this.client.on('ready', () => this.logger.log('Redis connected successfully'));
-    this.client.on('end', () => this.logger.log('Redis connection ended'));
+    this.client.on('error', (err) => this.logger.error('Redis client error', { error: err.message }, 'redis'));
 
     await this.client.connect();
   }
@@ -39,7 +39,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy() {
     if (this.client) {
       await this.client.quit();
-      this.logger.log('Redis connection closed');
     }
   }
 
@@ -142,7 +141,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   // Pub/Sub for Real-time Events
   async publishEvent(channel: string, data: any): Promise<void> {
     if (!this.client) {
-      this.logger.error('Redis client not initialized for publish');
+      this.logger.error('Redis client not initialized for publish', { channel }, 'redis');
       return;
     }
     await this.client.publish(channel, JSON.stringify(data));
@@ -150,28 +149,21 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async subscribeToChannel(channel: string, callback: (data: any) => void): Promise<void> {
     if (!this.client) {
-      this.logger.error('Redis client not initialized');
+      this.logger.error('Redis client not initialized', { channel }, 'redis');
       return;
     }
 
-    this.logger.log(`Creating subscriber for channel: ${channel}`);
     const subscriber = this.client.duplicate();
     await subscriber.connect();
-    this.logger.log(`Subscriber connected for channel: ${channel}`);
     
     await subscriber.subscribe(channel, (message) => {
-      this.logger.log(`📨 Received raw message on ${channel}: ${message.substring(0, 100)}...`);
       try {
         const data = JSON.parse(message);
-        this.logger.log(`📨 Parsed data for ${channel}:`, data);
         callback(data);
-        this.logger.log(`Callback executed for ${channel}`);
       } catch (error) {
-        this.logger.error(`Error parsing message from channel ${channel}:`, error);
+        this.logger.error('Error parsing message', { channel, error: (error as Error).message }, 'redis');
       }
     });
-    
-    this.logger.log(`Successfully subscribed to channel: ${channel}`);
   }
 
   // Generic Key-Value Operations
