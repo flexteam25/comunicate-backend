@@ -1,0 +1,200 @@
+const dotenv = require('dotenv');
+const path = require('path');
+
+// Load development environment variables
+const devEnv = dotenv.config({ path: path.join(__dirname, '.env') }).parsed || {};
+
+// Load production environment variables
+const prodEnv = dotenv.config({ path: path.join(__dirname, '.env.production') }).parsed || {};
+
+/**
+ * PM2 Ecosystem Configuration
+ * 
+ * Direct PM2 Commands:
+ * 
+ * Development:
+ *   pm2 start ecosystem.config.js                    # Start with development env
+ *   pm2 restart ecosystem.config.js                  # Restart with development env
+ *   pm2 reload ecosystem.config.js                   # Reload with development env
+ *   pm2 logs                                          # View all logs
+ *   pm2 status                                        # View status
+ *   pm2 monit                                         # Monitor processes
+ * 
+ * Production:
+ *   pm2 start ecosystem.config.js --env production  # Start with production env
+ *   pm2 restart ecosystem.config.js --env production # Restart with production env
+ *   pm2 reload ecosystem.config.js --env production  # Reload with production env
+ *   pm2 logs --env production                        # View production logs
+ * 
+ * Common Commands:
+ *   pm2 stop all                                      # Stop all processes
+ *   pm2 delete all                                    # Delete all processes
+ *   pm2 show <process-name>                           # Show process details
+ *   pm2 logs <process-name> --lines 50               # View specific process logs
+ */
+
+module.exports = {
+  apps: [
+    {
+      name: 'minigame-api',
+      script: 'dist/src/main.js',
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: devEnv.NODE_ENV,
+        PORT: devEnv.PORT,
+        
+        // Database - Development
+        DB_HOST: devEnv.DB_HOST,
+        DB_PORT: devEnv.DB_PORT,
+        DB_USERNAME: devEnv.DB_USERNAME,
+        DB_PASSWORD: devEnv.DB_PASSWORD,
+        DB_DATABASE: devEnv.DB_DATABASE,
+        
+        // Redis - Development
+        REDIS_HOST: devEnv.REDIS_HOST,
+        REDIS_PORT: devEnv.REDIS_PORT,
+        REDIS_PASSWORD: devEnv.REDIS_PASSWORD,
+        REDIS_DB: devEnv.REDIS_DB,
+
+        TZ_OFFSET_FOR_ROUND: devEnv.TZ_OFFSET_FOR_ROUND,
+        
+        // External Services - Development
+        API_SERVICE_URL: devEnv.API_SERVICE_URL,
+        API_SERVICE_KEY: devEnv.API_SERVICE_KEY,
+      },
+      env_production: {
+        NODE_ENV: prodEnv.NODE_ENV,
+        PORT: prodEnv.PORT,
+        
+        // Database - Production
+        DB_HOST: prodEnv.DB_HOST,
+        DB_PORT: prodEnv.DB_PORT,
+        DB_USERNAME: prodEnv.DB_USERNAME,
+        DB_PASSWORD: prodEnv.DB_PASSWORD,
+        DB_DATABASE: prodEnv.DB_DATABASE,
+        
+        // Redis - Production
+        REDIS_HOST: prodEnv.REDIS_HOST,
+        REDIS_PORT: prodEnv.REDIS_PORT,
+        REDIS_PASSWORD: prodEnv.REDIS_PASSWORD,
+        REDIS_DB: prodEnv.REDIS_DB,
+
+        TZ_OFFSET_FOR_ROUND: prodEnv.TZ_OFFSET_FOR_ROUND,
+        
+        // External Services - Production
+        API_SERVICE_URL: prodEnv.API_SERVICE_URL,
+        API_SERVICE_KEY: prodEnv.API_SERVICE_KEY,
+      },
+      log_file: 'pm2/logs/app.log',
+      out_file: 'pm2/logs/app-out.log',
+      error_file: 'pm2/logs/app-error.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_memory_restart: '1G',
+      restart_delay: 4000,
+      max_restarts: 10,
+      min_uptime: '10s',
+    },
+    {
+      name: 'socket-client',
+      script: 'dist/src/cli.js',
+      args: 'socket-client',
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: devEnv.NODE_ENV,
+        
+        // Redis - Development
+        REDIS_HOST: devEnv.REDIS_HOST,
+        REDIS_PORT: devEnv.REDIS_PORT,
+        REDIS_PASSWORD: devEnv.REDIS_PASSWORD,
+        REDIS_DB: devEnv.REDIS_DB,
+        
+        // Socket Configuration - Development
+        SOCKET_DOMAIN: devEnv.SOCKET_DOMAIN,
+        SOCKET_HTTP: devEnv.SOCKET_HTTP,
+        SOCKET_AUTH_ID: devEnv.SOCKET_AUTH_ID,
+
+        SOCKET_DATA_LOG_ONLY: devEnv.SOCKET_DATA_LOG_ONLY || 0,
+
+        API_THROTTLE_GET_LIMIT: devEnv.API_THROTTLE_GET_LIMIT || 100,
+        API_THROTTLE_GET_WINDOW: devEnv.API_THROTTLE_GET_WINDOW || 60,
+        API_THROTTLE_POST_LIMIT: devEnv.API_THROTTLE_POST_LIMIT || 30,
+        API_THROTTLE_POST_WINDOW: devEnv.API_THROTTLE_POST_WINDOW || 60,
+        
+        CORS_ALLOWED_ORIGINS: devEnv.CORS_ALLOWED_ORIGINS,
+        BYPASS_CORS_ORIGIN: devEnv.BYPASS_CORS_ORIGIN || 1,
+        JWT_SECRET: devEnv.JWT_SECRET,
+      },
+      env_production: {
+        NODE_ENV: prodEnv.NODE_ENV,
+        
+        // Redis - Production
+        REDIS_HOST: prodEnv.REDIS_HOST,
+        REDIS_PORT: prodEnv.REDIS_PORT,
+        REDIS_PASSWORD: prodEnv.REDIS_PASSWORD,
+        REDIS_DB: prodEnv.REDIS_DB,
+        
+        // Socket Configuration - Production
+        SOCKET_DOMAIN: prodEnv.SOCKET_DOMAIN,
+        SOCKET_HTTP: prodEnv.SOCKET_HTTP,
+        SOCKET_AUTH_ID: prodEnv.SOCKET_AUTH_ID,
+
+        SOCKET_DATA_LOG_ONLY: prodEnv.SOCKET_DATA_LOG_ONLY || 0,
+
+        API_THROTTLE_GET_LIMIT: prodEnv.API_THROTTLE_GET_LIMIT || 100,
+        API_THROTTLE_GET_WINDOW: prodEnv.API_THROTTLE_GET_WINDOW || 60,
+        API_THROTTLE_POST_LIMIT: prodEnv.API_THROTTLE_POST_LIMIT || 30,
+        API_THROTTLE_POST_WINDOW: prodEnv.API_THROTTLE_POST_WINDOW || 60,
+        
+        CORS_ALLOWED_ORIGINS: prodEnv.CORS_ALLOWED_ORIGINS,
+        BYPASS_CORS_ORIGIN: prodEnv.BYPASS_CORS_ORIGIN || 1,
+        JWT_SECRET: prodEnv.JWT_SECRET,
+      },
+      log_file: 'pm2/logs/socket-client.log',
+      out_file: 'pm2/logs/socket-client-out.log',
+      error_file: 'pm2/logs/socket-client-error.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_memory_restart: '512M',
+      restart_delay: 4000,
+      max_restarts: 10,
+      min_uptime: '10s',
+    },
+    {
+      name: 'queue-worker',
+      script: 'dist/src/queue-worker-cli.js',
+      args: 'queue-worker',
+      instances: 3,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: devEnv.NODE_ENV,
+        
+        // Redis - Development
+        REDIS_HOST: devEnv.REDIS_HOST,
+        REDIS_PORT: devEnv.REDIS_PORT,
+        REDIS_PASSWORD: devEnv.REDIS_PASSWORD,
+        REDIS_DB: devEnv.REDIS_DB,
+      },
+      env_production: {
+        NODE_ENV: prodEnv.NODE_ENV,
+        
+        // Redis - Production
+        REDIS_HOST: prodEnv.REDIS_HOST,
+        REDIS_PORT: prodEnv.REDIS_PORT,
+        REDIS_PASSWORD: prodEnv.REDIS_PASSWORD,
+        REDIS_DB: prodEnv.REDIS_DB,
+      },
+      log_file: 'pm2/logs/queue-worker.log',
+      out_file: 'pm2/logs/queue-worker-out.log',
+      error_file: 'pm2/logs/queue-worker-error.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_memory_restart: '512M',
+      restart_delay: 4000,
+      max_restarts: 10,
+      min_uptime: '10s',
+    },
+  ],
+};

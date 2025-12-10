@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: minigame-postgres-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: poca_db
+    ports:
+      - "${DB_PORT:-5522}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    container_name: minigame-redis-cache
+    restart: unless-stopped
+    command: redis-server --requirepass "redispass123"
+    ports:
+      - "${REDIS_PORT:-6329}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  backend:
+    driver: bridge
