@@ -1,12 +1,9 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Partner } from '../../domains/game/entities/partner.entity';
-import { PartnerBackendService } from './partner-backend.service';
+import { PasswordService } from './password.service';
+import { JwtService } from './jwt.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Partner])],
-  providers: [PartnerBackendService],
-  exports: [PartnerBackendService],
+  providers: [PasswordService, JwtService],
+  exports: [PasswordService, JwtService],
 })
 export class ServicesModule {}
-

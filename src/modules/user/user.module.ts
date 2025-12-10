@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './domain/entities/user.entity';
 import { UserRepository } from './infrastructure/persistence/typeorm/user.repository';
@@ -6,10 +6,15 @@ import { ChangePasswordUseCase } from './application/handlers/change-password.us
 import { UpdateProfileUseCase } from './application/handlers/update-profile.use-case';
 import { UserController } from './interface/rest/user.controller';
 import { PasswordService } from '../../shared/services/password.service';
-import { IUserRepository } from './infrastructure/persistence/repositories/user.repository';
+import { AuthModule } from '../auth/auth.module';
+import { UploadModule } from '../../shared/services/upload';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [
+    TypeOrmModule.forFeature([User]),
+    forwardRef(() => AuthModule),
+    UploadModule.register({ storageType: 'local' }),
+  ],
   controllers: [UserController],
   providers: [
     {

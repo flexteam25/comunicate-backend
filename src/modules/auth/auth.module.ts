@@ -31,6 +31,6 @@ import { IUserRepository } from '../user/infrastructure/persistence/repositories
     PasswordService,
     JwtService,
   ],
-  exports: [UserTokenRepository, 'IUserTokenRepository'],
+  exports: [UserTokenRepository, 'IUserTokenRepository', JwtService],
 })
 export class AuthModule {}

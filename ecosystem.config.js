@@ -125,7 +125,10 @@ module.exports = {
         
         CORS_ALLOWED_ORIGINS: devEnv.CORS_ALLOWED_ORIGINS,
         BYPASS_CORS_ORIGIN: devEnv.BYPASS_CORS_ORIGIN || 1,
-        JWT_SECRET: devEnv.JWT_SECRET,
+        JWT_ACCESS_SECRET: devEnv.JWT_ACCESS_SECRET,
+        JWT_REFRESH_SECRET: devEnv.JWT_REFRESH_SECRET,
+        JWT_ACCESS_EXPIRES_IN: devEnv.JWT_ACCESS_EXPIRES_IN,
+        JWT_REFRESH_EXPIRES_IN: devEnv.JWT_REFRESH_EXPIRES_IN,
       },
       env_production: {
         NODE_ENV: prodEnv.NODE_ENV,
@@ -150,7 +153,10 @@ module.exports = {
         
         CORS_ALLOWED_ORIGINS: prodEnv.CORS_ALLOWED_ORIGINS,
         BYPASS_CORS_ORIGIN: prodEnv.BYPASS_CORS_ORIGIN || 1,
-        JWT_SECRET: prodEnv.JWT_SECRET,
+        JWT_ACCESS_SECRET: prodEnv.JWT_ACCESS_SECRET,
+        JWT_REFRESH_SECRET: prodEnv.JWT_REFRESH_SECRET,
+        JWT_ACCESS_EXPIRES_IN: prodEnv.JWT_ACCESS_EXPIRES_IN,
+        JWT_REFRESH_EXPIRES_IN: prodEnv.JWT_REFRESH_EXPIRES_IN,
       },
       log_file: 'pm2/logs/socket-client.log',
       out_file: 'pm2/logs/socket-client-out.log',

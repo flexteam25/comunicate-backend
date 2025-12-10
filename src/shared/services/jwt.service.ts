@@ -20,14 +20,19 @@ export interface TokenPair {
 export class JwtService {
   private readonly accessTokenSecret: string;
   private readonly refreshTokenSecret: string;
-  private readonly accessTokenExpiresIn: string;
+  private readonly accessTokenExpiresIn: string; // e.g., "30m", "1h", "7d"
   private readonly refreshTokenExpiresIn: string;
 
   constructor(private configService: ConfigService) {
-    this.accessTokenSecret = this.configService.get<string>('JWT_ACCESS_SECRET') || 'access-secret';
-    this.refreshTokenSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'refresh-secret';
-    this.accessTokenExpiresIn = this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') || '30m';
-    this.refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '1h';
+    this.accessTokenSecret =
+      this.configService.get<string>('JWT_ACCESS_SECRET') || 'access-secret';
+    this.refreshTokenSecret =
+      this.configService.get<string>('JWT_REFRESH_SECRET') || 'refresh-secret';
+    // Use string format: "30m" = 30 minutes, "7d" = 7 days
+    this.accessTokenExpiresIn =
+      this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') || '30m';
+    this.refreshTokenExpiresIn =
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
   }
 
   /**
@@ -45,7 +50,7 @@ export class JwtService {
       } as JwtPayload,
       this.accessTokenSecret,
       {
-        expiresIn: this.accessTokenExpiresIn,
+        expiresIn: this.accessTokenExpiresIn as jwt.SignOptions['expiresIn'],
       },
     );
 
@@ -58,7 +63,7 @@ export class JwtService {
       } as JwtPayload,
       this.refreshTokenSecret,
       {
-        expiresIn: this.refreshTokenExpiresIn,
+        expiresIn: this.refreshTokenExpiresIn as jwt.SignOptions['expiresIn'],
       },
     );
 
@@ -79,7 +84,7 @@ export class JwtService {
         throw new UnauthorizedException('Invalid token type');
       }
       return payload;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired access token');
     }
   }
@@ -94,7 +99,7 @@ export class JwtService {
         throw new UnauthorizedException('Invalid token type');
       }
       return payload;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }

@@ -2,13 +2,25 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ApiExceptionFilter } from './shared/filters/api-exception.filter';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
-  
+  // CORS is handled by CorsTrustMiddleware
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Serve static files from uploads directory
+  const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+  app.useStaticAssets(join(process.cwd(), uploadDir), {
+    prefix: '/uploads',
+  });
+
+  // Set global API prefix
+  app.setGlobalPrefix('api');
+
   // Enable global exception filter
   app.useGlobalFilters(new ApiExceptionFilter());
-  
+
   // Enable validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -18,9 +30,10 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3008;
   await app.listen(port);
   Logger.log(`Server started on port ${port}`);
+  Logger.log(`Static files served from /${uploadDir}`);
 }
 
-bootstrap();
+void bootstrap();

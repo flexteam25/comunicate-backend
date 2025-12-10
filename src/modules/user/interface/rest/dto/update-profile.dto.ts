@@ -5,9 +5,4 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(100)
   displayName?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  avatarUrl?: string;
 }

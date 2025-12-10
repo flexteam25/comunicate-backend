@@ -11,21 +11,27 @@ import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
+  private readonly apiServiceUrl: string;
+
   constructor(
     private readonly registerUseCase: RegisterUseCase,
     private readonly loginUseCase: LoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     @Inject(forwardRef(() => 'IUserRepository'))
     private readonly userRepository: IUserRepository,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterDto): Promise<ApiResponse<AuthResponse>> {
-    const user = await this.registerUseCase.execute({
+    await this.registerUseCase.execute({
       email: dto.email,
       password: dto.password,
       displayName: dto.displayName,
@@ -42,7 +48,7 @@ export class AuthController {
         id: result.user.id,
         email: result.user.email,
         displayName: result.user.displayName || undefined,
-        avatarUrl: result.user.avatarUrl || undefined,
+        avatarUrl: this.apiServiceUrl + (result.user.avatarUrl || undefined),
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -109,7 +115,7 @@ export class AuthController {
       id: dbUser.id,
       email: dbUser.email,
       displayName: dbUser.displayName || undefined,
-      avatarUrl: dbUser.avatarUrl || undefined,
+      avatarUrl: this.apiServiceUrl + (dbUser.avatarUrl || undefined),
       isActive: dbUser.isActive,
       lastLoginAt: dbUser.lastLoginAt || undefined,
       createdAt: dbUser.createdAt,

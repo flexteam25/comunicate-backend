@@ -1,12 +1,30 @@
-import { Controller, Put, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Put,
+  Post,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ChangePasswordUseCase } from '../../application/handlers/change-password.use-case';
 import { UpdateProfileUseCase } from '../../application/handlers/update-profile.use-case';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserResponse } from '../../../../shared/dto/user-response.dto';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
-import { CurrentUser, CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../../../shared/decorators/current-user.decorator';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
+import { UploadService, UploadResult, MulterFile } from '../../../../shared/services/upload';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -14,6 +32,7 @@ export class UserController {
   constructor(
     private readonly changePasswordUseCase: ChangePasswordUseCase,
     private readonly updateProfileUseCase: UpdateProfileUseCase,
+    private readonly uploadService: UploadService,
   ) {}
 
   @Put('change-password')
@@ -44,7 +63,6 @@ export class UserController {
     const updatedUser = await this.updateProfileUseCase.execute({
       userId: user.userId,
       displayName: dto.displayName,
-      avatarUrl: dto.avatarUrl,
     });
 
     const userResponse: UserResponse = {
@@ -59,5 +77,31 @@ export class UserController {
     };
 
     return ApiResponseUtil.success(userResponse, 'Profile updated successfully');
+  }
+
+  @Post('avatar')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadAvatar(
+    @CurrentUser() user: CurrentUserPayload,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/i }),
+        ],
+      }),
+    )
+    file: MulterFile,
+  ): Promise<ApiResponse<UploadResult>> {
+    const result = await this.uploadService.uploadAvatar(file, user.userId);
+
+    // Update user profile with new avatar URL
+    await this.updateProfileUseCase.execute({
+      userId: user.userId,
+      avatarUrl: result.url,
+    });
+
+    return ApiResponseUtil.success(result, 'Avatar uploaded successfully');
   }
 }

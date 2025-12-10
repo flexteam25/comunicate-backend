@@ -41,7 +41,7 @@ npm run seeder run
 ```bash
 npm run start:dev
 ```
-API defaults to `http://localhost:3000`.
+API defaults to `http://localhost:3008`.
 
 ## Scripts
 - `npm run start:dev` — Nest dev server (hot reload)
@@ -50,31 +50,37 @@ API defaults to `http://localhost:3000`.
 - `npm run migration up|down` — TypeORM migrations
 - `npm run seeder run` — Seed data (if present)
 
-## Project Structure (current target)
+## Project Structure
 ```
 src/
-├── domains/                  # DDD modules (per bounded context)
+├── modules/                  # DDD modules (per bounded context)
 │   ├── auth/                 # auth credentials, tokens
-│   ├── user/                 # user profile
-│   ├── site/                 # site directory, domains, events
-│   ├── review/               # site reviews
-│   ├── fraud-report/         # 먹튀 reports
-│   ├── community/            # boards/posts/comments
-│   ├── points/               # ledger, earning, redemption
-│   ├── gifticon/             # store/exchange
-│   ├── site-manager-request/ # manager approval flow
-│   ├── admin/                # admin/backoffice
-│   └── notification/         # notification channels/adapters
-├── shared/                   # cross-cutting (domain base, guards, queue, socket)
+│   ├── badge/                # badge system
+│   └── user/                 # user profile
+├── shared/                   # cross-cutting concerns
+│   ├── constants/            # app-wide constants
+│   ├── decorators/           # custom decorators
+│   ├── domain/               # base domain classes
+│   ├── dto/                  # shared DTOs
+│   ├── filters/              # exception filters
+│   ├── guards/               # auth guards
+│   ├── logger/               # logging utilities
+│   ├── middleware/           # HTTP middleware
+│   ├── queue/                # BullMQ queue setup
+│   ├── redis/                # Redis client/cache
+│   ├── services/             # shared services
+│   ├── socket/               # Socket.IO setup
+│   └── utils/                # utility functions
 ├── migrations/               # TypeORM migrations
-├── scripts/                  # migration/seeder helpers
+├── seeders/                  # seed data scripts
 └── main.ts                   # application entry
 ```
 
-### Domain layering (per module)
-- `domain`: entities, value objects, domain events, repository ports.
-- `application`: use-case services (commands/queries), DTO/mappers.
-- `infrastructure`: adapters for persistence, cache, external services, controllers.
+### Module layering (per module)
+- `domain/`: entities, value objects, domain events, repository ports.
+- `application/`: use-case services (commands/queries), DTO/mappers.
+- `infrastructure/`: adapters for persistence, cache, external services.
+- `interface/`: controllers, resolvers, gateway handlers.
 
 ## Additional Docs
 - `system.md` — product scope, API priorities (P0/P1/P2).

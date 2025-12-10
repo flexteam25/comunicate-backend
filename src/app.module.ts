@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from './shared/logger/logger.module';
@@ -16,6 +16,8 @@ import { Badge } from './modules/badge/domain/entities/badge.entity';
 import { UserRole } from './modules/user/domain/entities/user-role.entity';
 import { UserPermission } from './modules/user/domain/entities/user-permission.entity';
 import { UserBadge } from './modules/user/domain/entities/user-badge.entity';
+import { CorsTrustMiddleware } from './shared/middleware/cors-trust.middleware';
+import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middleware';
 
 @Module({
   imports: [
@@ -40,8 +42,7 @@ import { UserBadge } from './modules/user/domain/entities/user-badge.entity';
         UserBadge,
       ],
       synchronize: false,
-      logging: process.env.NODE_ENV === 'development',
-      timezone: 'UTC', // Ensure all timestamps are stored in UTC
+      logging: false,
     }),
     LoggerModule,
     RedisModule,
@@ -52,4 +53,8 @@ import { UserBadge } from './modules/user/domain/entities/user-badge.entity';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(CorsTrustMiddleware, ApiThrottleMiddleware).forRoutes('*');
+  }
+}
