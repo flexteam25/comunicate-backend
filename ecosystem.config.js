@@ -83,6 +83,13 @@ module.exports = {
         UPLOAD_MAX_FILE_SIZE: devEnv.UPLOAD_MAX_FILE_SIZE || '5242880',
         UPLOAD_IMAGE_QUALITY: devEnv.UPLOAD_IMAGE_QUALITY || '80',
         UPLOAD_BASE_URL: devEnv.UPLOAD_BASE_URL || '/uploads',
+
+        EMAIL_PROVIDER: devEnv.EMAIL_PROVIDER,
+        SMTP_HOST: devEnv.SMTP_HOST,
+        SMTP_PORT: devEnv.SMTP_PORT,
+        SMTP_USER: devEnv.SMTP_USER,
+        SMTP_PASSWORD: devEnv.SMTP_PASSWORD,
+        SMTP_FROM: devEnv.SMTP_FROM,
       },
       env_production: {
         NODE_ENV: prodEnv.NODE_ENV || 'production',
@@ -127,6 +134,13 @@ module.exports = {
         UPLOAD_MAX_FILE_SIZE: prodEnv.UPLOAD_MAX_FILE_SIZE || '5242880',
         UPLOAD_IMAGE_QUALITY: prodEnv.UPLOAD_IMAGE_QUALITY || '80',
         UPLOAD_BASE_URL: prodEnv.UPLOAD_BASE_URL || '/uploads',
+
+        EMAIL_PROVIDER: prodEnv.EMAIL_PROVIDER,
+        SMTP_HOST: prodEnv.SMTP_HOST,
+        SMTP_PORT: prodEnv.SMTP_PORT,
+        SMTP_USER: prodEnv.SMTP_USER,
+        SMTP_PASSWORD: prodEnv.SMTP_PASSWORD,
+        SMTP_FROM: prodEnv.SMTP_FROM,
       },
       log_file: 'pm2/logs/app.log',
       out_file: 'pm2/logs/app-out.log',
