@@ -1,23 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-
-export interface NotificationJobData {
-  userId: string;
-  type: string;
-  message: string;
-  data?: any;
-}
+import { EmailJobData } from './processors/email.processor';
 
 @Injectable()
 export class QueueService {
   constructor(
-    @InjectQueue('notification')
-    private notificationQueue: Queue<NotificationJobData>,
+    @InjectQueue('email')
+    private emailQueue: Queue<EmailJobData>,
   ) {}
 
-  async addNotificationJob(data: NotificationJobData): Promise<void> {
-    await this.notificationQueue.add('send-notification', data, {
+  async addEmailJob(data: EmailJobData): Promise<void> {
+    await this.emailQueue.add('send-email', data, {
       removeOnComplete: 10,
       removeOnFail: 20,
     });

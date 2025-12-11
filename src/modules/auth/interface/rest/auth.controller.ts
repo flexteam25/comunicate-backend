@@ -3,16 +3,20 @@ import { RegisterUseCase } from '../../application/handlers/register.use-case';
 import { LoginUseCase } from '../../application/handlers/login.use-case';
 import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.use-case';
 import { LogoutUseCase } from '../../application/handlers/logout.use-case';
+import { RequestOtpUseCase } from '../../application/handlers/request-otp.use-case';
+import { ResetPasswordUseCase } from '../../application/handlers/reset-password.use-case';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RequestOtpDto } from './dto/request-otp.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponse } from '../../../../shared/dto/auth-response.dto';
-import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
+import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 @Controller('auth')
 export class AuthController {
   private readonly apiServiceUrl: string;
@@ -22,6 +26,8 @@ export class AuthController {
     private readonly loginUseCase: LoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly logoutUseCase: LogoutUseCase,
+    private readonly requestOtpUseCase: RequestOtpUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
     @Inject(forwardRef(() => 'IUserRepository'))
     private readonly userRepository: IUserRepository,
     private readonly configService: ConfigService,
@@ -119,6 +125,38 @@ export class AuthController {
     return ApiResponseUtil.success(
       { message: 'Logged out successfully' },
       'Logged out successfully',
+    );
+  }
+
+  @Post('request-otp')
+  @HttpCode(HttpStatus.OK)
+  async requestOtp(@Body() dto: RequestOtpDto): Promise<ApiResponse> {
+    const result = await this.requestOtpUseCase.execute({
+      email: dto.email,
+    });
+
+    return ApiResponseUtil.success(
+      {
+        code: result?.otp,
+        note: 'For testing purpose, the OTP is sent to the email',
+      },
+      result?.message || 'OTP sent successfully',
+    );
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<ApiResponse<{ message: string }>> {
+    const result = await this.resetPasswordUseCase.execute({
+      email: dto.email,
+      newPassword: dto.newPassword,
+      passwordConfirmation: dto.passwordConfirmation,
+      verifyCode: dto.verifyCode,
+    });
+
+    return ApiResponseUtil.success(
+      null,
+      result?.message || 'Password reset successfully',
     );
   }
 }

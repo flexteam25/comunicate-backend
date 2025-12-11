@@ -1,14 +1,17 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from './shared/logger/logger.module';
 import { RedisModule } from './shared/redis/redis.module';
 import { SocketModule } from './shared/socket/socket.module';
+import { ServicesModule } from './shared/services/services.module';
+import { QueueClientModule } from './shared/queue/queue-client.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { User } from './modules/user/domain/entities/user.entity';
+import { UserOldPassword } from './modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from './modules/auth/domain/entities/user-token.entity';
 import { Role } from './modules/user/domain/entities/role.entity';
 import { Permission } from './modules/user/domain/entities/permission.entity';
@@ -33,6 +36,7 @@ import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middlewa
       database: process.env.DB_DATABASE || 'poca_db',
       entities: [
         User,
+        UserOldPassword,
         UserToken,
         Role,
         Permission,
@@ -47,6 +51,8 @@ import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middlewa
     LoggerModule,
     RedisModule,
     SocketModule,
+    ServicesModule,
+    QueueClientModule,
     AuthModule,
     UserModule,
   ],
@@ -55,6 +61,8 @@ import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middlewa
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CorsTrustMiddleware, ApiThrottleMiddleware).forRoutes('*');
+    consumer
+      .apply(CorsTrustMiddleware, ApiThrottleMiddleware)
+      .forRoutes({ path: '*path', method: RequestMethod.ALL });
   }
 }

@@ -48,21 +48,21 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     // Check if token is revoked in database
-    const tokenRecord = await this.userTokenRepository.findByTokenId(payload.jti);
+      const tokenRecord = await this.userTokenRepository.findByTokenId(payload.jti);
     if (!tokenRecord) {
       throw new UnauthorizedException('Token not found');
     }
     if (!tokenRecord.isValid()) {
       throw new UnauthorizedException('Token has been revoked or expired');
-    }
+      }
 
-    // Attach user info to request
-    request.user = {
-      userId: payload.sub,
-      email: payload.email,
-      tokenId: payload.jti,
-    };
+      // Attach user info to request
+      request.user = {
+        userId: payload.sub,
+        email: payload.email,
+        tokenId: payload.jti,
+      };
 
-    return true;
+      return true;
   }
 }

@@ -18,11 +18,11 @@ async function bootstrap() {
 
   // Set global API prefix
   app.setGlobalPrefix('api');
-
+  
   // Enable global exception filter with LoggerService
   const loggerService = app.get(LoggerService);
   app.useGlobalFilters(new ApiExceptionFilter(loggerService));
-
+  
   // Enable validation pipe
   app.useGlobalPipes(
     new ValidationPipe({

@@ -7,17 +7,20 @@ import { RegisterUseCase } from './application/handlers/register.use-case';
 import { LoginUseCase } from './application/handlers/login.use-case';
 import { RefreshTokenUseCase } from './application/handlers/refresh-token.use-case';
 import { LogoutUseCase } from './application/handlers/logout.use-case';
+import { RequestOtpUseCase } from './application/handlers/request-otp.use-case';
+import { ResetPasswordUseCase } from './application/handlers/reset-password.use-case';
 import { AuthController } from './interface/rest/auth.controller';
 import { UserModule } from '../user/user.module';
 import { PasswordService } from '../../shared/services/password.service';
 import { JwtService } from '../../shared/services/jwt.service';
-import { IUserRepository } from '../user/infrastructure/persistence/repositories/user.repository';
+import { QueueClientModule } from '../../shared/queue/queue-client.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserToken]),
     ConfigModule,
     forwardRef(() => UserModule),
+    QueueClientModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -30,6 +33,8 @@ import { IUserRepository } from '../user/infrastructure/persistence/repositories
     LoginUseCase,
     RefreshTokenUseCase,
     LogoutUseCase,
+    RequestOtpUseCase,
+    ResetPasswordUseCase,
     PasswordService,
     JwtService,
   ],

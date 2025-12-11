@@ -3,10 +3,11 @@ import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
-import { NotificationProcessor } from './processors/notification.processor';
+import { EmailProcessor } from './processors/email.processor';
 import { LoggerModule } from '../logger/logger.module';
 import { RedisModule } from '../redis/redis.module';
 import { QueueService } from './queue.service';
+import { EmailModule } from '../services/email/email.module';
 
 @Module({
   imports: [
@@ -41,27 +42,32 @@ import { QueueService } from './queue.service';
     }),
     LoggerModule,
     RedisModule,
+    EmailModule.forRoot(),
     BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        connection: {
+      useFactory: (configService: ConfigService) => {
+        const redisConfig = {
           host: configService.get('REDIS_HOST', 'localhost'),
           port: parseInt(configService.get('REDIS_PORT', '6379')),
           password: configService.get('REDIS_PASSWORD'),
-          db: 0,
-        },
-      }),
+          db: parseInt(configService.get('REDIS_DB', '0')),
+        };
+        
+        return {
+          connection: redisConfig,
+        };
+      },
       inject: [ConfigService],
     }),
     BullModule.registerQueue({
-      name: 'notification',
+      name: 'email',
       defaultJobOptions: {
         removeOnComplete: 10,
-        removeOnFail: 5,
+        removeOnFail: 20,
       },
     }),
   ],
-  providers: [NotificationProcessor, QueueService],
-  exports: [BullModule, NotificationProcessor, QueueService],
+  providers: [EmailProcessor, QueueService],
+  exports: [BullModule, EmailProcessor, QueueService],
 })
 export class QueueWorkerModule {}

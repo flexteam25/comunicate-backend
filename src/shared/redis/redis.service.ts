@@ -186,6 +186,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return result === 1;
   }
 
+  // String operations (for simple values like OTP)
+  async setString(key: string, value: string, ttl?: number): Promise<void> {
+    const options = ttl ? { EX: ttl } : undefined;
+    await this.client.set(key, value, options);
+  }
+
+  async getString(key: string): Promise<string | null> {
+    const data = await this.client.get(key) as string;
+    return data || null;
+  }
+
   async getKeys(pattern: string): Promise<string[]> {
     return await this.client.keys(pattern);
   }

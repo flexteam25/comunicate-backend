@@ -25,24 +25,10 @@ import { QueueService } from './queue.service';
     // Only register queues for adding jobs, NO processors
     BullModule.registerQueue(
       { 
-        name: 'minigame-socket-data-handle',
+        name: 'email',
         defaultJobOptions: {
-          removeOnComplete: 0, // Don't keep successful jobs
-          removeOnFail: 5,     // Keep 5 failed jobs
-        }
-      },
-      { 
-        name: 'notification',
-        defaultJobOptions: {
-          removeOnComplete: 0, // Don't keep successful jobs
-          removeOnFail: 5,     // Keep 5 failed jobs
-        }
-      },
-      { 
-        name: 'betting-result',
-        defaultJobOptions: {
-          removeOnComplete: 0, // Don't keep successful jobs
-          removeOnFail: 5,     // Keep 5 failed jobs
+          removeOnComplete: 10, // Keep 10 successful jobs for debugging
+          removeOnFail: 20,     // Keep 20 failed jobs
         }
       },
     ),

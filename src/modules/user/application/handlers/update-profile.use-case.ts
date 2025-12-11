@@ -1,5 +1,7 @@
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
+import { TransactionService } from '../../../../shared/services/transaction.service';
 import { User } from '../../domain/entities/user.entity';
 
 export interface UpdateProfileCommand {
@@ -10,25 +12,32 @@ export interface UpdateProfileCommand {
 
 @Injectable()
 export class UpdateProfileUseCase {
-  constructor(@Inject('IUserRepository') private readonly userRepository: IUserRepository) {}
+  constructor(
+    @Inject('IUserRepository')
+    private readonly userRepository: IUserRepository,
+    private readonly transactionService: TransactionService,
+  ) {}
 
   async execute(command: UpdateProfileCommand): Promise<User> {
-    // Find user
+    // Find user (outside transaction for validation)
     const user = await this.userRepository.findById(command.userId);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    // Update fields
-    if (command.displayName !== undefined) {
-      user.displayName = command.displayName || null;
-    }
+    // Execute update in transaction
+    return this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
+      // Update fields
+      if (command.displayName !== undefined) {
+        user.displayName = command.displayName || null;
+      }
 
-    if (command.avatarUrl !== undefined) {
-      user.avatarUrl = command.avatarUrl || null;
-    }
+      if (command.avatarUrl !== undefined) {
+        user.avatarUrl = command.avatarUrl || null;
+      }
 
-    // Update user
-    return this.userRepository.update(user);
+      // Update user
+      return entityManager.save(User, user);
+    });
   }
 }
