@@ -5,7 +5,7 @@
 # ============================================
 
 # Define the specific services from ecosystem.config.js
-SERVICES=("comunicate-api")
+SERVICES=("poca-api" "poca-queue")
 
 echo "🧹 Stopping project-specific PM2 processes..."
 
@@ -35,7 +35,7 @@ done
 
 echo "🔍 Checking for leftover project-specific Node.js processes..."
 # Only check for processes that match our project patterns
-PROJECT_PIDS=$(ps aux | grep -E "(comunicate-api)" | grep -v grep | awk '{print $2}')
+PROJECT_PIDS=$(ps aux | grep -E "(poca-api|poca-queue)" | grep -v grep | awk '{print $2}')
 if [ -n "$PROJECT_PIDS" ]; then
   echo "🚫 Killing leftover project processes: $PROJECT_PIDS"
   kill -9 $PROJECT_PIDS >/dev/null 2>&1
