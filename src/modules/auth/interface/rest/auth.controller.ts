@@ -1,18 +1,18 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Req, Inject, forwardRef, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Req, Inject, forwardRef, UseGuards } from '@nestjs/common';
 import { RegisterUseCase } from '../../application/handlers/register.use-case';
 import { LoginUseCase } from '../../application/handlers/login.use-case';
 import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.use-case';
+import { LogoutUseCase } from '../../application/handlers/logout.use-case';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponse } from '../../../../shared/dto/auth-response.dto';
-import { UserResponse } from '../../../../shared/dto/user-response.dto';
-import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
-import { CurrentUser, CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
+import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
+import { CurrentUser, CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
 @Controller('auth')
 export class AuthController {
   private readonly apiServiceUrl: string;
@@ -21,6 +21,7 @@ export class AuthController {
     private readonly registerUseCase: RegisterUseCase,
     private readonly loginUseCase: LoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
     @Inject(forwardRef(() => 'IUserRepository'))
     private readonly userRepository: IUserRepository,
     private readonly configService: ConfigService,
@@ -105,26 +106,19 @@ export class AuthController {
     return ApiResponseUtil.success(authResponse, 'Token refreshed successfully');
   }
 
-  @Get('me')
+  @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async getMe(@CurrentUser() user: CurrentUserPayload): Promise<ApiResponse<UserResponse>> {
-    const dbUser = await this.userRepository.findById(user.userId);
-    if (!dbUser) {
-      throw new NotFoundException('User not found');
-    }
+  async logout(
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.logoutUseCase.execute({
+      tokenId: user.tokenId,
+    });
 
-    const userResponse: UserResponse = {
-      id: dbUser.id,
-      email: dbUser.email,
-      displayName: dbUser.displayName || undefined,
-      avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser.avatarUrl),
-      isActive: dbUser.isActive,
-      lastLoginAt: dbUser.lastLoginAt || undefined,
-      createdAt: dbUser.createdAt,
-      updatedAt: dbUser.updatedAt,
-    };
-
-    return ApiResponseUtil.success(userResponse);
+    return ApiResponseUtil.success(
+      { message: 'Logged out successfully' },
+      'Logged out successfully',
+    );
   }
 }

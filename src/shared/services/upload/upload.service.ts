@@ -5,7 +5,6 @@ import * as crypto from 'crypto';
 import * as path from 'path';
 import { StorageProvider, STORAGE_PROVIDER } from './storage-provider.interface';
 import { LoggerService } from '../../logger/logger.service';
-import { buildFullUrl as buildUrl } from '../../utils/url.util';
 
 // Multer file type (exported for reuse)
 export interface MulterFile {
@@ -25,7 +24,7 @@ export interface UploadOptions {
 }
 
 export interface UploadResult {
-  url: string;
+  relativePath: string; // Relative path to save in database
   filename: string;
   originalName: string;
   size: number;
@@ -45,7 +44,6 @@ const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 export class UploadService {
   private readonly maxFileSize: number;
   private readonly defaultQuality: number;
-  private readonly apiServiceUrl: string;
 
   constructor(
     @Inject(STORAGE_PROVIDER)
@@ -58,14 +56,11 @@ export class UploadService {
       this.configService.get<number>('UPLOAD_MAX_FILE_SIZE') || 5 * 1024 * 1024;
     this.defaultQuality =
       this.configService.get<number>('UPLOAD_IMAGE_QUALITY') || 80;
-    // API service URL for full URL generation
-    this.apiServiceUrl =
-      this.configService.get<string>('API_SERVICE_URL') || '';
   }
 
   /**
    * Upload and process avatar image
-   * Converts to WebP format and resizes if needed
+   * Converts to WebP format without resizing
    */
   async uploadAvatar(
     file: MulterFile,
@@ -75,14 +70,10 @@ export class UploadService {
     try {
       this.validateFile(file);
 
-      const { maxWidth = 400, maxHeight = 400, quality = this.defaultQuality } = options || {};
+      const { quality = this.defaultQuality } = options || {};
 
-      // Process image: resize and convert to WebP
-      const processedBuffer = await this.processImage(file.buffer, {
-        maxWidth,
-        maxHeight,
-        quality,
-      });
+      // Process image: convert to WebP without resizing
+      const processedBuffer = await this.convertToWebP(file.buffer, quality);
 
       // Generate short unique filename
       const filename = this.generateFilename('av', '.webp');
@@ -95,11 +86,8 @@ export class UploadService {
         folder,
       );
 
-      // Build full URL with API_SERVICE_URL prefix
-      const url = buildUrl(this.apiServiceUrl, relativePath) || relativePath;
-
       return {
-        url,
+        relativePath,
         filename,
         originalName: file.originalname,
         size: processedBuffer.length,
@@ -126,18 +114,12 @@ export class UploadService {
       this.validateFile(file);
 
       const {
-        maxWidth = 1920,
-        maxHeight = 1080,
         quality = this.defaultQuality,
         folder = 'images',
       } = options || {};
 
-      // Process image
-      const processedBuffer = await this.processImage(file.buffer, {
-        maxWidth,
-        maxHeight,
-        quality,
-      });
+      // Process image: convert to WebP without resizing
+      const processedBuffer = await this.convertToWebP(file.buffer, quality);
 
       // Generate short unique filename
       const filename = this.generateFilename('img', '.webp');
@@ -149,11 +131,8 @@ export class UploadService {
         folder,
       );
 
-      // Build full URL with API_SERVICE_URL prefix
-      const url = buildUrl(this.apiServiceUrl, relativePath) || relativePath;
-
       return {
-        url,
+        relativePath,
         filename,
         originalName: file.originalname,
         size: processedBuffer.length,
@@ -171,8 +150,8 @@ export class UploadService {
   /**
    * Delete uploaded file
    */
-  async deleteFile(url: string): Promise<void> {
-    await this.storageProvider.delete(url);
+  async deleteFile(relativePath: string): Promise<void> {
+    await this.storageProvider.delete(relativePath);
   }
 
   /**
@@ -207,7 +186,17 @@ export class UploadService {
   }
 
   /**
-   * Process image: resize and convert to WebP
+   * Convert image to WebP format without resizing
+   */
+  private async convertToWebP(
+    buffer: Buffer,
+    quality: number,
+  ): Promise<Buffer> {
+    return sharp(buffer).webp({ quality }).toBuffer();
+  }
+
+  /**
+   * Process image: resize and convert to WebP (kept for backward compatibility if needed)
    */
   private async processImage(
     buffer: Buffer,

@@ -1,7 +1,6 @@
 import {
   Controller,
   Put,
-  Post,
   Body,
   UseGuards,
   HttpCode,
@@ -11,6 +10,9 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  NotFoundException,
+  Get,
+  Inject,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChangePasswordUseCase } from '../../application/handlers/change-password.use-case';
@@ -24,11 +26,14 @@ import {
   CurrentUserPayload,
 } from '../../../../shared/decorators/current-user.decorator';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
-import { UploadService, UploadResult, MulterFile } from '../../../../shared/services/upload';
+import { UploadService, MulterFile } from '../../../../shared/services/upload';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
+import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
+import { BadgeResponse } from '../../../../shared/dto/badge-response.dto';
+import { RoleResponse } from '../../../../shared/dto/role-response.dto';
 
-@Controller('users')
+@Controller()
 @UseGuards(JwtAuthGuard)
 export class UserController {
   private readonly apiServiceUrl: string;
@@ -38,6 +43,8 @@ export class UserController {
     private readonly updateProfileUseCase: UpdateProfileUseCase,
     private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
+    @Inject('IUserRepository')
+    private readonly userRepository: IUserRepository,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -50,9 +57,11 @@ export class UserController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.changePasswordUseCase.execute({
       userId: user.userId,
+      tokenId: user.tokenId,
       currentPassword: dto.currentPassword,
       newPassword: dto.newPassword,
       passwordConfirmation: dto.passwordConfirmation,
+      logoutAll: dto.logoutAll,
     });
 
     return ApiResponseUtil.success(
@@ -61,19 +70,40 @@ export class UserController {
     );
   }
 
-  @Put('profile')
+  @Put('me')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('avatar'))
   async updateProfile(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateProfileDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/i }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file?: MulterFile,
   ): Promise<ApiResponse<UserResponse>> {
+    let avatarUrl: string | undefined;
+
+    // Upload avatar if provided
+    if (file) {
+      const uploadResult = await this.uploadService.uploadAvatar(file, user.userId);
+      // Save relative path to database, not full URL
+      avatarUrl = uploadResult.relativePath;
+    }
+
+    // Update profile with displayName and/or avatarUrl
     const updatedUser = await this.updateProfileUseCase.execute({
       userId: user.userId,
       displayName: dto.displayName,
+      avatarUrl,
     });
 
     const userResponse: UserResponse = {
-      id: updatedUser.id,
       email: updatedUser.email,
       displayName: updatedUser.displayName || undefined,
       avatarUrl: buildFullUrl(this.apiServiceUrl, updatedUser.avatarUrl),
@@ -86,29 +116,93 @@ export class UserController {
     return ApiResponseUtil.success(userResponse, 'Profile updated successfully');
   }
 
-  @Post('avatar')
+  @Get('/me')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('avatar'))
-  async uploadAvatar(
+  async getMe(
     @CurrentUser() user: CurrentUserPayload,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
-          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/i }),
-        ],
-      }),
-    )
-    file: MulterFile,
-  ): Promise<ApiResponse<UploadResult>> {
-    const result = await this.uploadService.uploadAvatar(file, user.userId);
+  ): Promise<ApiResponse<UserResponse>> {
+    const dbUser = await this.userRepository.findById(user.userId, [
+      'userRoles',
+      'userRoles.role',
+      'userBadges',
+      'userBadges.badge',
+    ]);
+    if (!dbUser) {
+      throw new NotFoundException('User not found');
+    }
 
-    // Update user profile with new avatar URL
-    await this.updateProfileUseCase.execute({
-      userId: user.userId,
-      avatarUrl: result.url,
-    });
+    // Map roles
+    const roles: RoleResponse[] = [];
+    if (dbUser.userRoles) {
+      for (const userRole of dbUser.userRoles) {
+        if (userRole?.role) {
+          roles.push({
+            id: userRole.role.id,
+            name: userRole.role.name,
+          });
+        }
+      }
+    }
 
-    return ApiResponseUtil.success(result, 'Avatar uploaded successfully');
+    // Map badges
+    const badges: BadgeResponse[] = [];
+    if (dbUser.userBadges) {
+      for (const userBadge of dbUser.userBadges) {
+        if (userBadge?.badge) {
+          const badge = userBadge.badge;
+          badges.push({
+            id: badge.id,
+            name: badge.name,
+            description: badge.description || undefined,
+            iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+            earnedAt: userBadge.earnedAt,
+          });
+        }
+      }
+    }
+
+    const userResponse: UserResponse = {
+      email: dbUser.email,
+      displayName: dbUser.displayName || undefined,
+      avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser.avatarUrl),
+      isActive: dbUser.isActive,
+      lastLoginAt: dbUser.lastLoginAt || undefined,
+      roles: roles.length > 0 ? roles : [],
+      badges: badges.length > 0 ? badges : [],
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt,
+    };
+
+    return ApiResponseUtil.success(userResponse);
+  }
+
+  @Get('/me/badges')
+  @HttpCode(HttpStatus.OK)
+  async getMyBadges(
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<ApiResponse<BadgeResponse[]>> {
+    const dbUser = await this.userRepository.findByIdWithBadges(user.userId);
+    if (!dbUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const userBadges = dbUser.userBadges || [];
+    const badges: BadgeResponse[] = [];
+
+    for (const userBadge of userBadges) {
+      if (userBadge?.badge) {
+        const badge = userBadge.badge;
+        badges.push({
+          id: badge.id,
+          name: badge.name,
+          description: badge.description || undefined,
+          iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+          earnedAt: userBadge.earnedAt,
+        });
+      }
+    }
+
+    return ApiResponseUtil.success(badges);
   }
 }

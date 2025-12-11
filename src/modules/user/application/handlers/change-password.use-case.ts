@@ -1,13 +1,21 @@
-import { Injectable, UnauthorizedException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
+import { IUserTokenRepository } from '../../../auth/infrastructure/persistence/repositories/user-token.repository';
 import { PasswordService } from '../../../../shared/services/password.service';
 import { User } from '../../domain/entities/user.entity';
 
 export interface ChangePasswordCommand {
   userId: string;
+  tokenId: string;
   currentPassword: string;
   newPassword: string;
   passwordConfirmation: string;
+  logoutAll?: boolean;
 }
 
 @Injectable()
@@ -15,6 +23,8 @@ export class ChangePasswordUseCase {
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
+    @Inject('IUserTokenRepository')
+    private readonly userTokenRepository: IUserTokenRepository,
     private readonly passwordService: PasswordService,
   ) {}
 
@@ -43,6 +53,19 @@ export class ChangePasswordUseCase {
     user.passwordHash = await this.passwordService.hashPassword(command.newPassword);
 
     // Update user
-    return this.userRepository.update(user);
+    const updatedUser = await this.userRepository.update(user);
+
+    // If logoutAll is true, revoke all other tokens except the current one
+    if (command.logoutAll) {
+      const allTokens = await this.userTokenRepository.findByUserId(command.userId);
+      for (const token of allTokens) {
+        // Skip the current token
+        if (token.tokenId !== command.tokenId) {
+          await this.userTokenRepository.revokeToken(token.tokenId);
+        }
+      }
+    }
+
+    return updatedUser;
   }
 }

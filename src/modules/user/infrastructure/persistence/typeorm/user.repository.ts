@@ -11,17 +11,24 @@ export class UserRepository implements IUserRepository {
     private readonly repository: Repository<User>,
   ) {}
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string, relations?: string[]): Promise<User | null> {
     return this.repository.findOne({
       where: { email, deletedAt: null },
-      relations: ['userRoles', 'userRoles.role', 'userPermissions', 'userPermissions.permission'],
+      ...(relations && relations.length > 0 ? { relations } : {}),
     });
   }
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string, relations?: string[]): Promise<User | null> {
     return this.repository.findOne({
       where: { id, deletedAt: null },
-      relations: ['userRoles', 'userRoles.role', 'userPermissions', 'userPermissions.permission'],
+      ...(relations && relations.length > 0 ? { relations } : {}),
+    });
+  }
+
+  async findByIdWithBadges(id: string): Promise<User | null> {
+    return this.repository.findOne({
+      where: { id, deletedAt: null },
+      relations: ['userBadges', 'userBadges.badge'],
     });
   }
 

@@ -6,6 +6,7 @@ import { UserTokenRepository } from './infrastructure/persistence/typeorm/user-t
 import { RegisterUseCase } from './application/handlers/register.use-case';
 import { LoginUseCase } from './application/handlers/login.use-case';
 import { RefreshTokenUseCase } from './application/handlers/refresh-token.use-case';
+import { LogoutUseCase } from './application/handlers/logout.use-case';
 import { AuthController } from './interface/rest/auth.controller';
 import { UserModule } from '../user/user.module';
 import { PasswordService } from '../../shared/services/password.service';
@@ -28,6 +29,7 @@ import { IUserRepository } from '../user/infrastructure/persistence/repositories
     RegisterUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
+    LogoutUseCase,
     PasswordService,
     JwtService,
   ],

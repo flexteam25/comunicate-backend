@@ -1,4 +1,4 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsBoolean } from 'class-validator';
 
 export class ChangePasswordDto {
   @IsString()
@@ -11,4 +11,8 @@ export class ChangePasswordDto {
   @IsString()
   @MinLength(8)
   passwordConfirmation: string;
+
+  @IsOptional()
+  @IsBoolean()
+  logoutAll?: boolean;
 }
