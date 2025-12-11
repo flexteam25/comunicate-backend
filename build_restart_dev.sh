@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build and restart PM2 processes script
-# Usage: ./build_restart_dev.sh [--name=api|all]
+# Usage: ./build_restart_dev.sh [--name=api|queue|all]
 
 # Colors for output
 RED='\033[0;31m'
@@ -76,15 +76,17 @@ restart_all() {
 
 # Function to show usage
 show_usage() {
-    echo "Usage: $0 [--name=api|all]"
+    echo "Usage: $0 [--name=api|queue|all]"
     echo ""
     echo "Options:"
     echo "  --name=api     Build and restart API process only (default)"
+    echo "  --name=queue   Build and restart Queue Worker process only"
     echo "  --name=all     Build and restart all processes"
     echo ""
     echo "Examples:"
     echo "  $0              # Build and restart API (default)"
     echo "  $0 --name=api   # Build and restart API"
+    echo "  $0 --name=queue # Build and restart Queue Worker"
     echo "  $0 --name=all   # Build and restart all processes"
 }
 
@@ -98,7 +100,15 @@ main() {
         --name=api)
             print_status "Building and restarting API process..."
             if build_project; then
-                restart_process "comunicate-api"
+                restart_process "poca-api"
+            else
+                exit 1
+            fi
+            ;;
+        --name=queue)
+            print_status "Building and restarting Queue Worker process..."
+            if build_project; then
+                restart_process "poca-queue"
             else
                 exit 1
             fi
