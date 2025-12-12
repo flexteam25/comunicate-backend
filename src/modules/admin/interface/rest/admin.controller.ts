@@ -1,0 +1,275 @@
+import {
+  Controller,
+  Post,
+  Put,
+  Get,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { LoginUseCase } from '../../application/handlers/login.use-case';
+import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.use-case';
+import { LogoutUseCase } from '../../application/handlers/logout.use-case';
+import { RequestOtpUseCase } from '../../application/handlers/request-otp.use-case';
+import { ResetPasswordUseCase } from '../../application/handlers/reset-password.use-case';
+import { ChangePasswordUseCase } from '../../application/handlers/change-password.use-case';
+import { UpdateProfileUseCase } from '../../application/handlers/update-profile.use-case';
+import { GetMeUseCase } from '../../application/handlers/get-me.use-case';
+import { CreateAdminUseCase } from '../../application/handlers/create-admin.use-case';
+import { AdminLoginDto } from './dto/login.dto';
+import { AdminRefreshTokenDto } from './dto/refresh-token.dto';
+import { AdminRequestOtpDto } from './dto/request-otp.dto';
+import { AdminResetPasswordDto } from './dto/reset-password.dto';
+import { AdminChangePasswordDto } from './dto/change-password.dto';
+import { AdminUpdateProfileDto } from './dto/update-profile.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
+import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
+import { AdminJwtAuthGuard } from '../../infrastructure/guards/admin-jwt-auth.guard';
+import { AdminPermissionGuard } from '../../infrastructure/guards/admin-permission.guard';
+import { CurrentAdmin, CurrentAdminPayload } from '../../infrastructure/decorators/current-admin.decorator';
+import { RequirePermission } from '../../infrastructure/decorators/require-permission.decorator';
+
+interface AdminAuthResponse {
+  admin: {
+    id: string;
+    email: string;
+    displayName?: string;
+    isSuperAdmin: boolean;
+  };
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface AdminResponse {
+  id: string;
+  email: string;
+  displayName?: string;
+  isSuperAdmin: boolean;
+  isActive: boolean;
+  lastLoginAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+@Controller('admin')
+export class AdminController {
+  private readonly apiServiceUrl: string;
+
+  constructor(
+    private readonly loginUseCase: LoginUseCase,
+    private readonly refreshTokenUseCase: RefreshTokenUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
+    private readonly requestOtpUseCase: RequestOtpUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
+    private readonly updateProfileUseCase: UpdateProfileUseCase,
+    private readonly getMeUseCase: GetMeUseCase,
+    private readonly createAdminUseCase: CreateAdminUseCase,
+    private readonly configService: ConfigService,
+  ) {
+    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(
+    @Body() dto: AdminLoginDto,
+    @Req() req: any,
+  ): Promise<ApiResponse<AdminAuthResponse>> {
+    const result = await this.loginUseCase.execute({
+      email: dto.email,
+      password: dto.password,
+      deviceInfo: dto.deviceInfo,
+      ipAddress: req.ip || req.connection?.remoteAddress,
+    });
+
+    const authResponse: AdminAuthResponse = {
+      admin: {
+        id: result.admin.id,
+        email: result.admin.email,
+        displayName: result.admin.displayName || undefined,
+        isSuperAdmin: result.admin.isSuperAdmin,
+      },
+      accessToken: result.tokens.accessToken,
+      refreshToken: result.tokens.refreshToken,
+    };
+
+    return ApiResponseUtil.success(authResponse, 'Login successful');
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Body() dto: AdminRefreshTokenDto,
+  ): Promise<ApiResponse<AdminAuthResponse>> {
+    const result = await this.refreshTokenUseCase.execute({
+      refreshToken: dto.refreshToken,
+    });
+
+    const authResponse: AdminAuthResponse = {
+      admin: {
+        id: result.admin.id,
+        email: result.admin.email,
+        displayName: result.admin.displayName || undefined,
+        isSuperAdmin: result.admin.isSuperAdmin,
+      },
+      accessToken: result.tokens.accessToken,
+      refreshToken: result.tokens.refreshToken,
+    };
+
+    return ApiResponseUtil.success(authResponse, 'Token refreshed successfully');
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AdminJwtAuthGuard)
+  async logout(
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.logoutUseCase.execute({
+      tokenId: admin.tokenId,
+    });
+
+    return ApiResponseUtil.success(
+      { message: 'Logout successful' },
+      'Logout successful',
+    );
+  }
+
+  @Post('request-otp')
+  @HttpCode(HttpStatus.OK)
+  async requestOtp(
+    @Body() dto: AdminRequestOtpDto,
+  ): Promise<ApiResponse<{ message: string }>> {
+    const result = await this.requestOtpUseCase.execute({
+      email: dto.email,
+    });
+
+    return ApiResponseUtil.success(
+      { message: result.message },
+      result.message,
+    );
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body() dto: AdminResetPasswordDto,
+  ): Promise<ApiResponse<{ message: string }>> {
+    const result = await this.resetPasswordUseCase.execute({
+      email: dto.email,
+      newPassword: dto.newPassword,
+      passwordConfirmation: dto.passwordConfirmation,
+      verifyCode: dto.verifyCode,
+    });
+
+    return ApiResponseUtil.success(
+      { message: result.message },
+      result.message,
+    );
+  }
+
+  @Put('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AdminJwtAuthGuard)
+  async changePassword(
+    @CurrentAdmin() admin: CurrentAdminPayload,
+    @Body() dto: AdminChangePasswordDto,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.changePasswordUseCase.execute({
+      adminId: admin.adminId,
+      tokenId: admin.tokenId,
+      currentPassword: dto.currentPassword,
+      newPassword: dto.newPassword,
+      passwordConfirmation: dto.passwordConfirmation,
+      logoutAll: dto.logoutAll,
+    });
+
+    return ApiResponseUtil.success(
+      { message: 'Password changed successfully' },
+      'Password changed successfully',
+    );
+  }
+
+  @Put('me')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AdminJwtAuthGuard)
+  async updateProfile(
+    @CurrentAdmin() admin: CurrentAdminPayload,
+    @Body() dto: AdminUpdateProfileDto,
+  ): Promise<ApiResponse<AdminResponse>> {
+    const updatedAdmin = await this.updateProfileUseCase.execute({
+      adminId: admin.adminId,
+      displayName: dto.displayName,
+    });
+
+    const adminResponse: AdminResponse = {
+      id: updatedAdmin.id,
+      email: updatedAdmin.email,
+      displayName: updatedAdmin.displayName || undefined,
+      isSuperAdmin: updatedAdmin.isSuperAdmin,
+      isActive: updatedAdmin.isActive,
+      lastLoginAt: updatedAdmin.lastLoginAt,
+      createdAt: updatedAdmin.createdAt,
+      updatedAt: updatedAdmin.updatedAt,
+    };
+
+    return ApiResponseUtil.success(adminResponse, 'Profile updated successfully');
+  }
+
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AdminJwtAuthGuard)
+  async getMe(
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<AdminResponse>> {
+    const adminData = await this.getMeUseCase.execute(admin.adminId);
+
+    const adminResponse: AdminResponse = {
+      id: adminData.id,
+      email: adminData.email,
+      displayName: adminData.displayName || undefined,
+      isSuperAdmin: adminData.isSuperAdmin,
+      isActive: adminData.isActive,
+      lastLoginAt: adminData.lastLoginAt,
+      createdAt: adminData.createdAt,
+      updatedAt: adminData.updatedAt,
+    };
+
+    return ApiResponseUtil.success(adminResponse, 'Admin retrieved successfully');
+  }
+
+  @Post('create')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
+  @RequirePermission('admin.create')
+  async createAdmin(
+    @CurrentAdmin() admin: CurrentAdminPayload,
+    @Body() dto: CreateAdminDto,
+  ): Promise<ApiResponse<AdminResponse>> {
+    const newAdmin = await this.createAdminUseCase.execute({
+      creatorAdminId: admin.adminId,
+      email: dto.email,
+      password: dto.password,
+      displayName: dto.displayName,
+      permissionIds: dto.permissionIds,
+    });
+
+    const adminResponse: AdminResponse = {
+      id: newAdmin.id,
+      email: newAdmin.email,
+      displayName: newAdmin.displayName || undefined,
+      isSuperAdmin: newAdmin.isSuperAdmin,
+      isActive: newAdmin.isActive,
+      lastLoginAt: newAdmin.lastLoginAt,
+      createdAt: newAdmin.createdAt,
+      updatedAt: newAdmin.updatedAt,
+    };
+
+    return ApiResponseUtil.success(adminResponse, 'Admin created successfully');
+  }
+}
+

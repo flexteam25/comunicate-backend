@@ -10,6 +10,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { User } from './modules/user/domain/entities/user.entity';
 import { UserOldPassword } from './modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from './modules/auth/domain/entities/user-token.entity';
@@ -19,8 +20,12 @@ import { Badge } from './modules/badge/domain/entities/badge.entity';
 import { UserRole } from './modules/user/domain/entities/user-role.entity';
 import { UserPermission } from './modules/user/domain/entities/user-permission.entity';
 import { UserBadge } from './modules/user/domain/entities/user-badge.entity';
+import { Admin } from './modules/admin/domain/entities/admin.entity';
+import { AdminToken } from './modules/admin/domain/entities/admin-token.entity';
+import { AdminRole } from './modules/admin/domain/entities/admin-role.entity';
+import { AdminPermission } from './modules/admin/domain/entities/admin-permission.entity';
+import { AdminOldPassword } from './modules/user/domain/entities/admin-old-password.entity';
 import { CorsTrustMiddleware } from './shared/middleware/cors-trust.middleware';
-import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middleware';
 
 @Module({
   imports: [
@@ -44,6 +49,11 @@ import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middlewa
         UserRole,
         UserPermission,
         UserBadge,
+        Admin,
+        AdminToken,
+        AdminRole,
+        AdminPermission,
+        AdminOldPassword,
       ],
       synchronize: false,
       logging: false,
@@ -55,14 +65,9 @@ import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middlewa
     QueueClientModule,
     AuthModule,
     UserModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(CorsTrustMiddleware, ApiThrottleMiddleware)
-      .forRoutes({ path: '*path', method: RequestMethod.ALL });
-  }
-}
+export class AppModule {}

@@ -5,6 +5,8 @@ import { ApiExceptionFilter } from './shared/filters/api-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { LoggerService } from './shared/logger/logger.service';
+import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middleware';
+import { CorsTrustMiddleware } from './shared/middleware/cors-trust.middleware';
 
 async function bootstrap() {
   // CORS is handled by CorsTrustMiddleware
@@ -22,6 +24,13 @@ async function bootstrap() {
   // Enable global exception filter with LoggerService
   const loggerService = app.get(LoggerService);
   app.useGlobalFilters(new ApiExceptionFilter(loggerService));
+
+  const corsTrustMiddleware = new CorsTrustMiddleware();
+  app.use((req, res, next) => corsTrustMiddleware.use(req, res, next));
+  
+  // Apply API throttle middleware
+  const apiThrottleMiddleware = new ApiThrottleMiddleware(loggerService);
+  app.use((req, res, next) => apiThrottleMiddleware.use(req, res, next));
   
   // Enable validation pipe
   app.useGlobalPipes(
