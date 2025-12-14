@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
-export class AddIsSuperAdminToAdmins1765530842314 implements MigrationInterface {
+export class AddIsSuperAdminToAdmins1765686535459 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Set timezone to UTC for this session
     await queryRunner.query("SET timezone = 'UTC'");
@@ -23,4 +23,3 @@ export class AddIsSuperAdminToAdmins1765530842314 implements MigrationInterface 
     await queryRunner.dropColumn('admins', 'is_super_admin');
   }
 }
-

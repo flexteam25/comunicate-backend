@@ -7,6 +7,7 @@ import { Admin } from '../../domain/entities/admin.entity';
 export interface UpdateProfileCommand {
   adminId: string;
   displayName?: string;
+  avatarUrl?: string;
 }
 
 @Injectable()
@@ -29,6 +30,10 @@ export class UpdateProfileUseCase {
       // Update fields
       if (command.displayName !== undefined) {
         admin.displayName = command.displayName || null;
+      }
+
+      if (command.avatarUrl !== undefined) {
+        admin.avatarUrl = command.avatarUrl || null;
       }
 
       // Update admin

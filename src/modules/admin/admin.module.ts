@@ -25,6 +25,7 @@ import { PasswordService } from '../../shared/services/password.service';
 import { JwtService } from '../../shared/services/jwt.service';
 import { TransactionService } from '../../shared/services/transaction.service';
 import { QueueClientModule } from '../../shared/queue/queue-client.module';
+import { UploadModule } from '../../shared/services/upload';
 import { AdminJwtAuthGuard } from './infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from './infrastructure/guards/admin-permission.guard';
 
@@ -40,6 +41,7 @@ import { AdminPermissionGuard } from './infrastructure/guards/admin-permission.g
     ]),
     ConfigModule,
     QueueClientModule,
+    UploadModule.register({ storageType: 'local' }),
   ],
   controllers: [AdminController],
   providers: [

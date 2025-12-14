@@ -16,6 +16,9 @@ export class Admin extends BaseEntity {
   @Column({ name: 'display_name', type: 'varchar', length: 100, nullable: true })
   displayName?: string;
 
+  @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
+  avatarUrl?: string;
+
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
@@ -37,4 +40,3 @@ export class Admin extends BaseEntity {
   @OneToMany(() => AdminOldPassword, (oldPassword) => oldPassword.admin)
   oldPasswords: AdminOldPassword[];
 }
-

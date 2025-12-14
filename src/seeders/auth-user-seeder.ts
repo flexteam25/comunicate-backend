@@ -184,15 +184,7 @@ export class AuthUserSeeder {
       });
       await queryRunner.manager.save(siteOwnerUser);
 
-      const adminUser = queryRunner.manager.create(User, {
-        email: 'admin@example.com',
-        passwordHash,
-        displayName: 'Admin User',
-        isActive: true,
-      });
-      await queryRunner.manager.save(adminUser);
-
-      // Assign roles
+      // Assign roles (only user and site-owner roles, NOT admin role)
       const userUserRole = queryRunner.manager.create(UserRole, {
         userId: regularUser.id,
         roleId: userRole.id,
@@ -205,22 +197,7 @@ export class AuthUserSeeder {
       });
       await queryRunner.manager.save(siteOwnerUserRole);
 
-      const adminUserRole = queryRunner.manager.create(UserRole, {
-        userId: adminUser.id,
-        roleId: adminRole.id,
-      });
-      await queryRunner.manager.save(adminUserRole);
-
       // Assign permissions directly to users (not through roles)
-      // Admin user gets all permissions
-      for (const permission of savedPermissions) {
-        const userPermission = queryRunner.manager.create(UserPermission, {
-          userId: adminUser.id,
-          permissionId: permission.id,
-        });
-        await queryRunner.manager.save(userPermission);
-      }
-
       // Site owner gets site-related permissions
       const siteOwnerPermissions = savedPermissions.filter(
         (p) => p.name === 'sites.update' || p.name === 'sites.create',

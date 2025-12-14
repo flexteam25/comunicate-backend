@@ -8,7 +8,13 @@ import {
   HttpStatus,
   Req,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { LoginUseCase } from '../../application/handlers/login.use-case';
 import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.use-case';
@@ -29,14 +35,20 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
 import { AdminJwtAuthGuard } from '../../infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../infrastructure/guards/admin-permission.guard';
-import { CurrentAdmin, CurrentAdminPayload } from '../../infrastructure/decorators/current-admin.decorator';
+import {
+  CurrentAdmin,
+  CurrentAdminPayload,
+} from '../../infrastructure/decorators/current-admin.decorator';
 import { RequirePermission } from '../../infrastructure/decorators/require-permission.decorator';
+import { UploadService, MulterFile } from '../../../../shared/services/upload';
+import { buildFullUrl } from '../../../../shared/utils/url.util';
 
 interface AdminAuthResponse {
   admin: {
     id: string;
     email: string;
     displayName?: string;
+    avatarUrl?: string;
     isSuperAdmin: boolean;
   };
   accessToken: string;
@@ -47,6 +59,7 @@ interface AdminResponse {
   id: string;
   email: string;
   displayName?: string;
+  avatarUrl?: string;
   isSuperAdmin: boolean;
   isActive: boolean;
   lastLoginAt?: Date;
@@ -54,7 +67,7 @@ interface AdminResponse {
   updatedAt: Date;
 }
 
-@Controller('admin')
+@Controller('admin/auth')
 export class AdminController {
   private readonly apiServiceUrl: string;
 
@@ -68,6 +81,7 @@ export class AdminController {
     private readonly updateProfileUseCase: UpdateProfileUseCase,
     private readonly getMeUseCase: GetMeUseCase,
     private readonly createAdminUseCase: CreateAdminUseCase,
+    private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -91,6 +105,7 @@ export class AdminController {
         id: result.admin.id,
         email: result.admin.email,
         displayName: result.admin.displayName || undefined,
+        avatarUrl: buildFullUrl(this.apiServiceUrl, result.admin.avatarUrl),
         isSuperAdmin: result.admin.isSuperAdmin,
       },
       accessToken: result.tokens.accessToken,
@@ -114,6 +129,7 @@ export class AdminController {
         id: result.admin.id,
         email: result.admin.email,
         displayName: result.admin.displayName || undefined,
+        avatarUrl: buildFullUrl(this.apiServiceUrl, result.admin.avatarUrl),
         isSuperAdmin: result.admin.isSuperAdmin,
       },
       accessToken: result.tokens.accessToken,
@@ -142,14 +158,16 @@ export class AdminController {
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
   async requestOtp(
-    @Body() dto: AdminRequestOtpDto,
-  ): Promise<ApiResponse<{ message: string }>> {
+    @Body() dto: AdminRequestOtpDto): Promise<ApiResponse> {
     const result = await this.requestOtpUseCase.execute({
       email: dto.email,
     });
 
     return ApiResponseUtil.success(
-      { message: result.message },
+      {
+        code: result?.otp || null,
+        note: 'For testing purpose, the OTP is sent to the email',
+      },
       result.message,
     );
   }
@@ -197,19 +215,42 @@ export class AdminController {
   @Put('me')
   @HttpCode(HttpStatus.OK)
   @UseGuards(AdminJwtAuthGuard)
+  @UseInterceptors(FileInterceptor('avatar'))
   async updateProfile(
     @CurrentAdmin() admin: CurrentAdminPayload,
     @Body() dto: AdminUpdateProfileDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/i }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file?: MulterFile,
   ): Promise<ApiResponse<AdminResponse>> {
+    let avatarUrl: string | undefined;
+
+    // Upload avatar if provided
+    if (file) {
+      const uploadResult = await this.uploadService.uploadAvatar(file, admin.adminId);
+      // Save relative path to database, not full URL
+      avatarUrl = uploadResult.relativePath;
+    }
+
+    // Update profile with displayName and/or avatarUrl
     const updatedAdmin = await this.updateProfileUseCase.execute({
       adminId: admin.adminId,
       displayName: dto.displayName,
+      avatarUrl,
     });
 
     const adminResponse: AdminResponse = {
       id: updatedAdmin.id,
       email: updatedAdmin.email,
       displayName: updatedAdmin.displayName || undefined,
+      avatarUrl: buildFullUrl(this.apiServiceUrl, updatedAdmin.avatarUrl),
       isSuperAdmin: updatedAdmin.isSuperAdmin,
       isActive: updatedAdmin.isActive,
       lastLoginAt: updatedAdmin.lastLoginAt,
@@ -232,6 +273,7 @@ export class AdminController {
       id: adminData.id,
       email: adminData.email,
       displayName: adminData.displayName || undefined,
+      avatarUrl: buildFullUrl(this.apiServiceUrl, adminData.avatarUrl),
       isSuperAdmin: adminData.isSuperAdmin,
       isActive: adminData.isActive,
       lastLoginAt: adminData.lastLoginAt,
@@ -262,6 +304,7 @@ export class AdminController {
       id: newAdmin.id,
       email: newAdmin.email,
       displayName: newAdmin.displayName || undefined,
+      avatarUrl: buildFullUrl(this.apiServiceUrl, newAdmin.avatarUrl),
       isSuperAdmin: newAdmin.isSuperAdmin,
       isActive: newAdmin.isActive,
       lastLoginAt: newAdmin.lastLoginAt,

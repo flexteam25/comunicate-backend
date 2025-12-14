@@ -11,6 +11,7 @@ POCA.GG is a platform providing information, reviews, and scam reports for Toto/
 ```
 src/
 ├── modules/                  # DDD modules
+│   ├── admin/                # Admin management module
 │   ├── auth/                 # Authentication module
 │   ├── badge/                # Badge system
 │   └── user/                 # User management
@@ -40,14 +41,19 @@ src/
 | Table | Description |
 |-------|-------------|
 | `users` | User info (email, password_hash, display_name, avatar_url, is_active, last_login_at) |
-| `roles` | Roles (user, site-owner, admin) |
-| `permissions` | System permissions |
+| `admins` | Admin info (email, password_hash, display_name, is_active, is_super_admin, last_login_at) |
+| `roles` | Roles with type field (user/admin types) |
+| `permissions` | System permissions with type field (user/admin types) |
 | `badges` | Badge system (user/site types) |
-| `user_tokens` | JWT refresh tokens (stateful token management) |
-| `user_old_passwords` | Password history (user_id, password_hash, type, created_at) |
+| `user_tokens` | JWT refresh tokens for users (stateful token management) |
+| `admin_tokens` | JWT refresh tokens for admins (stateful token management) |
+| `user_old_passwords` | User password history (user_id, password_hash, type, created_at) |
+| `admin_old_passwords` | Admin password history (admin_id, password_hash, type, created_at) |
 | `user_roles` | User-Role mapping (many-to-many) |
 | `user_permissions` | User-Permission mapping (many-to-many) |
 | `user_badges` | User-Badge mapping (many-to-many) |
+| `admin_roles` | Admin-Role mapping (many-to-many, admin type roles only) |
+| `admin_permissions` | Admin-Permission mapping (many-to-many, admin type permissions only) |
 
 **User Old Passwords Table:**
 - Stores password history when user changes or resets password
@@ -126,22 +132,80 @@ src/
 
 ---
 
-### 5. Role & Permission System
+### 5. Admin Module (`/api/admin`)
 
-**Roles (seeded):**
-- `user` - Regular user
-- `site-owner` - Site owner
-- `admin` - Administrator
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/admin/login` | Admin login, returns JWT tokens | ❌ |
+| `POST` | `/api/admin/refresh` | Refresh access token | ❌ |
+| `POST` | `/api/admin/logout` | Logout (revoke current token) | ✅ |
+| `POST` | `/api/admin/request-otp` | Request OTP for password reset | ❌ |
+| `POST` | `/api/admin/reset-password` | Reset password with OTP verification | ❌ |
+| `PUT` | `/api/admin/change-password` | Change password | ✅ |
+| `PUT` | `/api/admin/me` | Update profile (displayName) | ✅ |
+| `GET` | `/api/admin/me` | Get current admin info | ✅ |
+| `POST` | `/api/admin/create` | Create new admin (requires permission) | ✅ |
 
-**Permissions (seeded):**
+**Features:**
+- ✅ Admin login with JWT (access + refresh tokens)
+- ✅ Stateful token management (tokens can be revoked)
+- ✅ Logout endpoint to revoke current token
+- ✅ OTP-based password reset (6-digit OTP, 3-minute expiry)
+- ✅ Password reset with OTP verification
+- ✅ Change password (requires current password)
+- ✅ Update profile (displayName)
+- ✅ Get current admin info
+- ✅ Create admin (requires `admin.create` permission)
+- ✅ Permission-based access control
+- ✅ Super admin support (`is_super_admin` field)
+- ✅ All tokens revoked after password reset
+- ✅ Password history tracking
+
+**Admin Permission System:**
+- `AdminJwtAuthGuard` - Validates admin JWT tokens
+- `AdminPermissionGuard` - Checks admin permissions
+- `@RequirePermission()` decorator - Declares required permissions for endpoints
+- `@CurrentAdmin()` decorator - Extracts admin info from request
+
+**Super Admin:**
+- Admins with `is_super_admin = true` bypass permission checks
+- Can access all endpoints regardless of assigned permissions
+
+---
+
+### 6. Role & Permission System
+
+**Role Types:**
+- `user` - Roles for regular users
+- `admin` - Roles for administrators
+
+**Permission Types:**
+- `user` - Permissions for regular users
+- `admin` - Permissions for administrators
+
+**User Roles (seeded):**
+- `user` - Regular user (type: USER)
+- `site-owner` - Site owner (type: USER)
+
+**Admin Roles (seeded):**
+- `admin` - Administrator (type: ADMIN) - Only used in `admin_roles` table, NOT in `user_roles`
+
+**User Permissions (seeded):**
 - `users.create`, `users.read`, `users.update`, `users.delete`
 - `sites.create`, `sites.update`, `sites.delete`
 - `reviews.moderate`, `scam-reports.moderate`
 - `admin.access`
 
+**Admin Permissions (seeded):**
+- `admin.create` - Create new admins
+- `admin.read` - View admin list
+- `admin.update` - Update admin info
+- `admin.delete` - Delete admins
+- Additional admin-specific permissions
+
 ---
 
-### 6. Badge System
+### 7. Badge System
 
 **Badge Types:**
 - `USER` - Badges for users
@@ -157,7 +221,7 @@ src/
 
 ---
 
-### 7. Shared Infrastructure
+### 8. Shared Infrastructure
 
 | Component | Description |
 |-----------|-------------|
@@ -180,10 +244,14 @@ src/
 | `buildFullUrl` utility | Helper to build full URLs with API_SERVICE_URL prefix |
 | `BadgeResponse` DTO | Badge response structure |
 | `RoleResponse` DTO | Role response structure |
+| `AdminJwtAuthGuard` | Admin JWT authentication guard |
+| `AdminPermissionGuard` | Admin permission checking guard |
+| `@RequirePermission()` decorator | Declare required permissions for admin endpoints |
+| `@CurrentAdmin()` decorator | Extract admin info from request |
 
 ---
 
-### 8. Upload Service (File Upload)
+### 9. Upload Service (File Upload)
 
 **Location:** `src/shared/services/upload/`
 
@@ -198,13 +266,15 @@ upload/
 
 **Features:**
 - ✅ Accept image files: `png`, `jpg`, `jpeg`, `webp`
-- ✅ Convert all images to **WebP** format (better compression)
-- ✅ Resize images (max 400x400 for avatars)
+- ✅ Convert all images to **WebP** format (better compression, preserves original resolution)
+- ✅ No automatic resizing (maintains original image dimensions)
 - ✅ Validate file size (max 5MB)
 - ✅ Generate unique filenames
 - ✅ Local storage provider (saves to `uploads/` directory)
 - ✅ Static file serving at `/uploads/*`
 - ✅ Storage provider interface (ready for S3 integration)
+- ✅ Saves relative paths to database (not full URLs)
+- ✅ Builds full URLs only when returning responses
 
 **Usage:**
 ```bash
@@ -226,7 +296,7 @@ UPLOAD_IMAGE_QUALITY=80         # WebP quality (1-100)
 
 ---
 
-### 9. Queue Architecture (BullMQ)
+### 10. Queue Architecture (BullMQ)
 
 **Location:** `src/shared/queue/`
 
@@ -257,7 +327,7 @@ UPLOAD_IMAGE_QUALITY=80         # WebP quality (1-100)
 
 ---
 
-### 10. Email Service (SMTP)
+### 11. Email Service (SMTP)
 
 **Location:** `src/shared/services/email/`
 
@@ -370,7 +440,7 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 
 ---
 
-### 11. User Response Structure
+### 12. User Response Structure
 
 **UserResponse DTO includes:**
 - Basic info: `email`, `displayName`, `avatarUrl`, `isActive`, `lastLoginAt`
@@ -385,12 +455,40 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 
 ---
 
-### 12. Test Users (Seeded)
+### 13. Database Migrations
 
+**New Migrations Added:**
+- `1765514782256-add-type-to-roles-and-permissions.ts` - Add `type` field to roles and permissions (user/admin)
+- `1765530842314-add-is-super-admin-to-admins.ts` - Add `is_super_admin` field to admins table
+- `1765600000000-create-admin-system.ts` - Create admin system tables (admins, admin_tokens, admin_roles, admin_permissions, admin_old_passwords)
+- `1765610000000-create-user-extensions.ts` - User system extensions
+- `1765620000000-create-post-system.ts` - Post system tables
+- `1765630000000-create-scam-report-system.ts` - Scam report system tables
+- `1765640000000-create-site-system-part1.ts` - Site system tables (part 1)
+- `1765650000000-create-site-system-part2.ts` - Site system tables (part 2)
+- `1765660000000-create-site-system-part3.ts` - Site system tables (part 3)
+
+---
+
+### 14. Test Users (Seeded)
+
+**Users (in `users` table):**
 | Email | Password | Role |
 |-------|----------|------|
 | `user@example.com` | `password123` | user |
 | `siteowner@example.com` | `password123` | site-owner |
-| `admin@example.com` | `password123` | admin |
+
+**Note:** Users table does NOT contain admin accounts. Admin accounts are in the `admins` table.
+
+**Test Admins (in `admins` table):**
+| Email | Password | Is Super Admin |
+|-------|----------|----------------|
+| `superadmin@poca.gg` | `SuperAdmin@123` | true |
+
+**Important:**
+- Users can only have roles: `user` or `site-owner` (type: USER)
+- Admins can only have role: `admin` (type: ADMIN)
+- The `user_roles` table does NOT map users to admin role
+- The `admin_roles` table maps admins to admin role
 
 ---

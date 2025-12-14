@@ -29,8 +29,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     // Check if debug mode is enabled (show detailed error messages)
-    const isDebugMode =
-      process.env.DEBUG_MODE === 'true' || process.env.NODE_ENV === 'development';
+    const isDebugMode = process.env.DEBUG_MODE === 'true';
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';

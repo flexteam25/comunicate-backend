@@ -155,8 +155,13 @@ async function runSeeder(): Promise<void> {
     // Run auth user seeder
     console.log('\n🌱 Running Auth User seeder...');
     const { AuthUserSeeder } = await import('../src/seeders/auth-user-seeder');
+    const { AuthAdminSeeder } = await import('../src/seeders/auth-admin-seeder');
+
     const authUserSeeder = new AuthUserSeeder(dataSource);
     await authUserSeeder.seed();
+
+    const authAdminSeeder = new AuthAdminSeeder(dataSource);
+    await authAdminSeeder.seed();
 
     console.log('\n✅ All seeders completed successfully!');
   } catch (error) {

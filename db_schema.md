@@ -11,7 +11,9 @@
 - email: varchar(255) (unique)
 - password_hash: varchar(255)
 - display_name: varchar(100)
+- avatar_url: varchar(500) (nullable)
 - is_active: boolean (default: true)
+- is_super_admin: boolean (default: false)
 - last_login_at: timestamptz
 - created_at: timestamptz
 - updated_at: timestamptz

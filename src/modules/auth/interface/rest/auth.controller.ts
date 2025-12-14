@@ -17,7 +17,7 @@ import { buildFullUrl } from '../../../../shared/utils/url.util';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
-@Controller('auth')
+@Controller('api/auth')
 export class AuthController {
   private readonly apiServiceUrl: string;
 
@@ -137,7 +137,7 @@ export class AuthController {
 
     return ApiResponseUtil.success(
       {
-        code: result?.otp,
+        code: result?.otp || null,
         note: 'For testing purpose, the OTP is sent to the email',
       },
       result?.message || 'OTP sent successfully',

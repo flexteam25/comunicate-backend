@@ -33,7 +33,7 @@ import { IUserRepository } from '../../infrastructure/persistence/repositories/u
 import { BadgeResponse } from '../../../../shared/dto/badge-response.dto';
 import { RoleResponse } from '../../../../shared/dto/role-response.dto';
 
-@Controller()
+@Controller('api')
 @UseGuards(JwtAuthGuard)
 export class UserController {
   private readonly apiServiceUrl: string;
@@ -116,7 +116,7 @@ export class UserController {
     return ApiResponseUtil.success(userResponse, 'Profile updated successfully');
   }
 
-  @Get('/me')
+  @Get('me')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async getMe(

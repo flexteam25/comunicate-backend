@@ -17,9 +17,6 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), uploadDir), {
     prefix: '/uploads',
   });
-
-  // Set global API prefix
-  app.setGlobalPrefix('api');
   
   // Enable global exception filter with LoggerService
   const loggerService = app.get(LoggerService);
