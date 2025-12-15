@@ -41,5 +41,5 @@ export class User extends BaseEntity {
   @OneToOne(() => UserProfile, (userProfile) => userProfile.user, {
     cascade: true,
   })
-  userProfile: UserProfile[];
+  userProfile: UserProfile;
 }
