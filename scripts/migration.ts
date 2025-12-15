@@ -7,6 +7,7 @@ import { Badge } from '../src/modules/badge/domain/entities/badge.entity';
 import { UserRole } from '../src/modules/user/domain/entities/user-role.entity';
 import { UserPermission } from '../src/modules/user/domain/entities/user-permission.entity';
 import { UserBadge } from '../src/modules/user/domain/entities/user-badge.entity';
+import { UserProfile } from '../src/modules/user/domain/entities/user-profile.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -76,6 +77,7 @@ function buildDataSource() {
       UserRole,
       UserPermission,
       UserBadge,
+      UserProfile,
     ],
     migrations: [path.join(__dirname, '../src/migrations/*.{ts,js}')],
     migrationsTableName: 'migrations',
