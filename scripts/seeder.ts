@@ -12,6 +12,7 @@ import { AdminToken } from '../src/modules/admin/domain/entities/admin-token.ent
 import { AdminRole } from '../src/modules/admin/domain/entities/admin-role.entity';
 import { AdminPermission } from '../src/modules/admin/domain/entities/admin-permission.entity';
 import { AdminOldPassword } from '../src/modules/user/domain/entities/admin-old-password.entity';
+import { UserProfile } from '../src/modules/user/domain/entities/user-profile.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -62,6 +63,7 @@ function createDataSource(): DataSource {
       AdminRole,
       AdminPermission,
       AdminOldPassword,
+      UserProfile,
     ],
     synchronize: false,
     logging: true,
