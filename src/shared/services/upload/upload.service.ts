@@ -148,6 +148,54 @@ export class UploadService {
   }
 
   /**
+   * Upload site image (logo or main image)
+   * Saves to uploads/sites/{siteId}/
+   */
+  async uploadSiteImage(
+    file: MulterFile,
+    siteId: string,
+    imageType: 'logo' | 'main',
+    options?: UploadOptions,
+  ): Promise<UploadResult> {
+    try {
+      this.validateFile(file);
+
+      const { quality = this.defaultQuality } = options || {};
+
+      // Process image: convert to WebP without resizing
+      const processedBuffer = await this.convertToWebP(file.buffer, quality);
+
+      // Generate filename based on image type
+      const prefix = imageType === 'logo' ? 'logo' : 'main';
+      const filename = this.generateFilename(prefix, '.webp');
+
+      // Save to storage with siteId as subfolder: sites/{siteId}/
+      const folder = `sites/${siteId}`;
+      const relativePath = await this.storageProvider.save(
+        processedBuffer,
+        filename,
+        folder,
+      );
+
+      return {
+        relativePath,
+        filename,
+        originalName: file.originalname,
+        size: processedBuffer.length,
+        mimeType: 'image/webp',
+      };
+    } catch (error) {
+      this.logger.error('Site image upload failed', {
+        siteId,
+        imageType,
+        originalName: file?.originalname,
+        error: (error as Error).message,
+      }, 'upload');
+      throw error;
+    }
+  }
+
+  /**
    * Delete uploaded file
    */
   async deleteFile(relativePath: string): Promise<void> {

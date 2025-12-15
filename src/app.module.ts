@@ -11,6 +11,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { SiteModule } from './modules/site/site.module';
+import { TierModule } from './modules/tier/tier.module';
 import { User } from './modules/user/domain/entities/user.entity';
 import { UserOldPassword } from './modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from './modules/auth/domain/entities/user-token.entity';
@@ -25,7 +27,13 @@ import { AdminToken } from './modules/admin/domain/entities/admin-token.entity';
 import { AdminRole } from './modules/admin/domain/entities/admin-role.entity';
 import { AdminPermission } from './modules/admin/domain/entities/admin-permission.entity';
 import { AdminOldPassword } from './modules/user/domain/entities/admin-old-password.entity';
-import { CorsTrustMiddleware } from './shared/middleware/cors-trust.middleware';
+import { Site } from './modules/site/domain/entities/site.entity';
+import { SiteCategory } from './modules/site/domain/entities/site-category.entity';
+import { SiteBadge } from './modules/site/domain/entities/site-badge.entity';
+import { SiteDomain } from './modules/site/domain/entities/site-domain.entity';
+import { SiteView } from './modules/site/domain/entities/site-view.entity';
+import { Tier } from './modules/tier/domain/entities/tier.entity';
+import { UserProfile } from './modules/user/domain/entities/user-profile.entity';
 
 @Module({
   imports: [
@@ -54,6 +62,13 @@ import { CorsTrustMiddleware } from './shared/middleware/cors-trust.middleware';
         AdminRole,
         AdminPermission,
         AdminOldPassword,
+        Site,
+        SiteCategory,
+        SiteBadge,
+        SiteDomain,
+        SiteView,
+        Tier,
+        UserProfile,
       ],
       synchronize: false,
       logging: false,
@@ -66,6 +81,8 @@ import { CorsTrustMiddleware } from './shared/middleware/cors-trust.middleware';
     AuthModule,
     UserModule,
     AdminModule,
+    SiteModule,
+    TierModule,
   ],
   controllers: [AppController],
   providers: [AppService],

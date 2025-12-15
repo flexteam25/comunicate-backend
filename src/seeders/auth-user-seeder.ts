@@ -20,29 +20,47 @@ export class AuthUserSeeder {
     await queryRunner.startTransaction();
 
     try {
-      // Create roles
-      const userRole = queryRunner.manager.create(Role, {
-        name: 'user',
-        description: 'Regular user role',
-        type: RoleType.USER,
-      });
-      await queryRunner.manager.save(userRole);
+      // Upsert roles
+      const rolesData = [
+        { name: 'user', description: 'Regular user role', type: RoleType.USER },
+        { name: 'site-owner', description: 'Site owner role', type: RoleType.USER },
+        { name: 'admin', description: 'Administrator role', type: RoleType.ADMIN },
+      ];
 
-      const siteOwnerRole = queryRunner.manager.create(Role, {
-        name: 'site-owner',
-        description: 'Site owner role',
-        type: RoleType.USER,
-      });
-      await queryRunner.manager.save(siteOwnerRole);
+      const savedRoles = [];
+      for (const roleData of rolesData) {
+        let role = await queryRunner.manager.findOne(Role, {
+          where: { name: roleData.name },
+        });
 
-      const adminRole = queryRunner.manager.create(Role, {
-        name: 'admin',
-        description: 'Administrator role',
-        type: RoleType.ADMIN,
-      });
-      await queryRunner.manager.save(adminRole);
+        if (role) {
+          // Update existing role
+          role.description = roleData.description;
+          role.type = roleData.type;
+          await queryRunner.manager.save(role);
+        } else {
+          // Create new role
+          role = queryRunner.manager.create(Role, roleData);
+          await queryRunner.manager.save(role);
+        }
+        savedRoles.push(role);
+      }
 
-      // Create permissions - Admin permissions
+      const userRole = savedRoles.find((r: Role) => r.name === 'user') as
+        | Role
+        | undefined;
+      const siteOwnerRole = savedRoles.find((r: Role) => r.name === 'site-owner') as
+        | Role
+        | undefined;
+      const adminRole = savedRoles.find((r: Role) => r.name === 'admin') as
+        | Role
+        | undefined;
+
+      if (!userRole || !siteOwnerRole || !adminRole) {
+        throw new Error('Failed to create required roles');
+      }
+
+      // Upsert permissions - Admin permissions
       const adminPermissions = [
         { name: 'users.create', description: 'Create users', type: PermissionType.ADMIN },
         { name: 'users.read', description: 'Read users', type: PermissionType.ADMIN },
@@ -107,6 +125,26 @@ export class AuthUserSeeder {
           description: 'Approve site manager applications',
           type: PermissionType.ADMIN,
         },
+        {
+          name: 'site.create',
+          description: 'Create sites',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'site.update',
+          description: 'Update sites',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'site.delete',
+          description: 'Delete sites',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'site.view',
+          description: 'View sites',
+          type: PermissionType.ADMIN,
+        },
       ];
 
       // Create permissions - User permissions (if needed in future)
@@ -124,13 +162,25 @@ export class AuthUserSeeder {
 
       const savedPermissions = [];
       for (const perm of permissions) {
-        const permission = queryRunner.manager.create(Permission, perm);
-        await queryRunner.manager.save(permission);
+        let permission = await queryRunner.manager.findOne(Permission, {
+          where: { name: perm.name },
+        });
+
+        if (permission) {
+          // Update existing permission
+          permission.description = perm.description;
+          permission.type = perm.type;
+          await queryRunner.manager.save(permission);
+        } else {
+          // Create new permission
+          permission = queryRunner.manager.create(Permission, perm);
+          await queryRunner.manager.save(permission);
+        }
         savedPermissions.push(permission);
       }
 
-      // Create badges
-      const badges = [
+      // Upsert badges
+      const badgesData = [
         {
           name: 'Early Adopter',
           description: 'Joined in early days',
@@ -159,65 +209,134 @@ export class AuthUserSeeder {
       ];
 
       const savedBadges = [];
-      for (const badge of badges) {
-        const badgeEntity = queryRunner.manager.create(Badge, badge);
-        await queryRunner.manager.save(badgeEntity);
-        savedBadges.push(badgeEntity);
+      for (const badgeData of badgesData) {
+        let badge = await queryRunner.manager.findOne(Badge, {
+          where: { name: badgeData.name },
+        });
+
+        if (badge) {
+          // Update existing badge
+          badge.description = badgeData.description;
+          badge.badgeType = badgeData.badgeType;
+          await queryRunner.manager.save(badge);
+        } else {
+          // Create new badge
+          badge = queryRunner.manager.create(Badge, badgeData);
+          await queryRunner.manager.save(badge);
+        }
+        savedBadges.push(badge);
       }
 
-      // Create test users
-      const passwordHash = await bcrypt.hash('password123', 10);
+      // Upsert test users
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      const passwordHash: string = await bcrypt.hash('password123', 10);
 
-      const regularUser = queryRunner.manager.create(User, {
-        email: 'user@example.com',
-        passwordHash,
-        displayName: 'Regular User',
-        isActive: true,
+      let regularUser = await queryRunner.manager.findOne(User, {
+        where: { email: 'user@example.com' },
       });
-      await queryRunner.manager.save(regularUser);
-
-      const siteOwnerUser = queryRunner.manager.create(User, {
-        email: 'siteowner@example.com',
-        passwordHash,
-        displayName: 'Site Owner',
-        isActive: true,
-      });
-      await queryRunner.manager.save(siteOwnerUser);
-
-      // Assign roles (only user and site-owner roles, NOT admin role)
-      const userUserRole = queryRunner.manager.create(UserRole, {
-        userId: regularUser.id,
-        roleId: userRole.id,
-      });
-      await queryRunner.manager.save(userUserRole);
-
-      const siteOwnerUserRole = queryRunner.manager.create(UserRole, {
-        userId: siteOwnerUser.id,
-        roleId: siteOwnerRole.id,
-      });
-      await queryRunner.manager.save(siteOwnerUserRole);
-
-      // Assign permissions directly to users (not through roles)
-      // Site owner gets site-related permissions
-      const siteOwnerPermissions = savedPermissions.filter(
-        (p) => p.name === 'sites.update' || p.name === 'sites.create',
-      );
-      for (const permission of siteOwnerPermissions) {
-        const userPermission = queryRunner.manager.create(UserPermission, {
-          userId: siteOwnerUser.id,
-          permissionId: permission.id,
+      if (regularUser) {
+        regularUser.passwordHash = passwordHash;
+        regularUser.displayName = 'Regular User';
+        regularUser.isActive = true;
+        await queryRunner.manager.save(regularUser);
+      } else {
+        const newRegularUser = queryRunner.manager.create(User, {
+          email: 'user@example.com',
+          passwordHash,
+          displayName: 'Regular User',
+          isActive: true,
         });
-        await queryRunner.manager.save(userPermission);
+        regularUser = await queryRunner.manager.save(newRegularUser);
       }
 
-      // Assign badges
-      const earlyAdopterBadge = savedBadges.find((b) => b.name === 'Early Adopter');
-      if (earlyAdopterBadge) {
-        const userBadge = queryRunner.manager.create(UserBadge, {
-          userId: regularUser.id,
-          badgeId: earlyAdopterBadge.id,
+      let siteOwnerUser = await queryRunner.manager.findOne(User, {
+        where: { email: 'siteowner@example.com' },
+      });
+      if (siteOwnerUser) {
+        siteOwnerUser.passwordHash = passwordHash;
+        siteOwnerUser.displayName = 'Site Owner';
+        siteOwnerUser.isActive = true;
+        await queryRunner.manager.save(siteOwnerUser);
+      } else {
+        const newSiteOwnerUser = queryRunner.manager.create(User, {
+          email: 'siteowner@example.com',
+          passwordHash,
+          displayName: 'Site Owner',
+          isActive: true,
         });
-        await queryRunner.manager.save(userBadge);
+        siteOwnerUser = await queryRunner.manager.save(newSiteOwnerUser);
+      }
+
+      // Upsert user roles
+      if (regularUser && userRole) {
+        let userUserRole = await queryRunner.manager.findOne(UserRole, {
+          where: { userId: regularUser.id, roleId: userRole.id },
+        });
+        if (!userUserRole) {
+          userUserRole = queryRunner.manager.create(UserRole, {
+            userId: regularUser.id,
+            roleId: userRole.id,
+          });
+          await queryRunner.manager.save(userUserRole);
+        }
+      }
+
+      if (siteOwnerUser && siteOwnerRole) {
+        let siteOwnerUserRole = await queryRunner.manager.findOne(UserRole, {
+          where: { userId: siteOwnerUser.id, roleId: siteOwnerRole.id },
+        });
+        if (!siteOwnerUserRole) {
+          siteOwnerUserRole = queryRunner.manager.create(UserRole, {
+            userId: siteOwnerUser.id,
+            roleId: siteOwnerRole.id,
+          });
+          await queryRunner.manager.save(siteOwnerUserRole);
+        }
+      }
+
+      // Upsert user permissions
+      if (siteOwnerUser) {
+        const siteOwnerPermissions = savedPermissions.filter(
+          (p: Permission) => p.name === 'sites.update' || p.name === 'sites.create',
+        );
+        for (const permission of siteOwnerPermissions) {
+          const existingPermission = await queryRunner.manager.findOne(UserPermission, {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            where: { userId: siteOwnerUser.id, permissionId: permission.id },
+          });
+
+          if (!existingPermission) {
+            const userPermission = queryRunner.manager.create(UserPermission, {
+              userId: siteOwnerUser.id,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+              permissionId: permission.id,
+            });
+            await queryRunner.manager.save(userPermission);
+          }
+        }
+      }
+
+      // Upsert user badges
+      if (regularUser) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const earlyAdopterBadge = savedBadges.find(
+          (b: Badge) => b.name === 'Early Adopter',
+        );
+        if (earlyAdopterBadge) {
+          const existingBadge = await queryRunner.manager.findOne(UserBadge, {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            where: { userId: regularUser.id, badgeId: earlyAdopterBadge.id },
+          });
+
+          if (!existingBadge) {
+            const userBadge = queryRunner.manager.create(UserBadge, {
+              userId: regularUser.id,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+              badgeId: earlyAdopterBadge.id,
+            });
+            await queryRunner.manager.save(userBadge);
+          }
+        }
       }
 
       await queryRunner.commitTransaction();

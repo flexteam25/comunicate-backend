@@ -101,6 +101,10 @@ export class UserController {
       userId: user.userId,
       displayName: dto.displayName,
       avatarUrl,
+      bio: dto.bio,
+      phone: dto.phone,
+      birthDate: dto.birthDate,
+      gender: dto.gender,
     });
 
     const userResponse: UserResponse = {
@@ -111,6 +115,10 @@ export class UserController {
       lastLoginAt: updatedUser.lastLoginAt || undefined,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
+      bio: updatedUser.userProfile?.bio || undefined,
+      phone: updatedUser.userProfile?.phone || undefined,
+      birthDate: updatedUser.userProfile?.birthDate || undefined,
+      gender: updatedUser.userProfile?.gender || undefined,
     };
 
     return ApiResponseUtil.success(userResponse, 'Profile updated successfully');
@@ -127,6 +135,7 @@ export class UserController {
       'userRoles.role',
       'userBadges',
       'userBadges.badge',
+      'userProfile',
     ]);
     if (!dbUser) {
       throw new NotFoundException('User not found');
@@ -166,6 +175,10 @@ export class UserController {
       email: dbUser.email,
       displayName: dbUser.displayName || undefined,
       avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser.avatarUrl),
+      bio: dbUser.userProfile?.bio || undefined,
+      phone: dbUser.userProfile?.phone || undefined,
+      birthDate: dbUser.userProfile?.birthDate || undefined,
+      gender: dbUser.userProfile?.gender || undefined,
       isActive: dbUser.isActive,
       lastLoginAt: dbUser.lastLoginAt || undefined,
       roles: roles.length > 0 ? roles : [],

@@ -43,7 +43,7 @@ export class ChangePasswordUseCase {
     }
 
     // Find user (outside transaction for validation)
-    const user = await this.userRepository.findById(command.userId);
+    const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }

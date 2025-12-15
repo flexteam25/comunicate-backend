@@ -1,4 +1,5 @@
-import { IsEmail, IsString, MinLength, IsOptional, MaxLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, MaxLength, IsDate } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class RegisterDto {
   @IsEmail()
@@ -12,4 +13,24 @@ export class RegisterDto {
   @IsString()
   @MaxLength(100)
   displayName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  bio?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phone?: string;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  birthDate?: Date;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  gender?: string;
 }

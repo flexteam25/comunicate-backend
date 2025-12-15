@@ -1,7 +1,10 @@
 import { DataSource } from 'typeorm';
 import { Admin } from '../modules/admin/domain/entities/admin.entity';
 import { Role, RoleType } from '../modules/user/domain/entities/role.entity';
-import { Permission, PermissionType } from '../modules/user/domain/entities/permission.entity';
+import {
+  Permission,
+  PermissionType,
+} from '../modules/user/domain/entities/permission.entity';
 import { AdminRole } from '../modules/admin/domain/entities/admin-role.entity';
 import { AdminPermission } from '../modules/admin/domain/entities/admin-permission.entity';
 import * as bcrypt from 'bcrypt';
@@ -15,7 +18,7 @@ export class AuthAdminSeeder {
     await queryRunner.startTransaction();
 
     try {
-      // Find admin role
+      // Find admin role (should exist from auth-user-seeder)
       const adminRole = await queryRunner.manager.findOne(Role, {
         where: { name: 'admin', type: RoleType.ADMIN },
       });
@@ -24,36 +27,67 @@ export class AuthAdminSeeder {
         throw new Error('Admin role not found. Please run AuthUserSeeder first.');
       }
 
-      // Find admin permissions
+      // Find admin permissions (should exist from auth-user-seeder)
       const adminPermissions = await queryRunner.manager.find(Permission, {
         where: { type: PermissionType.ADMIN },
       });
 
-      // Create super admin
-      const superAdminPassword = await bcrypt.hash('SuperAdmin@123', 10);
-      const superAdmin = queryRunner.manager.create(Admin, {
-        email: 'superadmin@poca.gg',
-        passwordHash: superAdminPassword,
-        displayName: 'Super Admin',
-        isActive: true,
-        isSuperAdmin: true,
-      });
-      await queryRunner.manager.save(superAdmin);
+      if (adminPermissions.length === 0) {
+        throw new Error('Admin permissions not found. Please run AuthUserSeeder first.');
+      }
 
-      // Assign admin role to super admin
-      const superAdminRole = queryRunner.manager.create(AdminRole, {
-        adminId: superAdmin.id,
-        roleId: adminRole.id,
+      // Upsert super admin
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      const superAdminPassword: string = await bcrypt.hash('SuperAdmin@123', 10);
+      let superAdmin = await queryRunner.manager.findOne(Admin, {
+        where: { email: 'superadmin@poca.gg' },
       });
-      await queryRunner.manager.save(superAdminRole);
 
-      // Assign all admin permissions to super admin
-      for (const permission of adminPermissions) {
-        const adminPermission = queryRunner.manager.create(AdminPermission, {
-          adminId: superAdmin.id,
-          permissionId: permission.id,
+      if (superAdmin) {
+        // Update existing super admin
+        superAdmin.passwordHash = superAdminPassword;
+        superAdmin.displayName = 'Super Admin';
+        superAdmin.isActive = true;
+        superAdmin.isSuperAdmin = true;
+        await queryRunner.manager.save(superAdmin);
+      } else {
+        // Create new super admin
+        const newSuperAdmin = queryRunner.manager.create(Admin, {
+          email: 'superadmin@poca.gg',
+          passwordHash: superAdminPassword,
+          displayName: 'Super Admin',
+          isActive: true,
+          isSuperAdmin: true,
         });
-        await queryRunner.manager.save(adminPermission);
+        superAdmin = await queryRunner.manager.save(newSuperAdmin);
+      }
+
+      // Upsert admin role assignment
+      let superAdminRole = await queryRunner.manager.findOne(AdminRole, {
+        where: { adminId: superAdmin.id, roleId: adminRole.id },
+      });
+
+      if (!superAdminRole) {
+        superAdminRole = queryRunner.manager.create(AdminRole, {
+          adminId: superAdmin.id,
+          roleId: adminRole.id,
+        });
+        await queryRunner.manager.save(superAdminRole);
+      }
+
+      // Upsert admin permissions assignments
+      for (const permission of adminPermissions) {
+        const existingPermission = await queryRunner.manager.findOne(AdminPermission, {
+          where: { adminId: superAdmin.id, permissionId: permission.id },
+        });
+
+        if (!existingPermission) {
+          const adminPermission = queryRunner.manager.create(AdminPermission, {
+            adminId: superAdmin.id,
+            permissionId: permission.id,
+          });
+          await queryRunner.manager.save(adminPermission);
+        }
       }
 
       await queryRunner.commitTransaction();
@@ -67,4 +101,3 @@ export class AuthAdminSeeder {
     }
   }
 }
-

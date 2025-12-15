@@ -26,6 +26,9 @@ export class Badge extends BaseEntity {
   })
   badgeType: BadgeType;
 
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
+
   @OneToMany(() => UserBadge, (userBadge) => userBadge.badge)
   userBadges: UserBadge[];
 }

@@ -59,7 +59,7 @@ export class RefreshTokenUseCase {
     }
 
     // Find user (outside transaction for validation)
-    const user = await this.userRepository.findById(payload.sub);
+    const user = await this.userRepository.findById(payload.sub, ['userProfile']);
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User not found or inactive');
     }
@@ -68,7 +68,9 @@ export class RefreshTokenUseCase {
     const tokens = this.jwtService.generateTokenPair(user.id, user.email);
 
     // Hash new refresh token (outside transaction)
-    const refreshTokenHash = await this.passwordService.hashRefreshToken(tokens.refreshToken);
+    const refreshTokenHash = await this.passwordService.hashRefreshToken(
+      tokens.refreshToken,
+    );
 
     // Calculate expiration
     const expiresAt = new Date();

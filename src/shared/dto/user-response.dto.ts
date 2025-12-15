@@ -11,4 +11,8 @@ export interface UserResponse {
   badges?: BadgeResponse[];
   createdAt: Date;
   updatedAt: Date;
+  bio?: string;
+  phone?: string;
+  birthDate?: Date;
+  gender?: string;
 }

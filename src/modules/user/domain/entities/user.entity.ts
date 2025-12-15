@@ -1,9 +1,10 @@
-import { Entity, Column, OneToMany } from 'typeorm';
+import { Entity, Column, OneToMany, OneToOne } from 'typeorm';
 import { BaseEntity } from '../../../../shared/domain/base-entity';
 import { UserToken } from '../../../auth/domain/entities/user-token.entity';
 import { UserRole } from './user-role.entity';
 import { UserPermission } from './user-permission.entity';
 import { UserBadge } from './user-badge.entity';
+import { UserProfile } from './user-profile.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -36,4 +37,9 @@ export class User extends BaseEntity {
 
   @OneToMany(() => UserBadge, (userBadge) => userBadge.user)
   userBadges: UserBadge[];
+
+  @OneToOne(() => UserProfile, (userProfile) => userProfile.user, {
+    cascade: true,
+  })
+  userProfile: UserProfile;
 }
