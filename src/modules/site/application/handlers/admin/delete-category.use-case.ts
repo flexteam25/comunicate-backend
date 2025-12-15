@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  Inject,
 } from '@nestjs/common';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
@@ -15,11 +14,7 @@ export interface DeleteCategoryCommand {
 
 @Injectable()
 export class DeleteCategoryUseCase {
-  constructor(
-    @Inject('ISiteCategoryRepository')
-    @Inject('ISiteRepository')
-    private readonly transactionService: TransactionService,
-  ) {}
+  constructor(private readonly transactionService: TransactionService) {}
 
   async execute(command: DeleteCategoryCommand): Promise<void> {
     await this.transactionService.executeInTransaction(

@@ -36,7 +36,7 @@ export class AdminCategoryController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission('site.update')
+  @RequirePermission('site.create')
   async createCategory(
     @Body() dto: CreateCategoryDto,
   ): Promise<ApiResponse<SiteCategory>> {

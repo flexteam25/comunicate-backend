@@ -28,7 +28,7 @@ export class ListSitesUseCase {
     return this.siteRepository.findAllWithCursor(
       filters,
       command.cursor,
-      command.limit || 20,
+      command.limit ? (Number(command.limit) < 50 ? Number(command.limit) : 50) : 20,
       command.sortBy || 'createdAt',
       command.sortOrder || 'DESC',
     );

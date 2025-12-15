@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
@@ -10,10 +10,7 @@ export interface CreateCategoryCommand {
 
 @Injectable()
 export class CreateCategoryUseCase {
-  constructor(
-    @Inject('ISiteCategoryRepository')
-    private readonly transactionService: TransactionService,
-  ) {}
+  constructor(private readonly transactionService: TransactionService) {}
 
   async execute(command: CreateCategoryCommand): Promise<SiteCategory> {
     return this.transactionService.executeInTransaction(

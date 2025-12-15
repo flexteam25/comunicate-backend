@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  Inject,
 } from '@nestjs/common';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
@@ -17,10 +16,7 @@ export interface UpdateCategoryCommand {
 
 @Injectable()
 export class UpdateCategoryUseCase {
-  constructor(
-    @Inject('ISiteCategoryRepository')
-    private readonly transactionService: TransactionService,
-  ) {}
+  constructor(private readonly transactionService: TransactionService) {}
 
   async execute(command: UpdateCategoryCommand): Promise<SiteCategory> {
     return this.transactionService.executeInTransaction(
