@@ -492,3 +492,278 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 - The `admin_roles` table maps admins to admin role
 
 ---
+
+### 15. Site Management Module (Phase 1)
+
+**Location:** `src/modules/site/`
+
+**Admin APIs (`/admin/sites`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/admin/sites` | Create new site | ✅ (permission: `sites.create`) |
+| `GET` | `/admin/sites` | List sites (cursor pagination) | ✅ (permission: `sites.read`) |
+| `GET` | `/admin/sites/:id` | Get site details | ✅ (permission: `sites.read`) |
+| `PUT` | `/admin/sites/:id` | Update site | ✅ (permission: `sites.update`) |
+| `DELETE` | `/admin/sites/:id` | Soft delete site | ✅ (permission: `sites.delete`) |
+| `PUT` | `/admin/sites/restore/:id` | Restore soft-deleted site | ✅ (permission: `sites.update`) |
+| `POST` | `/admin/sites/:id/badges` | Assign badge to site | ✅ (permission: `sites.update`) |
+| `DELETE` | `/admin/sites/:id/badges/:badgeId` | Remove badge from site | ✅ (permission: `sites.update`) |
+| `POST` | `/admin/sites/:id/domains` | Add domain to site | ✅ (permission: `sites.update`) |
+| `PUT` | `/admin/sites/:id/domains/:domainId` | Update site domain | ✅ (permission: `sites.update`) |
+| `DELETE` | `/admin/sites/:id/domains/:domainId` | Delete site domain | ✅ (permission: `sites.update`) |
+
+**User APIs (`/api/sites`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/sites` | List sites (verified/monitored only, cursor pagination) | ❌ |
+| `GET` | `/api/sites/:id` | Get site details (tracks view) | ❌ |
+| `GET` | `/api/site-categories` | List active site categories | ❌ |
+| `GET` | `/api/tiers` | List active tiers | ❌ |
+
+**Features:**
+- ✅ Site CRUD operations with permission checks
+- ✅ Super admin bypass for all operations
+- ✅ Cursor pagination for listing sites
+- ✅ Search by site name or domain
+- ✅ Soft delete and restore functionality
+- ✅ Site badge assignment (many-to-many)
+- ✅ Site domain management (one site, many domains)
+- ✅ Image uploads for `logo_url` and `main_image_url` (max 5MB, stored in `uploads/sites/site_id/`)
+- ✅ Site view tracking (increments view count)
+- ✅ All create/update operations wrapped in transactions
+- ✅ Filter by `is_active` status
+- ✅ Filter by category, tier, status
+- ✅ User-facing APIs only show verified/monitored sites
+
+**Site Entity:**
+- Fields: `name`, `description`, `logoUrl`, `mainImageUrl`, `websiteUrl`, `status` (pending/verified/monitored/rejected), `categoryId`, `tierId`, `isActive`, `deletedAt`
+- Relationships: `category`, `tier`, `badges[]`, `domains[]`, `views[]`
+
+**Site Domain Entity:**
+- Fields: `siteId`, `domain`, `isCurrent` (boolean)
+- One site can have multiple domains
+- Only one domain can be `isCurrent = true` at a time
+
+---
+
+### 16. Site Category Management Module
+
+**Location:** `src/modules/site/`
+
+**Admin APIs (`/admin/site-categories`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/admin/site-categories` | Create category | ✅ (permission: `sites.create`) |
+| `GET` | `/admin/site-categories` | List categories | ✅ (permission: `sites.read`) |
+| `GET` | `/admin/site-categories/:id` | Get category | ✅ (permission: `sites.read`) |
+| `PUT` | `/admin/site-categories/:id` | Update category | ✅ (permission: `sites.update`) |
+| `DELETE` | `/admin/site-categories/:id` | Soft delete category | ✅ (permission: `sites.delete`) |
+| `PUT` | `/admin/site-categories/restore/:id` | Restore category | ✅ (permission: `sites.update`) |
+
+**Features:**
+- ✅ Category CRUD with permission checks
+- ✅ Super admin bypass
+- ✅ Soft delete and restore
+- ✅ `is_active` flag support
+- ✅ All operations wrapped in transactions
+- ✅ Filter by `is_active` status
+
+**Site Category Entity:**
+- Fields: `name`, `description`, `isActive`, `deletedAt`
+
+---
+
+### 17. Tier Management Module
+
+**Location:** `src/modules/tier/`
+
+**Admin APIs (`/admin/tiers`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/admin/tiers` | Create tier | ✅ (permission: `sites.create`) |
+| `GET` | `/admin/tiers` | List tiers | ✅ (permission: `sites.read`) |
+| `GET` | `/admin/tiers/:id` | Get tier | ✅ (permission: `sites.read`) |
+| `PUT` | `/admin/tiers/:id` | Update tier | ✅ (permission: `sites.update`) |
+| `DELETE` | `/admin/tiers/:id` | Soft delete tier | ✅ (permission: `sites.delete`) |
+| `PUT` | `/admin/tiers/restore/:id` | Restore tier | ✅ (permission: `sites.update`) |
+
+**User APIs (`/api/tiers`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/tiers` | List active tiers | ❌ |
+
+**Features:**
+- ✅ Tier CRUD with permission checks
+- ✅ Super admin bypass
+- ✅ Soft delete and restore
+- ✅ `is_active` flag support
+- ✅ All operations wrapped in transactions
+- ✅ Filter by `is_active` status
+- ✅ One-to-one relationship with sites (one site has one tier)
+
+**Tier Entity:**
+- Fields: `name`, `description`, `level`, `isActive`, `deletedAt`
+
+---
+
+### 18. Badge Management Module (Admin)
+
+**Location:** `src/modules/badge/`
+
+**Admin APIs (`/admin/badges`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/admin/badges` | Create badge | ✅ (permission: `badges.create`) |
+| `GET` | `/admin/badges` | List badges | ✅ (permission: `badges.read`) |
+| `GET` | `/admin/badges/:id` | Get badge | ✅ (permission: `badges.read`) |
+| `PUT` | `/admin/badges/:id` | Update badge | ✅ (permission: `badges.update`) |
+| `DELETE` | `/admin/badges/:id` | Soft delete badge | ✅ (permission: `badges.delete`) |
+| `PUT` | `/admin/badges/restore/:id` | Restore badge | ✅ (permission: `badges.update`) |
+
+**Features:**
+- ✅ Badge CRUD with permission checks
+- ✅ Super admin bypass
+- ✅ Soft delete and restore (if `deleted_at` column exists)
+- ✅ `is_active` flag support
+- ✅ Filter by `is_active` status
+- ✅ Badge types: `USER` and `SITE`
+
+**Badge Entity:**
+- Fields: `name`, `description`, `iconUrl`, `type` (USER/SITE), `isActive`, `deletedAt` (if applicable)
+
+---
+
+### 19. User Badge Assignment (Admin)
+
+**Location:** `src/modules/admin/` and `src/modules/user/`
+
+**Admin APIs (`/admin/users/:userId/badges`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/admin/users/:userId/badges` | Assign badge to user | ✅ (permission: `users.update`) |
+| `DELETE` | `/admin/users/:userId/badges/:badgeId` | Remove badge from user | ✅ (permission: `users.update`) |
+
+**Features:**
+- ✅ Assign badges to users (many-to-many)
+- ✅ Remove badges from users
+- ✅ Permission checks with super admin bypass
+- ✅ Validates badge type is `USER`
+- ✅ All operations wrapped in transactions
+
+---
+
+### 20. User Profile Extensions
+
+**Updated User APIs:**
+
+| Method | Endpoint | Description | Changes |
+|--------|----------|-------------|---------|
+| `PUT` | `/api/users/me` | Update profile | ✅ Now updates `user_profiles` table (bio, phone, birthDate, gender) |
+| `GET` | `/api/users/me` | Get profile | ✅ Returns `user_profiles` data (bio, phone, birthDate, gender) |
+
+**User Profile Entity:**
+- Fields: `userId`, `bio`, `phone`, `birthDate`, `gender`
+- One-to-one relationship with `User`
+- Created automatically when user registers
+
+**Features:**
+- ✅ Update user profile information (displayName, avatar, bio, phone, birthDate, gender)
+- ✅ Profile data included in user response
+- ✅ All updates wrapped in transactions
+
+---
+
+### 21. Cursor Pagination
+
+**Location:** `src/shared/utils/cursor-pagination.util.ts`
+
+**Features:**
+- ✅ Efficient pagination for large datasets
+- ✅ Uses cursor-based approach (better than offset-based for large data)
+- ✅ Supports `nextCursor` and `prevCursor`
+- ✅ Used in site listing APIs
+
+**Usage:**
+```typescript
+const result = await this.siteRepository.findAllWithCursor({
+  limit: 20,
+  cursor: query.cursor,
+  filters: { search, categoryId, tierId, status, isActive }
+});
+```
+
+---
+
+### 22. Database Migrations (Additional)
+
+**New Migrations Added:**
+- `1765670000000-add-is-active-to-badges-tiers-categories.ts` - Add `is_active` column to `badges`, `tiers`, and `site_categories` tables
+- `1765680000000-add-deleted-at-to-tiers-categories.ts` - Add `deleted_at` column to `tiers` and `site_categories` tables for soft delete
+
+---
+
+### 23. Seeder Updates
+
+**Updated Seeders:**
+- ✅ `auth-user-seeder.ts` - Refactored to use upsert pattern (update or create) to prevent errors on re-run
+- ✅ `auth-admin-seeder.ts` - Refactored to use upsert pattern (update or create) to prevent errors on re-run
+
+**Seeder Pattern:**
+- All seeders now check for existing data before creating
+- Updates existing records if found, creates new if not found
+- Prevents duplicate key errors when re-running seeders
+
+---
+
+### 24. Upload Service Enhancements
+
+**Location:** `src/shared/services/upload/upload.service.ts`
+
+**New Methods:**
+- ✅ `uploadSiteImage()` - Handles site-specific image uploads (logo, main image)
+- ✅ Stores images in `uploads/sites/site_id/` directory
+- ✅ Max file size: 5MB
+- ✅ Converts to WebP format
+- ✅ Generates unique filenames
+
+**Usage:**
+```typescript
+// Upload site logo
+const logoUrl = await this.uploadService.uploadSiteImage(
+  file,
+  siteId,
+  'logo'
+);
+
+// Upload site main image
+const mainImageUrl = await this.uploadService.uploadSiteImage(
+  file,
+  siteId,
+  'main-image'
+);
+```
+
+---
+
+### 25. Dependency Injection Fixes
+
+**Changes:**
+- ✅ Created `AdminGuardsModule` to properly export admin guards and decorators
+- ✅ Fixed circular dependency issues between modules
+- ✅ Created `UserTokenRepositoryModule` to properly export user token repository
+- ✅ Updated `AuthModule` to use proper module imports
+
+**Modules Updated:**
+- `AdminModule` - Exports guards and decorators via `AdminGuardsModule`
+- `AuthModule` - Uses `UserTokenRepositoryModule` for proper dependency injection
+- `SiteModule` - Imports `AdminModule` for admin guard dependencies
+- `TierModule` - Uses `forwardRef` to handle circular dependencies with `SiteModule`
+
+---

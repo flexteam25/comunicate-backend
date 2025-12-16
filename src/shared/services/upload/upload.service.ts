@@ -31,12 +31,7 @@ export interface UploadResult {
   mimeType: string;
 }
 
-const ALLOWED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/webp',
-];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 
@@ -54,8 +49,11 @@ export class UploadService {
     // Default: 5MB max file size
     this.maxFileSize =
       this.configService.get<number>('UPLOAD_MAX_FILE_SIZE') || 5 * 1024 * 1024;
-    this.defaultQuality =
-      this.configService.get<number>('UPLOAD_IMAGE_QUALITY') || 80;
+    // Ensure quality is always a number (env vars are strings)
+    const qualityConfig = this.configService.get<string | number>('UPLOAD_IMAGE_QUALITY');
+    this.defaultQuality = qualityConfig
+      ? Number.parseInt(String(qualityConfig), 10) || 80
+      : 80;
   }
 
   /**
@@ -94,11 +92,15 @@ export class UploadService {
         mimeType: 'image/webp',
       };
     } catch (error) {
-      this.logger.error('Avatar upload failed', {
-        userId,
-        originalName: file?.originalname,
-        error: (error as Error).message,
-      }, 'upload');
+      this.logger.error(
+        'Avatar upload failed',
+        {
+          userId,
+          originalName: file?.originalname,
+          error: (error as Error).message,
+        },
+        'upload',
+      );
       throw error;
     }
   }
@@ -106,17 +108,11 @@ export class UploadService {
   /**
    * Upload generic image
    */
-  async uploadImage(
-    file: MulterFile,
-    options?: UploadOptions,
-  ): Promise<UploadResult> {
+  async uploadImage(file: MulterFile, options?: UploadOptions): Promise<UploadResult> {
     try {
       this.validateFile(file);
 
-      const {
-        quality = this.defaultQuality,
-        folder = 'images',
-      } = options || {};
+      const { quality = this.defaultQuality, folder = 'images' } = options || {};
 
       // Process image: convert to WebP without resizing
       const processedBuffer = await this.convertToWebP(file.buffer, quality);
@@ -139,10 +135,14 @@ export class UploadService {
         mimeType: 'image/webp',
       };
     } catch (error) {
-      this.logger.error('Image upload failed', {
-        originalName: file?.originalname,
-        error: (error as Error).message,
-      }, 'upload');
+      this.logger.error(
+        'Image upload failed',
+        {
+          originalName: file?.originalname,
+          error: (error as Error).message,
+        },
+        'upload',
+      );
       throw error;
     }
   }
@@ -185,12 +185,16 @@ export class UploadService {
         mimeType: 'image/webp',
       };
     } catch (error) {
-      this.logger.error('Site image upload failed', {
-        siteId,
-        imageType,
-        originalName: file?.originalname,
-        error: (error as Error).message,
-      }, 'upload');
+      this.logger.error(
+        'Site image upload failed',
+        {
+          siteId,
+          imageType,
+          originalName: file?.originalname,
+          error: (error as Error).message,
+        },
+        'upload',
+      );
       throw error;
     }
   }
@@ -236,11 +240,13 @@ export class UploadService {
   /**
    * Convert image to WebP format without resizing
    */
-  private async convertToWebP(
-    buffer: Buffer,
-    quality: number,
-  ): Promise<Buffer> {
-    return sharp(buffer).webp({ quality }).toBuffer();
+  private async convertToWebP(buffer: Buffer, quality: number | string): Promise<Buffer> {
+    // Ensure quality is always a number (1-100)
+    const qualityNumber = Number.parseInt(String(quality), 10);
+    if (isNaN(qualityNumber) || qualityNumber < 1 || qualityNumber > 100) {
+      throw new BadRequestException('Image quality must be a number between 1 and 100');
+    }
+    return sharp(buffer).webp({ quality: qualityNumber }).toBuffer();
   }
 
   /**
@@ -248,16 +254,22 @@ export class UploadService {
    */
   private async processImage(
     buffer: Buffer,
-    options: { maxWidth: number; maxHeight: number; quality: number },
+    options: { maxWidth: number; maxHeight: number; quality: number | string },
   ): Promise<Buffer> {
     const { maxWidth, maxHeight, quality } = options;
+
+    // Ensure quality is always a number (1-100)
+    const qualityNumber = Number.parseInt(String(quality), 10);
+    if (isNaN(qualityNumber) || qualityNumber < 1 || qualityNumber > 100) {
+      throw new BadRequestException('Image quality must be a number between 1 and 100');
+    }
 
     return sharp(buffer)
       .resize(maxWidth, maxHeight, {
         fit: 'inside',
         withoutEnlargement: true,
       })
-      .webp({ quality })
+      .webp({ quality: qualityNumber })
       .toBuffer();
   }
 
@@ -280,4 +292,3 @@ export class UploadService {
     return this.storageProvider.getType();
   }
 }
-
