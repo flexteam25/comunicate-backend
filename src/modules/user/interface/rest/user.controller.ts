@@ -40,7 +40,9 @@ import { RoleResponse } from '../../../../shared/dto/role-response.dto';
 import { AddFavoriteSiteUseCase } from '../../application/handlers/add-favorite-site.use-case';
 import { RemoveFavoriteSiteUseCase } from '../../application/handlers/remove-favorite-site.use-case';
 import { ListFavoriteSitesUseCase } from '../../application/handlers/list-favorite-sites.use-case';
+import { GetActivityUseCase } from '../../application/handlers/get-activity.use-case';
 import { SiteResponse } from '../../../site/interface/rest/dto/site-response.dto';
+import { Site } from '../../../site/domain/entities/site.entity';
 
 @Controller('api')
 @UseGuards(JwtAuthGuard)
@@ -57,6 +59,7 @@ export class UserController {
     private readonly addFavoriteSiteUseCase: AddFavoriteSiteUseCase,
     private readonly removeFavoriteSiteUseCase: RemoveFavoriteSiteUseCase,
     private readonly listFavoriteSitesUseCase: ListFavoriteSitesUseCase,
+    private readonly getActivityUseCase: GetActivityUseCase,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -327,5 +330,69 @@ export class UserController {
     }
 
     return ApiResponseUtil.success(badges);
+  }
+
+  @Get('activity')
+  @HttpCode(HttpStatus.OK)
+  async getActivity(
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<ApiResponse<{ favorite: SiteResponse[]; recent: SiteResponse[] }>> {
+    const result = await this.getActivityUseCase.execute({
+      userId: user.userId,
+    });
+
+    const mapSiteToResponse = (site: Site): SiteResponse => ({
+      id: site.id,
+      name: site.name,
+      category: site.category
+        ? {
+            id: site.category.id,
+            name: site.category.name,
+            description: site.category.description || undefined,
+          }
+        : {
+            id: '',
+            name: '',
+          },
+      logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || undefined,
+      mainImageUrl:
+        buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || undefined,
+      tier: site.tier
+        ? {
+            id: site.tier.id,
+            name: site.tier.name,
+            description: site.tier.description || undefined,
+            order: site.tier.order,
+            color: site.tier.color || undefined,
+          }
+        : undefined,
+      permanentUrl: site.permanentUrl || undefined,
+      status: site.status,
+      description: site.description || undefined,
+      reviewCount: site.reviewCount,
+      averageRating: Number(site.averageRating),
+      badges: (site.siteBadges || []).map((sb) => ({
+        id: sb.badge?.id || '',
+        name: sb.badge?.name || '',
+        description: sb.badge?.description || undefined,
+        iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge?.iconUrl || null) || undefined,
+      })),
+      domains: (site.siteDomains || []).map((sd) => ({
+        id: sd.id,
+        domain: sd.domain,
+        isActive: sd.isActive,
+        isCurrent: sd.isCurrent,
+      })),
+      createdAt: site.createdAt,
+      updatedAt: site.updatedAt,
+    });
+
+    const favoriteSites = result.favorite.map(mapSiteToResponse);
+    const recentSites = result.recent.map(mapSiteToResponse);
+
+    return ApiResponseUtil.success({
+      favorite: favoriteSites,
+      recent: recentSites,
+    });
   }
 }

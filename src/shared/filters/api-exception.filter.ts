@@ -41,7 +41,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
-      } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+      } else if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null
+      ) {
         const responseObj = exceptionResponse as HttpExceptionResponse;
         const responseMessage = Array.isArray(responseObj.message)
           ? responseObj.message.join(', ')
@@ -64,18 +67,24 @@ export class ApiExceptionFilter implements ExceptionFilter {
     }
 
     // Log error with details
+    // Format stack trace as array for better readability
+    let stackTrace: string[] | undefined = undefined;
+    if (exception instanceof Error && exception.stack) {
+      stackTrace = exception.stack.split('\n').map((line) => line.trim());
+    }
+
     const logData = {
       status,
       message,
       path: request.url,
       method: request.method,
       ip: request.ip,
-      stack: exception instanceof Error ? exception.stack : undefined,
+      stack: stackTrace,
     };
 
-    if (status >= 500) {
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error('Server error', logData, 'error');
-    } else if (status >= 400) {
+    } else if (status >= HttpStatus.BAD_REQUEST) {
       this.logger.warn('Client error', logData, 'error');
     }
 

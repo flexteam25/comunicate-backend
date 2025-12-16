@@ -19,6 +19,7 @@ import { UserController } from './interface/rest/user.controller';
 import { AddFavoriteSiteUseCase } from './application/handlers/add-favorite-site.use-case';
 import { RemoveFavoriteSiteUseCase } from './application/handlers/remove-favorite-site.use-case';
 import { ListFavoriteSitesUseCase } from './application/handlers/list-favorite-sites.use-case';
+import { GetActivityUseCase } from './application/handlers/get-activity.use-case';
 import { PasswordService } from '../../shared/services/password.service';
 import { UploadModule } from '../../shared/services/upload';
 import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
@@ -70,6 +71,7 @@ import { SiteModule } from '../site/site.module';
     AddFavoriteSiteUseCase,
     RemoveFavoriteSiteUseCase,
     ListFavoriteSitesUseCase,
+    GetActivityUseCase,
     AssignBadgeUseCase,
     RemoveBadgeUseCase,
     PasswordService,

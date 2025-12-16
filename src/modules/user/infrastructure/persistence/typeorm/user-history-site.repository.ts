@@ -37,4 +37,20 @@ export class UserHistorySiteRepository implements IUserHistorySiteRepository {
       await this.repository.delete(idsToDelete);
     }
   }
+
+  async findRecentHistory(
+    userId: string,
+    limit: number,
+  ): Promise<{ siteId: string; createdAt: Date }[]> {
+    const histories = await this.repository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+
+    return histories.map((h) => ({
+      siteId: h.siteId,
+      createdAt: h.createdAt,
+    }));
+  }
 }

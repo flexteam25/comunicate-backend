@@ -13,6 +13,14 @@ import { AdminRole } from '../src/modules/admin/domain/entities/admin-role.entit
 import { AdminPermission } from '../src/modules/admin/domain/entities/admin-permission.entity';
 import { AdminOldPassword } from '../src/modules/user/domain/entities/admin-old-password.entity';
 import { UserProfile } from '../src/modules/user/domain/entities/user-profile.entity';
+import { UserFavoriteSite } from '../src/modules/user/domain/entities/user-favorite-site.entity';
+import { Site } from '../src/modules/site/domain/entities/site.entity';
+import { SiteCategory } from '../src/modules/site/domain/entities/site-category.entity';
+import { SiteBadge } from '../src/modules/site/domain/entities/site-badge.entity';
+import { SiteDomain } from '../src/modules/site/domain/entities/site-domain.entity';
+import { SiteView } from '../src/modules/site/domain/entities/site-view.entity';
+import { Tier } from '../src/modules/tier/domain/entities/tier.entity';
+import { UserHistorySite } from '../src/modules/user/domain/entities/user-history-site.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -64,6 +72,14 @@ function createDataSource(): DataSource {
       AdminPermission,
       AdminOldPassword,
       UserProfile,
+      UserFavoriteSite,
+      Site,
+      SiteCategory,
+      SiteBadge,
+      SiteDomain,
+      SiteView,
+      Tier,
+      UserHistorySite,
     ],
     synchronize: false,
     logging: true,
