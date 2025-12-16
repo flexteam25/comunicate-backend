@@ -1,4 +1,5 @@
 import { PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { DomainEvent } from './domain-event';
 
 export abstract class BaseEntity {
@@ -14,6 +15,7 @@ export abstract class BaseEntity {
   @DeleteDateColumn({ name: 'deleted_at' })
   deletedAt?: Date;
 
+  @Exclude()
   private domainEvents: DomainEvent[] = [];
 
   protected addDomainEvent(event: DomainEvent): void {

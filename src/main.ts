@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { ApiExceptionFilter } from './shared/filters/api-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
@@ -17,18 +18,17 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), uploadDir), {
     prefix: '/uploads',
   });
-  
+
   // Enable global exception filter with LoggerService
   const loggerService = app.get(LoggerService);
   app.useGlobalFilters(new ApiExceptionFilter(loggerService));
 
   const corsTrustMiddleware = new CorsTrustMiddleware();
   app.use((req, res, next) => corsTrustMiddleware.use(req, res, next));
-  
+
   // Apply API throttle middleware
   const apiThrottleMiddleware = new ApiThrottleMiddleware(loggerService);
   app.use((req, res, next) => apiThrottleMiddleware.use(req, res, next));
-  
   // Enable validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -37,6 +37,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Enable ClassSerializerInterceptor to respect @Exclude() decorators
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   const port = process.env.PORT || 3008;
   await app.listen(port);
