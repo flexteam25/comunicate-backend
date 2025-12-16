@@ -60,6 +60,11 @@ export class SiteResponse {
 
 export class CursorPaginatedSitesResponse {
   data: SiteResponse[];
+  // Optional grouped view of the same data, grouped by tier
+  groupedByTier?: {
+    tier: TierResponse | null;
+    sites: SiteResponse[];
+  }[];
   nextCursor: string | null;
   hasMore: boolean;
 }

@@ -24,6 +24,8 @@ import { Badge } from './modules/badge/domain/entities/badge.entity';
 import { UserRole } from './modules/user/domain/entities/user-role.entity';
 import { UserPermission } from './modules/user/domain/entities/user-permission.entity';
 import { UserBadge } from './modules/user/domain/entities/user-badge.entity';
+import { UserFavoriteSite } from './modules/user/domain/entities/user-favorite-site.entity';
+import { UserHistorySite } from './modules/user/domain/entities/user-history-site.entity';
 import { Admin } from './modules/admin/domain/entities/admin.entity';
 import { AdminToken } from './modules/admin/domain/entities/admin-token.entity';
 import { AdminRole } from './modules/admin/domain/entities/admin-role.entity';
@@ -63,6 +65,8 @@ import { AdvertisingContact } from './modules/support/domain/entities/advertisin
         UserRole,
         UserPermission,
         UserBadge,
+        UserFavoriteSite,
+        UserHistorySite,
         Admin,
         AdminToken,
         AdminRole,

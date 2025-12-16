@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { CreateCategoryUseCase } from '../../../application/handlers/admin/create-category.use-case';
 import { UpdateCategoryUseCase } from '../../../application/handlers/admin/update-category.use-case';
@@ -56,7 +57,7 @@ export class AdminCategoryController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.update')
   async updateCategory(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateCategoryDto,
   ): Promise<ApiResponse<SiteCategory>> {
     const category = await this.updateCategoryUseCase.execute({ categoryId: id, ...dto });
@@ -67,7 +68,7 @@ export class AdminCategoryController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.delete')
   async deleteCategory(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteCategoryUseCase.execute({ categoryId: id });
     return ApiResponseUtil.success({ message: 'Category deleted successfully' });
@@ -77,7 +78,7 @@ export class AdminCategoryController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.update')
   async restoreCategory(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.restoreCategoryUseCase.execute({ categoryId: id });
     return ApiResponseUtil.success({ message: 'Category restored successfully' });

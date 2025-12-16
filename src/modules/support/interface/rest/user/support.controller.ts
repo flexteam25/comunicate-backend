@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CreateInquiryUseCase } from '../../../application/handlers/user/create-inquiry.use-case';
@@ -144,7 +145,7 @@ export class UserSupportController {
   )
   async updateInquiry(
     @CurrentUser() user: CurrentUserPayload,
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateInquiryDto,
     @UploadedFiles()
     files?: {

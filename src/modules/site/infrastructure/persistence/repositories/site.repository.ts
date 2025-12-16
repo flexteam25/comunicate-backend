@@ -24,4 +24,5 @@ export interface ISiteRepository {
   restore(id: string): Promise<void>;
   findByCategory(categoryId: string): Promise<Site[]>;
   findByTier(tierId: string): Promise<Site[]>;
+  findByIds(ids: string[]): Promise<Site[]>;
 }

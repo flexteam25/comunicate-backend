@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Site } from '../../../domain/entities/site.entity';
 import { ISiteRepository, SiteFilters } from '../repositories/site.repository';
 import { CursorPaginationResult, CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
@@ -156,5 +156,11 @@ export class SiteRepository implements ISiteRepository {
       where: { tierId, deletedAt: null },
     });
   }
-}
 
+  async findByIds(ids: string[]): Promise<Site[]> {
+    return this.repository.find({
+      where: { id: In(ids), deletedAt: null },
+      relations: ['category', 'tier', 'siteBadges.badge', 'siteDomains'],
+    });
+  }
+}

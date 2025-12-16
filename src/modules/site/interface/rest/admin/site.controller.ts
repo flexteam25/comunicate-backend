@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CreateSiteUseCase } from '../../../application/handlers/admin/create-site.use-case';
@@ -212,7 +213,9 @@ export class AdminSiteController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.view')
-  async getSite(@Param('id') id: string): Promise<ApiResponse<SiteResponse>> {
+  async getSite(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<SiteResponse>> {
     const site = await this.getSiteUseCase.execute({ siteId: id });
     return ApiResponseUtil.success(this.mapSiteToResponse(site));
   }
@@ -227,7 +230,7 @@ export class AdminSiteController {
     ]),
   )
   async updateSite(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateSiteDto,
     @UploadedFiles()
     files?: {
@@ -288,7 +291,9 @@ export class AdminSiteController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.delete')
-  async deleteSite(@Param('id') id: string): Promise<ApiResponse<{ message: string }>> {
+  async deleteSite(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteSiteUseCase.execute({ siteId: id });
     return ApiResponseUtil.success({ message: 'Site deleted successfully' });
   }
@@ -296,7 +301,9 @@ export class AdminSiteController {
   @Put('restore/:id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.update')
-  async restoreSite(@Param('id') id: string): Promise<ApiResponse<SiteResponse>> {
+  async restoreSite(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<SiteResponse>> {
     const site = await this.restoreSiteUseCase.execute({ siteId: id });
     return ApiResponseUtil.success(this.mapSiteToResponse(site), 'Site restored successfully');
   }
@@ -305,7 +312,7 @@ export class AdminSiteController {
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('site.update')
   async addDomain(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: CreateSiteDomainDto,
   ): Promise<ApiResponse> {
     await this.addSiteDomainUseCase.execute({
@@ -321,8 +328,8 @@ export class AdminSiteController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.update')
   async updateDomain(
-    @Param('id') id: string,
-    @Param('domainId') domainId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('domainId', new ParseUUIDPipe()) domainId: string,
     @Body() dto: UpdateSiteDomainDto,
   ): Promise<ApiResponse> {
     await this.updateSiteDomainUseCase.execute({
@@ -339,8 +346,8 @@ export class AdminSiteController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.update')
   async deleteDomain(
-    @Param('id') id: string,
-    @Param('domainId') domainId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('domainId', new ParseUUIDPipe()) domainId: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteSiteDomainUseCase.execute({
       siteId: id,
@@ -352,7 +359,10 @@ export class AdminSiteController {
   @Post(':id/badges')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('site.update')
-  async assignBadge(@Param('id') id: string, @Body() dto: AssignBadgeDto): Promise<ApiResponse<{ message: string }>> {
+  async assignBadge(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: AssignBadgeDto,
+  ): Promise<ApiResponse<{ message: string }>> {
     await this.assignBadgeUseCase.execute({ siteId: id, badgeId: dto.badgeId });
     return ApiResponseUtil.success({ message: 'Badge assigned successfully' });
   }
@@ -361,8 +371,8 @@ export class AdminSiteController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.update')
   async removeBadge(
-    @Param('id') id: string,
-    @Param('badgeId') badgeId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('badgeId', new ParseUUIDPipe()) badgeId: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.removeBadgeUseCase.execute({ siteId: id, badgeId });
     return ApiResponseUtil.success({ message: 'Badge removed successfully' });

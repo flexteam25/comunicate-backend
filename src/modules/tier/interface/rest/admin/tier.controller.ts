@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { CreateTierUseCase } from '../../../application/handlers/admin/create-tier.use-case';
 import { UpdateTierUseCase } from '../../../application/handlers/admin/update-tier.use-case';
@@ -53,7 +54,10 @@ export class AdminTierController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.update')
-  async updateTier(@Param('id') id: string, @Body() dto: UpdateTierDto): Promise<ApiResponse<Tier>> {
+  async updateTier(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateTierDto,
+  ): Promise<ApiResponse<Tier>> {
     const tier = await this.updateTierUseCase.execute({ tierId: id, ...dto });
     return ApiResponseUtil.success(tier, 'Tier updated successfully');
   }
@@ -61,7 +65,9 @@ export class AdminTierController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.delete')
-  async deleteTier(@Param('id') id: string): Promise<ApiResponse<{ message: string }>> {
+  async deleteTier(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteTierUseCase.execute({ tierId: id });
     return ApiResponseUtil.success({ message: 'Tier deleted successfully' });
   }
@@ -69,7 +75,9 @@ export class AdminTierController {
   @Put('/restore/:id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.update')
-  async restoreTier(@Param('id') id: string): Promise<ApiResponse<{ message: string }>> {
+  async restoreTier(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<{ message: string }>> {
     await this.restoreTierUseCase.execute({ tierId: id });
     return ApiResponseUtil.success({ message: 'Tier restored successfully' });
   }

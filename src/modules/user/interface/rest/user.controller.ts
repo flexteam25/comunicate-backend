@@ -13,6 +13,11 @@ import {
   NotFoundException,
   Get,
   Inject,
+  Post,
+  Delete,
+  Param,
+  Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChangePasswordUseCase } from '../../application/handlers/change-password.use-case';
@@ -32,6 +37,10 @@ import { buildFullUrl } from '../../../../shared/utils/url.util';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
 import { BadgeResponse } from '../../../../shared/dto/badge-response.dto';
 import { RoleResponse } from '../../../../shared/dto/role-response.dto';
+import { AddFavoriteSiteUseCase } from '../../application/handlers/add-favorite-site.use-case';
+import { RemoveFavoriteSiteUseCase } from '../../application/handlers/remove-favorite-site.use-case';
+import { ListFavoriteSitesUseCase } from '../../application/handlers/list-favorite-sites.use-case';
+import { SiteResponse } from '../../../site/interface/rest/dto/site-response.dto';
 
 @Controller('api')
 @UseGuards(JwtAuthGuard)
@@ -45,8 +54,109 @@ export class UserController {
     private readonly configService: ConfigService,
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
+    private readonly addFavoriteSiteUseCase: AddFavoriteSiteUseCase,
+    private readonly removeFavoriteSiteUseCase: RemoveFavoriteSiteUseCase,
+    private readonly listFavoriteSitesUseCase: ListFavoriteSitesUseCase,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
+
+  @Post('favorite-sites')
+  @HttpCode(HttpStatus.CREATED)
+  async addFavoriteSite(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body('siteId', new ParseUUIDPipe()) siteId: string,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.addFavoriteSiteUseCase.execute({
+      userId: user.userId,
+      siteId,
+    });
+
+    return ApiResponseUtil.success(
+      { message: 'Added to favorites' },
+      'Added to favorites',
+    );
+  }
+
+  @Delete('favorite-sites/:siteId')
+  @HttpCode(HttpStatus.OK)
+  async removeFavoriteSite(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('siteId', new ParseUUIDPipe()) siteId: string,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.removeFavoriteSiteUseCase.execute({
+      userId: user.userId,
+      siteId,
+    });
+
+    return ApiResponseUtil.success(
+      { message: 'Removed from favorites' },
+      'Removed from favorites',
+    );
+  }
+
+  @Get('me/favorite-sites')
+  @HttpCode(HttpStatus.OK)
+  async listFavoriteSites(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+  ): Promise<ApiResponse<SiteResponse[]>> {
+    const result = await this.listFavoriteSitesUseCase.execute({
+      userId: user.userId,
+      cursor,
+      limit: limit ? Number(limit) : undefined,
+    });
+
+    const sites = result.data.map((item) => item.site);
+
+    const mappedSites: SiteResponse[] = sites.map((site) => ({
+      id: site.id,
+      name: site.name,
+      category: site.category
+        ? {
+            id: site.category.id,
+            name: site.category.name,
+            description: site.category.description || undefined,
+          }
+        : {
+            id: '',
+            name: '',
+          },
+      logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || undefined,
+      mainImageUrl:
+        buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || undefined,
+      tier: site.tier
+        ? {
+            id: site.tier.id,
+            name: site.tier.name,
+            description: site.tier.description || undefined,
+            order: site.tier.order,
+            color: site.tier.color || undefined,
+          }
+        : undefined,
+      permanentUrl: site.permanentUrl || undefined,
+      status: site.status,
+      description: site.description || undefined,
+      reviewCount: site.reviewCount,
+      averageRating: Number(site.averageRating),
+      badges: (site.siteBadges || []).map((sb) => ({
+        id: sb.badge.id,
+        name: sb.badge.name,
+        description: sb.badge.description || undefined,
+        iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
+      })),
+      domains: (site.siteDomains || []).map((sd) => ({
+        id: sd.id,
+        domain: sd.domain,
+        isActive: sd.isActive,
+        isCurrent: sd.isCurrent,
+      })),
+      createdAt: site.createdAt,
+      updatedAt: site.updatedAt,
+    }));
+
+    return ApiResponseUtil.success(mappedSites);
   }
 
   @Put('change-password')

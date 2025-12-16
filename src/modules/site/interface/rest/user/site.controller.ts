@@ -1,4 +1,14 @@
-import { Controller, Get, Param, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Req,
+  ParseUUIDPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { ListSitesUseCase } from '../../../application/handlers/user/list-sites.use-case';
 import { GetSiteUseCase } from '../../../application/handlers/user/get-site.use-case';
@@ -10,6 +20,7 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../../../../../shared/decorators/current-user.decorator';
+import { OptionalJwtAuthGuard } from '../../../../../shared/guards/optional-jwt-auth.guard';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ConfigService } from '@nestjs/config';
 import { Site } from '../../../domain/entities/site.entity';
@@ -92,9 +103,43 @@ export class UserSiteController {
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
     });
+    const sites = result.data.map((site) => this.mapSiteToResponse(site));
+
+    // Group sites by tier for easier consumption on the client side
+    const groupsMap = new Map<
+      string,
+      {
+        tier: SiteResponse['tier'] | null;
+        sites: SiteResponse[];
+      }
+    >();
+
+    for (const site of sites) {
+      const key = site.tier?.id ?? 'no-tier';
+      let group = groupsMap.get(key);
+
+      if (!group) {
+        group = {
+          tier: site.tier ?? null,
+          sites: [],
+        };
+        groupsMap.set(key, group);
+      }
+
+      group.sites.push(site);
+    }
+
+    const groupedByTier = Array.from(groupsMap.values()).sort((a, b) => {
+      // Keep sites without tier at the end
+      if (!a.tier && !b.tier) return 0;
+      if (!a.tier) return 1;
+      if (!b.tier) return -1;
+      return (a.tier.order ?? 0) - (b.tier.order ?? 0);
+    });
 
     return ApiResponseUtil.success({
-      data: result.data.map((site) => this.mapSiteToResponse(site)),
+      data: sites,
+      groupedByTier,
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
     });
@@ -109,8 +154,9 @@ export class UserSiteController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(OptionalJwtAuthGuard)
   async getSite(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: Request,
     @CurrentUser() user?: CurrentUserPayload,
   ): Promise<ApiResponse<SiteResponse>> {

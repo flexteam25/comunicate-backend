@@ -10,11 +10,11 @@ import { ListTiersUseCase as UserListTiersUseCase } from './application/handlers
 import { RestoreTierUseCase } from './application/handlers/admin/restore-tier.use-case';
 import { AdminTierController } from './interface/rest/admin/tier.controller';
 import { UserTierController } from './interface/rest/user/tier.controller';
-import { AdminModule } from '../admin/admin.module';
+import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { SitePersistenceModule } from '../site/site-persistence.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tier]), AdminModule, SitePersistenceModule],
+  imports: [TypeOrmModule.forFeature([Tier]), AdminGuardsModule, SitePersistenceModule],
   providers: [
     {
       provide: 'ITierRepository',

@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ListInquiriesUseCase } from '../../../application/handlers/admin/list-inquiries.use-case';
 import { GetInquiryUseCase } from '../../../application/handlers/admin/get-inquiry.use-case';
@@ -99,7 +100,9 @@ export class AdminSupportController {
   @Get('inquiries/:id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.inquiry.view')
-  async getInquiry(@Param('id') id: string): Promise<ApiResponse<any>> {
+  async getInquiry(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<any>> {
     const inquiry = await this.getInquiryUseCase.execute(id);
     return ApiResponseUtil.success(this.mapInquiryToResponse(inquiry));
   }
@@ -108,7 +111,7 @@ export class AdminSupportController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.inquiry.reply')
   async replyInquiry(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAdmin() admin: CurrentAdminPayload,
     @Body() dto: ReplyInquiryDto,
   ): Promise<ApiResponse<any>> {
@@ -149,7 +152,7 @@ export class AdminSupportController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.feedback.update')
   async markFeedbackViewed(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ApiResponse<any>> {
     const feedback = await this.markFeedbackViewedUseCase.execute({
@@ -187,7 +190,7 @@ export class AdminSupportController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.bug.update')
   async markBugReportViewed(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ApiResponse<any>> {
     const bugReport = await this.markBugReportViewedUseCase.execute({
@@ -225,7 +228,7 @@ export class AdminSupportController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.advertising.update')
   async markAdvertisingContactViewed(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ApiResponse<any>> {
     const advertisingContact = await this.markAdvertisingContactViewedUseCase.execute({

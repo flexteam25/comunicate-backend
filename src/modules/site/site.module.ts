@@ -23,16 +23,21 @@ import { UpdateSiteDomainUseCase } from './application/handlers/admin/update-sit
 import { DeleteSiteDomainUseCase } from './application/handlers/admin/delete-site-domain.use-case';
 import { Module } from '@nestjs/common';
 import { TierModule } from '../tier/tier.module';
-import { AdminModule } from '../admin/admin.module';
+import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { UploadModule } from '../../shared/services/upload';
 import { SitePersistenceModule } from './site-persistence.module';
+import { UserHistorySitePersistenceModule } from '../user/user-history-site-persistence.module';
+import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { OptionalJwtAuthGuard } from '../../shared/guards/optional-jwt-auth.guard';
 
 @Module({
   imports: [
     TypeOrmModule,
     SitePersistenceModule,
     TierModule,
-    AdminModule,
+    AdminGuardsModule,
+    UserHistorySitePersistenceModule,
+    UserTokenRepositoryModule,
     UploadModule.register({ storageType: 'local' }),
   ],
   providers: [
@@ -55,6 +60,7 @@ import { SitePersistenceModule } from './site-persistence.module';
     UserListCategoriesUseCase,
     RestoreCategoryUseCase,
     RestoreSiteUseCase,
+    OptionalJwtAuthGuard,
   ],
   controllers: [AdminSiteController, AdminCategoryController, UserSiteController],
   exports: [SitePersistenceModule],

@@ -15,6 +15,7 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
@@ -87,7 +88,9 @@ export class AdminBadgeController {
     let iconUrl: string | undefined;
 
     if (file) {
-      const uploadResult = await this.uploadService.uploadImage(file, { folder: 'badges' });
+      const uploadResult = await this.uploadService.uploadImage(file, {
+        folder: 'badges',
+      });
       iconUrl = uploadResult.relativePath;
     }
 
@@ -99,13 +102,18 @@ export class AdminBadgeController {
       isActive: dto.isActive ?? true,
     });
 
-    return ApiResponseUtil.success(this.mapBadgeToResponse(badge), 'Badge created successfully');
+    return ApiResponseUtil.success(
+      this.mapBadgeToResponse(badge),
+      'Badge created successfully',
+    );
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
   @RequirePermission('badge.read')
-  async listBadges(@Query('badgeType') badgeType?: string): Promise<ApiResponse<AdminBadgeResponse[]>> {
+  async listBadges(
+    @Query('badgeType') badgeType?: string,
+  ): Promise<ApiResponse<AdminBadgeResponse[]>> {
     const badges = await this.listBadgesUseCase.execute(badgeType);
     return ApiResponseUtil.success(badges.map((badge) => this.mapBadgeToResponse(badge)));
   }
@@ -113,7 +121,9 @@ export class AdminBadgeController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('badge.read')
-  async getBadge(@Param('id') id: string): Promise<ApiResponse<AdminBadgeResponse>> {
+  async getBadge(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<AdminBadgeResponse>> {
     const badge = await this.getBadgeUseCase.execute({ badgeId: id });
     return ApiResponseUtil.success(this.mapBadgeToResponse(badge));
   }
@@ -123,7 +133,7 @@ export class AdminBadgeController {
   @RequirePermission('badge.update')
   @UseInterceptors(FileInterceptor('icon'))
   async updateBadge(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateBadgeDto,
     @UploadedFile(
       new ParseFilePipe({
@@ -139,7 +149,9 @@ export class AdminBadgeController {
     let iconUrl: string | undefined;
 
     if (file) {
-      const uploadResult = await this.uploadService.uploadImage(file, { folder: 'badges' });
+      const uploadResult = await this.uploadService.uploadImage(file, {
+        folder: 'badges',
+      });
       iconUrl = uploadResult.relativePath;
     }
 
@@ -151,13 +163,18 @@ export class AdminBadgeController {
       isActive: dto.isActive,
     });
 
-    return ApiResponseUtil.success(this.mapBadgeToResponse(badge), 'Badge updated successfully');
+    return ApiResponseUtil.success(
+      this.mapBadgeToResponse(badge),
+      'Badge updated successfully',
+    );
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('badge.delete')
-  async deleteBadge(@Param('id') id: string): Promise<ApiResponse<{ success: boolean }>> {
+  async deleteBadge(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<{ success: boolean }>> {
     await this.deleteBadgeUseCase.execute({ badgeId: id });
     return ApiResponseUtil.success({ success: true }, 'Badge deleted successfully');
   }
@@ -165,7 +182,9 @@ export class AdminBadgeController {
   @Post(':id/restore')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('badge.update')
-  async restoreBadge(@Param('id') id: string): Promise<ApiResponse<{ success: boolean }>> {
+  async restoreBadge(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<{ success: boolean }>> {
     await this.restoreBadgeUseCase.execute({ badgeId: id });
     return ApiResponseUtil.success({ success: true }, 'Badge restored successfully');
   }

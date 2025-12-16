@@ -23,7 +23,7 @@ import { ListAdvertisingContactsUseCase } from './application/handlers/admin/lis
 import { MarkAdvertisingContactViewedUseCase } from './application/handlers/admin/mark-advertising-contact-viewed.use-case';
 import { TransactionService } from '../../shared/services/transaction.service';
 import { UploadModule } from '../../shared/services/upload';
-import { AdminModule } from '../admin/admin.module';
+import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
 import { UserSupportController } from './interface/rest/user/support.controller';
 import { AdminSupportController } from './interface/rest/admin/support.controller';
@@ -34,7 +34,7 @@ import { ListUserInquiriesUseCase } from './application/handlers/user/list-user-
   imports: [
     TypeOrmModule.forFeature([Inquiry, Feedback, BugReport, AdvertisingContact]),
     UploadModule.register({ storageType: 'local' }),
-    AdminModule,
+    AdminGuardsModule,
     UserTokenRepositoryModule,
   ],
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

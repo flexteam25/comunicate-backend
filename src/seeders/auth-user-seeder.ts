@@ -145,6 +145,47 @@ export class AuthUserSeeder {
           description: 'View sites',
           type: PermissionType.ADMIN,
         },
+        // Support module permissions
+        {
+          name: 'support.inquiry.view',
+          description: 'View support inquiries',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'support.inquiry.reply',
+          description: 'Reply to support inquiries',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'support.feedback.view',
+          description: 'View user feedback',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'support.feedback.update',
+          description: 'Update/mark feedback as viewed',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'support.bug.view',
+          description: 'View bug reports',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'support.bug.update',
+          description: 'Update/mark bug reports as viewed',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'support.advertising.view',
+          description: 'View advertising contacts',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'support.advertising.update',
+          description: 'Update/mark advertising contacts as viewed',
+          type: PermissionType.ADMIN,
+        },
       ];
 
       // Create permissions - User permissions (if needed in future)

@@ -1,6 +1,12 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+} from '@nestjs/common';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
 import { ISiteViewRepository } from '../../../infrastructure/persistence/repositories/site-view.repository';
+import { IUserHistorySiteRepository } from '../../../../user/infrastructure/persistence/repositories/user-history-site.repository';
 import { Site, SiteStatus } from '../../../domain/entities/site.entity';
 
 export interface GetSiteCommand {
@@ -16,6 +22,8 @@ export class GetSiteUseCase {
     private readonly siteRepository: ISiteRepository,
     @Inject('ISiteViewRepository')
     private readonly siteViewRepository: ISiteViewRepository,
+    @Inject('IUserHistorySiteRepository')
+    private readonly userHistorySiteRepository: IUserHistorySiteRepository,
   ) {}
 
   async execute(command: GetSiteCommand): Promise<Site> {
@@ -36,7 +44,7 @@ export class GetSiteUseCase {
       throw new ForbiddenException('Site is not available for viewing');
     }
 
-    // Track view (async, don't wait for it)
+    // Track view and user history (async, don't wait for it)
     this.siteViewRepository
       .create({
         siteId: command.siteId,
@@ -48,7 +56,15 @@ export class GetSiteUseCase {
         console.error('Failed to track site view:', error);
       });
 
+    if (command.userId) {
+      this.userHistorySiteRepository
+        .addHistory(command.userId, command.siteId)
+        .catch((error) => {
+          // Log error but don't fail the request
+          console.error('Failed to save user site history:', error);
+        });
+    }
+
     return site;
   }
 }
-

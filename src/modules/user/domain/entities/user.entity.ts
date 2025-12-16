@@ -5,6 +5,8 @@ import { UserRole } from './user-role.entity';
 import { UserPermission } from './user-permission.entity';
 import { UserBadge } from './user-badge.entity';
 import { UserProfile } from './user-profile.entity';
+import { UserFavoriteSite } from './user-favorite-site.entity';
+import { UserHistorySite } from './user-history-site.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -37,6 +39,12 @@ export class User extends BaseEntity {
 
   @OneToMany(() => UserBadge, (userBadge) => userBadge.user)
   userBadges: UserBadge[];
+
+  @OneToMany(() => UserFavoriteSite, (favorite) => favorite.user)
+  userFavoriteSites: UserFavoriteSite[];
+
+  @OneToMany(() => UserHistorySite, (history) => history.user)
+  userHistorySites: UserHistorySite[];
 
   @OneToOne(() => UserProfile, (userProfile) => userProfile.user, {
     cascade: true,
