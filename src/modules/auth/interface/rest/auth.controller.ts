@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Req, Inject, forwardRef, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Req, Inject, UseGuards } from '@nestjs/common';
 import { RegisterUseCase } from '../../application/handlers/register.use-case';
 import { LoginUseCase } from '../../application/handlers/login.use-case';
 import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.use-case';
@@ -28,7 +28,7 @@ export class AuthController {
     private readonly logoutUseCase: LogoutUseCase,
     private readonly requestOtpUseCase: RequestOtpUseCase,
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
-    @Inject(forwardRef(() => 'IUserRepository'))
+    @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly configService: ConfigService,
   ) {

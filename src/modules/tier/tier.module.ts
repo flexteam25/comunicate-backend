@@ -6,8 +6,10 @@ import { CreateTierUseCase } from './application/handlers/admin/create-tier.use-
 import { UpdateTierUseCase } from './application/handlers/admin/update-tier.use-case';
 import { DeleteTierUseCase } from './application/handlers/admin/delete-tier.use-case';
 import { ListTiersUseCase } from './application/handlers/admin/list-tiers.use-case';
+import { ListTiersUseCase as UserListTiersUseCase } from './application/handlers/user/list-tiers.use-case';
 import { RestoreTierUseCase } from './application/handlers/admin/restore-tier.use-case';
 import { AdminTierController } from './interface/rest/admin/tier.controller';
+import { UserTierController } from './interface/rest/user/tier.controller';
 import { AdminModule } from '../admin/admin.module';
 import { SiteModule } from '../site/site.module';
 
@@ -23,9 +25,10 @@ import { SiteModule } from '../site/site.module';
     UpdateTierUseCase,
     DeleteTierUseCase,
     ListTiersUseCase,
+    UserListTiersUseCase,
     RestoreTierUseCase,
   ],
-  controllers: [AdminTierController],
+  controllers: [AdminTierController, UserTierController],
   exports: ['ITierRepository', TierRepository],
 })
 export class TierModule {}

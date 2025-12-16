@@ -1,5 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { ISiteRepository, SiteFilters } from '../../../infrastructure/persistence/repositories/site.repository';
+import {
+  ISiteRepository,
+  SiteFilters,
+} from '../../../infrastructure/persistence/repositories/site.repository';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import { Site, SiteStatus } from '../../../domain/entities/site.entity';
 
@@ -34,4 +37,3 @@ export class ListSitesUseCase {
     );
   }
 }
-

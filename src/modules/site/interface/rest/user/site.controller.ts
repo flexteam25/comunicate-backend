@@ -1,24 +1,19 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  HttpCode,
-  HttpStatus,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { ListSitesUseCase } from '../../../application/handlers/user/list-sites.use-case';
 import { GetSiteUseCase } from '../../../application/handlers/user/get-site.use-case';
+import { ListCategoriesUseCase } from '../../../application/handlers/user/list-categories.use-case';
 import { ListSitesQueryDto } from '../dto/list-sites-query.dto';
 import { SiteResponse, CursorPaginatedSitesResponse } from '../dto/site-response.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
-import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
-import { CurrentUser, CurrentUserPayload } from '../../../../../shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../../../../shared/decorators/current-user.decorator';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ConfigService } from '@nestjs/config';
 import { Site } from '../../../domain/entities/site.entity';
+import { SiteCategory } from '../../../domain/entities/site-category.entity';
 
 @Controller('api/sites')
 export class UserSiteController {
@@ -27,6 +22,7 @@ export class UserSiteController {
   constructor(
     private readonly listSitesUseCase: ListSitesUseCase,
     private readonly getSiteUseCase: GetSiteUseCase,
+    private readonly listCategoriesUseCase: ListCategoriesUseCase,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -42,9 +38,13 @@ export class UserSiteController {
             name: site.category.name,
             description: site.category.description || undefined,
           }
-        : ({} as any),
+        : {
+            id: '',
+            name: '',
+          },
       logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || undefined,
-      mainImageUrl: buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || undefined,
+      mainImageUrl:
+        buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || undefined,
       tier: site.tier
         ? {
             id: site.tier.id,
@@ -78,7 +78,9 @@ export class UserSiteController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async listSites(@Query() query: ListSitesQueryDto): Promise<ApiResponse<CursorPaginatedSitesResponse>> {
+  async listSites(
+    @Query() query: ListSitesQueryDto,
+  ): Promise<ApiResponse<CursorPaginatedSitesResponse>> {
     const result = await this.listSitesUseCase.execute({
       filters: {
         categoryId: query.categoryId,
@@ -96,6 +98,13 @@ export class UserSiteController {
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
     });
+  }
+
+  @Get('categories')
+  @HttpCode(HttpStatus.OK)
+  async listCategories(): Promise<ApiResponse<SiteCategory[]>> {
+    const categories = await this.listCategoriesUseCase.execute();
+    return ApiResponseUtil.success(categories);
   }
 
   @Get(':id')
@@ -117,4 +126,3 @@ export class UserSiteController {
     return ApiResponseUtil.success(this.mapSiteToResponse(site));
   }
 }
-

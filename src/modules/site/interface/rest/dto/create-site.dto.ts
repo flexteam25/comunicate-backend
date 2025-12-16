@@ -19,5 +19,10 @@ export class CreateSiteDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
+  mainImageUrl?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 }

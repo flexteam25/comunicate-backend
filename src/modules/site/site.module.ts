@@ -25,6 +25,7 @@ import { CreateCategoryUseCase } from './application/handlers/admin/create-categ
 import { UpdateCategoryUseCase } from './application/handlers/admin/update-category.use-case';
 import { DeleteCategoryUseCase } from './application/handlers/admin/delete-category.use-case';
 import { ListCategoriesUseCase } from './application/handlers/admin/list-categories.use-case';
+import { ListCategoriesUseCase as UserListCategoriesUseCase } from './application/handlers/user/list-categories.use-case';
 import { RestoreCategoryUseCase } from './application/handlers/admin/restore-category.use-case';
 import { RestoreSiteUseCase } from './application/handlers/admin/restore-site.use-case';
 import { AddSiteDomainUseCase } from './application/handlers/admin/add-site-domain.use-case';
@@ -92,6 +93,7 @@ import { Badge } from '../badge/domain/entities/badge.entity';
     UpdateCategoryUseCase,
     DeleteCategoryUseCase,
     ListCategoriesUseCase,
+    UserListCategoriesUseCase,
     RestoreCategoryUseCase,
     RestoreSiteUseCase,
   ],

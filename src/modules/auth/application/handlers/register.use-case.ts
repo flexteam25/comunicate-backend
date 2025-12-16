@@ -2,7 +2,6 @@ import {
   Injectable,
   ConflictException,
   Inject,
-  forwardRef,
 } from "@nestjs/common";
 import { EntityManager } from "typeorm";
 import { IUserRepository } from "../../../user/infrastructure/persistence/repositories/user.repository";
@@ -24,7 +23,7 @@ export interface RegisterCommand {
 @Injectable()
 export class RegisterUseCase {
   constructor(
-    @Inject(forwardRef(() => "IUserRepository"))
+    @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly passwordService: PasswordService,
     private readonly transactionService: TransactionService

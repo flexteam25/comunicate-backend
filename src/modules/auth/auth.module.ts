@@ -1,8 +1,6 @@
-import { Module, forwardRef } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { UserToken } from './domain/entities/user-token.entity';
-import { UserTokenRepository } from './infrastructure/persistence/typeorm/user-token.repository';
+import { UserTokenRepositoryModule } from './infrastructure/persistence/user-token-repository.module';
 import { RegisterUseCase } from './application/handlers/register.use-case';
 import { LoginUseCase } from './application/handlers/login.use-case';
 import { RefreshTokenUseCase } from './application/handlers/refresh-token.use-case';
@@ -17,18 +15,13 @@ import { QueueClientModule } from '../../shared/queue/queue-client.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserToken]),
+    UserTokenRepositoryModule,
     ConfigModule,
-    forwardRef(() => UserModule),
+    UserModule,
     QueueClientModule,
   ],
   controllers: [AuthController],
   providers: [
-    {
-      provide: 'IUserTokenRepository',
-      useClass: UserTokenRepository,
-    },
-    UserTokenRepository,
     RegisterUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
@@ -38,6 +31,6 @@ import { QueueClientModule } from '../../shared/queue/queue-client.module';
     PasswordService,
     JwtService,
   ],
-  exports: [UserTokenRepository, 'IUserTokenRepository', JwtService],
+  exports: [UserTokenRepositoryModule, JwtService],
 })
 export class AuthModule {}

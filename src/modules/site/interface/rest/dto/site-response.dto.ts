@@ -1,4 +1,5 @@
 import { SiteStatus } from '../../../domain/entities/site.entity';
+import { BadgeType } from 'src/modules/badge/domain/entities/badge.entity';
 
 export class SiteCategoryResponse {
   id: string;
@@ -21,6 +22,17 @@ export class BadgeResponse {
   iconUrl?: string;
 }
 
+export class AdminBadgeResponse {
+  id: string;
+  name: string;
+  description?: string;
+  iconUrl?: string;
+  badgeType: BadgeType;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+}
 export class SiteDomainResponse {
   id: string;
   domain: string;
@@ -51,4 +63,3 @@ export class CursorPaginatedSitesResponse {
   nextCursor: string | null;
   hasMore: boolean;
 }
-

@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { QueueService } from '../../../../shared/queue/queue.service';
@@ -11,7 +11,7 @@ export interface RequestOtpCommand {
 @Injectable()
 export class RequestOtpUseCase {
   constructor(
-    @Inject(forwardRef(() => 'IUserRepository'))
+    @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly redisService: RedisService,
     private readonly queueService: QueueService,

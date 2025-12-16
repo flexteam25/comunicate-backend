@@ -1,4 +1,4 @@
-import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from './shared/logger/logger.module';
@@ -13,6 +13,7 @@ import { UserModule } from './modules/user/user.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SiteModule } from './modules/site/site.module';
 import { TierModule } from './modules/tier/tier.module';
+import { BadgeModule } from './modules/badge/badge.module';
 import { User } from './modules/user/domain/entities/user.entity';
 import { UserOldPassword } from './modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from './modules/auth/domain/entities/user-token.entity';
@@ -80,7 +81,8 @@ import { UserProfile } from './modules/user/domain/entities/user-profile.entity'
     QueueClientModule,
     AuthModule,
     UserModule,
-    AdminModule,
+    AdminModule, // Must be before BadgeModule for guards injection
+    BadgeModule, // Imports AdminModule for guards
     SiteModule,
     TierModule,
   ],

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { IUserTokenRepository } from '../../infrastructure/persistence/repositories/user-token.repository';
@@ -20,7 +20,7 @@ export interface RefreshTokenResult {
 @Injectable()
 export class RefreshTokenUseCase {
   constructor(
-    @Inject(forwardRef(() => 'IUserRepository'))
+    @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     @Inject('IUserTokenRepository')
     private readonly userTokenRepository: IUserTokenRepository,

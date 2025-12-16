@@ -3,7 +3,6 @@ import {
   BadRequestException,
   UnauthorizedException,
   Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
@@ -25,7 +24,7 @@ export interface ResetPasswordCommand {
 @Injectable()
 export class ResetPasswordUseCase {
   constructor(
-    @Inject(forwardRef(() => 'IUserRepository'))
+    @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     @Inject('IUserTokenRepository')
     private readonly userTokenRepository: IUserTokenRepository,
@@ -97,4 +96,3 @@ export class ResetPasswordUseCase {
     return { message: 'Password reset successfully. Please login with your new password.' };
   }
 }
-

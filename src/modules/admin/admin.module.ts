@@ -21,13 +21,14 @@ import { UpdateProfileUseCase } from './application/handlers/update-profile.use-
 import { GetMeUseCase } from './application/handlers/get-me.use-case';
 import { CreateAdminUseCase } from './application/handlers/create-admin.use-case';
 import { AdminController } from './interface/rest/admin.controller';
+import { AdminUserBadgeController } from './interface/rest/user-badge.controller';
+import { UserModule } from '../user/user.module';
 import { PasswordService } from '../../shared/services/password.service';
 import { JwtService } from '../../shared/services/jwt.service';
 import { TransactionService } from '../../shared/services/transaction.service';
 import { QueueClientModule } from '../../shared/queue/queue-client.module';
 import { UploadModule } from '../../shared/services/upload';
-import { AdminJwtAuthGuard } from './infrastructure/guards/admin-jwt-auth.guard';
-import { AdminPermissionGuard } from './infrastructure/guards/admin-permission.guard';
+import { AdminGuardsModule } from './infrastructure/guards/admin-guards.module';
 
 @Module({
   imports: [
@@ -42,8 +43,10 @@ import { AdminPermissionGuard } from './infrastructure/guards/admin-permission.g
     ConfigModule,
     QueueClientModule,
     UploadModule.register({ storageType: 'local' }),
+    AdminGuardsModule,
+    UserModule,
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, AdminUserBadgeController],
   providers: [
     {
       provide: 'IAdminRepository',
@@ -77,17 +80,13 @@ import { AdminPermissionGuard } from './infrastructure/guards/admin-permission.g
     PasswordService,
     JwtService,
     TransactionService,
-    AdminJwtAuthGuard,
-    AdminPermissionGuard,
   ],
   exports: [
     'IAdminRepository',
     'IAdminTokenRepository',
     'IAdminPermissionRepository',
     'IAdminOldPasswordRepository',
-    AdminJwtAuthGuard,
-    AdminPermissionGuard,
+    AdminGuardsModule,
   ],
 })
 export class AdminModule {}
-
