@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Tier } from './domain/entities/tier.entity';
 import { TierRepository } from './infrastructure/persistence/typeorm/tier.repository';
@@ -11,10 +11,10 @@ import { RestoreTierUseCase } from './application/handlers/admin/restore-tier.us
 import { AdminTierController } from './interface/rest/admin/tier.controller';
 import { UserTierController } from './interface/rest/user/tier.controller';
 import { AdminModule } from '../admin/admin.module';
-import { SiteModule } from '../site/site.module';
+import { SitePersistenceModule } from '../site/site-persistence.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tier]), AdminModule, forwardRef(() => SiteModule)],
+  imports: [TypeOrmModule.forFeature([Tier]), AdminModule, SitePersistenceModule],
   providers: [
     {
       provide: 'ITierRepository',

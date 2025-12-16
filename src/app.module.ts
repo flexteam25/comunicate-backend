@@ -14,6 +14,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { SiteModule } from './modules/site/site.module';
 import { TierModule } from './modules/tier/tier.module';
 import { BadgeModule } from './modules/badge/badge.module';
+import { SupportModule } from './modules/support/support.module';
 import { User } from './modules/user/domain/entities/user.entity';
 import { UserOldPassword } from './modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from './modules/auth/domain/entities/user-token.entity';
@@ -35,6 +36,10 @@ import { SiteDomain } from './modules/site/domain/entities/site-domain.entity';
 import { SiteView } from './modules/site/domain/entities/site-view.entity';
 import { Tier } from './modules/tier/domain/entities/tier.entity';
 import { UserProfile } from './modules/user/domain/entities/user-profile.entity';
+import { Inquiry } from './modules/support/domain/entities/inquiry.entity';
+import { Feedback } from './modules/support/domain/entities/feedback.entity';
+import { BugReport } from './modules/support/domain/entities/bug-report.entity';
+import { AdvertisingContact } from './modules/support/domain/entities/advertising-contact.entity';
 
 @Module({
   imports: [
@@ -70,6 +75,10 @@ import { UserProfile } from './modules/user/domain/entities/user-profile.entity'
         SiteView,
         Tier,
         UserProfile,
+        Inquiry,
+        Feedback,
+        BugReport,
+        AdvertisingContact,
       ],
       synchronize: false,
       logging: false,
@@ -85,6 +94,7 @@ import { UserProfile } from './modules/user/domain/entities/user-profile.entity'
     BadgeModule, // Imports AdminModule for guards
     SiteModule,
     TierModule,
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

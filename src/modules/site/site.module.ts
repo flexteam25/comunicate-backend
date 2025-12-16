@@ -1,14 +1,4 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Site } from './domain/entities/site.entity';
-import { SiteCategory } from './domain/entities/site-category.entity';
-import { SiteBadge } from './domain/entities/site-badge.entity';
-import { SiteDomain } from './domain/entities/site-domain.entity';
-import { SiteView } from './domain/entities/site-view.entity';
-import { SiteRepository } from './infrastructure/persistence/typeorm/site.repository';
-import { SiteCategoryRepository } from './infrastructure/persistence/typeorm/site-category.repository';
-import { SiteBadgeRepository } from './infrastructure/persistence/typeorm/site-badge.repository';
-import { SiteDomainRepository } from './infrastructure/persistence/typeorm/site-domain.repository';
-import { SiteViewRepository } from './infrastructure/persistence/typeorm/site-view.repository';
 import { CreateSiteUseCase } from './application/handlers/admin/create-site.use-case';
 import { UpdateSiteUseCase } from './application/handlers/admin/update-site.use-case';
 import { DeleteSiteUseCase } from './application/handlers/admin/delete-site.use-case';
@@ -31,52 +21,21 @@ import { RestoreSiteUseCase } from './application/handlers/admin/restore-site.us
 import { AddSiteDomainUseCase } from './application/handlers/admin/add-site-domain.use-case';
 import { UpdateSiteDomainUseCase } from './application/handlers/admin/update-site-domain.use-case';
 import { DeleteSiteDomainUseCase } from './application/handlers/admin/delete-site-domain.use-case';
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TierModule } from '../tier/tier.module';
 import { AdminModule } from '../admin/admin.module';
 import { UploadModule } from '../../shared/services/upload';
-import { Badge } from '../badge/domain/entities/badge.entity';
+import { SitePersistenceModule } from './site-persistence.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Site,
-      SiteCategory,
-      SiteBadge,
-      SiteDomain,
-      SiteView,
-      Badge,
-    ]),
-    forwardRef(() => TierModule),
+    TypeOrmModule,
+    SitePersistenceModule,
+    TierModule,
     AdminModule,
     UploadModule.register({ storageType: 'local' }),
   ],
   providers: [
-    {
-      provide: 'ISiteRepository',
-      useClass: SiteRepository,
-    },
-    {
-      provide: 'ISiteCategoryRepository',
-      useClass: SiteCategoryRepository,
-    },
-    {
-      provide: 'ISiteBadgeRepository',
-      useClass: SiteBadgeRepository,
-    },
-    {
-      provide: 'ISiteDomainRepository',
-      useClass: SiteDomainRepository,
-    },
-    {
-      provide: 'ISiteViewRepository',
-      useClass: SiteViewRepository,
-    },
-    SiteRepository,
-    SiteCategoryRepository,
-    SiteBadgeRepository,
-    SiteDomainRepository,
-    SiteViewRepository,
     CreateSiteUseCase,
     UpdateSiteUseCase,
     DeleteSiteUseCase,
@@ -98,13 +57,6 @@ import { Badge } from '../badge/domain/entities/badge.entity';
     RestoreSiteUseCase,
   ],
   controllers: [AdminSiteController, AdminCategoryController, UserSiteController],
-  exports: [
-    'ISiteRepository',
-    'ISiteCategoryRepository',
-    'ISiteBadgeRepository',
-    SiteRepository,
-    SiteCategoryRepository,
-    SiteBadgeRepository,
-  ],
+  exports: [SitePersistenceModule],
 })
 export class SiteModule {}

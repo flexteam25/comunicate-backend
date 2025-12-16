@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { SocketGateway } from './socket.gateway';
 
 @Injectable()
@@ -6,7 +6,6 @@ export class SocketService {
   private readonly logger = new Logger(SocketService.name);
 
   constructor(
-    @Inject(forwardRef(() => SocketGateway))
     private readonly socketGateway: SocketGateway,
   ) {}
 
