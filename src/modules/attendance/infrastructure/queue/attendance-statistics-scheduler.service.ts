@@ -22,8 +22,6 @@ export class AttendanceStatisticsSchedulerService {
     timeZone: 'UTC',
   })
   async handleCron(): Promise<void> {
-    this.logger.log('Attendance statistics cron triggered - dispatching job to queue');
-
     try {
       await this.attendanceStatisticsQueue.add(
         'calculate-statistics',
@@ -35,7 +33,6 @@ export class AttendanceStatisticsSchedulerService {
           removeOnFail: 20,
         },
       );
-      this.logger.log('Attendance statistics job dispatched to queue successfully');
     } catch (error) {
       this.logger.error(
         'Failed to dispatch attendance statistics job',

@@ -20,19 +20,7 @@ export class AttendanceStatisticsProcessor extends WorkerHost {
 
   async process(job: Job<AttendanceStatisticsJobData>): Promise<any> {
     try {
-      this.logger.info(
-        `Processing attendance statistics job ${job.id}`,
-        { jobId: job.id, timestamp: job.data.timestamp },
-        'attendance-statistics-queue',
-      );
-
       await this.calculateStatisticsUseCase.execute();
-
-      this.logger.info(
-        `Attendance statistics job ${job.id} completed successfully`,
-        { jobId: job.id },
-        'attendance-statistics-queue',
-      );
 
       return {
         success: true,

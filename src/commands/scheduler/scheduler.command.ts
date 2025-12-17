@@ -16,12 +16,6 @@ export class SchedulerCommand extends CommandRunner implements OnModuleInit {
   }
 
   async onModuleInit() {
-    this.logger.info(
-      "Scheduler started - Cron scheduler is active",
-      null,
-      "scheduler"
-    );
-
     this.setupSignalHandlers();
   }
 
@@ -50,8 +44,6 @@ export class SchedulerCommand extends CommandRunner implements OnModuleInit {
       return;
     }
     this.isShuttingDown = true;
-
-    this.logger.info("Shutting down scheduler...", null, "scheduler");
 
     // Resolve the promise to allow graceful exit
     if (this.resolve) {
