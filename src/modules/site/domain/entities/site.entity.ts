@@ -25,6 +25,9 @@ export class Site extends BaseEntity {
   @Column({ name: 'main_image_url', type: 'varchar', length: 500, nullable: true })
   mainImageUrl?: string;
 
+  @Column({ name: 'site_image_url', type: 'varchar', length: 500, nullable: true })
+  siteImageUrl?: string;
+
   @Column({ name: 'tier_id', type: 'uuid', nullable: true })
   tierId?: string;
 
@@ -61,4 +64,3 @@ export class Site extends BaseEntity {
   @OneToMany(() => SiteDomain, (siteDomain) => siteDomain.site)
   siteDomains: SiteDomain[];
 }
-

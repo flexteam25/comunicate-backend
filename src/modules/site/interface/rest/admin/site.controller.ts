@@ -79,6 +79,7 @@ export class AdminSiteController {
         : ({} as any),
       logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || undefined,
       mainImageUrl: buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || undefined,
+      siteImageUrl: buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || undefined,
       tier: site.tier
         ? {
             id: site.tier.id,
@@ -117,6 +118,7 @@ export class AdminSiteController {
     FileFieldsInterceptor([
       { name: 'logo', maxCount: 1 },
       { name: 'mainImage', maxCount: 1 },
+      { name: 'siteImage', maxCount: 1 },
     ]),
   )
   async createSite(
@@ -125,6 +127,7 @@ export class AdminSiteController {
     files?: {
       logo?: MulterFile[];
       mainImage?: MulterFile[];
+      siteImage?: MulterFile[];
     },
   ): Promise<ApiResponse<SiteResponse>> {
     // Create site first
@@ -133,6 +136,7 @@ export class AdminSiteController {
     // Upload images if provided
     let logoUrl: string | undefined;
     let mainImageUrl: string | undefined;
+    let siteImageUrl: string | undefined;
 
     if (files) {
       // Upload logo
@@ -169,12 +173,33 @@ export class AdminSiteController {
         mainImageUrl = mainImageResult.relativePath;
       }
 
+      // Upload site image
+      if (files.siteImage && files.siteImage[0]) {
+        const file = files.siteImage[0];
+        // Validate file
+        if (file.size > 5 * 1024 * 1024) {
+          throw new BadRequestException('Site image file size exceeds 5MB');
+        }
+        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
+          throw new BadRequestException(
+            'Invalid site image file type. Allowed: jpg, jpeg, png, webp',
+          );
+        }
+        const siteImageResult = await this.uploadService.uploadSiteImage(
+          files.siteImage[0],
+          site.id,
+          'site',
+        );
+        siteImageUrl = siteImageResult.relativePath;
+      }
+
       // Update site with image URLs
-      if (logoUrl || mainImageUrl) {
+      if (logoUrl || mainImageUrl || siteImageUrl) {
         const updatedSite = await this.updateSiteUseCase.execute({
           siteId: site.id,
           logoUrl,
           mainImageUrl,
+          siteImageUrl,
         });
         return ApiResponseUtil.success(
           this.mapSiteToResponse(updatedSite),
@@ -227,6 +252,7 @@ export class AdminSiteController {
     FileFieldsInterceptor([
       { name: 'logo', maxCount: 1 },
       { name: 'mainImage', maxCount: 1 },
+      { name: 'siteImage', maxCount: 1 },
     ]),
   )
   async updateSite(
@@ -236,11 +262,13 @@ export class AdminSiteController {
     files?: {
       logo?: MulterFile[];
       mainImage?: MulterFile[];
+      siteImage?: MulterFile[];
     },
   ): Promise<ApiResponse<SiteResponse>> {
     // Upload images if provided
     let logoUrl: string | undefined;
     let mainImageUrl: string | undefined;
+    let siteImageUrl: string | undefined;
 
     if (files) {
       // Upload logo
@@ -276,6 +304,26 @@ export class AdminSiteController {
         );
         mainImageUrl = mainImageResult.relativePath;
       }
+
+      // Upload site image
+      if (files.siteImage && files.siteImage[0]) {
+        const file = files.siteImage[0];
+        // Validate file
+        if (file.size > 5 * 1024 * 1024) {
+          throw new BadRequestException('Site image file size exceeds 5MB');
+        }
+        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
+          throw new BadRequestException(
+            'Invalid site image file type. Allowed: jpg, jpeg, png, webp',
+          );
+        }
+        const siteImageResult = await this.uploadService.uploadSiteImage(
+          files.siteImage[0],
+          id,
+          'site',
+        );
+        siteImageUrl = siteImageResult.relativePath;
+      }
     }
 
     // Update site with all data
@@ -284,6 +332,7 @@ export class AdminSiteController {
       ...dto,
       logoUrl,
       mainImageUrl,
+      siteImageUrl,
     });
     return ApiResponseUtil.success(this.mapSiteToResponse(site), 'Site updated successfully');
   }

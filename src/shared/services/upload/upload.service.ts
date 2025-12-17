@@ -154,7 +154,7 @@ export class UploadService {
   async uploadSiteImage(
     file: MulterFile,
     siteId: string,
-    imageType: 'logo' | 'main',
+    imageType: 'logo' | 'main' | 'site',
     options?: UploadOptions,
   ): Promise<UploadResult> {
     try {
@@ -247,30 +247,6 @@ export class UploadService {
       throw new BadRequestException('Image quality must be a number between 1 and 100');
     }
     return sharp(buffer).webp({ quality: qualityNumber }).toBuffer();
-  }
-
-  /**
-   * Process image: resize and convert to WebP (kept for backward compatibility if needed)
-   */
-  private async processImage(
-    buffer: Buffer,
-    options: { maxWidth: number; maxHeight: number; quality: number | string },
-  ): Promise<Buffer> {
-    const { maxWidth, maxHeight, quality } = options;
-
-    // Ensure quality is always a number (1-100)
-    const qualityNumber = Number.parseInt(String(quality), 10);
-    if (isNaN(qualityNumber) || qualityNumber < 1 || qualityNumber > 100) {
-      throw new BadRequestException('Image quality must be a number between 1 and 100');
-    }
-
-    return sharp(buffer)
-      .resize(maxWidth, maxHeight, {
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .webp({ quality: qualityNumber })
-      .toBuffer();
   }
 
   /**

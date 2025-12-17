@@ -11,6 +11,7 @@ export interface CreateSiteCommand {
   categoryId: string;
   logoUrl?: string;
   mainImageUrl?: string;
+  siteImageUrl?: string;
   tierId?: string;
   permanentUrl?: string;
   description?: string;
@@ -52,6 +53,7 @@ export class CreateSiteUseCase {
           categoryId: command.categoryId,
           logoUrl: command.logoUrl,
           mainImageUrl: command.mainImageUrl,
+          siteImageUrl: command.siteImageUrl,
           tierId: command.tierId,
           permanentUrl: command.permanentUrl,
           description: command.description,

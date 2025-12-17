@@ -17,6 +17,7 @@ export interface UpdateSiteCommand {
   categoryId?: string;
   logoUrl?: string;
   mainImageUrl?: string;
+  siteImageUrl?: string;
   tierId?: string;
   permanentUrl?: string;
   status?: SiteStatus;
@@ -71,6 +72,8 @@ export class UpdateSiteUseCase {
         if (command.logoUrl !== undefined) updateData.logoUrl = command.logoUrl || null;
         if (command.mainImageUrl !== undefined)
           updateData.mainImageUrl = command.mainImageUrl || null;
+        if (command.siteImageUrl !== undefined)
+          updateData.siteImageUrl = command.siteImageUrl || null;
         if (command.tierId !== undefined) updateData.tierId = command.tierId || null;
         if (command.permanentUrl !== undefined)
           updateData.permanentUrl = command.permanentUrl || null;

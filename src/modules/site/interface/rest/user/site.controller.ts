@@ -56,6 +56,8 @@ export class UserSiteController {
       logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || undefined,
       mainImageUrl:
         buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || undefined,
+      siteImageUrl:
+        buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || undefined,
       tier: site.tier
         ? {
             id: site.tier.id,

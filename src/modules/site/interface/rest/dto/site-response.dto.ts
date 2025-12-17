@@ -46,6 +46,7 @@ export class SiteResponse {
   category: SiteCategoryResponse;
   logoUrl?: string;
   mainImageUrl?: string;
+  siteImageUrl?: string;
   tier?: TierResponse;
   permanentUrl?: string;
   status: SiteStatus;
