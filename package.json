@@ -20,11 +20,10 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migration": "ts-node scripts/migration.ts",
     "seeder": "ts-node scripts/seeder.ts",
-    "socket-client": "node dist/cli.js socket-client",
-    "socket-client:dev": "ts-node src/cli.ts socket-client",
     "queue-worker": "node dist/queue-worker-cli.js queue-worker",
     "queue-worker:dev": "ts-node src/queue-worker-cli.ts queue-worker",
-    "test:final-round": "ts-node scripts/test-final-round.ts"
+    "scheduler": "node dist/scheduler-cli.js scheduler",
+    "scheduler:dev": "ts-node src/scheduler-cli.ts scheduler"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.3",
@@ -34,6 +33,7 @@
     "@nestjs/cqrs": "^11.0.3",
     "@nestjs/platform-express": "^11.1.6",
     "@nestjs/platform-socket.io": "^11.1.6",
+    "@nestjs/schedule": "^6.1.0",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.6",
     "axios": "^1.12.2",

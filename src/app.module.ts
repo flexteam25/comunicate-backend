@@ -42,6 +42,9 @@ import { Inquiry } from './modules/support/domain/entities/inquiry.entity';
 import { Feedback } from './modules/support/domain/entities/feedback.entity';
 import { BugReport } from './modules/support/domain/entities/bug-report.entity';
 import { AdvertisingContact } from './modules/support/domain/entities/advertising-contact.entity';
+import { Attendance } from './modules/attendance/domain/entities/attendance.entity';
+import { AttendanceStatistic } from './modules/attendance/domain/entities/attendance-statistic.entity';
+import { AttendanceModule } from './modules/attendance/attendance.module';
 
 @Module({
   imports: [
@@ -83,6 +86,8 @@ import { AdvertisingContact } from './modules/support/domain/entities/advertisin
         Feedback,
         BugReport,
         AdvertisingContact,
+        Attendance,
+        AttendanceStatistic,
       ],
       synchronize: false,
       logging: false,
@@ -99,6 +104,7 @@ import { AdvertisingContact } from './modules/support/domain/entities/advertisin
     SiteModule,
     TierModule,
     SupportModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

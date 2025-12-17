@@ -8,6 +8,8 @@ import { LoggerModule } from '../logger/logger.module';
 import { RedisModule } from '../redis/redis.module';
 import { QueueService } from './queue.service';
 import { EmailModule } from '../services/email/email.module';
+import { AttendanceModule } from '../../modules/attendance/attendance.module';
+import { AttendanceStatisticsProcessor } from '../../modules/attendance/infrastructure/queue/attendance-statistics.processor';
 
 @Module({
   imports: [
@@ -43,6 +45,7 @@ import { EmailModule } from '../services/email/email.module';
     LoggerModule,
     RedisModule,
     EmailModule.forRoot(),
+    AttendanceModule, // Import for AttendanceStatisticsProcessor
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
@@ -59,15 +62,24 @@ import { EmailModule } from '../services/email/email.module';
       },
       inject: [ConfigService],
     }),
-    BullModule.registerQueue({
-      name: 'email',
-      defaultJobOptions: {
-        removeOnComplete: 10,
-        removeOnFail: 20,
+    BullModule.registerQueue(
+      {
+        name: 'email',
+        defaultJobOptions: {
+          removeOnComplete: 10,
+          removeOnFail: 20,
+        },
       },
-    }),
+      {
+        name: 'attendance-statistics',
+        defaultJobOptions: {
+          removeOnComplete: 10,
+          removeOnFail: 20,
+        },
+      },
+    ),
   ],
-  providers: [EmailProcessor, QueueService],
-  exports: [BullModule, EmailProcessor, QueueService],
+  providers: [EmailProcessor, AttendanceStatisticsProcessor, QueueService],
+  exports: [BullModule, EmailProcessor, AttendanceStatisticsProcessor, QueueService],
 })
 export class QueueWorkerModule {}

@@ -15,7 +15,7 @@ import { QueueService } from './queue.service';
           password: configService.get('REDIS_PASSWORD'),
           db: parseInt(configService.get('REDIS_DB', '0')),
         };
-        
+
         return {
           connection: redisConfig,
         };
@@ -24,12 +24,19 @@ import { QueueService } from './queue.service';
     }),
     // Only register queues for adding jobs, NO processors
     BullModule.registerQueue(
-      { 
+      {
         name: 'email',
         defaultJobOptions: {
           removeOnComplete: 10, // Keep 10 successful jobs for debugging
-          removeOnFail: 20,     // Keep 20 failed jobs
-        }
+          removeOnFail: 20, // Keep 20 failed jobs
+        },
+      },
+      {
+        name: 'attendance-statistics',
+        defaultJobOptions: {
+          removeOnComplete: 10,
+          removeOnFail: 20,
+        },
       },
     ),
   ],

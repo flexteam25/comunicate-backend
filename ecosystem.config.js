@@ -228,5 +228,55 @@ module.exports = {
       max_restarts: 10,
       min_uptime: '10s',
     },
+    {
+      name: 'poca-scheduler',
+      script: 'dist/src/scheduler-cli.js',
+      args: 'scheduler',
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: devEnv.NODE_ENV || 'development',
+        DEBUG_MODE: devEnv.DEBUG_MODE || 'false',
+        
+        // Database - Development
+        DB_HOST: devEnv.DB_HOST,
+        DB_PORT: devEnv.DB_PORT,
+        DB_USERNAME: devEnv.DB_USERNAME,
+        DB_PASSWORD: devEnv.DB_PASSWORD,
+        DB_DATABASE: devEnv.DB_DATABASE,
+        
+        // Redis - Development
+        REDIS_HOST: devEnv.REDIS_HOST,
+        REDIS_PORT: devEnv.REDIS_PORT,
+        REDIS_PASSWORD: devEnv.REDIS_PASSWORD,
+        REDIS_DB: devEnv.REDIS_DB,
+      },
+      env_production: {
+        NODE_ENV: prodEnv.NODE_ENV || 'production',
+        DEBUG_MODE: prodEnv.DEBUG_MODE || 'false',
+        
+        // Database - Production
+        DB_HOST: prodEnv.DB_HOST,
+        DB_PORT: prodEnv.DB_PORT,
+        DB_USERNAME: prodEnv.DB_USERNAME,
+        DB_PASSWORD: prodEnv.DB_PASSWORD,
+        DB_DATABASE: prodEnv.DB_DATABASE,
+        
+        // Redis - Production
+        REDIS_HOST: prodEnv.REDIS_HOST,
+        REDIS_PORT: prodEnv.REDIS_PORT,
+        REDIS_PASSWORD: prodEnv.REDIS_PASSWORD,
+        REDIS_DB: prodEnv.REDIS_DB,
+      },
+      log_file: 'pm2/logs/scheduler.log',
+      out_file: 'pm2/logs/scheduler-out.log',
+      error_file: 'pm2/logs/scheduler-error.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_memory_restart: '256M',
+      restart_delay: 4000,
+      max_restarts: 10,
+      min_uptime: '10s',
+    },
   ],
 };

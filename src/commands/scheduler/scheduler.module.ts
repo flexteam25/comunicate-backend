@@ -1,8 +1,13 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { QueueWorkerCommand } from './queue-worker.command';
-import { QueueWorkerModule as SharedQueueWorkerModule } from '../../shared/queue/queue-worker.module';
+import { WinstonModule } from 'nest-winston';
+import * as winston from 'winston';
+import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerCommand } from './scheduler.command';
+import { LoggerModule } from '../../shared/logger/logger.module';
+import { AttendanceStatisticsSchedulerService } from '../../modules/attendance/infrastructure/queue/attendance-statistics-scheduler.service';
 import { User } from '../../modules/user/domain/entities/user.entity';
 import { UserOldPassword } from '../../modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from '../../modules/auth/domain/entities/user-token.entity';
@@ -39,6 +44,33 @@ import { AttendanceStatistic } from '../../modules/attendance/domain/entities/at
       isGlobal: true,
       envFilePath: '.env',
     }),
+    WinstonModule.forRoot({
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.colorize(),
+            winston.format.printf((info) => {
+              const { timestamp, level, message, context } = info as {
+                timestamp: string;
+                level: string;
+                message: string;
+                context?: string;
+              };
+              return `${timestamp} [${context || 'App'}] ${level}: ${message}`;
+            }),
+          ),
+        }),
+        new winston.transports.File({
+          filename: 'logs/scheduler.log',
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.json(),
+          ),
+        }),
+      ],
+    }),
+    LoggerModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -80,8 +112,31 @@ import { AttendanceStatistic } from '../../modules/attendance/domain/entities/at
       synchronize: false,
       logging: false,
     }),
-    SharedQueueWorkerModule, // Import processors and GameModule
+    ScheduleModule.forRoot(), // Enable cron scheduling
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        const redisConfig = {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: parseInt(configService.get<string>('REDIS_PORT', '6379'), 10),
+          password: configService.get<string>('REDIS_PASSWORD'),
+          db: parseInt(configService.get<string>('REDIS_DB', '0'), 10),
+        };
+
+        return {
+          connection: redisConfig,
+        };
+      },
+      inject: [ConfigService],
+    }),
+    BullModule.registerQueue({
+      name: 'attendance-statistics',
+      defaultJobOptions: {
+        removeOnComplete: 10,
+        removeOnFail: 20,
+      },
+    }),
   ],
-  providers: [QueueWorkerCommand],
+  providers: [SchedulerCommand, AttendanceStatisticsSchedulerService],
 })
-export class QueueWorkerCommandModule {}
+export class SchedulerCommandModule {}

@@ -12,9 +12,15 @@ import { AdminTierController } from './interface/rest/admin/tier.controller';
 import { UserTierController } from './interface/rest/user/tier.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { SitePersistenceModule } from '../site/site-persistence.module';
+import { ServicesModule } from '../../shared/services/services.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tier]), AdminGuardsModule, SitePersistenceModule],
+  imports: [
+    TypeOrmModule.forFeature([Tier]),
+    AdminGuardsModule,
+    SitePersistenceModule,
+    ServicesModule,
+  ],
   providers: [
     {
       provide: 'ITierRepository',
