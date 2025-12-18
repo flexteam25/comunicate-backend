@@ -17,6 +17,17 @@ import { SiteView } from '../src/modules/site/domain/entities/site-view.entity';
 import { Tier } from '../src/modules/tier/domain/entities/tier.entity';
 import { UserHistorySite } from '../src/modules/user/domain/entities/user-history-site.entity';
 import { UserComment } from '../src/modules/user/domain/entities/user-comment.entity';
+import { Admin } from '../src/modules/admin/domain/entities/admin.entity';
+import { AdminToken } from '../src/modules/admin/domain/entities/admin-token.entity';
+import { AdminRole } from '../src/modules/admin/domain/entities/admin-role.entity';
+import { AdminPermission } from '../src/modules/admin/domain/entities/admin-permission.entity';
+import { AdminOldPassword } from '../src/modules/user/domain/entities/admin-old-password.entity';
+import { Inquiry } from '../src/modules/support/domain/entities/inquiry.entity';
+import { Feedback } from '../src/modules/support/domain/entities/feedback.entity';
+import { BugReport } from '../src/modules/support/domain/entities/bug-report.entity';
+import { AdvertisingContact } from '../src/modules/support/domain/entities/advertising-contact.entity';
+import { Attendance } from '../src/modules/attendance/domain/entities/attendance.entity';
+import { AttendanceStatistic } from '../src/modules/attendance/domain/entities/attendance-statistic.entity';
 import { ScamReport } from '../src/modules/scam-report/domain/entities/scam-report.entity';
 import { ScamReportImage } from '../src/modules/scam-report/domain/entities/scam-report-image.entity';
 import { ScamReportComment } from '../src/modules/scam-report/domain/entities/scam-report-comment.entity';
@@ -101,6 +112,18 @@ function buildDataSource() {
       Tier,
       UserHistorySite,
       UserComment,
+      Admin,
+      AdminToken,
+      AdminRole,
+      AdminPermission,
+      AdminOldPassword,
+      UserProfile,
+      Inquiry,
+      Feedback,
+      BugReport,
+      AdvertisingContact,
+      Attendance,
+      AttendanceStatistic,
       ScamReport,
       ScamReportImage,
       ScamReportComment,
