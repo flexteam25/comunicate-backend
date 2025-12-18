@@ -6,6 +6,8 @@ export interface SiteFilters {
   tierId?: string;
   status?: string;
   search?: string;
+  categoryType?: 'toto' | 'casino' | 'all'; // Filter by category type: toto, casino, or all
+  filterBy?: 'reviewCount' | 'firstCharge' | 'recharge' | 'experience'; // Filter by specific field
 }
 
 export interface ISiteRepository {

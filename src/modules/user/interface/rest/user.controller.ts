@@ -159,6 +159,9 @@ export class UserController {
       })),
       createdAt: site.createdAt,
       updatedAt: site.updatedAt,
+      firstCharge: site.firstCharge ? Number(site.firstCharge) : undefined,
+      recharge: site.recharge ? Number(site.recharge) : undefined,
+      experience: site.experience,
     }));
 
     return ApiResponseUtil.success(mappedSites);
@@ -389,6 +392,9 @@ export class UserController {
       })),
       createdAt: site.createdAt,
       updatedAt: site.updatedAt,
+      firstCharge: site.firstCharge ? Number(site.firstCharge) : undefined,
+      recharge: site.recharge ? Number(site.recharge) : undefined,
+      experience: site.experience,
     });
 
     const favoriteSites = result.favorite.map(mapSiteToResponse);

@@ -74,31 +74,37 @@ export class AdminSiteController {
         ? {
             id: site.category.id,
             name: site.category.name,
-            description: site.category.description || undefined,
+            description: site.category.description || null,
           }
-        : ({} as any),
-      logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || undefined,
-      mainImageUrl: buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || undefined,
-      siteImageUrl: buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || undefined,
+        : {
+            id: '',
+            name: '',
+          },
+      logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || null,
+      mainImageUrl: buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || null,
+      siteImageUrl: buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || null,
       tier: site.tier
         ? {
             id: site.tier.id,
             name: site.tier.name,
-            description: site.tier.description || undefined,
+            description: site.tier.description || null,
             order: site.tier.order,
-            color: site.tier.color || undefined,
+            color: site.tier.color || null,
           }
-        : undefined,
-      permanentUrl: site.permanentUrl || undefined,
+        : null,
+      permanentUrl: site.permanentUrl || null,
       status: site.status,
-      description: site.description || undefined,
+      description: site.description || null,
       reviewCount: site.reviewCount,
       averageRating: Number(site.averageRating),
+      firstCharge: site.firstCharge ? Number(site.firstCharge) : null,
+      recharge: site.recharge ? Number(site.recharge) : null,
+      experience: site.experience,
       badges: (site.siteBadges || []).map((sb) => ({
         id: sb.badge.id,
         name: sb.badge.name,
-        description: sb.badge.description || undefined,
-        iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
+        description: sb.badge.description || null,
+        iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
       })),
       domains: (site.siteDomains || []).map((sd) => ({
         id: sd.id,
@@ -131,7 +137,18 @@ export class AdminSiteController {
     },
   ): Promise<ApiResponse<SiteResponse>> {
     // Create site first
-    const site = await this.createSiteUseCase.execute(dto);
+    const site = await this.createSiteUseCase.execute({
+      name: dto.name,
+      categoryId: dto.categoryId,
+      tierId: dto.tierId,
+      permanentUrl: dto.permanentUrl,
+      mainImageUrl: dto.mainImageUrl,
+      siteImageUrl: dto.siteImageUrl,
+      description: dto.description,
+      firstCharge: dto.firstCharge,
+      recharge: dto.recharge,
+      experience: dto.experience,
+    });
 
     // Upload images if provided
     let logoUrl: string | undefined;
@@ -221,6 +238,8 @@ export class AdminSiteController {
         tierId: query.tierId,
         status: query.status,
         search: query.search,
+        categoryType: query.categoryType,
+        filterBy: query.filterBy,
       },
       cursor: query.cursor,
       limit: query.limit,

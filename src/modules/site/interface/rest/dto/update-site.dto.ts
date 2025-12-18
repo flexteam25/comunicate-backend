@@ -1,4 +1,5 @@
-import { IsString, IsUUID, IsOptional, MaxLength, IsEnum } from 'class-validator';
+import { IsString, IsUUID, IsOptional, MaxLength, IsEnum, IsNumber, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
 import { SiteStatus } from '../../../domain/entities/site.entity';
 
 export class UpdateSiteDto {
@@ -10,7 +11,6 @@ export class UpdateSiteDto {
   @IsOptional()
   @IsUUID()
   categoryId?: string;
-
 
   @IsOptional()
   @IsUUID()
@@ -28,5 +28,24 @@ export class UpdateSiteDto {
   @IsOptional()
   @IsString()
   description?: string;
-}
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  firstCharge?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  recharge?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  experience?: number;
+}

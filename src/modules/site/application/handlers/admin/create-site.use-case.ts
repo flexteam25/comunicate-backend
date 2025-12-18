@@ -15,6 +15,9 @@ export interface CreateSiteCommand {
   tierId?: string;
   permanentUrl?: string;
   description?: string;
+  firstCharge?: number;
+  recharge?: number;
+  experience?: number;
 }
 @Injectable()
 export class CreateSiteUseCase {
@@ -57,6 +60,9 @@ export class CreateSiteUseCase {
           tierId: command.tierId,
           permanentUrl: command.permanentUrl,
           description: command.description,
+          firstCharge: command.firstCharge,
+          recharge: command.recharge,
+          experience: command.experience || 0,
           status: SiteStatus.UNVERIFIED,
           reviewCount: 0,
           averageRating: 0,

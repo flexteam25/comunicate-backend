@@ -1,7 +1,7 @@
 # POCA.GG Backend - Work Log
 
 ## Project Overview
-POCA.GG is a platform providing information, reviews, and scam reports for Toto/Casino sites.
+POCA.GG is a platform providing information, reviews, and scam reports for Toto/casino sites.
 
 ---
 
@@ -115,6 +115,10 @@ src/
 | `PUT` | `/api/users/me` | Update profile (displayName + optional avatar) | ✅ |
 | `PUT` | `/api/users/change-password` | Change password | ✅ |
 | `GET` | `/api/users/me/badges` | Get current user badges | ✅ |
+| `POST` | `/api/users/me/favorite-sites/:siteId` | Add site to favorites | ✅ |
+| `DELETE` | `/api/users/me/favorite-sites/:siteId` | Remove site from favorites | ✅ |
+| `GET` | `/api/users/me/favorite-sites` | List favorite sites (cursor pagination) | ✅ |
+| `GET` | `/api/users/me/activity` | Get activity (favorites + recent sites) | ✅ |
 
 **Features:**
 - ✅ Get current user info with roles and badges
@@ -122,6 +126,10 @@ src/
 - ✅ Change password (requires current password, supports `logoutAll` option)
 - ✅ Get user badges list
 - ✅ Avatar upload integrated into profile update endpoint
+- ✅ Favorite sites management (add/remove/list)
+- ✅ Recent sites tracking (automatically tracked when viewing site)
+- ✅ Activity endpoint returns both favorites and recent sites (20 each)
+- ✅ Cursor pagination for favorite sites list
 
 **Change Password:**
 - Requires current password for verification
@@ -129,6 +137,26 @@ src/
 - If `logoutAll` is true, all tokens for the user are revoked except the current one
 - Saves old password to `user_old_passwords` table with type `change`
 - Uses database transaction for data integrity
+
+**Favorite Sites:**
+- Users can add/remove sites from favorites
+- Favorite sites are tracked with `createdAt` timestamp
+- Unique constraint on `userId` + `siteId` (prevents duplicates)
+- Maintains order from database queries when listing
+
+**Recent Sites:**
+- Automatically tracked when user views a site (`GET /api/sites/:id`)
+- Stores `viewedAt` timestamp in `user_history_sites` table
+- Used for "recent sites" feature in activity endpoint
+- Returns up to 20 most recent sites
+
+**User Favorite Site Entity:**
+- Fields: `userId`, `siteId`, `createdAt`
+- Unique constraint on `userId` + `siteId`
+
+**User History Site Entity:**
+- Fields: `userId`, `siteId`, `viewedAt`
+- Tracks when user last viewed a site
 
 ---
 
@@ -307,18 +335,33 @@ UPLOAD_IMAGE_QUALITY=80         # WebP quality (1-100)
 
 **Queues:**
 - `email` - Email sending queue (OTP, welcome emails, etc.)
+- `attendance-statistics` - Attendance statistics calculation queue
 
 **Queue Worker:**
 - Separate CLI process: `npm run queue-worker:dev`
-- Processes email jobs asynchronously
+- Processes email jobs and attendance statistics jobs asynchronously
 - Uses same Redis connection as main app (same `REDIS_DB` config)
 - Logs to `logs/queue-worker.log`
+
+**Scheduler:**
+- Separate CLI process: `npm run scheduler:dev`
+- Uses `@nestjs/schedule` for cron jobs
+- Dispatches scheduled jobs to BullMQ queues
+- Currently schedules: attendance statistics calculation (every 15 minutes)
+- Logs to `logs/scheduler.log`
+- PM2 process: `poca-scheduler` in `ecosystem.config.js`
 
 **Email Processing:**
 - All emails must go through queue (no direct sending)
 - Jobs are added via `QueueService.addEmailJob()`
 - Email is only sent when queue worker is running
 - If queue worker is not running, jobs are queued but not processed
+
+**Scheduled Jobs:**
+- Attendance statistics calculation runs every 15 minutes via cron
+- Scheduler dispatches jobs to `attendance-statistics` queue
+- Queue worker processes the jobs asynchronously
+- Only error logs are kept (info logs removed for cleaner logs)
 
 **Transaction Support:**
 - All POST/PUT methods use `TransactionService.executeInTransaction()` for data integrity
@@ -522,6 +565,17 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 | `GET` | `/api/site-categories` | List active site categories | ❌ |
 | `GET` | `/api/tiers` | List active tiers | ❌ |
 
+**Query Parameters for `/api/sites`:**
+- `cursor` - Cursor for pagination
+- `limit` - Number of items per page (default: 20)
+- `search` - Search by site name or domain
+- `categoryId` - Filter by category ID
+- `tierId` - Filter by tier ID
+- `categoryType` - Filter by category name (toto/casino/all)
+- `filterBy` - Filter by ranking field (firstCharge/recharge/experience/reviewCount)
+- `sortBy` - Sort field (createdAt, firstCharge, recharge, experience, reviewCount, tier)
+- `sortOrder` - Sort order (ASC/DESC, default: DESC)
+
 **Features:**
 - ✅ Site CRUD operations with permission checks
 - ✅ Super admin bypass for all operations
@@ -530,16 +584,20 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 - ✅ Soft delete and restore functionality
 - ✅ Site badge assignment (many-to-many)
 - ✅ Site domain management (one site, many domains)
-- ✅ Image uploads for `logo_url` and `main_image_url` (max 5MB, stored in `uploads/sites/site_id/`)
-- ✅ Site view tracking (increments view count)
+- ✅ Image uploads for `logo_url`, `main_image_url`, and `site_image_url` (max 5MB, stored in `uploads/sites/site_id/`)
+- ✅ Site view tracking (increments view count, tracks user history)
 - ✅ All create/update operations wrapped in transactions
 - ✅ Filter by `is_active` status
-- ✅ Filter by category, tier, status
+- ✅ Filter by category, tier, status, categoryType
+- ✅ Filter by ranking fields (firstCharge, recharge, experience, reviewCount)
+- ✅ Sort by ranking fields with NULL values at end when DESC
 - ✅ User-facing APIs only show verified/monitored sites
+- ✅ API responses use `null` instead of `undefined` for optional fields (ensures all keys present)
 
 **Site Entity:**
-- Fields: `name`, `description`, `logoUrl`, `mainImageUrl`, `websiteUrl`, `status` (pending/verified/monitored/rejected), `categoryId`, `tierId`, `isActive`, `deletedAt`
+- Fields: `name`, `description`, `logoUrl`, `mainImageUrl`, `siteImageUrl`, `websiteUrl`, `status` (pending/verified/monitored/rejected), `categoryId`, `tierId`, `isActive`, `deletedAt`, `firstCharge` (%), `recharge` (%), `experience` (points)
 - Relationships: `category`, `tier`, `badges[]`, `domains[]`, `views[]`
+- Ranking fields: `firstCharge` (decimal, percentage), `recharge` (decimal, percentage), `experience` (integer, experience points)
 
 **Site Domain Entity:**
 - Fields: `siteId`, `domain`, `isCurrent` (boolean)
@@ -677,6 +735,7 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 - ✅ Update user profile information (displayName, avatar, bio, phone, birthDate, gender)
 - ✅ Profile data included in user response
 - ✅ All updates wrapped in transactions
+- ✅ API responses use `null` instead of `undefined` for optional fields
 
 ---
 
@@ -706,6 +765,10 @@ const result = await this.siteRepository.findAllWithCursor({
 **New Migrations Added:**
 - `1765670000000-add-is-active-to-badges-tiers-categories.ts` - Add `is_active` column to `badges`, `tiers`, and `site_categories` tables
 - `1765680000000-add-deleted-at-to-tiers-categories.ts` - Add `deleted_at` column to `tiers` and `site_categories` tables for soft delete
+- `1765863000001-create-user-history-sites.ts` - Creates `user_favorite_sites` and `user_history_sites` tables
+- `1765935823716-add-site-image-url-to-sites.ts` - Adds `site_image_url` column to `sites` table
+- `1765955273683-create-attendance-system.ts` - Creates `attendances` and `attendance_statistics` tables
+- `1766022483806-add-ranking-fields-to-sites.ts` - Adds `first_charge`, `recharge`, `experience` columns to `sites` table
 
 ---
 
@@ -727,7 +790,7 @@ const result = await this.siteRepository.findAllWithCursor({
 **Location:** `src/shared/services/upload/upload.service.ts`
 
 **New Methods:**
-- ✅ `uploadSiteImage()` - Handles site-specific image uploads (logo, main image)
+- ✅ `uploadSiteImage()` - Handles site-specific image uploads (logo, main image, site image)
 - ✅ Stores images in `uploads/sites/site_id/` directory
 - ✅ Max file size: 5MB
 - ✅ Converts to WebP format
@@ -748,6 +811,13 @@ const mainImageUrl = await this.uploadService.uploadSiteImage(
   siteId,
   'main-image'
 );
+
+// Upload site image
+const siteImageUrl = await this.uploadService.uploadSiteImage(
+  file,
+  siteId,
+  'site-image'
+);
 ```
 
 ---
@@ -765,5 +835,52 @@ const mainImageUrl = await this.uploadService.uploadSiteImage(
 - `AuthModule` - Uses `UserTokenRepositoryModule` for proper dependency injection
 - `SiteModule` - Imports `AdminModule` for admin guard dependencies
 - `TierModule` - Uses `forwardRef` to handle circular dependencies with `SiteModule`
+
+---
+
+### 26. Attendance System Module
+
+**Location:** `src/modules/attendance/`
+
+**User APIs (`/api/attendances`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/attendances` | Create attendance (check-in) | ✅ |
+| `GET` | `/api/attendances` | List attendances with statistics (cursor pagination) | ✅ |
+
+**Features:**
+- ✅ Daily check-in system for users
+- ✅ Attendance statistics tracking (total days, current streak, rank)
+- ✅ Cursor pagination for attendance list
+- ✅ Filter by date (`today`, `streak`, `total`)
+- ✅ Rank by attendance time (`rankByTime`)
+- ✅ Daily message support
+- ✅ Automatic statistics calculation via scheduled job
+
+**Attendance Entity:**
+- Fields: `userId`, `message` (optional), `createdAt`
+- One user can check in once per day
+
+**Attendance Statistic Entity:**
+- Fields: `userId`, `statisticDate`, `totalAttendanceDays`, `currentStreak`, `attendanceTime`, `attendanceRank`, `dailyMessage`
+- Unique constraint on `userId` + `statisticDate`
+- Rank calculated based on check-in time (earlier = better rank)
+
+**Scheduled Statistics Calculation:**
+- ✅ Cron job runs every 15 minutes (`@nestjs/schedule`)
+- ✅ Dispatches jobs to BullMQ queue (`attendance-statistics`)
+- ✅ Separate scheduler process (`npm run scheduler:dev`)
+- ✅ Processed by queue worker (`AttendanceStatisticsProcessor`)
+- ✅ Batch processing to avoid N+1 queries
+- ✅ Calculates rank based on check-in time (ASC order)
+- ✅ Only error logs kept (info logs removed for cleaner logs)
+
+**Scheduler Architecture:**
+- **Scheduler Command**: Separate CLI process for cron scheduling (`src/commands/scheduler/`)
+- **Scheduler Service**: `AttendanceStatisticsSchedulerService` - dispatches jobs to queue
+- **Queue Processor**: `AttendanceStatisticsProcessor` - processes jobs in queue worker
+- **PM2 Configuration**: Separate process `poca-scheduler` in `ecosystem.config.js`
+- **Logging**: Logs to `logs/scheduler.log`, only error logs kept
 
 ---

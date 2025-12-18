@@ -22,6 +22,9 @@ export interface UpdateSiteCommand {
   permanentUrl?: string;
   status?: SiteStatus;
   description?: string;
+  firstCharge?: number;
+  recharge?: number;
+  experience?: number;
 }
 
 @Injectable()
@@ -80,6 +83,9 @@ export class UpdateSiteUseCase {
         if (command.status !== undefined) updateData.status = command.status;
         if (command.description !== undefined)
           updateData.description = command.description || null;
+        if (command.firstCharge !== undefined) updateData.firstCharge = command.firstCharge || null;
+        if (command.recharge !== undefined) updateData.recharge = command.recharge || null;
+        if (command.experience !== undefined) updateData.experience = command.experience;
 
         await siteRepo.update(command.siteId, updateData);
         const updated = await siteRepo.findOne({

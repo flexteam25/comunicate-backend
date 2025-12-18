@@ -50,6 +50,15 @@ export class Site extends BaseEntity {
   @Column({ name: 'average_rating', type: 'decimal', precision: 3, scale: 2, default: 0 })
   averageRating: number;
 
+  @Column({ name: 'first_charge', type: 'decimal', precision: 5, scale: 2, nullable: true, comment: 'First charge percentage (%)' })
+  firstCharge?: number;
+
+  @Column({ name: 'recharge', type: 'decimal', precision: 5, scale: 2, nullable: true, comment: 'Recharge percentage (%)' })
+  recharge?: number;
+
+  @Column({ name: 'experience', type: 'integer', default: 0, comment: 'Experience points' })
+  experience: number;
+
   @ManyToOne(() => SiteCategory, (category) => category.sites)
   @JoinColumn({ name: 'category_id' })
   category: SiteCategory;

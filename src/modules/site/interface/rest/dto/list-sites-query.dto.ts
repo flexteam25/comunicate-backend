@@ -19,6 +19,14 @@ export class ListSitesQueryDto {
   search?: string;
 
   @IsOptional()
+  @IsEnum(['toto', 'casino', 'all'])
+  categoryType?: 'toto' | 'casino' | 'all'; // Filter by category type: toto, casino, or all
+
+  @IsOptional()
+  @IsEnum(['reviewCount', 'firstCharge', 'recharge', 'experience'])
+  filterBy?: 'reviewCount' | 'firstCharge' | 'recharge' | 'experience'; // Filter by specific field (highest)
+
+  @IsOptional()
   @IsString()
   cursor?: string;
 
@@ -30,11 +38,16 @@ export class ListSitesQueryDto {
   limit?: number;
 
   @IsOptional()
-  @IsString()
-  sortBy?: string;
+  @IsEnum(['tier', 'createdAt', 'reviewCount', 'firstCharge', 'recharge', 'experience'])
+  sortBy?:
+    | 'tier'
+    | 'createdAt'
+    | 'reviewCount'
+    | 'firstCharge'
+    | 'recharge'
+    | 'experience'; // Sort by tier or newest
 
   @IsOptional()
   @IsEnum(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC';
 }
-

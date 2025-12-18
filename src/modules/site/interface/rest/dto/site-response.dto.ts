@@ -53,6 +53,9 @@ export class SiteResponse {
   description?: string;
   reviewCount: number;
   averageRating: number;
+  firstCharge?: number;
+  recharge?: number;
+  experience: number;
   badges: BadgeResponse[];
   domains: SiteDomainResponse[];
   createdAt: Date;

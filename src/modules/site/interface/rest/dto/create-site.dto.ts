@@ -1,4 +1,5 @@
-import { IsString, IsUUID, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsUUID, IsOptional, MaxLength, IsNumber, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateSiteDto {
   @IsString()
@@ -24,5 +25,30 @@ export class CreateSiteDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
+  siteImageUrl?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  firstCharge?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  recharge?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  experience?: number;
 }
