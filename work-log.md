@@ -506,10 +506,18 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 - `1765600000000-create-admin-system.ts` - Create admin system tables (admins, admin_tokens, admin_roles, admin_permissions, admin_old_passwords)
 - `1765610000000-create-user-extensions.ts` - User system extensions
 - `1765620000000-create-post-system.ts` - Post system tables
-- `1765630000000-create-scam-report-system.ts` - Scam report system tables
+- `1765630000000-create-scam-report-system.ts` - Scam report system tables (scam_reports, scam_report_comments, scam_report_comment_images, scam_report_reactions)
+- `1766042980435-create-scam-report-images.ts` - Creates `scam_report_images` table
+- `1766043000000-add-indexes-to-scam-reports.ts` - Adds foreign keys and indexes to `scam_reports` table
+- `1766049539981-remove-like-count-from-scam-report-comments.ts` - Removes `like_count` column from `scam_report_comments` table
+- `1766051045757-drop-scam-report-site-table.ts` - Drops redundant `scam_report_site` table (scam_reports, scam_report_comments, scam_report_comment_images, scam_report_reactions)
 - `1765640000000-create-site-system-part1.ts` - Site system tables (part 1)
 - `1765650000000-create-site-system-part2.ts` - Site system tables (part 2)
 - `1765660000000-create-site-system-part3.ts` - Site system tables (part 3)
+- `1766042980435-create-scam-report-images.ts` - Creates `scam_report_images` table
+- `1766043000000-add-indexes-to-scam-reports.ts` - Adds foreign keys and indexes to `scam_reports` table
+- `1766049539981-remove-like-count-from-scam-report-comments.ts` - Removes `like_count` column from `scam_report_comments` table
+- `1766051045757-drop-scam-report-site-table.ts` - Drops redundant `scam_report_site` table
 
 ---
 
@@ -562,6 +570,7 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 |--------|----------|-------------|---------------|
 | `GET` | `/api/sites` | List sites (verified/monitored only, cursor pagination) | ❌ |
 | `GET` | `/api/sites/:id` | Get site details (tracks view) | ❌ |
+| `GET` | `/api/sites/:id/scam-reports` | List published scam reports for a site | ❌ |
 | `GET` | `/api/site-categories` | List active site categories | ❌ |
 | `GET` | `/api/tiers` | List active tiers | ❌ |
 
@@ -593,11 +602,14 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 - ✅ Sort by ranking fields with NULL values at end when DESC
 - ✅ User-facing APIs only show verified/monitored sites
 - ✅ API responses use `null` instead of `undefined` for optional fields (ensures all keys present)
+- ✅ `issueCount` field: Count of published scam reports per site (loaded via `loadRelationCountAndMap`)
+- ✅ Relationship with `ScamReport` entity for counting scam reports
 
 **Site Entity:**
-- Fields: `name`, `description`, `logoUrl`, `mainImageUrl`, `siteImageUrl`, `websiteUrl`, `status` (pending/verified/monitored/rejected), `categoryId`, `tierId`, `isActive`, `deletedAt`, `firstCharge` (%), `recharge` (%), `experience` (points)
-- Relationships: `category`, `tier`, `badges[]`, `domains[]`, `views[]`
+- Fields: `name`, `description`, `logoUrl`, `mainImageUrl`, `siteImageUrl`, `websiteUrl`, `status` (pending/verified/monitored/rejected), `categoryId`, `tierId`, `isActive`, `deletedAt`, `firstCharge` (%), `recharge` (%), `experience` (points), `issueCount` (computed, number of published scam reports)
+- Relationships: `category`, `tier`, `badges[]`, `domains[]`, `views[]`, `scamReports[]`
 - Ranking fields: `firstCharge` (decimal, percentage), `recharge` (decimal, percentage), `experience` (integer, experience points)
+- Computed properties: `issueCount` (loaded via `loadRelationCountAndMap`, counts published scam reports)
 
 **Site Domain Entity:**
 - Fields: `siteId`, `domain`, `isCurrent` (boolean)
@@ -882,5 +894,89 @@ const siteImageUrl = await this.uploadService.uploadSiteImage(
 - **Queue Processor**: `AttendanceStatisticsProcessor` - processes jobs in queue worker
 - **PM2 Configuration**: Separate process `poca-scheduler` in `ecosystem.config.js`
 - **Logging**: Logs to `logs/scheduler.log`, only error logs kept
+
+---
+
+### 27. Scam Report System
+
+**Location:** `src/modules/scam-report/`
+
+**User APIs (`/api/scam-reports`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/scam-reports` | Create scam report with images | ✅ |
+| `GET` | `/api/scam-reports` | List published scam reports (search by siteName) | ❌ |
+| `GET` | `/api/scam-reports/:id` | Get scam report details | ❌ |
+| `PUT` | `/api/scam-reports/:id` | Update own scam report | ✅ |
+| `DELETE` | `/api/scam-reports/:id` | Delete own scam report | ✅ |
+| `POST` | `/api/scam-reports/:id/react` | React to scam report (like/dislike) | ✅ |
+| `GET` | `/api/scam-reports/:id/comments` | List comments for scam report | ❌ |
+| `POST` | `/api/scam-reports/:id/comments` | Add comment to scam report | ✅ |
+| `DELETE` | `/api/scam-reports/comments/:commentId` | Soft delete own comment | ✅ |
+| `GET` | `/api/my-scam-reports` | List own scam reports (all statuses) | ✅ |
+
+**Admin APIs (`/admin/scam-reports`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/admin/scam-reports` | List all scam reports (cursor pagination) | ✅ |
+| `GET` | `/admin/scam-reports/:id` | Get scam report details | ✅ |
+| `POST` | `/admin/scam-reports/:id/approve` | Approve scam report (status: published) | ✅ |
+| `POST` | `/admin/scam-reports/:id/reject` | Reject scam report (status: rejected) | ✅ |
+
+**Features:**
+- ✅ Scam report CRUD with permission checks
+- ✅ Image uploads for scam reports (multiple images per report)
+- ✅ Image uploads for comments (multiple images per comment)
+- ✅ Status workflow: `pending` → `published` or `rejected` (one-way)
+- ✅ Public users can only view published reports
+- ✅ Owners can view/edit/delete own reports regardless of status
+- ✅ Reaction system (like/dislike) with unique constraint per user
+- ✅ Comment system with nested replies support
+- ✅ Top-level comments only by default (filter by `parentCommentId` for replies)
+- ✅ Soft delete for comments
+- ✅ Validation: Cannot retrieve replies if parent comment is soft-deleted
+- ✅ Cursor pagination for listing reports and comments
+- ✅ Search by site name (not siteId)
+- ✅ Reaction counts calculated via database subqueries (no N+1 queries)
+- ✅ `issueCount` field on sites: Count of published scam reports per site
+- ✅ Relationship between `Site` and `ScamReport` entities
+- ✅ `loadRelationCountAndMap` used to count scam reports efficiently
+- ✅ User comment tracking: Saves to `user_comments` table for future statistics
+
+**Scam Report Entity:**
+- Fields: `userId`, `siteId` (optional), `title`, `description`, `amount` (optional), `status` (pending/published/rejected), `adminId`, `reviewedAt`
+- Relationships: `user`, `site`, `admin`, `images[]`, `comments[]`, `reactions[]`
+- Status: `pending` (default), `published` (approved), `rejected`
+
+**Scam Report Image Entity:**
+- Fields: `scamReportId`, `imageUrl`, `order`
+- Multiple images per report
+
+**Scam Report Comment Entity:**
+- Fields: `scamReportId`, `userId`, `parentCommentId` (optional, for replies), `content`
+- Relationships: `scamReport`, `user`, `parentComment`, `replies[]`, `images[]`
+- Supports nested comments (replies to comments)
+
+**Scam Report Comment Image Entity:**
+- Fields: `commentId`, `imageUrl`, `order`
+- Multiple images per comment
+
+**Scam Report Reaction Entity:**
+- Fields: `scamReportId`, `userId`, `reactionType` (like/dislike)
+- Unique constraint: One reaction per user per report
+
+**User Comment Entity:**
+- Fields: `userId`, `commentType` (POST_COMMENT, SITE_REVIEW_COMMENT, SCAM_REPORT_COMMENT), `commentId`
+- Polymorphic association for tracking all user comments across different types
+- Used for future statistics
+
+**Integration with Site Module:**
+- `Site` entity has `OneToMany` relationship with `ScamReport`
+- `issueCount` computed property on `Site` entity (counts published scam reports)
+- `/api/sites/:id/scam-reports` endpoint to list published scam reports for a site
+- `issueCount` included in site list and detail APIs
+- Uses `loadRelationCountAndMap` for efficient counting (no N+1 queries)
 
 ---

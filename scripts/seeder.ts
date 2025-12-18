@@ -21,6 +21,12 @@ import { SiteDomain } from '../src/modules/site/domain/entities/site-domain.enti
 import { SiteView } from '../src/modules/site/domain/entities/site-view.entity';
 import { Tier } from '../src/modules/tier/domain/entities/tier.entity';
 import { UserHistorySite } from '../src/modules/user/domain/entities/user-history-site.entity';
+import { UserComment } from '../src/modules/user/domain/entities/user-comment.entity';
+import { ScamReport } from '../src/modules/scam-report/domain/entities/scam-report.entity';
+import { ScamReportImage } from '../src/modules/scam-report/domain/entities/scam-report-image.entity';
+import { ScamReportComment } from '../src/modules/scam-report/domain/entities/scam-report-comment.entity';
+import { ScamReportCommentImage } from '../src/modules/scam-report/domain/entities/scam-report-comment-image.entity';
+import { ScamReportReaction } from '../src/modules/scam-report/domain/entities/scam-report-reaction.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -80,6 +86,12 @@ function createDataSource(): DataSource {
       SiteView,
       Tier,
       UserHistorySite,
+      UserComment,
+      ScamReport,
+      ScamReportImage,
+      ScamReportComment,
+      ScamReportCommentImage,
+      ScamReportReaction,
     ],
     synchronize: false,
     logging: true,
