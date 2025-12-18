@@ -25,6 +25,8 @@ import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ConfigService } from '@nestjs/config';
 import { Site } from '../../../domain/entities/site.entity';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
+import { ListScamReportsUseCase } from '../../../../scam-report/application/handlers/list-scam-reports.use-case';
+import { ScamReportStatus } from '../../../../scam-report/domain/entities/scam-report.entity';
 
 @Controller('api/sites')
 export class UserSiteController {
@@ -34,6 +36,7 @@ export class UserSiteController {
     private readonly listSitesUseCase: ListSitesUseCase,
     private readonly getSiteUseCase: GetSiteUseCase,
     private readonly listCategoriesUseCase: ListCategoriesUseCase,
+    private readonly listScamReportsUseCase: ListScamReportsUseCase,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -73,6 +76,7 @@ export class UserSiteController {
       firstCharge: site.firstCharge ? Number(site.firstCharge) : null,
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
+      issueCount: site.issueCount || 0,
       badges: (site.siteBadges || []).map((sb) => ({
         id: sb.badge.id,
         name: sb.badge.name,
@@ -175,5 +179,60 @@ export class UserSiteController {
     });
 
     return ApiResponseUtil.success(this.mapSiteToResponse(site));
+  }
+
+  @Get(':id/scam-reports')
+  @HttpCode(HttpStatus.OK)
+  async listSiteScamReports(
+    @Param('id', new ParseUUIDPipe()) siteId: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ): Promise<ApiResponse<any>> {
+    const result = await this.listScamReportsUseCase.execute({
+      siteId,
+      status: ScamReportStatus.PUBLISHED,
+      cursor,
+      limit: limit ? parseInt(limit, 10) : 20,
+    });
+
+    // Map scam reports to response (reuse logic from scam-report controller)
+    const mapScamReportToResponse = (report: any) => {
+      // Use reaction counts from database (counted via subquery)
+      const reactions = {
+        like: report.likeCount || 0,
+        dislike: report.dislikeCount || 0,
+      };
+
+      return {
+        id: report.id,
+        siteId: report.siteId || null,
+        siteName: report.site?.name || null,
+        userId: report.userId,
+        userName: report.user?.displayName || null,
+        userEmail: report.user?.email || null,
+        title: report.title,
+        description: report.description,
+        amount: report.amount ? Number(report.amount) : null,
+        status: report.status,
+        images: (report.images || []).map((img: any) => ({
+          id: img.id,
+          imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl),
+          order: img.order,
+          createdAt: img.createdAt,
+        })),
+        reactions,
+        adminId: report.adminId || null,
+        adminName: report.admin?.displayName || null,
+        reviewedAt: report.reviewedAt || null,
+        createdAt: report.createdAt,
+        updatedAt: report.updatedAt,
+      };
+    };
+
+    return ApiResponseUtil.success({
+      data: result.data.map((report) => mapScamReportToResponse(report)),
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    });
   }
 }

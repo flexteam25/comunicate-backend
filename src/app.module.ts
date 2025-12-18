@@ -26,6 +26,7 @@ import { UserPermission } from './modules/user/domain/entities/user-permission.e
 import { UserBadge } from './modules/user/domain/entities/user-badge.entity';
 import { UserFavoriteSite } from './modules/user/domain/entities/user-favorite-site.entity';
 import { UserHistorySite } from './modules/user/domain/entities/user-history-site.entity';
+import { UserComment } from './modules/user/domain/entities/user-comment.entity';
 import { Admin } from './modules/admin/domain/entities/admin.entity';
 import { AdminToken } from './modules/admin/domain/entities/admin-token.entity';
 import { AdminRole } from './modules/admin/domain/entities/admin-role.entity';
@@ -45,6 +46,12 @@ import { AdvertisingContact } from './modules/support/domain/entities/advertisin
 import { Attendance } from './modules/attendance/domain/entities/attendance.entity';
 import { AttendanceStatistic } from './modules/attendance/domain/entities/attendance-statistic.entity';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { ScamReport } from './modules/scam-report/domain/entities/scam-report.entity';
+import { ScamReportImage } from './modules/scam-report/domain/entities/scam-report-image.entity';
+import { ScamReportComment } from './modules/scam-report/domain/entities/scam-report-comment.entity';
+import { ScamReportCommentImage } from './modules/scam-report/domain/entities/scam-report-comment-image.entity';
+import { ScamReportReaction } from './modules/scam-report/domain/entities/scam-report-reaction.entity';
+import { ScamReportModule } from './modules/scam-report/scam-report.module';
 
 @Module({
   imports: [
@@ -70,6 +77,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
         UserBadge,
         UserFavoriteSite,
         UserHistorySite,
+        UserComment,
         Admin,
         AdminToken,
         AdminRole,
@@ -88,6 +96,11 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
         AdvertisingContact,
         Attendance,
         AttendanceStatistic,
+        ScamReport,
+        ScamReportImage,
+        ScamReportComment,
+        ScamReportCommentImage,
+        ScamReportReaction,
       ],
       synchronize: false,
       logging: false,
@@ -105,6 +118,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
     TierModule,
     SupportModule,
     AttendanceModule,
+    ScamReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

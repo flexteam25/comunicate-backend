@@ -100,6 +100,7 @@ export class AdminSiteController {
       firstCharge: site.firstCharge ? Number(site.firstCharge) : null,
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
+      issueCount: site.issueCount || 0,
       badges: (site.siteBadges || []).map((sb) => ({
         id: sb.badge.id,
         name: sb.badge.name,

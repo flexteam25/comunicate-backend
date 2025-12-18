@@ -56,6 +56,7 @@ export class SiteResponse {
   firstCharge?: number;
   recharge?: number;
   experience: number;
+  issueCount: number;
   badges: BadgeResponse[];
   domains: SiteDomainResponse[];
   createdAt: Date;

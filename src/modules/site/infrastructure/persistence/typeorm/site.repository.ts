@@ -47,6 +47,16 @@ export class SiteRepository implements ISiteRepository {
     queryBuilder.leftJoinAndSelect("siteBadges.badge", "badge");
     queryBuilder.leftJoinAndSelect("site.siteDomains", "siteDomains");
 
+    queryBuilder.loadRelationCountAndMap(
+      'site.issueCount',
+      'site.scamReports',
+      'scamReport',
+      (qb) =>
+        qb
+          .where('scamReport.deletedAt IS NULL')
+          .andWhere("scamReport.status = 'published'"),
+    );
+
     // Apply filters
     if (filters?.categoryId) {
       queryBuilder.andWhere("site.categoryId = :categoryId", {
@@ -165,6 +175,7 @@ export class SiteRepository implements ISiteRepository {
 
     const sites = await queryBuilder.getMany();
 
+    // issueCount is automatically loaded by loadRelationCountAndMap
     // Check if there's more data
     const hasMore = sites.length > limit;
     const data = hasMore ? sites.slice(0, limit) : sites;

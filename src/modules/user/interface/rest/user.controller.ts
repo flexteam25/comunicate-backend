@@ -162,6 +162,7 @@ export class UserController {
       firstCharge: site.firstCharge ? Number(site.firstCharge) : undefined,
       recharge: site.recharge ? Number(site.recharge) : undefined,
       experience: site.experience,
+      issueCount: site.issueCount || 0,
     }));
 
     return ApiResponseUtil.success(mappedSites);
@@ -395,6 +396,7 @@ export class UserController {
       firstCharge: site.firstCharge ? Number(site.firstCharge) : undefined,
       recharge: site.recharge ? Number(site.recharge) : undefined,
       experience: site.experience,
+      issueCount: site.issueCount || 0,
     });
 
     const favoriteSites = result.favorite.map(mapSiteToResponse);

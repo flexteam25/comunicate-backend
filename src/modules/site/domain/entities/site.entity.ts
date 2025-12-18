@@ -4,6 +4,7 @@ import { SiteCategory } from './site-category.entity';
 import { Tier } from '../../../tier/domain/entities/tier.entity';
 import { SiteBadge } from './site-badge.entity';
 import { SiteDomain } from './site-domain.entity';
+import { ScamReport } from '../../../scam-report/domain/entities/scam-report.entity';
 
 export enum SiteStatus {
   UNVERIFIED = 'unverified',
@@ -72,4 +73,10 @@ export class Site extends BaseEntity {
 
   @OneToMany(() => SiteDomain, (siteDomain) => siteDomain.site)
   siteDomains: SiteDomain[];
+
+  @OneToMany(() => ScamReport, (scamReport) => scamReport.site)
+  scamReports: ScamReport[];
+
+  // Computed property loaded by loadRelationCountAndMap
+  issueCount?: number;
 }

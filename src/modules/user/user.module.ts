@@ -5,6 +5,7 @@ import { UserOldPassword } from './domain/entities/user-old-password.entity';
 import { UserBadge } from './domain/entities/user-badge.entity';
 import { UserFavoriteSite } from './domain/entities/user-favorite-site.entity';
 import { UserHistorySite } from './domain/entities/user-history-site.entity';
+import { UserComment } from './domain/entities/user-comment.entity';
 import { Badge } from '../badge/domain/entities/badge.entity';
 import { UserRepository } from './infrastructure/persistence/typeorm/user.repository';
 import { UserOldPasswordRepository } from './infrastructure/persistence/typeorm/user-old-password.repository';
@@ -33,6 +34,7 @@ import { SiteModule } from '../site/site.module';
       UserBadge,
       UserFavoriteSite,
       UserHistorySite,
+      UserComment,
       Badge,
     ]),
     UploadModule.register({ storageType: 'local' }),
