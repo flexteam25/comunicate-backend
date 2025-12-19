@@ -20,8 +20,7 @@ export class EmailModule {
         {
           provide: EMAIL_PROVIDER,
           useFactory: (configService: ConfigService): EmailProvider => {
-            const providerType =
-              configService.get<string>('EMAIL_PROVIDER') || 'smtp';
+            const providerType = configService.get<string>('EMAIL_PROVIDER') || 'smtp';
 
             switch (providerType.toLowerCase()) {
               case 'smtp':
@@ -37,4 +36,3 @@ export class EmailModule {
     };
   }
 }
-

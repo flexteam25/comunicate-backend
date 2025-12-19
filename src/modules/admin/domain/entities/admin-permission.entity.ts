@@ -23,7 +23,9 @@ export class AdminPermission {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @ManyToOne(() => Admin, (admin) => admin.adminPermissions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Admin, (admin) => admin.adminPermissions, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'admin_id' })
   admin: Admin;
 
@@ -31,4 +33,3 @@ export class AdminPermission {
   @JoinColumn({ name: 'permission_id' })
   permission: Permission;
 }
-

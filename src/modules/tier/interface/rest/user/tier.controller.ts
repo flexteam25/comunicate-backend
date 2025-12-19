@@ -14,4 +14,3 @@ export class UserTierController {
     return ApiResponseUtil.success(tiers);
   }
 }
-

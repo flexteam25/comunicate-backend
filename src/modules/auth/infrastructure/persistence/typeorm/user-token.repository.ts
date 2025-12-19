@@ -34,16 +34,10 @@ export class UserTokenRepository implements IUserTokenRepository {
   }
 
   async revokeToken(tokenId: string): Promise<void> {
-    await this.repository.update(
-      { tokenId },
-      { revokedAt: new Date() },
-    );
+    await this.repository.update({ tokenId }, { revokedAt: new Date() });
   }
 
   async revokeAllUserTokens(userId: string): Promise<void> {
-    await this.repository.update(
-      { userId, revokedAt: null },
-      { revokedAt: new Date() },
-    );
+    await this.repository.update({ userId, revokedAt: null }, { revokedAt: new Date() });
   }
 }

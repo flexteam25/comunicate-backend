@@ -23,4 +23,3 @@ export class DeleteSiteUseCase {
     await this.siteRepository.delete(command.siteId);
   }
 }
-

@@ -24,15 +24,16 @@ export class MarkFeedbackViewedUseCase {
       throw new NotFoundException('Feedback not found');
     }
 
-    return this.transactionService.executeInTransaction(async (manager: EntityManager) => {
-      const feedbackRepo = manager.getRepository(Feedback);
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const feedbackRepo = manager.getRepository(Feedback);
 
-      feedback.isViewed = true;
-      feedback.viewedByAdminId = command.adminId;
-      feedback.viewedAt = new Date();
+        feedback.isViewed = true;
+        feedback.viewedByAdminId = command.adminId;
+        feedback.viewedAt = new Date();
 
-      return feedbackRepo.save(feedback);
-    });
+        return feedbackRepo.save(feedback);
+      },
+    );
   }
 }
-

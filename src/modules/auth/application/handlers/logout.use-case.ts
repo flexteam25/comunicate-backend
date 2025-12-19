@@ -24,13 +24,14 @@ export class LogoutUseCase {
     }
 
     // Revoke the token in transaction
-    await this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      await entityManager.update(
-        UserToken,
-        { tokenId: command.tokenId },
-        { revokedAt: new Date() },
-      );
-    });
+    await this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        await entityManager.update(
+          UserToken,
+          { tokenId: command.tokenId },
+          { revokedAt: new Date() },
+        );
+      },
+    );
   }
 }
-

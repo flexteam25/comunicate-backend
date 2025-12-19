@@ -23,8 +23,16 @@ export class AuthUserSeeder {
       // Upsert roles
       const rolesData = [
         { name: 'user', description: 'Regular user role', type: RoleType.USER },
-        { name: 'site-owner', description: 'Site owner role', type: RoleType.USER },
-        { name: 'admin', description: 'Administrator role', type: RoleType.ADMIN },
+        {
+          name: 'site-owner',
+          description: 'Site owner role',
+          type: RoleType.USER,
+        },
+        {
+          name: 'admin',
+          description: 'Administrator role',
+          type: RoleType.ADMIN,
+        },
       ];
 
       const savedRoles = [];
@@ -62,14 +70,46 @@ export class AuthUserSeeder {
 
       // Upsert permissions - Admin permissions
       const adminPermissions = [
-        { name: 'users.create', description: 'Create users', type: PermissionType.ADMIN },
-        { name: 'users.read', description: 'Read users', type: PermissionType.ADMIN },
-        { name: 'users.update', description: 'Update users', type: PermissionType.ADMIN },
-        { name: 'users.delete', description: 'Delete users', type: PermissionType.ADMIN },
-        { name: 'sites.create', description: 'Create sites', type: PermissionType.ADMIN },
-        { name: 'sites.update', description: 'Update sites', type: PermissionType.ADMIN },
-        { name: 'sites.delete', description: 'Delete sites', type: PermissionType.ADMIN },
-        { name: 'sites.verify', description: 'Verify sites', type: PermissionType.ADMIN },
+        {
+          name: 'users.create',
+          description: 'Create users',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'users.read',
+          description: 'Read users',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'users.update',
+          description: 'Update users',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'users.delete',
+          description: 'Delete users',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'sites.create',
+          description: 'Create sites',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'sites.update',
+          description: 'Update sites',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'sites.delete',
+          description: 'Delete sites',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'sites.verify',
+          description: 'Verify sites',
+          type: PermissionType.ADMIN,
+        },
         {
           name: 'posts.moderate',
           description: 'Moderate posts',

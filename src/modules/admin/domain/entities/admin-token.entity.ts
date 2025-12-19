@@ -57,4 +57,3 @@ export class AdminToken {
     return !this.isExpired() && !this.isRevoked();
   }
 }
-

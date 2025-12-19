@@ -40,7 +40,9 @@ export class UpdateSiteReviewUseCase {
     const timeDiff = now.getTime() - createdAt.getTime();
 
     if (timeDiff > twoHoursInMs) {
-      throw new ForbiddenException('Review can only be updated within 2 hours of submission');
+      throw new ForbiddenException(
+        'Review can only be updated within 2 hours of submission',
+      );
     }
 
     // If review was published, set to unpublished (requires re-approval)

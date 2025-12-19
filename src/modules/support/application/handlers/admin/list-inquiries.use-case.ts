@@ -1,5 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { IInquiryRepository, InquiryFilters } from '../../../infrastructure/persistence/repositories/inquiry.repository';
+import {
+  IInquiryRepository,
+  InquiryFilters,
+} from '../../../infrastructure/persistence/repositories/inquiry.repository';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import { Inquiry } from '../../../domain/entities/inquiry.entity';
 
@@ -28,4 +31,3 @@ export class ListInquiriesUseCase {
     );
   }
 }
-

@@ -52,7 +52,8 @@ export class UserSupportController {
     private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
   ) {
-    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || 'http://localhost:3000';
+    this.apiServiceUrl =
+      this.configService.get<string>('API_SERVICE_URL') || 'http://localhost:3000';
   }
 
   @Get('inquiries')
@@ -88,11 +89,7 @@ export class UserSupportController {
 
   @Post('inquiries')
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
   async createInquiry(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateInquiryDto,
@@ -101,7 +98,7 @@ export class UserSupportController {
       images?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    let imageUrls: string[] = [];
+    const imageUrls: string[] = [];
 
     // Upload images if provided
     if (files?.images && files.images.length > 0) {
@@ -111,9 +108,13 @@ export class UserSupportController {
           throw new BadRequestException('Image file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid image file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
-        const uploadResult = await this.uploadService.uploadImage(file, { folder: 'support/inquiries' });
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'support/inquiries',
+        });
         imageUrls.push(uploadResult.relativePath);
       }
     }
@@ -138,11 +139,7 @@ export class UserSupportController {
 
   @Put('inquiries/:id')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
   async updateInquiry(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -163,9 +160,13 @@ export class UserSupportController {
           throw new BadRequestException('Image file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid image file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
-        const uploadResult = await this.uploadService.uploadImage(file, { folder: 'support/inquiries' });
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'support/inquiries',
+        });
         imageUrls.push(uploadResult.relativePath);
       }
     }
@@ -194,11 +195,7 @@ export class UserSupportController {
 
   @Post('feedbacks')
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
   async createFeedback(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateFeedbackDto,
@@ -207,7 +204,7 @@ export class UserSupportController {
       images?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    let imageUrls: string[] = [];
+    const imageUrls: string[] = [];
 
     // Upload images if provided
     if (files?.images && files.images.length > 0) {
@@ -217,9 +214,13 @@ export class UserSupportController {
           throw new BadRequestException('Image file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid image file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
-        const uploadResult = await this.uploadService.uploadImage(file, { folder: 'support/feedbacks' });
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'support/feedbacks',
+        });
         imageUrls.push(uploadResult.relativePath);
       }
     }
@@ -234,7 +235,8 @@ export class UserSupportController {
       {
         id: feedback.id,
         message: feedback.message,
-        images: feedback.images?.map((img) => buildFullUrl(this.apiServiceUrl, img)) || [],
+        images:
+          feedback.images?.map((img) => buildFullUrl(this.apiServiceUrl, img)) || [],
         isViewed: feedback.isViewed,
         createdAt: feedback.createdAt,
       },
@@ -244,11 +246,7 @@ export class UserSupportController {
 
   @Post('bug-reports')
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
   async createBugReport(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateBugReportDto,
@@ -257,7 +255,7 @@ export class UserSupportController {
       images?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    let imageUrls: string[] = [];
+    const imageUrls: string[] = [];
 
     // Upload images if provided
     if (files?.images && files.images.length > 0) {
@@ -267,9 +265,13 @@ export class UserSupportController {
           throw new BadRequestException('Image file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid image file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
-        const uploadResult = await this.uploadService.uploadImage(file, { folder: 'support/bug-reports' });
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'support/bug-reports',
+        });
         imageUrls.push(uploadResult.relativePath);
       }
     }
@@ -284,7 +286,8 @@ export class UserSupportController {
       {
         id: bugReport.id,
         message: bugReport.message,
-        images: bugReport.images?.map((img) => buildFullUrl(this.apiServiceUrl, img)) || [],
+        images:
+          bugReport.images?.map((img) => buildFullUrl(this.apiServiceUrl, img)) || [],
         isViewed: bugReport.isViewed,
         createdAt: bugReport.createdAt,
       },
@@ -294,11 +297,7 @@ export class UserSupportController {
 
   @Post('advertising-contacts')
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
   async createAdvertisingContact(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateAdvertisingContactDto,
@@ -307,7 +306,7 @@ export class UserSupportController {
       images?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    let imageUrls: string[] = [];
+    const imageUrls: string[] = [];
 
     // Upload images if provided
     if (files?.images && files.images.length > 0) {
@@ -317,9 +316,13 @@ export class UserSupportController {
           throw new BadRequestException('Image file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid image file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
-        const uploadResult = await this.uploadService.uploadImage(file, { folder: 'support/advertising-contacts' });
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'support/advertising-contacts',
+        });
         imageUrls.push(uploadResult.relativePath);
       }
     }
@@ -334,7 +337,10 @@ export class UserSupportController {
       {
         id: advertisingContact.id,
         message: advertisingContact.message,
-        images: advertisingContact.images?.map((img) => buildFullUrl(this.apiServiceUrl, img)) || [],
+        images:
+          advertisingContact.images?.map((img) =>
+            buildFullUrl(this.apiServiceUrl, img),
+          ) || [],
         isViewed: advertisingContact.isViewed,
         createdAt: advertisingContact.createdAt,
       },

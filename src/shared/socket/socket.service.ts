@@ -5,16 +5,14 @@ import { SocketGateway } from './socket.gateway';
 export class SocketService {
   private readonly logger = new Logger(SocketService.name);
 
-  constructor(
-    private readonly socketGateway: SocketGateway,
-  ) {}
+  constructor(private readonly socketGateway: SocketGateway) {}
 
   public broadcastToChannel(channel: string, event: string, data: any): void {
     // Check if socket gateway is available (might be null in queue worker context)
     if (!this.socketGateway || !this.socketGateway.server) {
       return;
     }
-    
+
     this.socketGateway.broadcastToChannel(channel, event, data);
   }
 
@@ -22,7 +20,7 @@ export class SocketService {
     if (!this.socketGateway || !this.socketGateway.server) {
       return;
     }
-    
+
     this.socketGateway.broadcastToUser(userId, event, data);
   }
 
@@ -30,7 +28,7 @@ export class SocketService {
     if (!this.socketGateway || !this.socketGateway.server) {
       return;
     }
-    
+
     this.socketGateway.broadcastToAll(event, data);
   }
 

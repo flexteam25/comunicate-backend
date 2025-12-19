@@ -37,7 +37,9 @@ export class ScamReportReaction {
   })
   reactionType: ReactionType;
 
-  @ManyToOne(() => ScamReport, (report) => report.reactions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ScamReport, (report) => report.reactions, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'scam_report_id' })
   scamReport: ScamReport;
 

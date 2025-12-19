@@ -1,4 +1,7 @@
-import { AdminOldPassword, AdminOldPasswordType } from '../../../../user/domain/entities/admin-old-password.entity';
+import {
+  AdminOldPassword,
+  AdminOldPasswordType,
+} from '../../../../user/domain/entities/admin-old-password.entity';
 
 export interface IAdminOldPasswordRepository {
   create(oldPassword: AdminOldPassword): Promise<AdminOldPassword>;
@@ -9,4 +12,3 @@ export interface IAdminOldPasswordRepository {
     limit?: number,
   ): Promise<AdminOldPassword[]>;
 }
-

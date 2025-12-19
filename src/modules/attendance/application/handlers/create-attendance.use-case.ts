@@ -1,4 +1,9 @@
-import { Inject, Injectable, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { IAttendanceRepository } from '../../infrastructure/persistence/repositories/attendance.repository';
 import { Attendance } from '../../domain/entities/attendance.entity';
 
@@ -25,7 +30,10 @@ export class CreateAttendanceUseCase {
     today.setUTCHours(0, 0, 0, 0);
 
     // Check if user already checked in today
-    const existing = await this.attendanceRepository.findByUserAndDate(command.userId, today);
+    const existing = await this.attendanceRepository.findByUserAndDate(
+      command.userId,
+      today,
+    );
     if (existing) {
       throw new ConflictException('Already checked in today');
     }

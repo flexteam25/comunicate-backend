@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsUUID, MaxLength, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsUUID,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateScamReportDto {
   @IsOptional()

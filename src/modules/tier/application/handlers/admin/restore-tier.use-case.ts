@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { ITierRepository } from '../../../infrastructure/persistence/repositories/tier.repository';
 
 export interface RestoreTierCommand {
@@ -27,4 +32,3 @@ export class RestoreTierUseCase {
     await this.tierRepository.restore(command.tierId);
   }
 }
-

@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
-export class AddDeletedAtToTiersCategories1765680000000
-  implements MigrationInterface
-{
+export class AddDeletedAtToTiersCategories1765680000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add deleted_at to tiers
     await queryRunner.addColumn(
@@ -30,4 +28,3 @@ export class AddDeletedAtToTiersCategories1765680000000
     await queryRunner.dropColumn('tiers', 'deleted_at');
   }
 }
-

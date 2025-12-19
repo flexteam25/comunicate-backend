@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
 export class CreateSiteSystemPart31765660000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -455,8 +461,14 @@ export class CreateSiteSystemPart31765660000000 implements MigrationInterface {
     // Drop indexes
     await queryRunner.dropIndex('site_applications', 'IDX_site_applications_category_id');
     await queryRunner.dropIndex('site_applications', 'IDX_site_applications_user_id');
-    await queryRunner.dropIndex('site_manager_applications', 'IDX_site_manager_applications_user_id');
-    await queryRunner.dropIndex('site_manager_applications', 'IDX_site_manager_applications_site_id');
+    await queryRunner.dropIndex(
+      'site_manager_applications',
+      'IDX_site_manager_applications_user_id',
+    );
+    await queryRunner.dropIndex(
+      'site_manager_applications',
+      'IDX_site_manager_applications_site_id',
+    );
     await queryRunner.dropIndex('site_event_views', 'IDX_site_event_views_event_id');
     await queryRunner.dropIndex('site_event_banners', 'IDX_site_event_banners_event_id');
     await queryRunner.dropIndex('site_events', 'IDX_site_events_site_id');
@@ -470,7 +482,9 @@ export class CreateSiteSystemPart31765660000000 implements MigrationInterface {
       }
     }
 
-    const siteManagerApplicationsTable = await queryRunner.getTable('site_manager_applications');
+    const siteManagerApplicationsTable = await queryRunner.getTable(
+      'site_manager_applications',
+    );
     if (siteManagerApplicationsTable) {
       const foreignKeys = siteManagerApplicationsTable.foreignKeys;
       for (const fk of foreignKeys) {
@@ -514,4 +528,3 @@ export class CreateSiteSystemPart31765660000000 implements MigrationInterface {
     await queryRunner.dropTable('site_events');
   }
 }
-

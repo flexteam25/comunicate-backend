@@ -1,14 +1,10 @@
-import {
-  Injectable,
-  ConflictException,
-  Inject,
-} from "@nestjs/common";
-import { EntityManager } from "typeorm";
-import { IUserRepository } from "../../../user/infrastructure/persistence/repositories/user.repository";
-import { PasswordService } from "../../../../shared/services/password.service";
-import { TransactionService } from "../../../../shared/services/transaction.service";
-import { User } from "../../../user/domain/entities/user.entity";
-import { UserProfile } from "src/modules/user/domain/entities/user-profile.entity";
+import { Injectable, ConflictException, Inject } from '@nestjs/common';
+import { EntityManager } from 'typeorm';
+import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
+import { PasswordService } from '../../../../shared/services/password.service';
+import { TransactionService } from '../../../../shared/services/transaction.service';
+import { User } from '../../../user/domain/entities/user.entity';
+import { UserProfile } from 'src/modules/user/domain/entities/user-profile.entity';
 
 export interface RegisterCommand {
   email: string;
@@ -26,7 +22,7 @@ export class RegisterUseCase {
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly passwordService: PasswordService,
-    private readonly transactionService: TransactionService
+    private readonly transactionService: TransactionService,
   ) {}
 
   async execute(command: RegisterCommand): Promise<User> {
@@ -37,13 +33,11 @@ export class RegisterUseCase {
           where: { email: command.email, deletedAt: null },
         });
         if (existingUser) {
-          throw new ConflictException("User with this email already exists");
+          throw new ConflictException('User with this email already exists');
         }
 
         // Hash password
-        const passwordHash = await this.passwordService.hashPassword(
-          command.password
-        );
+        const passwordHash = await this.passwordService.hashPassword(command.password);
 
         // Create user
         const user = new User();

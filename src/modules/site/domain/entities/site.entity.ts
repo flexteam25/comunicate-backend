@@ -23,16 +23,31 @@ export class Site extends BaseEntity {
   @Column({ name: 'logo_url', type: 'varchar', length: 500, nullable: true })
   logoUrl?: string;
 
-  @Column({ name: 'main_image_url', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'main_image_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   mainImageUrl?: string;
 
-  @Column({ name: 'site_image_url', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'site_image_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   siteImageUrl?: string;
 
   @Column({ name: 'tier_id', type: 'uuid', nullable: true })
   tierId?: string;
 
-  @Column({ name: 'permanent_url', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'permanent_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   permanentUrl?: string;
 
   @Column({
@@ -48,16 +63,41 @@ export class Site extends BaseEntity {
   @Column({ name: 'review_count', type: 'integer', default: 0 })
   reviewCount: number;
 
-  @Column({ name: 'average_rating', type: 'decimal', precision: 3, scale: 2, default: 0 })
+  @Column({
+    name: 'average_rating',
+    type: 'decimal',
+    precision: 3,
+    scale: 2,
+    default: 0,
+  })
   averageRating: number;
 
-  @Column({ name: 'first_charge', type: 'decimal', precision: 5, scale: 2, nullable: true, comment: 'First charge percentage (%)' })
+  @Column({
+    name: 'first_charge',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+    comment: 'First charge percentage (%)',
+  })
   firstCharge?: number;
 
-  @Column({ name: 'recharge', type: 'decimal', precision: 5, scale: 2, nullable: true, comment: 'Recharge percentage (%)' })
+  @Column({
+    name: 'recharge',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+    comment: 'Recharge percentage (%)',
+  })
   recharge?: number;
 
-  @Column({ name: 'experience', type: 'integer', default: 0, comment: 'Experience points' })
+  @Column({
+    name: 'experience',
+    type: 'integer',
+    default: 0,
+    comment: 'Experience points',
+  })
   experience: number;
 
   @ManyToOne(() => SiteCategory, (category) => category.sites)

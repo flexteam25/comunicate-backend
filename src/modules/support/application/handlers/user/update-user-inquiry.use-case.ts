@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { Inquiry, InquiryStatus } from '../../../domain/entities/inquiry.entity';
@@ -30,18 +35,20 @@ export class UpdateUserInquiryUseCase {
       throw new BadRequestException('Only pending inquiries can be updated');
     }
 
-    return this.transactionService.executeInTransaction(async (manager: EntityManager) => {
-      const inquiryRepo = manager.getRepository(Inquiry);
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const inquiryRepo = manager.getRepository(Inquiry);
 
-      if (typeof command.message === 'string') {
-        inquiry.message = command.message;
-      }
+        if (typeof command.message === 'string') {
+          inquiry.message = command.message;
+        }
 
-      if (typeof command.images !== 'undefined') {
-        inquiry.images = command.images;
-      }
+        if (typeof command.images !== 'undefined') {
+          inquiry.images = command.images;
+        }
 
-      return inquiryRepo.save(inquiry);
-    });
+        return inquiryRepo.save(inquiry);
+      },
+    );
   }
 }

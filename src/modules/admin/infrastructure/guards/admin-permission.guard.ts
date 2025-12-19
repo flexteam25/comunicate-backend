@@ -30,7 +30,9 @@ export class AdminPermissionGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<{ admin?: { adminId: string; isSuperAdmin: boolean } }>();
+    const request = context
+      .switchToHttp()
+      .getRequest<{ admin?: { adminId: string; isSuperAdmin: boolean } }>();
     const admin = request.admin;
 
     if (!admin) {
@@ -55,4 +57,3 @@ export class AdminPermissionGuard implements CanActivate {
     return true;
   }
 }
-

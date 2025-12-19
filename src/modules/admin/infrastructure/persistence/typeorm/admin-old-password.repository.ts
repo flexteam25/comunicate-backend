@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AdminOldPassword, AdminOldPasswordType } from '../../../../user/domain/entities/admin-old-password.entity';
+import {
+  AdminOldPassword,
+  AdminOldPasswordType,
+} from '../../../../user/domain/entities/admin-old-password.entity';
 import { IAdminOldPasswordRepository } from '../repositories/admin-old-password.repository';
 
 @Injectable()
@@ -47,4 +50,3 @@ export class AdminOldPasswordRepository implements IAdminOldPasswordRepository {
     return queryBuilder.getMany();
   }
 }
-

@@ -17,4 +17,3 @@ export class GetInquiryUseCase {
     return inquiry;
   }
 }
-

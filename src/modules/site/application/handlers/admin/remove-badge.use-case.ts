@@ -27,4 +27,3 @@ export class RemoveBadgeFromSiteUseCase {
     await this.siteBadgeRepository.removeBadge(command.siteId, command.badgeId);
   }
 }
-

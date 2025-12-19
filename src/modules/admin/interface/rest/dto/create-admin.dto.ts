@@ -1,4 +1,11 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsArray, IsUUID } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsOptional,
+  IsArray,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateAdminDto {
   @IsEmail()
@@ -17,4 +24,3 @@ export class CreateAdminDto {
   @IsUUID(undefined, { each: true })
   permissionIds?: string[];
 }
-

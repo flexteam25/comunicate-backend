@@ -26,20 +26,21 @@ export class ReplyInquiryUseCase {
       throw new NotFoundException('Inquiry not found');
     }
 
-    return this.transactionService.executeInTransaction(async (manager: EntityManager) => {
-      const inquiryRepo = manager.getRepository(Inquiry);
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const inquiryRepo = manager.getRepository(Inquiry);
 
-      inquiry.adminId = command.adminId;
-      inquiry.adminReply = command.reply;
-      inquiry.repliedAt = new Date();
-      if (command.status) {
-        inquiry.status = command.status;
-      } else if (inquiry.status === InquiryStatus.PENDING) {
-        inquiry.status = InquiryStatus.PROCESSING;
-      }
+        inquiry.adminId = command.adminId;
+        inquiry.adminReply = command.reply;
+        inquiry.repliedAt = new Date();
+        if (command.status) {
+          inquiry.status = command.status;
+        } else if (inquiry.status === InquiryStatus.PENDING) {
+          inquiry.status = InquiryStatus.PROCESSING;
+        }
 
-      return inquiryRepo.save(inquiry);
-    });
+        return inquiryRepo.save(inquiry);
+      },
+    );
   }
 }
-

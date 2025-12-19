@@ -7,4 +7,3 @@ export interface IAdminRepository {
   update(admin: Admin): Promise<Admin>;
   save(admin: Admin): Promise<Admin>;
 }
-

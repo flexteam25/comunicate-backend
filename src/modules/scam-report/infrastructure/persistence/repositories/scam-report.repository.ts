@@ -1,4 +1,7 @@
-import { ScamReport, ScamReportStatus } from '../../../domain/entities/scam-report.entity';
+import {
+  ScamReport,
+  ScamReportStatus,
+} from '../../../domain/entities/scam-report.entity';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 export interface IScamReportRepository {

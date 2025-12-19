@@ -58,4 +58,3 @@ export class AdminPermissionRepository implements IAdminPermissionRepository {
     return !!adminPermission;
   }
 }
-

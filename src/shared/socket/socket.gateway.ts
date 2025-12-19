@@ -35,10 +35,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
-    
+
     // Join public channel by default
     await client.join(SocketChannel.PUBLIC);
-    
+
     // Send welcome message
     client.emit('connected', {
       message: 'Connected to socket server',
@@ -54,7 +54,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('join-channel')
   async handleJoinChannel(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { channel: string; token?: string }
+    @MessageBody() data: { channel: string; token?: string },
   ) {
     const { channel, token } = data;
 
@@ -68,7 +68,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // For private channels, require authentication
       if (channel === SocketChannel.PRIVATE || channel === SocketChannel.NOTIFICATIONS) {
         if (!token) {
-          client.emit('error', { message: 'Authentication required for private channel' });
+          client.emit('error', {
+            message: 'Authentication required for private channel',
+          });
           return;
         }
 
@@ -85,8 +87,11 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       await client.join(channel);
-      client.emit('joined-channel', { channel, timestamp: new Date().toISOString() });
-      
+      client.emit('joined-channel', {
+        channel,
+        timestamp: new Date().toISOString(),
+      });
+
       this.logger.log(`Client ${client.id} joined channel ${channel}`);
     } catch (error) {
       this.logger.error(`Error joining channel: ${error.message}`);
@@ -97,12 +102,15 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('leave-channel')
   async handleLeaveChannel(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { channel: string }
+    @MessageBody() data: { channel: string },
   ) {
     const { channel } = data;
     await client.leave(channel);
-    client.emit('left-channel', { channel, timestamp: new Date().toISOString() });
-    
+    client.emit('left-channel', {
+      channel,
+      timestamp: new Date().toISOString(),
+    });
+
     this.logger.log(`Client ${client.id} left channel ${channel}`);
   }
 

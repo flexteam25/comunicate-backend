@@ -132,7 +132,9 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     }
 
     if (filters?.rating) {
-      queryBuilder.andWhere('review.rating = :rating', { rating: filters.rating });
+      queryBuilder.andWhere('review.rating = :rating', {
+        rating: filters.rating,
+      });
     }
 
     if (filters?.search) {
@@ -254,11 +256,15 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       .where('review.deletedAt IS NULL');
 
     if (filters?.siteId) {
-      queryBuilder.andWhere('review.siteId = :siteId', { siteId: filters.siteId });
+      queryBuilder.andWhere('review.siteId = :siteId', {
+        siteId: filters.siteId,
+      });
     }
 
     if (filters?.userId) {
-      queryBuilder.andWhere('review.userId = :userId', { userId: filters.userId });
+      queryBuilder.andWhere('review.userId = :userId', {
+        userId: filters.userId,
+      });
     }
 
     if (filters?.isPublished !== undefined) {
@@ -268,7 +274,9 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     }
 
     if (filters?.rating) {
-      queryBuilder.andWhere('review.rating = :rating', { rating: filters.rating });
+      queryBuilder.andWhere('review.rating = :rating', {
+        rating: filters.rating,
+      });
     }
 
     if (filters?.search) {

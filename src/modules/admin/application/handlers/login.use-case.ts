@@ -56,34 +56,37 @@ export class LoginUseCase {
     const tokens = this.jwtService.generateTokenPair(admin.id, admin.email);
 
     // Hash refresh token for storage (outside transaction)
-    const refreshTokenHash = await this.passwordService.hashRefreshToken(tokens.refreshToken);
+    const refreshTokenHash = await this.passwordService.hashRefreshToken(
+      tokens.refreshToken,
+    );
 
     // Calculate expiration (7 days from now)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     // Execute database operations in transaction
-    return this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      // Create token record
-      const adminToken = new AdminToken();
-      adminToken.adminId = admin.id;
-      adminToken.tokenId = tokens.tokenId;
-      adminToken.refreshTokenHash = refreshTokenHash;
-      adminToken.deviceInfo = command.deviceInfo || null;
-      adminToken.ipAddress = command.ipAddress || null;
-      adminToken.expiresAt = expiresAt;
+    return this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        // Create token record
+        const adminToken = new AdminToken();
+        adminToken.adminId = admin.id;
+        adminToken.tokenId = tokens.tokenId;
+        adminToken.refreshTokenHash = refreshTokenHash;
+        adminToken.deviceInfo = command.deviceInfo || null;
+        adminToken.ipAddress = command.ipAddress || null;
+        adminToken.expiresAt = expiresAt;
 
-      await entityManager.save(AdminToken, adminToken);
+        await entityManager.save(AdminToken, adminToken);
 
-      // Update last login
-      admin.lastLoginAt = new Date();
-      await entityManager.save(Admin, admin);
+        // Update last login
+        admin.lastLoginAt = new Date();
+        await entityManager.save(Admin, admin);
 
-      return {
-        admin,
-        tokens,
-      };
-    });
+        return {
+          admin,
+          tokens,
+        };
+      },
+    );
   }
 }
-

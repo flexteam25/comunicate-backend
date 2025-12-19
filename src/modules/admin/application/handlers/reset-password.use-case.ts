@@ -12,7 +12,10 @@ import { RedisService } from '../../../../shared/redis/redis.service';
 import { PasswordService } from '../../../../shared/services/password.service';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { Admin } from '../../domain/entities/admin.entity';
-import { AdminOldPassword, AdminOldPasswordType } from '../../../user/domain/entities/admin-old-password.entity';
+import {
+  AdminOldPassword,
+  AdminOldPasswordType,
+} from '../../../user/domain/entities/admin-old-password.entity';
 import { AdminToken } from '../../domain/entities/admin-token.entity';
 
 export interface ResetPasswordCommand {
@@ -71,32 +74,35 @@ export class ResetPasswordUseCase {
     const allTokens = await this.adminTokenRepository.findByAdminId(admin.id);
 
     // Execute database operations in transaction
-    await this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      // Save old password with type 'forgot'
-      const oldPassword = new AdminOldPassword();
-      oldPassword.adminId = admin.id;
-      oldPassword.passwordHash = admin.passwordHash;
-      oldPassword.type = AdminOldPasswordType.FORGOT;
-      await entityManager.save(AdminOldPassword, oldPassword);
+    await this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        // Save old password with type 'forgot'
+        const oldPassword = new AdminOldPassword();
+        oldPassword.adminId = admin.id;
+        oldPassword.passwordHash = admin.passwordHash;
+        oldPassword.type = AdminOldPasswordType.FORGOT;
+        await entityManager.save(AdminOldPassword, oldPassword);
 
-      // Update admin password
-      admin.passwordHash = newPasswordHash;
-      await entityManager.save(Admin, admin);
+        // Update admin password
+        admin.passwordHash = newPasswordHash;
+        await entityManager.save(Admin, admin);
 
-      // Revoke all admin tokens
-      for (const token of allTokens) {
-        await entityManager.update(
-          AdminToken,
-          { tokenId: token.tokenId },
-          { revokedAt: new Date() },
-        );
-      }
-    });
+        // Revoke all admin tokens
+        for (const token of allTokens) {
+          await entityManager.update(
+            AdminToken,
+            { tokenId: token.tokenId },
+            { revokedAt: new Date() },
+          );
+        }
+      },
+    );
 
     // Delete OTP from Redis after successful password reset
     await this.redisService.delete(redisKey);
 
-    return { message: 'Password reset successfully. Please login with your new password.' };
+    return {
+      message: 'Password reset successfully. Please login with your new password.',
+    };
   }
 }
-

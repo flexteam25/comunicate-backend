@@ -19,18 +19,19 @@ export class CreateFeedbackUseCase {
   ) {}
 
   async execute(command: CreateFeedbackCommand): Promise<Feedback> {
-    return this.transactionService.executeInTransaction(async (manager: EntityManager) => {
-      const feedbackRepo = manager.getRepository(Feedback);
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const feedbackRepo = manager.getRepository(Feedback);
 
-      const feedback = feedbackRepo.create({
-        userId: command.userId,
-        message: command.message,
-        images: command.images || [],
-        isViewed: false,
-      });
+        const feedback = feedbackRepo.create({
+          userId: command.userId,
+          message: command.message,
+          images: command.images || [],
+          isViewed: false,
+        });
 
-      return feedbackRepo.save(feedback);
-    });
+        return feedbackRepo.save(feedback);
+      },
+    );
   }
 }
-

@@ -22,4 +22,3 @@ export class Tier extends BaseEntity {
   @OneToMany(() => Site, (site) => site.tier)
   sites: Site[];
 }
-

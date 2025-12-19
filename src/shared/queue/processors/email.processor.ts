@@ -29,13 +29,17 @@ export class EmailProcessor extends WorkerHost {
       const result = await this.emailService.sendEmailWithBoth(to, subject, text, html);
 
       if (!result.success) {
-        this.logger.error('Email job failed', {
-          jobId: job.id,
-          to,
-          subject,
-          type,
-          error: result.error,
-        }, 'email-queue');
+        this.logger.error(
+          'Email job failed',
+          {
+            jobId: job.id,
+            to,
+            subject,
+            type,
+            error: result.error,
+          },
+          'email-queue',
+        );
         throw new Error(result.error || 'Email sending failed');
       }
 
@@ -47,15 +51,18 @@ export class EmailProcessor extends WorkerHost {
         processedAt: new Date().toISOString(),
       };
     } catch (error) {
-      this.logger.error('Email processor error', {
-        jobId: job.id,
-        to,
-        subject,
-        type,
-        error: (error as Error).message,
-      }, 'email-queue');
+      this.logger.error(
+        'Email processor error',
+        {
+          jobId: job.id,
+          to,
+          subject,
+          type,
+          error: (error as Error).message,
+        },
+        'email-queue',
+      );
       throw error;
     }
   }
 }
-

@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
 import { IScamReportCommentRepository } from '../../infrastructure/persistence/repositories/scam-report-comment.repository';
@@ -23,7 +29,9 @@ export class ListScamReportCommentsUseCase {
     private readonly scamReportCommentRepository: IScamReportCommentRepository,
   ) {}
 
-  async execute(command: ListScamReportCommentsCommand): Promise<CursorPaginationResult<ScamReportComment>> {
+  async execute(
+    command: ListScamReportCommentsCommand,
+  ): Promise<CursorPaginationResult<ScamReportComment>> {
     // Check if report exists and user has permission to view
     const report = await this.scamReportRepository.findById(command.reportId);
 
@@ -41,13 +49,17 @@ export class ListScamReportCommentsUseCase {
 
     // If requesting replies to a specific comment, verify the parent comment exists and is not deleted
     if (command.parentCommentId) {
-      const parentComment = await this.scamReportCommentRepository.findById(command.parentCommentId);
+      const parentComment = await this.scamReportCommentRepository.findById(
+        command.parentCommentId,
+      );
       if (!parentComment) {
         throw new NotFoundException('Parent comment not found or has been deleted');
       }
       // Verify parent comment belongs to the same report
       if (parentComment.scamReportId !== command.reportId) {
-        throw new BadRequestException('Parent comment does not belong to this scam report');
+        throw new BadRequestException(
+          'Parent comment does not belong to this scam report',
+        );
       }
     }
 

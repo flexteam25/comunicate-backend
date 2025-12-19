@@ -1,4 +1,12 @@
-import { IsString, IsUUID, IsOptional, MaxLength, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsOptional,
+  MaxLength,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateSiteDto {

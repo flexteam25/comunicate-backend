@@ -2,8 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Feedback } from '../../../domain/entities/feedback.entity';
-import { IFeedbackRepository, FeedbackFilters } from '../repositories/feedback.repository';
-import { CursorPaginationResult, CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
+import {
+  IFeedbackRepository,
+  FeedbackFilters,
+} from '../repositories/feedback.repository';
+import {
+  CursorPaginationResult,
+  CursorPaginationUtil,
+} from '../../../../../shared/utils/cursor-pagination.util';
 
 @Injectable()
 export class FeedbackRepository implements IFeedbackRepository {
@@ -34,10 +40,14 @@ export class FeedbackRepository implements IFeedbackRepository {
 
     // Apply filters
     if (filters?.userId) {
-      queryBuilder.andWhere('feedback.userId = :userId', { userId: filters.userId });
+      queryBuilder.andWhere('feedback.userId = :userId', {
+        userId: filters.userId,
+      });
     }
     if (filters?.isViewed !== undefined) {
-      queryBuilder.andWhere('feedback.isViewed = :isViewed', { isViewed: filters.isViewed });
+      queryBuilder.andWhere('feedback.isViewed = :isViewed', {
+        isViewed: filters.isViewed,
+      });
     }
 
     // Apply cursor pagination

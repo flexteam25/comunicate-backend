@@ -18,9 +18,7 @@ export class CorsTrustMiddleware implements NestMiddleware {
 
   // Allowed origins from environment (game frontend domains)
   // Format: comma-separated list of origins (e.g., "https://game-frontend.com,https://www.game-frontend.com")
-  private readonly allowedOrigins: string[] = (
-    process.env.CORS_ALLOWED_ORIGINS || ''
-  )
+  private readonly allowedOrigins: string[] = (process.env.CORS_ALLOWED_ORIGINS || '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);

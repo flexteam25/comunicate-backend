@@ -60,7 +60,10 @@ export class AdminCategoryController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateCategoryDto,
   ): Promise<ApiResponse<SiteCategory>> {
-    const category = await this.updateCategoryUseCase.execute({ categoryId: id, ...dto });
+    const category = await this.updateCategoryUseCase.execute({
+      categoryId: id,
+      ...dto,
+    });
     return ApiResponseUtil.success(category, 'Category updated successfully');
   }
 
@@ -71,7 +74,9 @@ export class AdminCategoryController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteCategoryUseCase.execute({ categoryId: id });
-    return ApiResponseUtil.success({ message: 'Category deleted successfully' });
+    return ApiResponseUtil.success({
+      message: 'Category deleted successfully',
+    });
   }
 
   @Put('/restore/:id')
@@ -81,6 +86,8 @@ export class AdminCategoryController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.restoreCategoryUseCase.execute({ categoryId: id });
-    return ApiResponseUtil.success({ message: 'Category restored successfully' });
+    return ApiResponseUtil.success({
+      message: 'Category restored successfully',
+    });
   }
 }

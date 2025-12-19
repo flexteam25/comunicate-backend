@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Inquiry, InquiryStatus } from '../../../domain/entities/inquiry.entity';
 import { IInquiryRepository, InquiryFilters } from '../repositories/inquiry.repository';
-import { CursorPaginationResult, CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
+import {
+  CursorPaginationResult,
+  CursorPaginationUtil,
+} from '../../../../../shared/utils/cursor-pagination.util';
 
 @Injectable()
 export class InquiryRepository implements IInquiryRepository {
@@ -34,13 +37,19 @@ export class InquiryRepository implements IInquiryRepository {
 
     // Apply filters
     if (filters?.userId) {
-      queryBuilder.andWhere('inquiry.userId = :userId', { userId: filters.userId });
+      queryBuilder.andWhere('inquiry.userId = :userId', {
+        userId: filters.userId,
+      });
     }
     if (filters?.status) {
-      queryBuilder.andWhere('inquiry.status = :status', { status: filters.status });
+      queryBuilder.andWhere('inquiry.status = :status', {
+        status: filters.status,
+      });
     }
     if (filters?.adminId) {
-      queryBuilder.andWhere('inquiry.adminId = :adminId', { adminId: filters.adminId });
+      queryBuilder.andWhere('inquiry.adminId = :adminId', {
+        adminId: filters.adminId,
+      });
     }
 
     // Apply cursor pagination

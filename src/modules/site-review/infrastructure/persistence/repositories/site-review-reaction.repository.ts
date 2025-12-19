@@ -1,4 +1,7 @@
-import { SiteReviewReaction, ReactionType } from '../../../domain/entities/site-review-reaction.entity';
+import {
+  SiteReviewReaction,
+  ReactionType,
+} from '../../../domain/entities/site-review-reaction.entity';
 
 export interface ISiteReviewReactionRepository {
   findByReviewIdAndUserId(

@@ -16,4 +16,3 @@ export class SiteViewRepository implements ISiteViewRepository {
     return this.repository.save(entity);
   }
 }
-

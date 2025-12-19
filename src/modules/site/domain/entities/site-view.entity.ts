@@ -1,4 +1,11 @@
-import { Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from 'typeorm';
 import { Site } from './site.entity';
 
 @Entity('site_views')
@@ -22,4 +29,3 @@ export class SiteView {
   @JoinColumn({ name: 'site_id' })
   site: Site;
 }
-

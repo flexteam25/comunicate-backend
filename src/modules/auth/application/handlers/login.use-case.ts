@@ -55,33 +55,37 @@ export class LoginUseCase {
     const tokens = this.jwtService.generateTokenPair(user.id, user.email);
 
     // Hash refresh token for storage (outside transaction)
-    const refreshTokenHash = await this.passwordService.hashRefreshToken(tokens.refreshToken);
+    const refreshTokenHash = await this.passwordService.hashRefreshToken(
+      tokens.refreshToken,
+    );
 
     // Calculate expiration (7 days from now)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     // Execute database operations in transaction
-    return this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      // Create token record
-      const userToken = new UserToken();
-      userToken.userId = user.id;
-      userToken.tokenId = tokens.tokenId;
-      userToken.refreshTokenHash = refreshTokenHash;
-      userToken.deviceInfo = command.deviceInfo || null;
-      userToken.ipAddress = command.ipAddress || null;
-      userToken.expiresAt = expiresAt;
+    return this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        // Create token record
+        const userToken = new UserToken();
+        userToken.userId = user.id;
+        userToken.tokenId = tokens.tokenId;
+        userToken.refreshTokenHash = refreshTokenHash;
+        userToken.deviceInfo = command.deviceInfo || null;
+        userToken.ipAddress = command.ipAddress || null;
+        userToken.expiresAt = expiresAt;
 
-      await entityManager.save(UserToken, userToken);
+        await entityManager.save(UserToken, userToken);
 
-      // Update last login
-      user.lastLoginAt = new Date();
-      await entityManager.save(User, user);
+        // Update last login
+        user.lastLoginAt = new Date();
+        await entityManager.save(User, user);
 
-      return {
-        user,
-        tokens,
-      };
-    });
+        return {
+          user,
+          tokens,
+        };
+      },
+    );
   }
 }

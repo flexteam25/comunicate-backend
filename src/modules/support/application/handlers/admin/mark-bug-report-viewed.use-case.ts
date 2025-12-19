@@ -14,14 +14,12 @@ export class MarkBugReportViewedUseCase {
   constructor(
     @Inject('IBugReportRepository')
     private readonly bugReportRepository: IBugReportRepository,
-    private readonly transactionService: TransactionService
+    private readonly transactionService: TransactionService,
   ) {}
 
   async execute(command: MarkBugReportViewedCommand): Promise<BugReport> {
     // Check if bug report exists
-    const bugReport = await this.bugReportRepository.findById(
-      command.bugReportId
-    );
+    const bugReport = await this.bugReportRepository.findById(command.bugReportId);
     if (!bugReport) {
       throw new NotFoundException('Bug report not found');
     }

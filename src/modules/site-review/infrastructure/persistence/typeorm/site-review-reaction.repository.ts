@@ -25,7 +25,10 @@ export class SiteReviewReactionRepository implements ISiteReviewReactionReposito
     return this.repository.save(entity);
   }
 
-  async update(id: string, data: Partial<SiteReviewReaction>): Promise<SiteReviewReaction> {
+  async update(
+    id: string,
+    data: Partial<SiteReviewReaction>,
+  ): Promise<SiteReviewReaction> {
     await this.repository.update(id, data);
     const updated = await this.repository.findOne({ where: { id } });
     if (!updated) {

@@ -46,7 +46,10 @@ export class GetActivityUseCase {
       .filter((site): site is Site => site !== undefined);
 
     // Get 20 recent history sites
-    const recentHistory = await this.historyRepository.findRecentHistory(command.userId, 20);
+    const recentHistory = await this.historyRepository.findRecentHistory(
+      command.userId,
+      20,
+    );
     const recentSiteIds = recentHistory.map((item) => item.siteId);
     const recentSites = await this.siteRepository.findByIds(recentSiteIds);
 

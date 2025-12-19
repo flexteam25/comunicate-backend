@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { SiteDomain } from '../../../domain/entities/site-domain.entity';
@@ -18,9 +14,7 @@ export interface UpdateSiteDomainCommand {
 
 @Injectable()
 export class UpdateSiteDomainUseCase {
-  constructor(
-    private readonly transactionService: TransactionService,
-  ) {}
+  constructor(private readonly transactionService: TransactionService) {}
 
   async execute(command: UpdateSiteDomainCommand): Promise<SiteDomain> {
     return this.transactionService.executeInTransaction(
@@ -46,7 +40,10 @@ export class UpdateSiteDomainUseCase {
         }
 
         // Domain change uniqueness
-        if (command.domain && command.domain.trim().toLowerCase() !== domainEntity.domain) {
+        if (
+          command.domain &&
+          command.domain.trim().toLowerCase() !== domainEntity.domain
+        ) {
           const normalized = command.domain.trim().toLowerCase();
           const existingDomain = await domainRepo.findOne({
             where: { domain: normalized },

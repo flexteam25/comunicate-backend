@@ -5,4 +5,3 @@ export class RequestOtpDto {
   @IsNotEmpty({ message: 'Email is required' })
   email: string;
 }
-

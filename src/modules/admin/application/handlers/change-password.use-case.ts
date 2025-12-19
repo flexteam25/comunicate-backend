@@ -11,7 +11,10 @@ import { IAdminOldPasswordRepository } from '../../infrastructure/persistence/re
 import { PasswordService } from '../../../../shared/services/password.service';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { Admin } from '../../domain/entities/admin.entity';
-import { AdminOldPassword, AdminOldPasswordType } from '../../../user/domain/entities/admin-old-password.entity';
+import {
+  AdminOldPassword,
+  AdminOldPasswordType,
+} from '../../../user/domain/entities/admin-old-password.entity';
 import { AdminToken } from '../../domain/entities/admin-token.entity';
 
 export interface ChangePasswordCommand {
@@ -67,34 +70,35 @@ export class ChangePasswordUseCase {
     }
 
     // Execute database operations in transaction
-    return this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      // Save old password before changing
-      const oldPassword = new AdminOldPassword();
-      oldPassword.adminId = admin.id;
-      oldPassword.passwordHash = admin.passwordHash;
-      oldPassword.type = AdminOldPasswordType.CHANGE;
-      await entityManager.save(AdminOldPassword, oldPassword);
+    return this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        // Save old password before changing
+        const oldPassword = new AdminOldPassword();
+        oldPassword.adminId = admin.id;
+        oldPassword.passwordHash = admin.passwordHash;
+        oldPassword.type = AdminOldPasswordType.CHANGE;
+        await entityManager.save(AdminOldPassword, oldPassword);
 
-      // Update admin password
-      admin.passwordHash = newPasswordHash;
-      const updatedAdmin = await entityManager.save(Admin, admin);
+        // Update admin password
+        admin.passwordHash = newPasswordHash;
+        const updatedAdmin = await entityManager.save(Admin, admin);
 
-      // If logoutAll is true, revoke all other tokens except the current one
-      if (command.logoutAll) {
-        for (const token of allTokens) {
-          // Skip the current token
-          if (token.tokenId !== command.tokenId) {
-            await entityManager.update(
-              AdminToken,
-              { tokenId: token.tokenId },
-              { revokedAt: new Date() },
-            );
+        // If logoutAll is true, revoke all other tokens except the current one
+        if (command.logoutAll) {
+          for (const token of allTokens) {
+            // Skip the current token
+            if (token.tokenId !== command.tokenId) {
+              await entityManager.update(
+                AdminToken,
+                { tokenId: token.tokenId },
+                { revokedAt: new Date() },
+              );
+            }
           }
         }
-      }
 
-      return updatedAdmin;
-    });
+        return updatedAdmin;
+      },
+    );
   }
 }
-

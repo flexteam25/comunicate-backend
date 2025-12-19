@@ -13,7 +13,10 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
     private readonly dataSource: DataSource,
   ) {}
 
-  async findByUserAndDate(userId: string, date: Date): Promise<AttendanceStatistic | null> {
+  async findByUserAndDate(
+    userId: string,
+    date: Date,
+  ): Promise<AttendanceStatistic | null> {
     return this.repository.findOne({
       where: {
         userId,
@@ -22,7 +25,10 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
     });
   }
 
-  async findByUserIdsAndDate(userIds: string[], date: Date): Promise<AttendanceStatistic[]> {
+  async findByUserIdsAndDate(
+    userIds: string[],
+    date: Date,
+  ): Promise<AttendanceStatistic[]> {
     if (userIds.length === 0) {
       return [];
     }
@@ -34,7 +40,9 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
     });
   }
 
-  async createOrUpdate(statistic: Partial<AttendanceStatistic>): Promise<AttendanceStatistic> {
+  async createOrUpdate(
+    statistic: Partial<AttendanceStatistic>,
+  ): Promise<AttendanceStatistic> {
     if (!statistic.userId || !statistic.statisticDate) {
       throw new Error('userId and statisticDate are required');
     }
@@ -54,7 +62,9 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
         attendanceRank: statistic.attendanceRank,
         dailyMessage: statistic.dailyMessage,
       });
-      return this.repository.findOne({ where: { id: existing.id } }) as Promise<AttendanceStatistic>;
+      return this.repository.findOne({
+        where: { id: existing.id },
+      });
     } else {
       const entity = this.repository.create(statistic);
       return this.repository.save(entity);
@@ -104,7 +114,11 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
           } else if (sortBy === 'total') {
             queryBuilder.andWhere(
               '(stat.totalAttendanceDays < :sortNum OR (stat.totalAttendanceDays = :sortNum AND stat.currentStreak < :sortStreak OR (stat.totalAttendanceDays = :sortNum AND stat.currentStreak = :sortStreak AND stat.id > :cursorId)))',
-              { sortNum, sortStreak: parseFloat(sortValue.split(',')[1] || '0'), cursorId: id },
+              {
+                sortNum,
+                sortStreak: parseFloat(sortValue.split(',')[1] || '0'),
+                cursorId: id,
+              },
             );
           }
         } else {

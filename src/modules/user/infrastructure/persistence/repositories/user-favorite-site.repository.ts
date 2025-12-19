@@ -20,5 +20,3 @@ export interface IUserFavoriteSiteRepository {
     hasMore: boolean;
   }>;
 }
-
-

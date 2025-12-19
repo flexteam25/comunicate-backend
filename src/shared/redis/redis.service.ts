@@ -31,7 +31,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       url: `redis://${config.password ? `:${config.password}@` : ''}${config.host}:${config.port}/${config.db}`,
     });
 
-    this.client.on('error', (err) => this.logger.error('Redis client error', { error: err.message }, 'redis'));
+    this.client.on('error', (err) =>
+      this.logger.error('Redis client error', { error: err.message }, 'redis'),
+    );
 
     await this.client.connect();
   }
@@ -44,15 +46,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   // Session Management
   async setSession(sessionId: string, data: any, ttl: number = 3600): Promise<void> {
-    await this.client.set(
-      `session:${sessionId}`,
-      JSON.stringify(data),
-      { EX: ttl }
-    );
+    await this.client.set(`session:${sessionId}`, JSON.stringify(data), {
+      EX: ttl,
+    });
   }
 
   async getSession(sessionId: string): Promise<any> {
-    const data = await this.client.get(`session:${sessionId}`) as string;
+    const data = (await this.client.get(`session:${sessionId}`)) as string;
     return data ? JSON.parse(data) : null;
   }
 
@@ -71,15 +71,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   // Game Data Caching
   async cacheGameData(gameId: string, data: any, ttl: number = 1800): Promise<void> {
-    await this.client.set(
-      `game:${gameId}`,
-      JSON.stringify(data),
-      { EX: ttl }
-    );
+    await this.client.set(`game:${gameId}`, JSON.stringify(data), { EX: ttl });
   }
 
   async getGameData(gameId: string): Promise<any> {
-    const data = await this.client.get(`game:${gameId}`) as string;
+    const data = (await this.client.get(`game:${gameId}`)) as string;
     return data ? JSON.parse(data) : null;
   }
 
@@ -88,16 +84,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   // User Session Management
-  async setUserSession(userId: string, sessionData: any, ttl: number = 3600): Promise<void> {
-    await this.client.set(
-      `user:session:${userId}`,
-      JSON.stringify(sessionData),
-      { EX: ttl }
-    );
+  async setUserSession(
+    userId: string,
+    sessionData: any,
+    ttl: number = 3600,
+  ): Promise<void> {
+    await this.client.set(`user:session:${userId}`, JSON.stringify(sessionData), {
+      EX: ttl,
+    });
   }
 
   async getUserSession(userId: string): Promise<any> {
-    const data = await this.client.get(`user:session:${userId}`) as string;
+    const data = (await this.client.get(`user:session:${userId}`)) as string;
     return data ? JSON.parse(data) : null;
   }
 
@@ -106,16 +104,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Partner API Key Management
-  async setPartnerApiKey(partnerId: string, apiKey: string, ttl: number = 86400): Promise<void> {
-    await this.client.set(
-      `partner:api:${partnerId}`,
-      apiKey,
-      { EX: ttl }
-    );
+  async setPartnerApiKey(
+    partnerId: string,
+    apiKey: string,
+    ttl: number = 86400,
+  ): Promise<void> {
+    await this.client.set(`partner:api:${partnerId}`, apiKey, { EX: ttl });
   }
 
   async getPartnerApiKey(partnerId: string): Promise<string | null> {
-    return await this.client.get(`partner:api:${partnerId}`) as string;
+    return (await this.client.get(`partner:api:${partnerId}`)) as string;
   }
 
   async deletePartnerApiKey(partnerId: string): Promise<void> {
@@ -125,16 +123,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   // Rate Limiting
   async checkRateLimit(key: string, limit: number, window: number): Promise<boolean> {
     const current = await this.client.incr(`rate_limit:${key}`);
-    
+
     if (current === 1) {
       await this.client.expire(`rate_limit:${key}`, window);
     }
-    
+
     return current <= limit;
   }
 
   async getRateLimitCount(key: string): Promise<number> {
-    const count = await this.client.get(`rate_limit:${key}`) as string;
+    const count = (await this.client.get(`rate_limit:${key}`)) as string;
     return count ? parseInt(count) : 0;
   }
 
@@ -147,7 +145,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.publish(channel, JSON.stringify(data));
   }
 
-  async subscribeToChannel(channel: string, callback: (data: any) => void): Promise<void> {
+  async subscribeToChannel(
+    channel: string,
+    callback: (data: any) => void,
+  ): Promise<void> {
     if (!this.client) {
       this.logger.error('Redis client not initialized', { channel }, 'redis');
       return;
@@ -155,13 +156,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
     const subscriber = this.client.duplicate();
     await subscriber.connect();
-    
+
     await subscriber.subscribe(channel, (message) => {
       try {
         const data = JSON.parse(message);
         callback(data);
       } catch (error) {
-        this.logger.error('Error parsing message', { channel, error: (error as Error).message }, 'redis');
+        this.logger.error(
+          'Error parsing message',
+          { channel, error: (error as Error).message },
+          'redis',
+        );
       }
     });
   }
@@ -173,7 +178,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async get(key: string): Promise<any> {
-    const data = await this.client.get(key) as string;
+    const data = (await this.client.get(key)) as string;
     return data ? JSON.parse(data) : null;
   }
 
@@ -193,7 +198,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async getString(key: string): Promise<string | null> {
-    const data = await this.client.get(key) as string;
+    const data = (await this.client.get(key)) as string;
     return data || null;
   }
 

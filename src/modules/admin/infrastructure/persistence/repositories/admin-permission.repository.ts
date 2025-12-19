@@ -5,4 +5,3 @@ export interface IAdminPermissionRepository {
   findByAdminId(adminId: string): Promise<AdminPermission[]>;
   hasPermission(adminId: string, permissionName: string): Promise<boolean>;
 }
-

@@ -77,29 +77,31 @@ export class RefreshTokenUseCase {
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     // Execute database operations in transaction
-    return this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      // Revoke old token
-      await entityManager.update(
-        UserToken,
-        { tokenId: payload.jti },
-        { revokedAt: new Date() },
-      );
+    return this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        // Revoke old token
+        await entityManager.update(
+          UserToken,
+          { tokenId: payload.jti },
+          { revokedAt: new Date() },
+        );
 
-      // Create new token record
-      const newTokenRecord = new UserToken();
-      newTokenRecord.userId = user.id;
-      newTokenRecord.tokenId = tokens.tokenId;
-      newTokenRecord.refreshTokenHash = refreshTokenHash;
-      newTokenRecord.deviceInfo = tokenRecord.deviceInfo;
-      newTokenRecord.ipAddress = tokenRecord.ipAddress;
-      newTokenRecord.expiresAt = expiresAt;
+        // Create new token record
+        const newTokenRecord = new UserToken();
+        newTokenRecord.userId = user.id;
+        newTokenRecord.tokenId = tokens.tokenId;
+        newTokenRecord.refreshTokenHash = refreshTokenHash;
+        newTokenRecord.deviceInfo = tokenRecord.deviceInfo;
+        newTokenRecord.ipAddress = tokenRecord.ipAddress;
+        newTokenRecord.expiresAt = expiresAt;
 
-      await entityManager.save(UserToken, newTokenRecord);
+        await entityManager.save(UserToken, newTokenRecord);
 
-      return {
-        user,
-        tokens,
-      };
-    });
+        return {
+          user,
+          tokens,
+        };
+      },
+    );
   }
 }

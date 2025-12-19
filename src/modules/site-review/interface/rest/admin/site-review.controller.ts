@@ -43,7 +43,8 @@ export class AdminSiteReviewController {
       siteName: review.site?.name || null,
       userId: review.userId,
       userName: review.user?.displayName || null,
-      userAvatarUrl: buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
+      userAvatarUrl:
+        buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
       rating: review.rating,
       title: review.title,
       content: review.content,
@@ -107,7 +108,9 @@ export class AdminSiteReviewController {
   async approveSiteReview(
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<SiteReviewResponseDto>> {
-    const review = await this.approveSiteReviewUseCase.execute({ reviewId: id });
+    const review = await this.approveSiteReviewUseCase.execute({
+      reviewId: id,
+    });
     return ApiResponseUtil.success(
       this.mapSiteReviewToResponse(review),
       'Site review approved successfully',

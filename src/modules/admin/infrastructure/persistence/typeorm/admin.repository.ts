@@ -38,4 +38,3 @@ export class AdminRepository implements IAdminRepository {
     return this.repository.save(admin);
   }
 }
-

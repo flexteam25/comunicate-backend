@@ -25,7 +25,9 @@ export class ScamReportImage {
   @Column({ type: 'integer', default: 0 })
   order: number;
 
-  @ManyToOne(() => ScamReport, (report) => report.images, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ScamReport, (report) => report.images, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'scam_report_id' })
   scamReport: ScamReport;
 

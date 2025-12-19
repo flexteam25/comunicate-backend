@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
 export class CreateSiteSystemPart21765650000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -379,8 +385,14 @@ export class CreateSiteSystemPart21765650000000 implements MigrationInterface {
     // Drop indexes
     await queryRunner.dropIndex('site_views', 'IDX_site_views_site_id');
     await queryRunner.query('DROP INDEX IF EXISTS "IDX_site_review_reactions_unique"');
-    await queryRunner.dropIndex('site_review_reactions', 'IDX_site_review_reactions_review_id');
-    await queryRunner.dropIndex('site_review_comments', 'IDX_site_review_comments_review_id');
+    await queryRunner.dropIndex(
+      'site_review_reactions',
+      'IDX_site_review_reactions_review_id',
+    );
+    await queryRunner.dropIndex(
+      'site_review_comments',
+      'IDX_site_review_comments_review_id',
+    );
     await queryRunner.query('DROP INDEX IF EXISTS "IDX_site_reviews_unique"');
     await queryRunner.dropIndex('site_reviews', 'IDX_site_reviews_user_id');
     await queryRunner.dropIndex('site_reviews', 'IDX_site_reviews_site_id');
@@ -425,4 +437,3 @@ export class CreateSiteSystemPart21765650000000 implements MigrationInterface {
     await queryRunner.dropTable('site_reviews');
   }
 }
-

@@ -30,34 +30,36 @@ export class UpdateProfileUseCase {
     }
 
     // Execute update in transaction
-    return this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      // Update fields
-      if (command.displayName !== undefined) {
-        user.displayName = command.displayName || null;
-      }
+    return this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        // Update fields
+        if (command.displayName !== undefined) {
+          user.displayName = command.displayName || null;
+        }
 
-      if (command.avatarUrl !== undefined) {
-        user.avatarUrl = command.avatarUrl || null;
-      }
+        if (command.avatarUrl !== undefined) {
+          user.avatarUrl = command.avatarUrl || null;
+        }
 
-      if (command.bio !== undefined) {
-        user.userProfile.bio = command.bio || null;
-      }
+        if (command.bio !== undefined) {
+          user.userProfile.bio = command.bio || null;
+        }
 
-      if (command.phone !== undefined) {
-        user.userProfile.phone = command.phone || null;
-      }
+        if (command.phone !== undefined) {
+          user.userProfile.phone = command.phone || null;
+        }
 
-      if (command.birthDate !== undefined) {
-        user.userProfile.birthDate = command.birthDate || null;
-      }
+        if (command.birthDate !== undefined) {
+          user.userProfile.birthDate = command.birthDate || null;
+        }
 
-      if (command.gender !== undefined) {
-        user.userProfile.gender = command.gender || null;
-      }
+        if (command.gender !== undefined) {
+          user.userProfile.gender = command.gender || null;
+        }
 
-      // Update user
-      return entityManager.save(User, user);
-    });
+        // Update user
+        return entityManager.save(User, user);
+      },
+    );
   }
 }

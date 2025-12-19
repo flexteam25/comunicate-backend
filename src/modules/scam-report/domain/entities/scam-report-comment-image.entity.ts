@@ -24,11 +24,12 @@ export class ScamReportCommentImage {
   @Column({ type: 'integer', default: 0 })
   order: number;
 
-  @ManyToOne(() => ScamReportComment, (comment) => comment.images, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ScamReportComment, (comment) => comment.images, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'comment_id' })
   comment: ScamReportComment;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }
-

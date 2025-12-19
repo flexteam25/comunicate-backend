@@ -39,7 +39,9 @@ export class AdminUserBadgeController {
   @Delete()
   @HttpCode(HttpStatus.OK)
   @RequirePermission('user.badge.remove')
-  async removeBadge(@Body() dto: RemoveBadgeDto): Promise<ApiResponse<{ success: boolean }>> {
+  async removeBadge(
+    @Body() dto: RemoveBadgeDto,
+  ): Promise<ApiResponse<{ success: boolean }>> {
     await this.removeBadgeUseCase.execute({
       userId: dto.userId,
       badgeId: dto.badgeId,

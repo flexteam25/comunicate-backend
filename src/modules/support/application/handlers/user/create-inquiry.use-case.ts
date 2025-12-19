@@ -19,18 +19,19 @@ export class CreateInquiryUseCase {
   ) {}
 
   async execute(command: CreateInquiryCommand): Promise<Inquiry> {
-    return this.transactionService.executeInTransaction(async (manager: EntityManager) => {
-      const inquiryRepo = manager.getRepository(Inquiry);
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const inquiryRepo = manager.getRepository(Inquiry);
 
-      const inquiry = inquiryRepo.create({
-        userId: command.userId,
-        message: command.message,
-        images: command.images || [],
-        status: InquiryStatus.PENDING,
-      });
+        const inquiry = inquiryRepo.create({
+          userId: command.userId,
+          message: command.message,
+          images: command.images || [],
+          status: InquiryStatus.PENDING,
+        });
 
-      return inquiryRepo.save(inquiry);
-    });
+        return inquiryRepo.save(inquiry);
+      },
+    );
   }
 }
-

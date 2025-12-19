@@ -62,4 +62,3 @@ export class SiteDomainRepository implements ISiteDomainRepository {
     await qb.execute();
   }
 }
-

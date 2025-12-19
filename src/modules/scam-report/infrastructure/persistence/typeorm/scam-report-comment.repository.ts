@@ -40,7 +40,9 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
     if (parentCommentId === undefined) {
       queryBuilder.andWhere('comment.parentCommentId IS NULL');
     } else if (parentCommentId !== null) {
-      queryBuilder.andWhere('comment.parentCommentId = :parentCommentId', { parentCommentId });
+      queryBuilder.andWhere('comment.parentCommentId = :parentCommentId', {
+        parentCommentId,
+      });
     }
 
     // Apply cursor pagination

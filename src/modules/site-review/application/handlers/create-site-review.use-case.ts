@@ -25,7 +25,7 @@ export class CreateSiteReviewUseCase {
     @Inject('ISiteRepository')
     private readonly siteRepository: ISiteRepository,
     private readonly transactionService: TransactionService,
-  ) { }
+  ) {}
 
   async execute(command: CreateSiteReviewCommand): Promise<SiteReview> {
     const site = await this.siteRepository.findById(command.siteId);

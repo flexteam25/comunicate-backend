@@ -1,5 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { IFeedbackRepository, FeedbackFilters } from '../../../infrastructure/persistence/repositories/feedback.repository';
+import {
+  IFeedbackRepository,
+  FeedbackFilters,
+} from '../../../infrastructure/persistence/repositories/feedback.repository';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import { Feedback } from '../../../domain/entities/feedback.entity';
 
@@ -18,7 +21,9 @@ export class ListFeedbacksUseCase {
     private readonly feedbackRepository: IFeedbackRepository,
   ) {}
 
-  async execute(command: ListFeedbacksCommand): Promise<CursorPaginationResult<Feedback>> {
+  async execute(
+    command: ListFeedbacksCommand,
+  ): Promise<CursorPaginationResult<Feedback>> {
     return this.feedbackRepository.findAllWithCursor(
       command.filters,
       command.cursor,
@@ -28,4 +33,3 @@ export class ListFeedbacksUseCase {
     );
   }
 }
-

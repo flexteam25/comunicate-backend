@@ -436,8 +436,14 @@ export class CreateSupportSystem1765862000000 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop indexes
-    await queryRunner.dropIndex('advertising_contacts', 'IDX_advertising_contacts_is_viewed');
-    await queryRunner.dropIndex('advertising_contacts', 'IDX_advertising_contacts_user_id');
+    await queryRunner.dropIndex(
+      'advertising_contacts',
+      'IDX_advertising_contacts_is_viewed',
+    );
+    await queryRunner.dropIndex(
+      'advertising_contacts',
+      'IDX_advertising_contacts_user_id',
+    );
     await queryRunner.dropIndex('bug_reports', 'IDX_bug_reports_is_viewed');
     await queryRunner.dropIndex('bug_reports', 'IDX_bug_reports_user_id');
     await queryRunner.dropIndex('feedbacks', 'IDX_feedbacks_is_viewed');
@@ -518,4 +524,3 @@ export class CreateSupportSystem1765862000000 implements MigrationInterface {
     await queryRunner.dropTable('inquiries');
   }
 }
-

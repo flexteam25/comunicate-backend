@@ -19,4 +19,3 @@ export interface IBugReportRepository {
   update(id: string, data: Partial<BugReport>): Promise<BugReport>;
   findByUserId(userId: string): Promise<BugReport[]>;
 }
-

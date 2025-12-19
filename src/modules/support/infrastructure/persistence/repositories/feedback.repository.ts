@@ -19,4 +19,3 @@ export interface IFeedbackRepository {
   update(id: string, data: Partial<Feedback>): Promise<Feedback>;
   findByUserId(userId: string): Promise<Feedback[]>;
 }
-

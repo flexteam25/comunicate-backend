@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { ISiteReviewRepository } from '../../infrastructure/persistence/repositories/site-review.repository';
 import { ISiteReviewReactionRepository } from '../../infrastructure/persistence/repositories/site-review-reaction.repository';
-import { SiteReviewReaction, ReactionType } from '../../domain/entities/site-review-reaction.entity';
+import {
+  SiteReviewReaction,
+  ReactionType,
+} from '../../domain/entities/site-review-reaction.entity';
 
 export interface ReactToSiteReviewCommand {
   reviewId: string;

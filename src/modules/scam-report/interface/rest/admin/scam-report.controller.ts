@@ -12,16 +12,16 @@ import {
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/admin-permission.guard';
 import { RequirePermission } from '../../../../admin/infrastructure/decorators/require-permission.decorator';
-import { CurrentAdmin, CurrentAdminPayload } from '../../../../admin/infrastructure/decorators/current-admin.decorator';
+import {
+  CurrentAdmin,
+  CurrentAdminPayload,
+} from '../../../../admin/infrastructure/decorators/current-admin.decorator';
 import { ListScamReportsUseCase } from '../../../application/handlers/list-scam-reports.use-case';
 import { GetScamReportUseCase } from '../../../application/handlers/get-scam-report.use-case';
 import { ApproveScamReportUseCase } from '../../../application/handlers/approve-scam-report.use-case';
 import { RejectScamReportUseCase } from '../../../application/handlers/reject-scam-report.use-case';
 import { ScamReportResponseDto } from '../dto/scam-report-response.dto';
-import {
-  ApiResponse,
-  ApiResponseUtil,
-} from '../../../../../shared/dto/api-response.dto';
+import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ScamReportStatus } from '../../../domain/entities/scam-report.entity';
 import { ConfigService } from '@nestjs/config';
@@ -36,10 +36,9 @@ export class AdminScamReportController {
     private readonly getScamReportUseCase: GetScamReportUseCase,
     private readonly approveScamReportUseCase: ApproveScamReportUseCase,
     private readonly rejectScamReportUseCase: RejectScamReportUseCase,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
   ) {
-    this.apiServiceUrl =
-      this.configService.get<string>('API_SERVICE_URL') || '';
+    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
 
   private mapScamReportToResponse(report: any): ScamReportResponseDto {
@@ -98,11 +97,11 @@ export class AdminScamReportController {
     });
   }
 
-  @Get(":id")
+  @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission("scam-reports.read")
+  @RequirePermission('scam-reports.read')
   async getScamReport(
-    @Param("id", new ParseUUIDPipe()) id: string
+    @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<ScamReportResponseDto>> {
     const report = await this.getScamReportUseCase.execute({
       reportId: id,
@@ -112,12 +111,12 @@ export class AdminScamReportController {
     return ApiResponseUtil.success(this.mapScamReportToResponse(report));
   }
 
-  @Put(":id/approve")
+  @Put(':id/approve')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission("scam-reports.moderate")
+  @RequirePermission('scam-reports.moderate')
   async approveScamReport(
-    @Param("id", new ParseUUIDPipe()) id: string,
-    @CurrentAdmin() admin: CurrentAdminPayload
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ApiResponse<ScamReportResponseDto>> {
     const report = await this.approveScamReportUseCase.execute({
       reportId: id,
@@ -132,16 +131,16 @@ export class AdminScamReportController {
 
     return ApiResponseUtil.success(
       this.mapScamReportToResponse(fullReport),
-      "Scam report approved successfully"
+      'Scam report approved successfully',
     );
   }
 
-  @Put(":id/reject")
+  @Put(':id/reject')
   @HttpCode(HttpStatus.OK)
-  @RequirePermission("scam-reports.moderate")
+  @RequirePermission('scam-reports.moderate')
   async rejectScamReport(
-    @Param("id", new ParseUUIDPipe()) id: string,
-    @CurrentAdmin() admin: CurrentAdminPayload
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ApiResponse<ScamReportResponseDto>> {
     const report = await this.rejectScamReportUseCase.execute({
       reportId: id,
@@ -156,7 +155,7 @@ export class AdminScamReportController {
 
     return ApiResponseUtil.success(
       this.mapScamReportToResponse(fullReport),
-      "Scam report rejected successfully"
+      'Scam report rejected successfully',
     );
   }
 }

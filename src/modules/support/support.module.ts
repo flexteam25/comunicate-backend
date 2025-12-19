@@ -37,7 +37,7 @@ import { ListUserInquiriesUseCase } from './application/handlers/user/list-user-
     AdminGuardsModule,
     UserTokenRepositoryModule,
   ],
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
   controllers: [UserSupportController, AdminSupportController],
   providers: [
     {

@@ -8,7 +8,10 @@
  * @param relativePath - Relative path (e.g., /uploads/avatars/user/file.webp)
  * @returns Full URL or null if relativePath is null/undefined
  */
-export function buildFullUrl(baseUrl: string | undefined, relativePath: string | null | undefined): string | null {
+export function buildFullUrl(
+  baseUrl: string | undefined,
+  relativePath: string | null | undefined,
+): string | null {
   if (!relativePath) {
     return null;
   }
@@ -23,4 +26,3 @@ export function buildFullUrl(baseUrl: string | undefined, relativePath: string |
 
   return `${cleanBaseUrl}${cleanPath}`;
 }
-

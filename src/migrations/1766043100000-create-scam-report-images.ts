@@ -82,11 +82,16 @@ export class CreateScamReportImages1766043100000 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop indexes
     await queryRunner.dropIndex('scam_report_images', 'IDX_scam_report_images_order');
-    await queryRunner.dropIndex('scam_report_images', 'IDX_scam_report_images_scam_report_id');
+    await queryRunner.dropIndex(
+      'scam_report_images',
+      'IDX_scam_report_images_scam_report_id',
+    );
 
     // Drop foreign key
     const table = await queryRunner.getTable('scam_report_images');
-    const fk = table?.foreignKeys.find((fk) => fk.columnNames.indexOf('scam_report_id') !== -1);
+    const fk = table?.foreignKeys.find(
+      (fk) => fk.columnNames.indexOf('scam_report_id') !== -1,
+    );
     if (fk) {
       await queryRunner.dropForeignKey('scam_report_images', fk);
     }

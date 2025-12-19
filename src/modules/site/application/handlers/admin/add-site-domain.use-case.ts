@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { SiteDomain } from '../../../domain/entities/site-domain.entity';
@@ -17,9 +13,7 @@ export interface AddSiteDomainCommand {
 
 @Injectable()
 export class AddSiteDomainUseCase {
-  constructor(
-    private readonly transactionService: TransactionService,
-  ) {}
+  constructor(private readonly transactionService: TransactionService) {}
 
   async execute(command: AddSiteDomainCommand): Promise<SiteDomain> {
     const normalizedDomain = command.domain.trim().toLowerCase();

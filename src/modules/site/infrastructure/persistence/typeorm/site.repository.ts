@@ -1,18 +1,18 @@
-import { Injectable } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { In, Repository } from "typeorm";
-import { Site } from "../../../domain/entities/site.entity";
-import { ISiteRepository, SiteFilters } from "../repositories/site.repository";
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
+import { Site } from '../../../domain/entities/site.entity';
+import { ISiteRepository, SiteFilters } from '../repositories/site.repository';
 import {
   CursorPaginationResult,
   CursorPaginationUtil,
-} from "../../../../../shared/utils/cursor-pagination.util";
+} from '../../../../../shared/utils/cursor-pagination.util';
 
 @Injectable()
 export class SiteRepository implements ISiteRepository {
   constructor(
     @InjectRepository(Site)
-    private readonly repository: Repository<Site>
+    private readonly repository: Repository<Site>,
   ) {}
 
   async findById(id: string, relations?: string[]): Promise<Site | null> {
@@ -33,19 +33,19 @@ export class SiteRepository implements ISiteRepository {
     filters?: SiteFilters,
     cursor?: string,
     limit: number = 20,
-    sortBy: string = "createdAt",
-    sortOrder: "ASC" | "DESC" = "DESC"
+    sortBy: string = 'createdAt',
+    sortOrder: 'ASC' | 'DESC' = 'DESC',
   ): Promise<CursorPaginationResult<Site>> {
     const queryBuilder = this.repository
-      .createQueryBuilder("site")
-      .where("site.deletedAt IS NULL");
+      .createQueryBuilder('site')
+      .where('site.deletedAt IS NULL');
 
     // Load relations early for filtering
-    queryBuilder.leftJoinAndSelect("site.category", "category");
-    queryBuilder.leftJoinAndSelect("site.tier", "tier");
-    queryBuilder.leftJoinAndSelect("site.siteBadges", "siteBadges");
-    queryBuilder.leftJoinAndSelect("siteBadges.badge", "badge");
-    queryBuilder.leftJoinAndSelect("site.siteDomains", "siteDomains");
+    queryBuilder.leftJoinAndSelect('site.category', 'category');
+    queryBuilder.leftJoinAndSelect('site.tier', 'tier');
+    queryBuilder.leftJoinAndSelect('site.siteBadges', 'siteBadges');
+    queryBuilder.leftJoinAndSelect('siteBadges.badge', 'badge');
+    queryBuilder.leftJoinAndSelect('site.siteDomains', 'siteDomains');
 
     queryBuilder.loadRelationCountAndMap(
       'site.issueCount',
@@ -59,36 +59,36 @@ export class SiteRepository implements ISiteRepository {
 
     // Apply filters
     if (filters?.categoryId) {
-      queryBuilder.andWhere("site.categoryId = :categoryId", {
+      queryBuilder.andWhere('site.categoryId = :categoryId', {
         categoryId: filters.categoryId,
       });
     }
     if (filters?.tierId) {
-      queryBuilder.andWhere("site.tierId = :tierId", {
+      queryBuilder.andWhere('site.tierId = :tierId', {
         tierId: filters.tierId,
       });
     }
     if (filters?.status) {
       // Support comma-separated statuses or single status
-      const statuses = filters.status.split(",").map((s) => s.trim());
+      const statuses = filters.status.split(',').map((s) => s.trim());
       if (statuses.length === 1) {
-        queryBuilder.andWhere("site.status = :status", { status: statuses[0] });
+        queryBuilder.andWhere('site.status = :status', { status: statuses[0] });
       } else {
-        queryBuilder.andWhere("site.status IN (:...statuses)", { statuses });
+        queryBuilder.andWhere('site.status IN (:...statuses)', { statuses });
       }
     }
-    if (filters?.categoryType && filters.categoryType !== "all") {
+    if (filters?.categoryType && filters.categoryType !== 'all') {
       // Filter by category name (toto or casino) - case insensitive
-      queryBuilder.andWhere("LOWER(category.name) = LOWER(:categoryType)", {
+      queryBuilder.andWhere('LOWER(category.name) = LOWER(:categoryType)', {
         categoryType: filters.categoryType,
       });
     }
     if (filters?.search) {
       queryBuilder.andWhere(
-        "(site.name ILIKE :search OR siteDomains.domain ILIKE :search)",
+        '(site.name ILIKE :search OR siteDomains.domain ILIKE :search)',
         {
           search: `%${filters.search}%`,
-        }
+        },
       );
     }
 
@@ -99,41 +99,41 @@ export class SiteRepository implements ISiteRepository {
     // If filterBy is specified, override sortBy to use that field (highest = DESC)
     if (filters?.filterBy) {
       actualSortBy = filters.filterBy;
-      actualSortOrder = "DESC"; // Always DESC for "highest" filters
+      actualSortOrder = 'DESC'; // Always DESC for "highest" filters
     }
 
     // Handle tier sorting (sort by tier.order)
-    if (actualSortBy === "tier") {
+    if (actualSortBy === 'tier') {
       // Apply cursor pagination for tier sorting
       if (cursor) {
         const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
         if (sortValue !== null && sortValue !== undefined) {
           const tierOrder = parseFloat(sortValue);
-          if (actualSortOrder === "ASC") {
+          if (actualSortOrder === 'ASC') {
             queryBuilder.andWhere(
-              "(tier.order > :tierOrder OR (tier.order = :tierOrder AND site.id > :cursorId) OR (tier.order IS NULL AND site.id > :cursorId))",
-              { tierOrder, cursorId: id }
+              '(tier.order > :tierOrder OR (tier.order = :tierOrder AND site.id > :cursorId) OR (tier.order IS NULL AND site.id > :cursorId))',
+              { tierOrder, cursorId: id },
             );
           } else {
             queryBuilder.andWhere(
-              "(tier.order < :tierOrder OR (tier.order = :tierOrder AND site.id < :cursorId) OR (tier.order IS NULL AND site.id < :cursorId))",
-              { tierOrder, cursorId: id }
+              '(tier.order < :tierOrder OR (tier.order = :tierOrder AND site.id < :cursorId) OR (tier.order IS NULL AND site.id < :cursorId))',
+              { tierOrder, cursorId: id },
             );
           }
         } else {
-          if (actualSortOrder === "ASC") {
-            queryBuilder.andWhere("site.id > :cursorId", { cursorId: id });
+          if (actualSortOrder === 'ASC') {
+            queryBuilder.andWhere('site.id > :cursorId', { cursorId: id });
           } else {
-            queryBuilder.andWhere("site.id < :cursorId", { cursorId: id });
+            queryBuilder.andWhere('site.id < :cursorId', { cursorId: id });
           }
         }
       }
-      if (actualSortOrder === "DESC") {
-        queryBuilder.addOrderBy(`site.${actualSortBy}`, "DESC", "NULLS LAST");
+      if (actualSortOrder === 'DESC') {
+        queryBuilder.addOrderBy(`site.${actualSortBy}`, 'DESC', 'NULLS LAST');
       } else {
-        queryBuilder.orderBy("tier.order", "ASC");
+        queryBuilder.orderBy('tier.order', 'ASC');
       }
-      queryBuilder.addOrderBy("site.id", actualSortOrder);
+      queryBuilder.addOrderBy('site.id', actualSortOrder);
     } else {
       // Apply cursor pagination
       if (cursor) {
@@ -141,33 +141,33 @@ export class SiteRepository implements ISiteRepository {
         const sortField = `site.${actualSortBy}`;
 
         if (sortValue !== null && sortValue !== undefined) {
-          if (actualSortOrder === "ASC") {
+          if (actualSortOrder === 'ASC') {
             queryBuilder.andWhere(
               `(${sortField} > :sortValue OR (${sortField} = :sortValue AND site.id > :cursorId))`,
-              { sortValue, cursorId: id }
+              { sortValue, cursorId: id },
             );
           } else {
             queryBuilder.andWhere(
               `(${sortField} < :sortValue OR (${sortField} = :sortValue AND site.id < :cursorId))`,
-              { sortValue, cursorId: id }
+              { sortValue, cursorId: id },
             );
           }
         } else {
-          if (actualSortOrder === "ASC") {
-            queryBuilder.andWhere("site.id > :cursorId", { cursorId: id });
+          if (actualSortOrder === 'ASC') {
+            queryBuilder.andWhere('site.id > :cursorId', { cursorId: id });
           } else {
-            queryBuilder.andWhere("site.id < :cursorId", { cursorId: id });
+            queryBuilder.andWhere('site.id < :cursorId', { cursorId: id });
           }
         }
       }
 
       // Apply sorting with NULLS LAST for DESC
-      if (actualSortOrder === "DESC") {
-        queryBuilder.addOrderBy(`site.${actualSortBy}`, "DESC", "NULLS LAST");
+      if (actualSortOrder === 'DESC') {
+        queryBuilder.addOrderBy(`site.${actualSortBy}`, 'DESC', 'NULLS LAST');
       } else {
-        queryBuilder.orderBy(`site.${actualSortBy}`, "ASC");
+        queryBuilder.orderBy(`site.${actualSortBy}`, 'ASC');
       }
-      queryBuilder.addOrderBy("site.id", actualSortOrder);
+      queryBuilder.addOrderBy('site.id', actualSortOrder);
     }
 
     // Fetch one extra to check if there's more
@@ -185,12 +185,10 @@ export class SiteRepository implements ISiteRepository {
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
       let sortValue: string | number | Date | null = null;
-      if (actualSortBy === "tier") {
+      if (actualSortBy === 'tier') {
         sortValue = lastItem.tier?.order ?? null;
       } else {
-        const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-          actualSortBy
-        ];
+        const fieldValue = (lastItem as unknown as Record<string, unknown>)[actualSortBy];
         if (fieldValue !== null && fieldValue !== undefined) {
           sortValue = fieldValue as string | number | Date;
         }
@@ -214,7 +212,7 @@ export class SiteRepository implements ISiteRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error("Site not found after update");
+      throw new Error('Site not found after update');
     }
     return updated;
   }
@@ -242,7 +240,7 @@ export class SiteRepository implements ISiteRepository {
   async findByIds(ids: string[]): Promise<Site[]> {
     return this.repository.find({
       where: { id: In(ids), deletedAt: null },
-      relations: ["category", "tier", "siteBadges.badge", "siteDomains"],
+      relations: ['category', 'tier', 'siteBadges.badge', 'siteDomains'],
     });
   }
 }

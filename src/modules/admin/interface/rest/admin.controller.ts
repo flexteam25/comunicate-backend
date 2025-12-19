@@ -149,16 +149,12 @@ export class AdminController {
       tokenId: admin.tokenId,
     });
 
-    return ApiResponseUtil.success(
-      { message: 'Logout successful' },
-      'Logout successful',
-    );
+    return ApiResponseUtil.success({ message: 'Logout successful' }, 'Logout successful');
   }
 
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
-  async requestOtp(
-    @Body() dto: AdminRequestOtpDto): Promise<ApiResponse> {
+  async requestOtp(@Body() dto: AdminRequestOtpDto): Promise<ApiResponse> {
     const result = await this.requestOtpUseCase.execute({
       email: dto.email,
     });
@@ -184,10 +180,7 @@ export class AdminController {
       verifyCode: dto.verifyCode,
     });
 
-    return ApiResponseUtil.success(
-      { message: result.message },
-      result.message,
-    );
+    return ApiResponseUtil.success({ message: result.message }, result.message);
   }
 
   @Put('change-password')
@@ -315,4 +308,3 @@ export class AdminController {
     return ApiResponseUtil.success(adminResponse, 'Admin created successfully');
   }
 }
-

@@ -24,35 +24,51 @@ export class EmailService {
    */
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
     try {
-      this.logger.info('Sending email', {
-        to: options.to,
-        subject: options.subject,
-        provider: this.emailProvider.getProviderName(),
-      }, 'email');
+      this.logger.info(
+        'Sending email',
+        {
+          to: options.to,
+          subject: options.subject,
+          provider: this.emailProvider.getProviderName(),
+        },
+        'email',
+      );
 
       const result = await this.emailProvider.sendEmail(options);
 
       if (result.success) {
-        this.logger.info('Email sent successfully', {
-          to: options.to,
-          subject: options.subject,
-          messageId: result.messageId,
-        }, 'email');
+        this.logger.info(
+          'Email sent successfully',
+          {
+            to: options.to,
+            subject: options.subject,
+            messageId: result.messageId,
+          },
+          'email',
+        );
       } else {
-        this.logger.error('Email sending failed', {
-          to: options.to,
-          subject: options.subject,
-          error: result.error,
-        }, 'email');
+        this.logger.error(
+          'Email sending failed',
+          {
+            to: options.to,
+            subject: options.subject,
+            error: result.error,
+          },
+          'email',
+        );
       }
 
       return result;
     } catch (error) {
-      this.logger.error('Email service error', {
-        to: options.to,
-        subject: options.subject,
-        error: (error as Error).message,
-      }, 'email');
+      this.logger.error(
+        'Email service error',
+        {
+          to: options.to,
+          subject: options.subject,
+          error: (error as Error).message,
+        },
+        'email',
+      );
 
       return {
         success: false,
@@ -121,20 +137,32 @@ export class EmailService {
     try {
       const isValid = await this.emailProvider.verifyConfiguration();
       if (isValid) {
-        this.logger.info('Email provider configuration verified', {
-          provider: this.emailProvider.getProviderName(),
-        }, 'email');
+        this.logger.info(
+          'Email provider configuration verified',
+          {
+            provider: this.emailProvider.getProviderName(),
+          },
+          'email',
+        );
       } else {
-        this.logger.error('Email provider configuration invalid', {
-          provider: this.emailProvider.getProviderName(),
-        }, 'email');
+        this.logger.error(
+          'Email provider configuration invalid',
+          {
+            provider: this.emailProvider.getProviderName(),
+          },
+          'email',
+        );
       }
       return isValid;
     } catch (error) {
-      this.logger.error('Email provider verification failed', {
-        provider: this.emailProvider.getProviderName(),
-        error: (error as Error).message,
-      }, 'email');
+      this.logger.error(
+        'Email provider verification failed',
+        {
+          provider: this.emailProvider.getProviderName(),
+          error: (error as Error).message,
+        },
+        'email',
+      );
       return false;
     }
   }
@@ -146,4 +174,3 @@ export class EmailService {
     return this.emailProvider.getProviderName();
   }
 }
-

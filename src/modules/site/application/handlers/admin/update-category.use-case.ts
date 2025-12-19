@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';

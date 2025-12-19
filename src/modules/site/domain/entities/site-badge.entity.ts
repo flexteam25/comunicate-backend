@@ -13,7 +13,11 @@ export class SiteBadge {
   @Column({ name: 'badge_id', type: 'uuid' })
   badgeId: string;
 
-  @Column({ name: 'created_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'created_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 
   @ManyToOne(() => Site, (site) => site.siteBadges, { onDelete: 'CASCADE' })

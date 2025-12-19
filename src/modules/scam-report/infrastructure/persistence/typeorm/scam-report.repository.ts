@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ScamReport, ScamReportStatus } from '../../../domain/entities/scam-report.entity';
+import {
+  ScamReport,
+  ScamReportStatus,
+} from '../../../domain/entities/scam-report.entity';
 import { IScamReportRepository } from '../repositories/scam-report.repository';
 import {
   CursorPaginationResult,
@@ -17,7 +20,7 @@ export class ScamReportRepository implements IScamReportRepository {
 
   async findById(id: string, relations?: string[]): Promise<ScamReport | null> {
     const needsReactionCount = relations?.includes('reactions');
-    
+
     if (needsReactionCount) {
       const queryBuilder = this.repository
         .createQueryBuilder('report')
@@ -62,12 +65,12 @@ export class ScamReportRepository implements IScamReportRepository {
       if (result.entities.length === 0) {
         return null;
       }
-      
+
       const report = result.entities[0];
       const rawData = result.raw[0];
       (report as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
       (report as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
-      
+
       return report;
     }
 

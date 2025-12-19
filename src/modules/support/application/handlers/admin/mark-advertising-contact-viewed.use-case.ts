@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException, Inject } from "@nestjs/common";
-import { IAdvertisingContactRepository } from "../../../infrastructure/persistence/repositories/advertising-contact.repository";
-import { AdvertisingContact } from "../../../domain/entities/advertising-contact.entity";
-import { TransactionService } from "../../../../../shared/services/transaction.service";
-import { EntityManager } from "typeorm";
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { IAdvertisingContactRepository } from '../../../infrastructure/persistence/repositories/advertising-contact.repository';
+import { AdvertisingContact } from '../../../domain/entities/advertising-contact.entity';
+import { TransactionService } from '../../../../../shared/services/transaction.service';
+import { EntityManager } from 'typeorm';
 
 export interface MarkAdvertisingContactViewedCommand {
   advertisingContactId: string;
@@ -12,33 +12,32 @@ export interface MarkAdvertisingContactViewedCommand {
 @Injectable()
 export class MarkAdvertisingContactViewedUseCase {
   constructor(
-    @Inject("IAdvertisingContactRepository")
+    @Inject('IAdvertisingContactRepository')
     private readonly advertisingContactRepository: IAdvertisingContactRepository,
-    private readonly transactionService: TransactionService
+    private readonly transactionService: TransactionService,
   ) {}
 
   async execute(
-    command: MarkAdvertisingContactViewedCommand
+    command: MarkAdvertisingContactViewedCommand,
   ): Promise<AdvertisingContact> {
     // Check if advertising contact exists
     const advertisingContact = await this.advertisingContactRepository.findById(
-      command.advertisingContactId
+      command.advertisingContactId,
     );
     if (!advertisingContact) {
-      throw new NotFoundException("Advertising contact not found");
+      throw new NotFoundException('Advertising contact not found');
     }
 
     return this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
-        const advertisingContactRepo =
-          manager.getRepository(AdvertisingContact);
+        const advertisingContactRepo = manager.getRepository(AdvertisingContact);
 
         advertisingContact.isViewed = true;
         advertisingContact.viewedByAdminId = command.adminId;
         advertisingContact.viewedAt = new Date();
 
         return advertisingContactRepo.save(advertisingContact);
-      }
+      },
     );
   }
 }

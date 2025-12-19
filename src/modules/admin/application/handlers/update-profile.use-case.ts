@@ -26,19 +26,20 @@ export class UpdateProfileUseCase {
     }
 
     // Execute update in transaction
-    return this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      // Update fields
-      if (command.displayName !== undefined) {
-        admin.displayName = command.displayName || null;
-      }
+    return this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        // Update fields
+        if (command.displayName !== undefined) {
+          admin.displayName = command.displayName || null;
+        }
 
-      if (command.avatarUrl !== undefined) {
-        admin.avatarUrl = command.avatarUrl || null;
-      }
+        if (command.avatarUrl !== undefined) {
+          admin.avatarUrl = command.avatarUrl || null;
+        }
 
-      // Update admin
-      return entityManager.save(Admin, admin);
-    });
+        // Update admin
+        return entityManager.save(Admin, admin);
+      },
+    );
   }
 }
-

@@ -22,7 +22,9 @@ export class ListUserInquiriesUseCase {
     private readonly inquiryRepository: IInquiryRepository,
   ) {}
 
-  async execute(command: ListUserInquiriesCommand): Promise<CursorPaginationResult<Inquiry>> {
+  async execute(
+    command: ListUserInquiriesCommand,
+  ): Promise<CursorPaginationResult<Inquiry>> {
     const filters: InquiryFilters = {
       userId: command.userId,
       status: command.status,

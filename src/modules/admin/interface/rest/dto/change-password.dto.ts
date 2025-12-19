@@ -16,4 +16,3 @@ export class AdminChangePasswordDto {
   @IsBoolean()
   logoutAll?: boolean;
 }
-

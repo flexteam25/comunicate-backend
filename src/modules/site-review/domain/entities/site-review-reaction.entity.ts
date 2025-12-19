@@ -38,7 +38,9 @@ export class SiteReviewReaction {
   })
   reactionType: ReactionType;
 
-  @ManyToOne(() => SiteReview, (review) => review.reactions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => SiteReview, (review) => review.reactions, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'review_id' })
   siteReview: SiteReview;
 

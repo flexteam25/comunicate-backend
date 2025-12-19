@@ -68,37 +68,40 @@ export class RefreshTokenUseCase {
     const tokens = this.jwtService.generateTokenPair(admin.id, admin.email);
 
     // Hash new refresh token (outside transaction)
-    const refreshTokenHash = await this.passwordService.hashRefreshToken(tokens.refreshToken);
+    const refreshTokenHash = await this.passwordService.hashRefreshToken(
+      tokens.refreshToken,
+    );
 
     // Calculate expiration
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     // Execute database operations in transaction
-    return this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      // Revoke old token
-      await entityManager.update(
-        AdminToken,
-        { tokenId: payload.jti },
-        { revokedAt: new Date() },
-      );
+    return this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        // Revoke old token
+        await entityManager.update(
+          AdminToken,
+          { tokenId: payload.jti },
+          { revokedAt: new Date() },
+        );
 
-      // Create new token record
-      const newTokenRecord = new AdminToken();
-      newTokenRecord.adminId = admin.id;
-      newTokenRecord.tokenId = tokens.tokenId;
-      newTokenRecord.refreshTokenHash = refreshTokenHash;
-      newTokenRecord.deviceInfo = tokenRecord.deviceInfo;
-      newTokenRecord.ipAddress = tokenRecord.ipAddress;
-      newTokenRecord.expiresAt = expiresAt;
+        // Create new token record
+        const newTokenRecord = new AdminToken();
+        newTokenRecord.adminId = admin.id;
+        newTokenRecord.tokenId = tokens.tokenId;
+        newTokenRecord.refreshTokenHash = refreshTokenHash;
+        newTokenRecord.deviceInfo = tokenRecord.deviceInfo;
+        newTokenRecord.ipAddress = tokenRecord.ipAddress;
+        newTokenRecord.expiresAt = expiresAt;
 
-      await entityManager.save(AdminToken, newTokenRecord);
+        await entityManager.save(AdminToken, newTokenRecord);
 
-      return {
-        admin,
-        tokens,
-      };
-    });
+        return {
+          admin,
+          tokens,
+        };
+      },
+    );
   }
 }
-

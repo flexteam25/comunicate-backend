@@ -19,4 +19,3 @@ export interface IAdvertisingContactRepository {
   update(id: string, data: Partial<AdvertisingContact>): Promise<AdvertisingContact>;
   findByUserId(userId: string): Promise<AdvertisingContact[]>;
 }
-

@@ -38,4 +38,3 @@ export class UserOldPassword {
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }
-

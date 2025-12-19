@@ -4,4 +4,3 @@ export class AdminRefreshTokenDto {
   @IsString()
   refreshToken: string;
 }
-

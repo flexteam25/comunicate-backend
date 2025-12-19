@@ -61,35 +61,36 @@ export class CreateAdminUseCase {
     const passwordHash = await this.passwordService.hashPassword(command.password);
 
     // Execute database operations in transaction
-    return this.transactionService.executeInTransaction(async (entityManager: EntityManager) => {
-      // Create admin
-      const admin = new Admin();
-      admin.email = command.email;
-      admin.passwordHash = passwordHash;
-      admin.displayName = command.displayName || null;
-      admin.isActive = true;
-      admin.isSuperAdmin = false;
+    return this.transactionService.executeInTransaction(
+      async (entityManager: EntityManager) => {
+        // Create admin
+        const admin = new Admin();
+        admin.email = command.email;
+        admin.passwordHash = passwordHash;
+        admin.displayName = command.displayName || null;
+        admin.isActive = true;
+        admin.isSuperAdmin = false;
 
-      const savedAdmin = await entityManager.save(Admin, admin);
+        const savedAdmin = await entityManager.save(Admin, admin);
 
-      // Assign permissions if provided
-      if (command.permissionIds && command.permissionIds.length > 0) {
-        for (const permissionId of command.permissionIds) {
-          // Verify permission exists
-          const permission = await entityManager.findOne(Permission, {
-            where: { id: permissionId },
-          });
-          if (permission) {
-            const adminPermission = new AdminPermission();
-            adminPermission.adminId = savedAdmin.id;
-            adminPermission.permissionId = permissionId;
-            await entityManager.save(AdminPermission, adminPermission);
+        // Assign permissions if provided
+        if (command.permissionIds && command.permissionIds.length > 0) {
+          for (const permissionId of command.permissionIds) {
+            // Verify permission exists
+            const permission = await entityManager.findOne(Permission, {
+              where: { id: permissionId },
+            });
+            if (permission) {
+              const adminPermission = new AdminPermission();
+              adminPermission.adminId = savedAdmin.id;
+              adminPermission.permissionId = permissionId;
+              await entityManager.save(AdminPermission, adminPermission);
+            }
           }
         }
-      }
 
-      return savedAdmin;
-    });
+        return savedAdmin;
+      },
+    );
   }
 }
-

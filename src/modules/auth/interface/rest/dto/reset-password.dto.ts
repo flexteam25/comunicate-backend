@@ -19,4 +19,3 @@ export class ResetPasswordDto {
   @Matches(/^\d{6}$/, { message: 'Verification code must be 6 digits' })
   verifyCode: string;
 }
-

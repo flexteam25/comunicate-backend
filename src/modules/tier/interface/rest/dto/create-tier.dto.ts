@@ -21,4 +21,3 @@ export class CreateTierDto {
   @MaxLength(20)
   color?: string;
 }
-

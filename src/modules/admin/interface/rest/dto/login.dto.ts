@@ -11,4 +11,3 @@ export class AdminLoginDto {
   @IsString()
   deviceInfo?: string;
 }
-

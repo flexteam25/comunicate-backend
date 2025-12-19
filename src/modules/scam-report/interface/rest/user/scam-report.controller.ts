@@ -17,7 +17,10 @@ import {
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
-import { CurrentUser, CurrentUserPayload } from '../../../../../shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../../../../shared/decorators/current-user.decorator';
 import { CreateScamReportUseCase } from '../../../application/handlers/create-scam-report.use-case';
 import { ListScamReportsUseCase } from '../../../application/handlers/list-scam-reports.use-case';
 import { GetScamReportUseCase } from '../../../application/handlers/get-scam-report.use-case';
@@ -31,7 +34,10 @@ import { CreateScamReportDto } from '../dto/create-scam-report.dto';
 import { UpdateScamReportDto } from '../dto/update-scam-report.dto';
 import { AddCommentDto } from '../dto/add-comment.dto';
 import { ReactToScamReportDto } from '../dto/react-to-scam-report.dto';
-import { ScamReportResponseDto, ScamReportCommentResponseDto } from '../dto/scam-report-response.dto';
+import {
+  ScamReportResponseDto,
+  ScamReportCommentResponseDto,
+} from '../dto/scam-report-response.dto';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { ConfigService } from '@nestjs/config';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
@@ -96,11 +102,7 @@ export class ScamReportController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
   @HttpCode(HttpStatus.CREATED)
   async createScamReport(
     @CurrentUser() user: CurrentUserPayload,
@@ -110,7 +112,7 @@ export class ScamReportController {
       images?: MulterFile[];
     },
   ): Promise<ApiResponse<ScamReportResponseDto>> {
-    let imageUrls: string[] = [];
+    const imageUrls: string[] = [];
 
     // Upload images if provided
     if (files?.images && files.images.length > 0) {
@@ -120,9 +122,13 @@ export class ScamReportController {
           throw new BadRequestException('Image file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid image file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
-        const uploadResult = await this.uploadService.uploadImage(file, { folder: 'scam-reports' });
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'scam-reports',
+        });
         imageUrls.push(uploadResult.relativePath);
       }
     }
@@ -199,11 +205,7 @@ export class ScamReportController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
   @HttpCode(HttpStatus.OK)
   async updateScamReport(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -225,9 +227,13 @@ export class ScamReportController {
           throw new BadRequestException('Image file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid image file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
-        const uploadResult = await this.uploadService.uploadImage(file, { folder: 'scam-reports' });
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'scam-reports',
+        });
         imageUrls.push(uploadResult.relativePath);
       }
     }
@@ -259,7 +265,10 @@ export class ScamReportController {
       userId: user.userId,
     });
 
-    return ApiResponseUtil.success({ message: 'Scam report deleted successfully' }, 'Scam report deleted successfully');
+    return ApiResponseUtil.success(
+      { message: 'Scam report deleted successfully' },
+      'Scam report deleted successfully',
+    );
   }
 
   @Get(':id/comments')
@@ -303,11 +312,7 @@ export class ScamReportController {
 
   @Post(':id/comments')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'images', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
   @HttpCode(HttpStatus.CREATED)
   async addComment(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -318,7 +323,7 @@ export class ScamReportController {
       images?: MulterFile[];
     },
   ): Promise<ApiResponse<ScamReportCommentResponseDto>> {
-    let imageUrls: string[] = [];
+    const imageUrls: string[] = [];
 
     // Upload images if provided
     if (files?.images && files.images.length > 0) {
@@ -328,9 +333,13 @@ export class ScamReportController {
           throw new BadRequestException('Image file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid image file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
-        const uploadResult = await this.uploadService.uploadImage(file, { folder: 'scam-reports/comments' });
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'scam-reports/comments',
+        });
         imageUrls.push(uploadResult.relativePath);
       }
     }
@@ -343,21 +352,24 @@ export class ScamReportController {
       images: imageUrls.length > 0 ? imageUrls : undefined,
     });
 
-    return ApiResponseUtil.success({
-      id: comment.id,
-      content: comment.content,
-      images: (comment.images || []).map((img: any) => ({
-        id: img.id,
-        imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl),
-        order: img.order,
-      })),
-      userId: comment.userId,
-      userName: comment.user?.displayName || null,
-      userEmail: comment.user?.email || null,
-      parentCommentId: comment.parentCommentId || null,
-      createdAt: comment.createdAt,
-      updatedAt: comment.updatedAt,
-    }, 'Comment added successfully');
+    return ApiResponseUtil.success(
+      {
+        id: comment.id,
+        content: comment.content,
+        images: (comment.images || []).map((img: any) => ({
+          id: img.id,
+          imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl),
+          order: img.order,
+        })),
+        userId: comment.userId,
+        userName: comment.user?.displayName || null,
+        userEmail: comment.user?.email || null,
+        parentCommentId: comment.parentCommentId || null,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+      },
+      'Comment added successfully',
+    );
   }
 
   @Delete('comments/:commentId')
@@ -392,9 +404,12 @@ export class ScamReportController {
       reactionType: dto.reactionType,
     });
 
-    return ApiResponseUtil.success({
-      id: reaction.id,
-      reactionType: reaction.reactionType,
-    }, 'Reaction added successfully');
+    return ApiResponseUtil.success(
+      {
+        id: reaction.id,
+        reactionType: reaction.reactionType,
+      },
+      'Reaction added successfully',
+    );
   }
 }

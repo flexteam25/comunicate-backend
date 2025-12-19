@@ -4,4 +4,3 @@ export class AdminRequestOtpDto {
   @IsEmail()
   email: string;
 }
-

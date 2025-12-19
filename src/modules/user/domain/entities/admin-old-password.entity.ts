@@ -21,7 +21,9 @@ export class AdminOldPassword {
   @Column({ name: 'admin_id', type: 'uuid' })
   adminId: string;
 
-  @ManyToOne(() => Admin, (admin) => admin.oldPasswords, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Admin, (admin) => admin.oldPasswords, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'admin_id' })
   admin: Admin;
 
@@ -38,4 +40,3 @@ export class AdminOldPassword {
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }
-

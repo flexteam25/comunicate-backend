@@ -7,4 +7,3 @@ export interface IScamReportImageRepository {
   delete(id: string): Promise<void>;
   deleteByReportId(reportId: string): Promise<void>;
 }
-

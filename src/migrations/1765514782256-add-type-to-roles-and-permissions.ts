@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, TableColumn } from "typeorm";
+import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
 export class AddTypeToRolesAndPermissions1765514782256 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -7,11 +7,11 @@ export class AddTypeToRolesAndPermissions1765514782256 implements MigrationInter
 
     // Add type column to roles table
     await queryRunner.addColumn(
-      "roles",
+      'roles',
       new TableColumn({
-        name: "type",
-        type: "varchar",
-        length: "20",
+        name: 'type',
+        type: 'varchar',
+        length: '20',
         isNullable: false,
         default: "'user'",
       }),
@@ -19,11 +19,11 @@ export class AddTypeToRolesAndPermissions1765514782256 implements MigrationInter
 
     // Add type column to permissions table
     await queryRunner.addColumn(
-      "permissions",
+      'permissions',
       new TableColumn({
-        name: "type",
-        type: "varchar",
-        length: "20",
+        name: 'type',
+        type: 'varchar',
+        length: '20',
         isNullable: false,
         default: "'user'",
       }),
@@ -56,9 +56,9 @@ export class AddTypeToRolesAndPermissions1765514782256 implements MigrationInter
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Remove type column from permissions table
-    await queryRunner.dropColumn("permissions", "type");
+    await queryRunner.dropColumn('permissions', 'type');
 
     // Remove type column from roles table
-    await queryRunner.dropColumn("roles", "type");
+    await queryRunner.dropColumn('roles', 'type');
   }
 }

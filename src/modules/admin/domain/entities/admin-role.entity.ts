@@ -31,4 +31,3 @@ export class AdminRole {
   @JoinColumn({ name: 'role_id' })
   role: Role;
 }
-

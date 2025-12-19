@@ -4,4 +4,3 @@ export class AssignBadgeDto {
   @IsUUID()
   badgeId: string;
 }
-

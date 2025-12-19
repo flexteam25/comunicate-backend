@@ -55,7 +55,7 @@ import { AttendanceStatisticsProcessor } from '../../modules/attendance/infrastr
           password: configService.get('REDIS_PASSWORD'),
           db: parseInt(configService.get('REDIS_DB', '0')),
         };
-        
+
         return {
           connection: redisConfig,
         };

@@ -69,9 +69,13 @@ export class AdvertisingContactRepository implements IAdvertisingContactReposito
         }
       } else {
         if (sortOrder === 'ASC') {
-          queryBuilder.andWhere('advertisingContact.id > :cursorId', { cursorId: id });
+          queryBuilder.andWhere('advertisingContact.id > :cursorId', {
+            cursorId: id,
+          });
         } else {
-          queryBuilder.andWhere('advertisingContact.id < :cursorId', { cursorId: id });
+          queryBuilder.andWhere('advertisingContact.id < :cursorId', {
+            cursorId: id,
+          });
         }
       }
     }

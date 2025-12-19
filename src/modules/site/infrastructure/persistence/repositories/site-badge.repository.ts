@@ -6,4 +6,3 @@ export interface ISiteBadgeRepository {
   removeBadge(siteId: string, badgeId: string): Promise<void>;
   hasBadge(siteId: string, badgeId: string): Promise<boolean>;
 }
-

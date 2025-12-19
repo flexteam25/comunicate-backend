@@ -17,7 +17,9 @@ export class ListMyScamReportsUseCase {
     private readonly scamReportRepository: IScamReportRepository,
   ) {}
 
-  async execute(command: ListMyScamReportsCommand): Promise<CursorPaginationResult<ScamReport>> {
+  async execute(
+    command: ListMyScamReportsCommand,
+  ): Promise<CursorPaginationResult<ScamReport>> {
     return this.scamReportRepository.findByUserId(
       command.userId,
       command.status,

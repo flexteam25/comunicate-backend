@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+} from '@nestjs/common';
 import { ScamReport, ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
 

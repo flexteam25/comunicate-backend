@@ -38,7 +38,9 @@ export class ListCommentsUseCase {
     // Public can view comments on published reviews
     // Owners can view comments on their own reviews
     if (!review.isPublished && review.userId !== command.userId) {
-      throw new BadRequestException('You can only view comments on published site reviews');
+      throw new BadRequestException(
+        'You can only view comments on published site reviews',
+      );
     }
 
     // Validate parent comment if provided (not undefined and not null)

@@ -8,4 +8,3 @@ export interface IAdminTokenRepository {
   revokeToken(tokenId: string): Promise<void>;
   revokeAllAdminTokens(adminId: string): Promise<void>;
 }
-

@@ -22,8 +22,7 @@ export class UploadModule {
       provide: STORAGE_PROVIDER,
       useFactory: (configService: ConfigService): StorageProvider => {
         // Can be extended to support S3 in the future
-        const type =
-          configService.get<string>('UPLOAD_STORAGE_TYPE') || storageType;
+        const type = configService.get<string>('UPLOAD_STORAGE_TYPE') || storageType;
 
         switch (type) {
           case 's3':
@@ -74,4 +73,3 @@ export class UploadModule {
     };
   }
 }
-

@@ -19,6 +19,10 @@ export class ListMySiteReviewsUseCase {
   async execute(
     command: ListMySiteReviewsCommand,
   ): Promise<CursorPaginationResult<SiteReview>> {
-    return this.siteReviewRepository.findByUserId(command.userId, command.cursor, command.limit);
+    return this.siteReviewRepository.findByUserId(
+      command.userId,
+      command.cursor,
+      command.limit,
+    );
   }
 }

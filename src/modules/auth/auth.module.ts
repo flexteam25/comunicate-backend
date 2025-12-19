@@ -14,12 +14,7 @@ import { JwtService } from '../../shared/services/jwt.service';
 import { QueueClientModule } from '../../shared/queue/queue-client.module';
 
 @Module({
-  imports: [
-    UserTokenRepositoryModule,
-    ConfigModule,
-    UserModule,
-    QueueClientModule,
-  ],
+  imports: [UserTokenRepositoryModule, ConfigModule, UserModule, QueueClientModule],
   controllers: [AuthController],
   providers: [
     RegisterUseCase,

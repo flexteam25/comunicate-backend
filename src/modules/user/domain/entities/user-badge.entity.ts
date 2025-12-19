@@ -13,7 +13,11 @@ export class UserBadge {
   @Column({ name: 'badge_id', type: 'uuid' })
   badgeId: string;
 
-  @Column({ name: 'earned_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'earned_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   earnedAt: Date;
 
   @ManyToOne(() => User, (user) => user.userBadges, { onDelete: 'CASCADE' })

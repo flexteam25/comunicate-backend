@@ -38,7 +38,12 @@ export class AttendanceStatistic {
   @Column({ name: 'attendance_rank', type: 'integer', nullable: true })
   attendanceRank?: number;
 
-  @Column({ name: 'daily_message', type: 'varchar', length: 20, nullable: true })
+  @Column({
+    name: 'daily_message',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   dailyMessage?: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })

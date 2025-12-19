@@ -1,7 +1,7 @@
-import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { CqrsModule } from "@nestjs/cqrs";
-import { QueueClientModule } from "../shared/queue/queue-client.module";
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { CqrsModule } from '@nestjs/cqrs';
+import { QueueClientModule } from '../shared/queue/queue-client.module';
 
 @Module({
   imports: [

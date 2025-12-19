@@ -13,4 +13,3 @@ export class ListTiersUseCase {
     return this.tierRepository.findAll();
   }
 }
-

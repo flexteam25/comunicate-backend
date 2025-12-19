@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+} from '@nestjs/common';
 import { IScamReportCommentRepository } from '../../infrastructure/persistence/repositories/scam-report-comment.repository';
 
 export interface DeleteCommentCommand {

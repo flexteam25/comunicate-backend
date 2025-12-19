@@ -43,4 +43,3 @@ export class SiteBadgeRepository implements ISiteBadgeRepository {
     return count > 0;
   }
 }
-

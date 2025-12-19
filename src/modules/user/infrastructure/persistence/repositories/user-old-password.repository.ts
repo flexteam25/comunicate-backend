@@ -1,4 +1,7 @@
-import { UserOldPassword, UserOldPasswordType } from '../../../domain/entities/user-old-password.entity';
+import {
+  UserOldPassword,
+  UserOldPasswordType,
+} from '../../../domain/entities/user-old-password.entity';
 
 export interface IUserOldPasswordRepository {
   create(oldPassword: UserOldPassword): Promise<UserOldPassword>;
@@ -9,4 +12,3 @@ export interface IUserOldPasswordRepository {
     limit?: number,
   ): Promise<UserOldPassword[]>;
 }
-

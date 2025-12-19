@@ -4,7 +4,7 @@ import { LoggerService } from '../logger/logger.service';
 
 /**
  * API Throttle Middleware
- * 
+ *
  * Separate rate limits for GET and POST methods:
  * - GET methods: Higher limit (for read operations)
  * - POST methods: Lower limit (for write operations)
@@ -21,9 +21,11 @@ export class ApiThrottleMiddleware implements NestMiddleware {
 
   // Configuration
   private readonly GET_LIMIT = parseInt(process.env.API_THROTTLE_GET_LIMIT || '100', 10); // requests
-  private readonly GET_WINDOW = parseInt(process.env.API_THROTTLE_GET_WINDOW || '60', 10) * 1000; // milliseconds
+  private readonly GET_WINDOW =
+    parseInt(process.env.API_THROTTLE_GET_WINDOW || '60', 10) * 1000; // milliseconds
   private readonly POST_LIMIT = parseInt(process.env.API_THROTTLE_POST_LIMIT || '30', 10); // requests
-  private readonly POST_WINDOW = parseInt(process.env.API_THROTTLE_POST_WINDOW || '60', 10) * 1000; // milliseconds
+  private readonly POST_WINDOW =
+    parseInt(process.env.API_THROTTLE_POST_WINDOW || '60', 10) * 1000; // milliseconds
 
   use(req: Request, res: Response, next: NextFunction) {
     const ip = this.getClientIp(req);
@@ -52,7 +54,11 @@ export class ApiThrottleMiddleware implements NestMiddleware {
     if (method === 'GET') {
       entry.getCount++;
       if (entry.getCount > this.GET_LIMIT) {
-        this.logger.warn('GET rate limit exceeded', { ip, path: req.path, count: entry.getCount }, 'throttle');
+        this.logger.warn(
+          'GET rate limit exceeded',
+          { ip, path: req.path, count: entry.getCount },
+          'throttle',
+        );
         res.setHeader('X-RateLimit-Limit', this.GET_LIMIT.toString());
         res.setHeader('X-RateLimit-Remaining', '0');
         res.setHeader('X-RateLimit-Reset', new Date(entry.resetTime).toISOString());
@@ -66,11 +72,23 @@ export class ApiThrottleMiddleware implements NestMiddleware {
         );
       }
       res.setHeader('X-RateLimit-Limit', this.GET_LIMIT.toString());
-      res.setHeader('X-RateLimit-Remaining', (this.GET_LIMIT - entry.getCount).toString());
-    } else if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
+      res.setHeader(
+        'X-RateLimit-Remaining',
+        (this.GET_LIMIT - entry.getCount).toString(),
+      );
+    } else if (
+      method === 'POST' ||
+      method === 'PUT' ||
+      method === 'PATCH' ||
+      method === 'DELETE'
+    ) {
       entry.postCount++;
       if (entry.postCount > this.POST_LIMIT) {
-        this.logger.warn('POST rate limit exceeded', { ip, path: req.path, method, count: entry.postCount }, 'throttle');
+        this.logger.warn(
+          'POST rate limit exceeded',
+          { ip, path: req.path, method, count: entry.postCount },
+          'throttle',
+        );
         res.setHeader('X-RateLimit-Limit', this.POST_LIMIT.toString());
         res.setHeader('X-RateLimit-Remaining', '0');
         res.setHeader('X-RateLimit-Reset', new Date(entry.resetTime).toISOString());
@@ -84,7 +102,10 @@ export class ApiThrottleMiddleware implements NestMiddleware {
         );
       }
       res.setHeader('X-RateLimit-Limit', this.POST_LIMIT.toString());
-      res.setHeader('X-RateLimit-Remaining', (this.POST_LIMIT - entry.postCount).toString());
+      res.setHeader(
+        'X-RateLimit-Remaining',
+        (this.POST_LIMIT - entry.postCount).toString(),
+      );
     }
 
     res.setHeader('X-RateLimit-Reset', new Date(entry.resetTime).toISOString());
@@ -124,4 +145,3 @@ export class ApiThrottleMiddleware implements NestMiddleware {
     }
   }
 }
-

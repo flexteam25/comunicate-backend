@@ -1,4 +1,13 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Req, Inject, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Req,
+  Inject,
+  UseGuards,
+} from '@nestjs/common';
 import { RegisterUseCase } from '../../application/handlers/register.use-case';
 import { LoginUseCase } from '../../application/handlers/login.use-case';
 import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.use-case';
@@ -15,7 +24,10 @@ import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-respons
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
-import { CurrentUser, CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../../../shared/decorators/current-user.decorator';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 @Controller('api/auth')
 export class AuthController {
@@ -37,7 +49,10 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: RegisterDto, @Req() req: any): Promise<ApiResponse<AuthResponse>> {
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() req: any,
+  ): Promise<ApiResponse<AuthResponse>> {
     const ipAddress = req.ip || req.connection?.remoteAddress;
 
     await this.registerUseCase.execute({
@@ -77,7 +92,10 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Req() req: any): Promise<ApiResponse<AuthResponse>> {
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: any,
+  ): Promise<ApiResponse<AuthResponse>> {
     const result = await this.loginUseCase.execute({
       email: dto.email,
       password: dto.password,
@@ -162,7 +180,9 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  async resetPassword(@Body() dto: ResetPasswordDto): Promise<ApiResponse<{ message: string }>> {
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+  ): Promise<ApiResponse<{ message: string }>> {
     const result = await this.resetPasswordUseCase.execute({
       email: dto.email,
       newPassword: dto.newPassword,

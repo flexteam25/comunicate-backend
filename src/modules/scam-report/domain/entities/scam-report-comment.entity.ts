@@ -1,11 +1,4 @@
-import {
-  Entity,
-  Column,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
-  Index,
-} from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../../../shared/domain/base-entity';
 import { ScamReport } from './scam-report.entity';
 import { User } from '../../../user/domain/entities/user.entity';
@@ -26,7 +19,9 @@ export class ScamReportComment extends BaseEntity {
   @Column({ type: 'text' })
   content: string;
 
-  @ManyToOne(() => ScamReport, (report) => report.comments, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ScamReport, (report) => report.comments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'scam_report_id' })
   scamReport: ScamReport;
 
@@ -34,7 +29,10 @@ export class ScamReportComment extends BaseEntity {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => ScamReportComment, (comment) => comment.replies, { nullable: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => ScamReportComment, (comment) => comment.replies, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'parent_comment_id' })
   parentComment?: ScamReportComment;
 

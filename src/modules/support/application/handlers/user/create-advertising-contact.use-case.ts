@@ -19,18 +19,19 @@ export class CreateAdvertisingContactUseCase {
   ) {}
 
   async execute(command: CreateAdvertisingContactCommand): Promise<AdvertisingContact> {
-    return this.transactionService.executeInTransaction(async (manager: EntityManager) => {
-      const advertisingContactRepo = manager.getRepository(AdvertisingContact);
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const advertisingContactRepo = manager.getRepository(AdvertisingContact);
 
-      const advertisingContact = advertisingContactRepo.create({
-        userId: command.userId,
-        message: command.message,
-        images: command.images || [],
-        isViewed: false,
-      });
+        const advertisingContact = advertisingContactRepo.create({
+          userId: command.userId,
+          message: command.message,
+          images: command.images || [],
+          isViewed: false,
+        });
 
-      return advertisingContactRepo.save(advertisingContact);
-    });
+        return advertisingContactRepo.save(advertisingContact);
+      },
+    );
   }
 }
-

@@ -4,4 +4,3 @@ export class AssignTierDto {
   @IsUUID()
   tierId: string;
 }
-

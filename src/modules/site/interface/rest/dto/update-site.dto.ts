@@ -1,4 +1,13 @@
-import { IsString, IsUUID, IsOptional, MaxLength, IsEnum, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsOptional,
+  MaxLength,
+  IsEnum,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { SiteStatus } from '../../../domain/entities/site.entity';
 

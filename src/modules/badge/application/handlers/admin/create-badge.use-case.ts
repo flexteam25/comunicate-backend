@@ -21,27 +21,29 @@ export class CreateBadgeUseCase {
   ) {}
 
   async execute(command: CreateBadgeCommand): Promise<Badge> {
-    return this.transactionService.executeInTransaction(async (manager: EntityManager) => {
-      const badgeRepo = manager.getRepository(Badge);
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const badgeRepo = manager.getRepository(Badge);
 
-      // Check duplicate by name (case-insensitive), excluding soft-deleted
-      const duplicate = await badgeRepo
-        .createQueryBuilder('b')
-        .where('LOWER(b.name) = LOWER(:name)', { name: command.name })
-        .andWhere('b.deletedAt IS NULL')
-        .getOne();
-      if (duplicate) {
-        throw new BadRequestException('Badge with this name already exists');
-      }
+        // Check duplicate by name (case-insensitive), excluding soft-deleted
+        const duplicate = await badgeRepo
+          .createQueryBuilder('b')
+          .where('LOWER(b.name) = LOWER(:name)', { name: command.name })
+          .andWhere('b.deletedAt IS NULL')
+          .getOne();
+        if (duplicate) {
+          throw new BadRequestException('Badge with this name already exists');
+        }
 
-      const badge = badgeRepo.create({
-        name: command.name,
-        description: command.description,
-        iconUrl: command.iconUrl,
-        badgeType: command.badgeType,
-        isActive: command.isActive ?? true,
-      });
-      return badgeRepo.save(badge);
-    });
+        const badge = badgeRepo.create({
+          name: command.name,
+          description: command.description,
+          iconUrl: command.iconUrl,
+          badgeType: command.badgeType,
+          isActive: command.isActive ?? true,
+        });
+        return badgeRepo.save(badge);
+      },
+    );
   }
 }

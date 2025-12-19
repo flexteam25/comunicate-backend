@@ -72,7 +72,9 @@ export class UserFavoriteSiteRepository implements IUserFavoriteSiteRepository {
       createdAt: row.createdAt,
     }));
 
-    const nextCursor = hasMore ? data[data.length - 1]?.createdAt.toISOString() ?? null : null;
+    const nextCursor = hasMore
+      ? (data[data.length - 1]?.createdAt.toISOString() ?? null)
+      : null;
 
     return {
       data,
@@ -81,5 +83,3 @@ export class UserFavoriteSiteRepository implements IUserFavoriteSiteRepository {
     };
   }
 }
-
-

@@ -67,7 +67,8 @@ export class SiteReviewController {
       siteName: review.site?.name || null,
       userId: review.userId,
       userName: review.user?.displayName || null,
-      userAvatarUrl: buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
+      userAvatarUrl:
+        buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
       rating: review.rating,
       title: review.title,
       content: review.content,
@@ -88,7 +89,8 @@ export class SiteReviewController {
       content: comment.content,
       userId: comment.userId,
       userName: comment.user?.displayName || null,
-      userAvatarUrl: buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null) || null,
+      userAvatarUrl:
+        buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null) || null,
       parentCommentId: comment.parentCommentId || null,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,

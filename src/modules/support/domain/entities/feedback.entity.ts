@@ -31,4 +31,3 @@ export class Feedback extends BaseEntity {
   @Column({ name: 'viewed_at', type: 'timestamptz', nullable: true })
   viewedAt?: Date;
 }
-

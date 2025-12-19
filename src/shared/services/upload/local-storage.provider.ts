@@ -10,16 +10,12 @@ export class LocalStorageProvider implements StorageProvider {
   private readonly baseUrl: string;
 
   constructor(private configService: ConfigService) {
-    this.uploadDir =
-      this.configService.get<string>('UPLOAD_DIR') || 'uploads';
-    this.baseUrl =
-      this.configService.get<string>('UPLOAD_BASE_URL') || '/uploads';
+    this.uploadDir = this.configService.get<string>('UPLOAD_DIR') || 'uploads';
+    this.baseUrl = this.configService.get<string>('UPLOAD_BASE_URL') || '/uploads';
   }
 
   async save(buffer: Buffer, filename: string, folder?: string): Promise<string> {
-    const targetDir = folder
-      ? path.join(this.uploadDir, folder)
-      : this.uploadDir;
+    const targetDir = folder ? path.join(this.uploadDir, folder) : this.uploadDir;
 
     // Ensure directory exists
     await fs.mkdir(targetDir, { recursive: true });
@@ -66,4 +62,3 @@ export class LocalStorageProvider implements StorageProvider {
     return 'local';
   }
 }
-

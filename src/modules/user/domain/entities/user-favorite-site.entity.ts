@@ -1,4 +1,11 @@
-import { Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 import { Site } from '../../../site/domain/entities/site.entity';
 
@@ -13,7 +20,9 @@ export class UserFavoriteSite {
   @Column({ name: 'site_id', type: 'uuid' })
   siteId: string;
 
-  @ManyToOne(() => User, (user) => user.userFavoriteSites, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.userFavoriteSites, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id' })
   user: User;
 

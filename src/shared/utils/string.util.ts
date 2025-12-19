@@ -5,7 +5,7 @@
 /**
  * Convert string to snake_case
  * Breaks whitespace and converts to lowercase with underscores
- * 
+ *
  * Examples:
  * - "User Beta 1" → "user_beta_1"
  * - "user_beta_1" → "user_beta_1"
@@ -23,4 +23,3 @@ export function toSnakeCase(str: string): string {
     .map((word) => word.toLowerCase())
     .join('_');
 }
-

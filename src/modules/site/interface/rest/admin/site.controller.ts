@@ -165,9 +165,15 @@ export class AdminSiteController {
           throw new BadRequestException('Logo file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid logo file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid logo file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
-        const logoResult = await this.uploadService.uploadSiteImage(file, site.id, 'logo');
+        const logoResult = await this.uploadService.uploadSiteImage(
+          file,
+          site.id,
+          'logo',
+        );
         logoUrl = logoResult.relativePath;
       }
 
@@ -226,13 +232,18 @@ export class AdminSiteController {
       }
     }
 
-    return ApiResponseUtil.success(this.mapSiteToResponse(site), 'Site created successfully');
+    return ApiResponseUtil.success(
+      this.mapSiteToResponse(site),
+      'Site created successfully',
+    );
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.view')
-  async listSites(@Query() query: ListSitesQueryDto): Promise<ApiResponse<CursorPaginatedSitesResponse>> {
+  async listSites(
+    @Query() query: ListSitesQueryDto,
+  ): Promise<ApiResponse<CursorPaginatedSitesResponse>> {
     const result = await this.listSitesUseCase.execute({
       filters: {
         categoryId: query.categoryId,
@@ -299,7 +310,9 @@ export class AdminSiteController {
           throw new BadRequestException('Logo file size exceeds 5MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException('Invalid logo file type. Allowed: jpg, jpeg, png, webp');
+          throw new BadRequestException(
+            'Invalid logo file type. Allowed: jpg, jpeg, png, webp',
+          );
         }
         const logoResult = await this.uploadService.uploadSiteImage(file, id, 'logo');
         logoUrl = logoResult.relativePath;
@@ -354,7 +367,10 @@ export class AdminSiteController {
       mainImageUrl,
       siteImageUrl,
     });
-    return ApiResponseUtil.success(this.mapSiteToResponse(site), 'Site updated successfully');
+    return ApiResponseUtil.success(
+      this.mapSiteToResponse(site),
+      'Site updated successfully',
+    );
   }
 
   @Delete(':id')
@@ -374,7 +390,10 @@ export class AdminSiteController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<SiteResponse>> {
     const site = await this.restoreSiteUseCase.execute({ siteId: id });
-    return ApiResponseUtil.success(this.mapSiteToResponse(site), 'Site restored successfully');
+    return ApiResponseUtil.success(
+      this.mapSiteToResponse(site),
+      'Site restored successfully',
+    );
   }
 
   @Post(':id/domains')

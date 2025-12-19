@@ -41,10 +41,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
-      } else if (
-        typeof exceptionResponse === 'object' &&
-        exceptionResponse !== null
-      ) {
+      } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         const responseObj = exceptionResponse as HttpExceptionResponse;
         const responseMessage = Array.isArray(responseObj.message)
           ? responseObj.message.join(', ')

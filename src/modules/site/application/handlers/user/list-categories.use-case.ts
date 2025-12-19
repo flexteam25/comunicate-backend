@@ -14,4 +14,3 @@ export class ListCategoriesUseCase {
     return this.categoryRepository.findAll(1);
   }
 }
-

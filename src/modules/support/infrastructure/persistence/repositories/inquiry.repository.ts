@@ -20,4 +20,3 @@ export interface IInquiryRepository {
   update(id: string, data: Partial<Inquiry>): Promise<Inquiry>;
   findByUserId(userId: string): Promise<Inquiry[]>;
 }
-

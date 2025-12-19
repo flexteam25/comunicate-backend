@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
-export class AddIsActiveToBadgesTiersCategories1765670000000
-  implements MigrationInterface
-{
+export class AddIsActiveToBadgesTiersCategories1765670000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add is_active to badges
     await queryRunner.addColumn(
@@ -44,4 +42,3 @@ export class AddIsActiveToBadgesTiersCategories1765670000000
     await queryRunner.dropColumn('badges', 'is_active');
   }
 }
-

@@ -6,4 +6,3 @@ export class AdminUpdateProfileDto {
   @MaxLength(100)
   displayName?: string;
 }
-

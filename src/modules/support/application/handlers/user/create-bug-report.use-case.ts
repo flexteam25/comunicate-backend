@@ -19,18 +19,19 @@ export class CreateBugReportUseCase {
   ) {}
 
   async execute(command: CreateBugReportCommand): Promise<BugReport> {
-    return this.transactionService.executeInTransaction(async (manager: EntityManager) => {
-      const bugReportRepo = manager.getRepository(BugReport);
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const bugReportRepo = manager.getRepository(BugReport);
 
-      const bugReport = bugReportRepo.create({
-        userId: command.userId,
-        message: command.message,
-        images: command.images || [],
-        isViewed: false,
-      });
+        const bugReport = bugReportRepo.create({
+          userId: command.userId,
+          message: command.message,
+          images: command.images || [],
+          isViewed: false,
+        });
 
-      return bugReportRepo.save(bugReport);
-    });
+        return bugReportRepo.save(bugReport);
+      },
+    );
   }
 }
-

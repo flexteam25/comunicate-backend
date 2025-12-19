@@ -21,7 +21,9 @@ export class ListAdvertisingContactsUseCase {
     private readonly advertisingContactRepository: IAdvertisingContactRepository,
   ) {}
 
-  async execute(command: ListAdvertisingContactsCommand): Promise<CursorPaginationResult<AdvertisingContact>> {
+  async execute(
+    command: ListAdvertisingContactsCommand,
+  ): Promise<CursorPaginationResult<AdvertisingContact>> {
     return this.advertisingContactRepository.findAllWithCursor(
       command.filters,
       command.cursor,

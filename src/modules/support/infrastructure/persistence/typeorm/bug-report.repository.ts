@@ -2,8 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BugReport } from '../../../domain/entities/bug-report.entity';
-import { IBugReportRepository, BugReportFilters } from '../repositories/bug-report.repository';
-import { CursorPaginationResult, CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
+import {
+  IBugReportRepository,
+  BugReportFilters,
+} from '../repositories/bug-report.repository';
+import {
+  CursorPaginationResult,
+  CursorPaginationUtil,
+} from '../../../../../shared/utils/cursor-pagination.util';
 
 @Injectable()
 export class BugReportRepository implements IBugReportRepository {
@@ -34,10 +40,14 @@ export class BugReportRepository implements IBugReportRepository {
 
     // Apply filters
     if (filters?.userId) {
-      queryBuilder.andWhere('bugReport.userId = :userId', { userId: filters.userId });
+      queryBuilder.andWhere('bugReport.userId = :userId', {
+        userId: filters.userId,
+      });
     }
     if (filters?.isViewed !== undefined) {
-      queryBuilder.andWhere('bugReport.isViewed = :isViewed', { isViewed: filters.isViewed });
+      queryBuilder.andWhere('bugReport.isViewed = :isViewed', {
+        isViewed: filters.isViewed,
+      });
     }
 
     // Apply cursor pagination
@@ -116,4 +126,3 @@ export class BugReportRepository implements IBugReportRepository {
     });
   }
 }
-

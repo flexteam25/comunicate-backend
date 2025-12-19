@@ -12,11 +12,17 @@ import {
 } from '@nestjs/common';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
-import { CurrentUser, CurrentUserPayload } from '../../../../shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../../../shared/decorators/current-user.decorator';
 import { CreateAttendanceUseCase } from '../../application/handlers/create-attendance.use-case';
 import { ListAttendancesUseCase } from '../../application/handlers/list-attendances.use-case';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
-import { AttendanceFilter, ListAttendancesQueryDto } from './dto/list-attendances-query.dto';
+import {
+  AttendanceFilter,
+  ListAttendancesQueryDto,
+} from './dto/list-attendances-query.dto';
 import {
   AttendanceResponse,
   ListAttendancesResponse,
@@ -77,7 +83,9 @@ export class AttendanceController {
       rankByTime: item.rankByTime,
       userId: item.userId,
       nickname: item.nickname,
-      avatarUrl: item.avatarUrl ? buildFullUrl(this.apiServiceUrl, item.avatarUrl) : undefined,
+      avatarUrl: item.avatarUrl
+        ? buildFullUrl(this.apiServiceUrl, item.avatarUrl)
+        : undefined,
       message: item.message,
       attendanceTime: item.attendanceTime,
       currentStreak: item.currentStreak,

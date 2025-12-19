@@ -2,11 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import {
-  EmailProvider,
-  EmailOptions,
-  EmailResult,
-} from './email-provider.interface';
+import { EmailProvider, EmailOptions, EmailResult } from './email-provider.interface';
 
 /**
  * SMTP Email Provider
@@ -21,8 +17,7 @@ export class SmtpEmailProvider implements EmailProvider {
   private readonly providerName: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.providerName =
-      this.configService.get<string>('EMAIL_PROVIDER') || 'smtp';
+    this.providerName = this.configService.get<string>('EMAIL_PROVIDER') || 'smtp';
     this.initializeTransporter();
   }
 
@@ -213,4 +208,3 @@ export class SmtpEmailProvider implements EmailProvider {
     }
   }
 }
-

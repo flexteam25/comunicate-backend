@@ -1,11 +1,4 @@
-import {
-  Entity,
-  Column,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
-  Index,
-} from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from '../../../../shared/domain/base-entity';
 import { SiteReview } from './site-review.entity';
 import { User } from '../../../user/domain/entities/user.entity';
@@ -27,7 +20,9 @@ export class SiteReviewComment extends BaseEntity {
   @Column({ type: 'text' })
   content: string;
 
-  @ManyToOne(() => SiteReview, (review) => review.comments, { onDelete: 'CASCADE' })
+  @ManyToOne(() => SiteReview, (review) => review.comments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'review_id' })
   siteReview: SiteReview;
 

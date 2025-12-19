@@ -63,7 +63,8 @@ export class AdminSupportController {
     private readonly markAdvertisingContactViewedUseCase: MarkAdvertisingContactViewedUseCase,
     private readonly configService: ConfigService,
   ) {
-    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || 'http://localhost:3000';
+    this.apiServiceUrl =
+      this.configService.get<string>('API_SERVICE_URL') || 'http://localhost:3000';
   }
 
   // ========== Inquiry Endpoints ==========
@@ -122,7 +123,10 @@ export class AdminSupportController {
       status: dto.status,
     });
 
-    return ApiResponseUtil.success(this.mapInquiryToResponse(inquiry), 'Inquiry replied successfully');
+    return ApiResponseUtil.success(
+      this.mapInquiryToResponse(inquiry),
+      'Inquiry replied successfully',
+    );
   }
 
   // ========== Feedback Endpoints ==========
@@ -160,14 +164,19 @@ export class AdminSupportController {
       adminId: admin.adminId,
     });
 
-    return ApiResponseUtil.success(this.mapFeedbackToResponse(feedback), 'Feedback marked as viewed');
+    return ApiResponseUtil.success(
+      this.mapFeedbackToResponse(feedback),
+      'Feedback marked as viewed',
+    );
   }
 
   // ========== Bug Report Endpoints ==========
   @Get('bug-reports')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.bug.view')
-  async listBugReports(@Query() query: ListBugReportsQueryDto): Promise<ApiResponse<any>> {
+  async listBugReports(
+    @Query() query: ListBugReportsQueryDto,
+  ): Promise<ApiResponse<any>> {
     const result = await this.listBugReportsUseCase.execute({
       filters: {
         userId: query.userId,
@@ -198,14 +207,19 @@ export class AdminSupportController {
       adminId: admin.adminId,
     });
 
-    return ApiResponseUtil.success(this.mapBugReportToResponse(bugReport), 'Bug report marked as viewed');
+    return ApiResponseUtil.success(
+      this.mapBugReportToResponse(bugReport),
+      'Bug report marked as viewed',
+    );
   }
 
   // ========== Advertising Contact Endpoints ==========
   @Get('advertising-contacts')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.advertising.view')
-  async listAdvertisingContacts(@Query() query: ListAdvertisingContactsQueryDto): Promise<ApiResponse<any>> {
+  async listAdvertisingContacts(
+    @Query() query: ListAdvertisingContactsQueryDto,
+  ): Promise<ApiResponse<any>> {
     const result = await this.listAdvertisingContactsUseCase.execute({
       filters: {
         userId: query.userId,
@@ -218,7 +232,9 @@ export class AdminSupportController {
     });
 
     return ApiResponseUtil.success({
-      data: result.data.map((adContact) => this.mapAdvertisingContactToResponse(adContact)),
+      data: result.data.map((adContact) =>
+        this.mapAdvertisingContactToResponse(adContact),
+      ),
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
     });
@@ -340,7 +356,9 @@ export class AdminSupportController {
           }
         : undefined,
       message: advertisingContact.message,
-      images: advertisingContact.images?.map((img) => buildFullUrl(this.apiServiceUrl, img)) || [],
+      images:
+        advertisingContact.images?.map((img) => buildFullUrl(this.apiServiceUrl, img)) ||
+        [],
       isViewed: advertisingContact.isViewed,
       viewedByAdminId: advertisingContact.viewedByAdminId,
       viewedByAdmin: advertisingContact.viewedByAdmin
@@ -356,4 +374,3 @@ export class AdminSupportController {
     };
   }
 }
-

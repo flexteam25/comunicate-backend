@@ -16,4 +16,3 @@ export class SiteCategory extends BaseEntity {
   @OneToMany(() => Site, (site) => site.category)
   sites: Site[];
 }
-

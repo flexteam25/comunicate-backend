@@ -58,7 +58,7 @@ export function getAllIpVersions(ip: string): string[] {
 /**
  * Check if IP matches any in trust list
  * Checks both original (IPv6) and normalized (IPv4) versions
- * 
+ *
  * Examples:
  * - If ip is '::1' and trustIps has '127.0.0.1' → returns true
  * - If ip is '::1' and trustIps has '::1' → returns true
@@ -97,4 +97,3 @@ export function isIpInTrustList(ip: string, trustIps: string[]): boolean {
     });
   });
 }
-
