@@ -1,19 +1,21 @@
 import {
   IsString,
   IsNotEmpty,
-  IsNumber,
   IsUUID,
   MaxLength,
   Min,
   Max,
+  IsInt,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateSiteReviewDto {
   @IsUUID()
   @IsNotEmpty()
   siteId: string;
 
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(1)
   @Max(5)
   rating: number;
