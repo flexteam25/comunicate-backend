@@ -28,9 +28,6 @@ import { SiteView } from '../../modules/site/domain/entities/site-view.entity';
 import { Tier } from '../../modules/tier/domain/entities/tier.entity';
 import { UserProfile } from '../../modules/user/domain/entities/user-profile.entity';
 import { Inquiry } from '../../modules/support/domain/entities/inquiry.entity';
-import { Feedback } from '../../modules/support/domain/entities/feedback.entity';
-import { BugReport } from '../../modules/support/domain/entities/bug-report.entity';
-import { AdvertisingContact } from '../../modules/support/domain/entities/advertising-contact.entity';
 import { Attendance } from '../../modules/attendance/domain/entities/attendance.entity';
 import { AttendanceStatistic } from '../../modules/attendance/domain/entities/attendance-statistic.entity';
 import { ScamReport } from '../../modules/scam-report/domain/entities/scam-report.entity';
@@ -81,9 +78,6 @@ import { SiteReviewComment } from '../../modules/site-review/domain/entities/sit
         Tier,
         UserProfile,
         Inquiry,
-        Feedback,
-        BugReport,
-        AdvertisingContact,
         Attendance,
         AttendanceStatistic,
         ScamReport,

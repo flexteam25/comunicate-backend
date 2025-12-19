@@ -1,11 +1,13 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { IInquiryRepository } from '../../../infrastructure/persistence/repositories/inquiry.repository';
-import { Inquiry, InquiryStatus } from '../../../domain/entities/inquiry.entity';
+import { Inquiry, InquiryStatus, InquiryCategory } from '../../../domain/entities/inquiry.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 
 export interface CreateInquiryCommand {
   userId: string;
+  title: string;
+  category: InquiryCategory;
   message: string;
   images?: string[];
 }
@@ -25,6 +27,8 @@ export class CreateInquiryUseCase {
 
         const inquiry = inquiryRepo.create({
           userId: command.userId,
+          title: command.title,
+          category: command.category,
           message: command.message,
           images: command.images || [],
           status: InquiryStatus.PENDING,

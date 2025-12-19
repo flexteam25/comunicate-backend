@@ -1069,3 +1069,60 @@ const siteImageUrl = await this.uploadService.uploadSiteImage(
 - Includes all user and admin endpoints
 
 ---
+
+### 29. Inquiry System (Refactored)
+
+**Location:** `src/modules/support/`
+
+**User APIs (`/api/support`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/support/inquiry-categories` | Get inquiry categories (public) | ❌ |
+| `GET` | `/api/support/inquiries` | List own inquiries (cursor pagination) | ✅ |
+| `POST` | `/api/support/inquiries` | Create inquiry with images | ✅ |
+| `PUT` | `/api/support/inquiries/:id` | Update own inquiry | ✅ |
+
+**Admin APIs (`/admin/support`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/admin/support/inquiries/statuses` | Get inquiry status options | ✅ |
+| `GET` | `/admin/support/inquiries` | List all inquiries (cursor pagination) | ✅ |
+| `GET` | `/admin/support/inquiries/:id` | Get inquiry details | ✅ |
+| `PUT` | `/admin/support/inquiries/:id/reply` | Reply to inquiry | ✅ |
+
+**Features:**
+- ✅ Inquiry CRUD with permission checks
+- ✅ Title and category fields (required)
+- ✅ Category enum: `inquiry`, `feedback`, `bug`, `advertisement`
+- ✅ Public API endpoint to get inquiry categories
+- ✅ Image uploads for inquiries (multiple images per inquiry, max 10)
+- ✅ Status workflow: `pending` → `processing` → `resolved` or `closed`
+- ✅ Admin reply functionality
+- ✅ Cursor pagination for listing inquiries
+- ✅ Filter by status, category, userId, adminId
+- ✅ Search and sort capabilities
+- ✅ Removed separate Feedback, BugReport, and AdvertisingContact entities (consolidated into Inquiry with category)
+
+**Inquiry Entity:**
+- Fields: `userId`, `title`, `category` (inquiry/feedback/bug/advertisement), `message`, `images[]`, `status` (pending/processing/closed/resolved), `adminId`, `adminReply`, `repliedAt`
+- Relationships: `user`, `admin`
+- Category enum: `InquiryCategory.INQUIRY`, `InquiryCategory.FEEDBACK`, `InquiryCategory.BUG`, `InquiryCategory.ADVERTISEMENT`
+
+**Database Schema:**
+- ✅ Migration `1766137602873-update-inquiry-system.ts`:
+  - Added `title` column (varchar 255, required) to `inquiries` table
+  - Added `category` column (enum: inquiry/feedback/bug/advertisement, default: inquiry) to `inquiries` table
+  - Dropped `feedbacks` table
+  - Dropped `bug_reports` table
+  - Dropped `advertising_contacts` table
+
+**Refactoring:**
+- ✅ Removed Feedback, BugReport, and AdvertisingContact entities
+- ✅ Consolidated all support requests into single Inquiry entity with category field
+- ✅ Updated all DTOs, use cases, and controllers
+- ✅ Removed unused repositories and use cases
+- ✅ Updated app.module.ts, scheduler.module.ts, queue-worker.module.ts, and migration.ts to remove deleted entity references
+
+---

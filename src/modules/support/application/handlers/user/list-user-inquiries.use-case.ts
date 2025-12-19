@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
-import { Inquiry, InquiryStatus } from '../../../domain/entities/inquiry.entity';
+import { Inquiry, InquiryStatus, InquiryCategory } from '../../../domain/entities/inquiry.entity';
 import {
   IInquiryRepository,
   InquiryFilters,
@@ -9,6 +9,7 @@ import {
 export interface ListUserInquiriesCommand {
   userId: string;
   status?: InquiryStatus;
+  category?: InquiryCategory;
   cursor?: string;
   limit?: number;
   sortBy?: string;
@@ -28,6 +29,7 @@ export class ListUserInquiriesUseCase {
     const filters: InquiryFilters = {
       userId: command.userId,
       status: command.status,
+      category: command.category,
     };
 
     return this.inquiryRepository.findAllWithCursor(

@@ -10,6 +10,13 @@ export enum InquiryStatus {
   RESOLVED = 'resolved',
 }
 
+export enum InquiryCategory {
+  INQUIRY = 'inquiry',
+  FEEDBACK = 'feedback',
+  BUG = 'bug',
+  ADVERTISEMENT = 'advertisement',
+}
+
 @Entity('inquiries')
 export class Inquiry extends BaseEntity {
   @Column({ name: 'user_id', type: 'uuid' })
@@ -18,6 +25,12 @@ export class Inquiry extends BaseEntity {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @Column({ type: 'varchar', length: 255 })
+  title: string;
+
+  @Column({ type: 'enum', enum: InquiryCategory, default: InquiryCategory.INQUIRY })
+  category: InquiryCategory;
 
   @Column({ type: 'text' })
   message: string;

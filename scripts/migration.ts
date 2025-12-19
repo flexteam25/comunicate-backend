@@ -23,9 +23,6 @@ import { AdminRole } from '../src/modules/admin/domain/entities/admin-role.entit
 import { AdminPermission } from '../src/modules/admin/domain/entities/admin-permission.entity';
 import { AdminOldPassword } from '../src/modules/user/domain/entities/admin-old-password.entity';
 import { Inquiry } from '../src/modules/support/domain/entities/inquiry.entity';
-import { Feedback } from '../src/modules/support/domain/entities/feedback.entity';
-import { BugReport } from '../src/modules/support/domain/entities/bug-report.entity';
-import { AdvertisingContact } from '../src/modules/support/domain/entities/advertising-contact.entity';
 import { Attendance } from '../src/modules/attendance/domain/entities/attendance.entity';
 import { AttendanceStatistic } from '../src/modules/attendance/domain/entities/attendance-statistic.entity';
 import { ScamReport } from '../src/modules/scam-report/domain/entities/scam-report.entity';
@@ -119,9 +116,6 @@ function buildDataSource() {
       AdminOldPassword,
       UserProfile,
       Inquiry,
-      Feedback,
-      BugReport,
-      AdvertisingContact,
       Attendance,
       AttendanceStatistic,
       ScamReport,

@@ -6,12 +6,14 @@ import {
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
-import { Inquiry, InquiryStatus } from '../../../domain/entities/inquiry.entity';
+import { Inquiry, InquiryStatus, InquiryCategory } from '../../../domain/entities/inquiry.entity';
 import { IInquiryRepository } from '../../../infrastructure/persistence/repositories/inquiry.repository';
 
 export interface UpdateUserInquiryCommand {
   inquiryId: string;
   userId: string;
+  title?: string;
+  category?: InquiryCategory;
   message?: string;
   images?: string[];
 }
@@ -38,6 +40,14 @@ export class UpdateUserInquiryUseCase {
     return this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         const inquiryRepo = manager.getRepository(Inquiry);
+
+        if (typeof command.title === 'string') {
+          inquiry.title = command.title;
+        }
+
+        if (typeof command.category !== 'undefined') {
+          inquiry.category = command.category;
+        }
 
         if (typeof command.message === 'string') {
           inquiry.message = command.message;

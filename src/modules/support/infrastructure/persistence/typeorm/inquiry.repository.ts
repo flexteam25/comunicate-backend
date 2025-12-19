@@ -46,6 +46,11 @@ export class InquiryRepository implements IInquiryRepository {
         status: filters.status,
       });
     }
+    if (filters?.category) {
+      queryBuilder.andWhere('inquiry.category = :category', {
+        category: filters.category,
+      });
+    }
     if (filters?.adminId) {
       queryBuilder.andWhere('inquiry.adminId = :adminId', {
         adminId: filters.adminId,

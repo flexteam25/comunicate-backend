@@ -1,9 +1,10 @@
-import { Inquiry, InquiryStatus } from '../../../domain/entities/inquiry.entity';
+import { Inquiry, InquiryStatus, InquiryCategory } from '../../../domain/entities/inquiry.entity';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 export interface InquiryFilters {
   userId?: string;
   status?: InquiryStatus;
+  category?: InquiryCategory;
   adminId?: string;
 }
 
