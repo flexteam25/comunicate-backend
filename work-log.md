@@ -510,7 +510,8 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 - `1766042980435-create-scam-report-images.ts` - Creates `scam_report_images` table
 - `1766043000000-add-indexes-to-scam-reports.ts` - Adds foreign keys and indexes to `scam_reports` table
 - `1766049539981-remove-like-count-from-scam-report-comments.ts` - Removes `like_count` column from `scam_report_comments` table
-- `1766051045757-drop-scam-report-site-table.ts` - Drops redundant `scam_report_site` table (scam_reports, scam_report_comments, scam_report_comment_images, scam_report_reactions)
+- `1766051045757-drop-scam-report-site-table.ts` - Drops redundant `scam_report_site` table
+- `1766118140089-update-site-reviews-schema.ts` - Removes `like_count` from `site_reviews` and `site_review_comments`, changes `is_published` default to `false`
 - `1765640000000-create-site-system-part1.ts` - Site system tables (part 1)
 - `1765650000000-create-site-system-part2.ts` - Site system tables (part 2)
 - `1765660000000-create-site-system-part3.ts` - Site system tables (part 3)
@@ -978,5 +979,93 @@ const siteImageUrl = await this.uploadService.uploadSiteImage(
 - `/api/sites/:id/scam-reports` endpoint to list published scam reports for a site
 - `issueCount` included in site list and detail APIs
 - Uses `loadRelationCountAndMap` for efficient counting (no N+1 queries)
+
+---
+
+### 28. Site Review System
+
+**Location:** `src/modules/site-review/`
+
+**User APIs (`/api/site-reviews`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/site-reviews` | Create site review (upsert pattern - throws error if exists) | ✅ |
+| `GET` | `/api/site-reviews` | List published site reviews for a site | ❌ |
+| `GET` | `/api/site-reviews/:id` | Get site review details | ❌ |
+| `PUT` | `/api/site-reviews/:id` | Update own site review (within 2 hours) | ✅ |
+| `DELETE` | `/api/site-reviews/:id` | Delete own site review | ✅ |
+| `POST` | `/api/site-reviews/:id/react` | React to site review (like/dislike) | ✅ |
+| `GET` | `/api/site-reviews/:id/comments` | List comments for site review | ❌ |
+| `POST` | `/api/site-reviews/:id/comments` | Add comment to site review | ✅ |
+| `DELETE` | `/api/site-reviews/comments/:commentId` | Soft delete own comment | ✅ |
+| `GET` | `/api/site-reviews/my-site-reviews` | List own site reviews (all statuses) | ✅ |
+
+**Admin APIs (`/admin/site-reviews`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/admin/site-reviews` | List all site reviews (cursor pagination) | ✅ |
+| `GET` | `/admin/site-reviews/:id` | Get site review details | ✅ |
+| `POST` | `/admin/site-reviews/:id/approve` | Approve site review (isPublished: true) | ✅ |
+| `POST` | `/admin/site-reviews/:id/reject` | Reject site review (isPublished: false) | ✅ |
+
+**Features:**
+- ✅ Site review CRUD with permission checks
+- ✅ Rating system (1-5 stars)
+- ✅ Title and content required
+- ✅ Upsert pattern: Throws error if review already exists (no update on create)
+- ✅ Update allowed only within 2 hours after submission
+- ✅ Status workflow: `isPublished: false` (default) → `true` (approved by admin)
+- ✅ Public users can only view published reviews
+- ✅ Owners can view/edit/delete own reviews regardless of status
+- ✅ Reaction system (like/dislike) with unique constraint per user
+- ✅ Comment system with nested replies support
+- ✅ Top-level comments only by default (filter by `parentCommentId` for replies)
+- ✅ Soft delete for comments
+- ✅ Validation: Cannot retrieve replies if parent comment is soft-deleted
+- ✅ Cursor pagination for listing reviews and comments
+- ✅ Sorting: Newest (createdAt DESC), Highest Rating (rating DESC), Lowest Rating (rating ASC)
+- ✅ Search by title (user API) or title/reviewer name (admin API)
+- ✅ Filter by rating (1-5)
+- ✅ Reaction counts calculated via database subqueries (no N+1 queries)
+- ✅ Comment counts loaded via `loadRelationCountAndMap`
+- ✅ Site statistics: Automatically calculates and updates `review_count` and `average_rating` on sites table
+- ✅ Statistics recalculation: Triggered on create/update/delete/approve/reject
+- ✅ User comment tracking: Saves to `user_comments` table for future statistics
+- ✅ Empty string handling: `parentCommentId=""` converted to `undefined` for top-level comments
+
+**Site Review Entity:**
+- Fields: `siteId`, `userId`, `rating` (1-5), `title`, `content`, `isPublished` (default: false)
+- Relationships: `site`, `user`, `reactions[]`, `comments[]`
+- Unique constraint: One review per user per site (`(site_id, user_id)`)
+- Computed properties: `likeCount`, `dislikeCount`, `commentCount` (loaded via subqueries/loadRelationCountAndMap)
+
+**Site Review Reaction Entity:**
+- Fields: `siteReviewId`, `userId`, `reactionType` (like/dislike)
+- Unique constraint: One reaction per user per review
+- Column mapping: `review_id` (database) → `siteReviewId` (entity)
+
+**Site Review Comment Entity:**
+- Fields: `siteReviewId`, `userId`, `parentCommentId` (optional, for replies), `content`
+- Relationships: `siteReview`, `user`, `parentComment`, `replies[]`
+- Supports nested comments (replies to comments)
+- No `like_count` field (removed via migration)
+
+**Database Schema Updates:**
+- ✅ Migration `1766118140089-update-site-reviews-schema.ts`:
+  - Removed `like_count` from `site_reviews` table
+  - Removed `like_count` from `site_review_comments` table
+  - Changed `is_published` default from `true` to `false`
+
+**Integration with Site Module:**
+- `Site` entity already has `review_count` and `average_rating` columns
+- Statistics automatically updated when reviews are created/updated/deleted/approved/rejected
+- Only published reviews count towards statistics
+- Uses raw SQL query in `recalculateSiteStatistics` to avoid circular dependencies
+
+**Postman Collection:**
+- ✅ `site-review-postman-collection.json` with `{{url}}` variable and Bearer token authentication
+- Includes all user and admin endpoints
 
 ---
