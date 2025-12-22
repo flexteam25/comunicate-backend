@@ -38,6 +38,8 @@ import { ScamReportReaction } from '../../modules/scam-report/domain/entities/sc
 import { SiteReview } from '../../modules/site-review/domain/entities/site-review.entity';
 import { SiteReviewReaction } from '../../modules/site-review/domain/entities/site-review-reaction.entity';
 import { SiteReviewComment } from '../../modules/site-review/domain/entities/site-review-comment.entity';
+import { SiteManager } from '../../modules/site-manager/domain/entities/site-manager.entity';
+import { SiteManagerApplication } from '../../modules/site-manager/domain/entities/site-manager-application.entity';
 
 @Module({
   imports: [
@@ -88,6 +90,8 @@ import { SiteReviewComment } from '../../modules/site-review/domain/entities/sit
         SiteReview,
         SiteReviewReaction,
         SiteReviewComment,
+        SiteManager,
+        SiteManagerApplication,
       ],
       synchronize: false,
       logging: false,

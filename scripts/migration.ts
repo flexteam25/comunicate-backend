@@ -30,6 +30,11 @@ import { ScamReportImage } from '../src/modules/scam-report/domain/entities/scam
 import { ScamReportComment } from '../src/modules/scam-report/domain/entities/scam-report-comment.entity';
 import { ScamReportCommentImage } from '../src/modules/scam-report/domain/entities/scam-report-comment-image.entity';
 import { ScamReportReaction } from '../src/modules/scam-report/domain/entities/scam-report-reaction.entity';
+import { SiteReview } from '../src/modules/site-review/domain/entities/site-review.entity';
+import { SiteReviewReaction } from '../src/modules/site-review/domain/entities/site-review-reaction.entity';
+import { SiteReviewComment } from '../src/modules/site-review/domain/entities/site-review-comment.entity';
+import { SiteManager } from '../src/modules/site-manager/domain/entities/site-manager.entity';
+import { SiteManagerApplication } from '../src/modules/site-manager/domain/entities/site-manager-application.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -123,6 +128,11 @@ function buildDataSource() {
       ScamReportComment,
       ScamReportCommentImage,
       ScamReportReaction,
+      SiteReview,
+      SiteReviewReaction,
+      SiteReviewComment,
+      SiteManager,
+      SiteManagerApplication,
     ],
     migrations: [path.join(__dirname, '../src/migrations/*.{ts,js}')],
     migrationsTableName: 'migrations',
