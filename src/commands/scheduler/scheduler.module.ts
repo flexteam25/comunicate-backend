@@ -45,6 +45,10 @@ import { SiteReviewReaction } from '../../modules/site-review/domain/entities/si
 import { SiteReviewComment } from '../../modules/site-review/domain/entities/site-review-comment.entity';
 import { SiteManager } from '../../modules/site-manager/domain/entities/site-manager.entity';
 import { SiteManagerApplication } from '../../modules/site-manager/domain/entities/site-manager-application.entity';
+import { PocaEvent } from '../../modules/poca-event/domain/entities/poca-event.entity';
+import { PocaEventBanner } from '../../modules/poca-event/domain/entities/poca-event-banner.entity';
+import { PocaEventView } from '../../modules/poca-event/domain/entities/poca-event-view.entity';
+import { Gifticon } from '../../modules/gifticon/domain/entities/gifticon.entity';
 
 @Module({
   imports: [
@@ -124,6 +128,10 @@ import { SiteManagerApplication } from '../../modules/site-manager/domain/entiti
         SiteReviewComment,
         SiteManager,
         SiteManagerApplication,
+        PocaEvent,
+        PocaEventBanner,
+        PocaEventView,
+        Gifticon,
       ],
       synchronize: false,
       logging: false,

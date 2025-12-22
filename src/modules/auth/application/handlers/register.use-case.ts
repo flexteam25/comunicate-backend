@@ -50,6 +50,7 @@ export class RegisterUseCase {
         profile.phone = command.phone || null;
         profile.birthDate = command.birthDate || null;
         profile.gender = command.gender || null;
+        profile.points = 0;
 
         profile.user = user;
         user.userProfile = profile;

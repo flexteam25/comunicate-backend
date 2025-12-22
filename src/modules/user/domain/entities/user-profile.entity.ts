@@ -25,6 +25,9 @@ export class UserProfile {
   @Column({ name: 'gender', type: 'varchar', length: 10, nullable: true })
   gender?: string;
 
+  @Column({ name: 'points', type: 'integer', default: 0 })
+  points: number;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

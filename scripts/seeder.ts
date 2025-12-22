@@ -32,6 +32,10 @@ import { SiteReviewReaction } from '../src/modules/site-review/domain/entities/s
 import { SiteReviewComment } from '../src/modules/site-review/domain/entities/site-review-comment.entity';
 import { SiteManager } from '../src/modules/site-manager/domain/entities/site-manager.entity';
 import { SiteManagerApplication } from '../src/modules/site-manager/domain/entities/site-manager-application.entity';
+import { PocaEvent } from '../src/modules/poca-event/domain/entities/poca-event.entity';
+import { PocaEventBanner } from '../src/modules/poca-event/domain/entities/poca-event-banner.entity';
+import { PocaEventView } from '../src/modules/poca-event/domain/entities/poca-event-view.entity';
+import { Gifticon } from '../src/modules/gifticon/domain/entities/gifticon.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -102,6 +106,10 @@ function createDataSource(): DataSource {
       SiteReviewComment,
       SiteManager,
       SiteManagerApplication,
+      PocaEvent,
+      PocaEventBanner,
+      PocaEventView,
+      Gifticon,
     ],
     synchronize: false,
     logging: true,

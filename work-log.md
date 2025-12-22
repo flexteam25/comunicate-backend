@@ -740,15 +740,21 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 | `GET` | `/api/users/me` | Get profile | ✅ Returns `user_profiles` data (bio, phone, birthDate, gender) |
 
 **User Profile Entity:**
-- Fields: `userId`, `bio`, `phone`, `birthDate`, `gender`
+- Fields: `userId`, `bio`, `phone`, `birthDate`, `gender`, `points` (integer, default: 0)
 - One-to-one relationship with `User`
-- Created automatically when user registers
+- Created automatically when user registers with default `points = 0`
 
 **Features:**
 - ✅ Update user profile information (displayName, avatar, bio, phone, birthDate, gender)
-- ✅ Profile data included in user response
+- ✅ Points field: Integer field to track user points (default: 0)
+- ✅ Profile data included in user response (including points)
 - ✅ All updates wrapped in transactions
 - ✅ API responses use `null` instead of `undefined` for optional fields
+- ✅ GET `/api/users/me` returns `points` field
+
+**Database Schema:**
+- ✅ Migration `1766398700563-add-points-to-user-profiles.ts`:
+  - Adds `points` column (integer, default: 0) to `user_profiles` table
 
 ---
 
@@ -782,6 +788,7 @@ const result = await this.siteRepository.findAllWithCursor({
 - `1765935823716-add-site-image-url-to-sites.ts` - Adds `site_image_url` column to `sites` table
 - `1765955273683-create-attendance-system.ts` - Creates `attendances` and `attendance_statistics` tables
 - `1766022483806-add-ranking-fields-to-sites.ts` - Adds `first_charge`, `recharge`, `experience` columns to `sites` table
+- `1766398700563-add-points-to-user-profiles.ts` - Adds `points` column (integer, default: 0) to `user_profiles` table
 
 ---
 
@@ -1064,10 +1071,6 @@ const siteImageUrl = await this.uploadService.uploadSiteImage(
 - Only published reviews count towards statistics
 - Uses raw SQL query in `recalculateSiteStatistics` to avoid circular dependencies
 
-**Postman Collection:**
-- ✅ `site-review-postman-collection.json` with `{{url}}` variable and Bearer token authentication
-- Includes all user and admin endpoints
-
 ---
 
 ### 29. Inquiry System (Refactored)
@@ -1124,5 +1127,167 @@ const siteImageUrl = await this.uploadService.uploadSiteImage(
 - ✅ Updated all DTOs, use cases, and controllers
 - ✅ Removed unused repositories and use cases
 - ✅ Updated app.module.ts, scheduler.module.ts, queue-worker.module.ts, and migration.ts to remove deleted entity references
+
+---
+
+### 30. Site Manager Application System
+
+**Location:** `src/modules/site-manager/`
+
+**User APIs (`/api/site-management`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/site-management/apply` | Apply to become site manager | ✅ |
+| `GET` | `/api/site-management/my-managed-sites` | List sites managed by current user | ✅ |
+| `GET` | `/api/site-management/my-applications` | List own applications (cursor pagination) | ✅ |
+| `PUT` | `/api/site-management/managed-sites/:siteId` | Update managed site | ✅ |
+
+**Admin APIs (`/admin/site-manager-applications`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/admin/site-manager-applications` | List all applications (cursor pagination) | ✅ |
+| `GET` | `/admin/site-manager-applications/:id` | Get application details | ✅ |
+| `POST` | `/admin/site-manager-applications/:id/approve` | Approve application | ✅ |
+| `POST` | `/admin/site-manager-applications/:id/reject` | Reject application | ✅ |
+
+**Features:**
+- ✅ Site manager application system
+- ✅ Users can apply to manage a site (with message)
+- ✅ One user can only have one pending application per site
+- ✅ Users can re-apply if their application was rejected (creates new application, keeps history)
+- ✅ Unique constraint: One user can manage one site at a time (`(user_id, site_id)` unique in `site_managers`)
+- ✅ Single site can have multiple managers
+- ✅ Site managers can get sites they manage and edit them (not delete)
+- ✅ Site managers can view their own application submissions
+- ✅ Admin can approve/reject applications (requires `site-manager-applications.approve` permission)
+- ✅ Race condition prevention: Uses pessimistic locking (`SELECT ... FOR UPDATE`) in approve/reject operations
+- ✅ File upload support for `logo`, `mainImage`, and `siteImage` in update managed site endpoint
+- ✅ Filter applications by `siteName` (partial match, case-insensitive) instead of `siteId`
+
+**Site Manager Application Entity:**
+- Fields: `siteId`, `userId`, `message`, `status` (pending/approved/rejected), `adminId`, `reviewedAt`
+- Relationships: `site`, `user`, `admin`
+- Status: `pending` (default), `approved`, `rejected`
+- Partial unique index: `UNIQUE(site_id, user_id) WHERE status = 'pending'` (allows multiple applications with different statuses but only one pending per user per site)
+
+**Site Manager Entity:**
+- Fields: `siteId`, `userId`, `createdAt`
+- Relationships: `site`, `user`
+- Unique constraint: `(user_id, site_id)` - one user can only manage one site at a time
+
+---
+
+### 31. POCA Events System
+
+**Location:** `src/modules/poca-event/`
+
+**User APIs (`/api/poca-events`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/poca-events` | List visible published events (cursor pagination) | ❌ |
+| `GET` | `/api/poca-events/:idOrSlug` | Get event detail (tracks view) | ❌ |
+
+**Admin APIs (`/admin/poca-events`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/admin/poca-events` | Create event with file uploads | ✅ |
+| `PUT` | `/admin/poca-events/:id` | Update event (all fields, with file uploads) | ✅ |
+| `DELETE` | `/admin/poca-events/:id` | Soft delete event | ✅ |
+| `GET` | `/admin/poca-events` | List all events (cursor pagination) | ✅ |
+| `GET` | `/admin/poca-events/:id` | Get event detail | ✅ |
+
+**Features:**
+- ✅ Global events system (not site-specific)
+- ✅ Event CRUD with permission checks (`gifticons.manage` permission)
+- ✅ Status workflow: `draft` → `published` → `archived`
+- ✅ Time window: `startsAt` and `endsAt` for event visibility
+- ✅ Slug support (auto-generated from title or manually provided)
+- ✅ View tracking: Increments `viewCount` and creates `PocaEventView` records
+- ✅ Banner system: Primary banner + multiple additional banners with order
+- ✅ File upload: Form-data with `primaryBanner` and `banners` (multiple files)
+- ✅ Banner order: `bannersOrder` JSON array to specify order
+- ✅ Delete banners: `deletePrimaryBanner` and `deleteBanners` flags in update
+- ✅ Cursor pagination for listing events
+- ✅ Visibility rules: Only `published` events with valid time window are visible to users
+- ✅ IP address and user agent tracking for views
+- ✅ Optional JWT auth for user APIs (to track userId in views, but not required)
+
+**POCA Event Entity:**
+- Fields: `title`, `slug` (unique, nullable), `summary`, `content`, `status` (draft/published/archived), `startsAt`, `endsAt`, `primaryBannerUrl`, `viewCount`
+- Relationships: `banners[]`, `views[]`
+
+**POCA Event Banner Entity:**
+- Fields: `eventId`, `imageUrl`, `order`
+- Multiple banners per event with order
+
+**POCA Event View Entity:**
+- Fields: `eventId`, `userId` (nullable), `ipAddress`, `userAgent` (nullable)
+- Tracks event views for analytics
+
+**Database Schema:**
+- ✅ Migration `1766389788887-create-poca-events-system.ts`:
+  - Creates `poca_events` table with status enum
+  - Creates `poca_event_banners` table
+  - Creates `poca_event_views` table
+  - Indexes for status, slug, starts_at, ends_at
+
+---
+
+### 32. Gifticon Management System
+
+**Location:** `src/modules/gifticon/`
+
+**User APIs (`/api/gifticons`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/gifticons` | List visible published gifticons (cursor pagination) | ❌ |
+| `GET` | `/api/gifticons/:idOrSlug` | Get gifticon detail | ❌ |
+
+**Admin APIs (`/admin/gifticons`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/admin/gifticons` | Create gifticon with file upload | ✅ |
+| `PUT` | `/admin/gifticons/:id` | Update gifticon (all fields, with file upload) | ✅ |
+| `DELETE` | `/admin/gifticons/:id` | Soft delete gifticon | ✅ |
+| `GET` | `/admin/gifticons` | List all gifticons (cursor pagination) | ✅ |
+| `GET` | `/admin/gifticons/:id` | Get gifticon detail | ✅ |
+
+**Features:**
+- ✅ Gifticon management system (reward system with points redemption)
+- ✅ Gifticon CRUD with permission checks (`gifticons.manage` permission)
+- ✅ Status workflow: `draft` → `published` → `archived`
+- ✅ Time window: `startsAt` and `endsAt` for gifticon visibility
+- ✅ Slug support (auto-generated from title or manually provided)
+- ✅ Amount field: Points required to redeem gifticon (integer, minimum 0)
+- ✅ Single image: One main image (`image_url`), no banners
+- ✅ Rich text content: HTML content from editor (can contain multiple images in HTML)
+- ✅ File upload: Form-data with `image` field (single file, max 5MB)
+- ✅ Delete image: `deleteImage` flag in update endpoint
+- ✅ Cursor pagination for listing gifticons
+- ✅ Visibility rules: Only `published` gifticons with valid time window are visible to users
+- ✅ No view tracking (simpler than POCA Events)
+
+**Gifticon Entity:**
+- Fields: `title`, `slug` (unique, nullable), `summary`, `content` (HTML from rich text editor), `imageUrl`, `status` (draft/published/archived), `startsAt`, `endsAt`, `amount` (integer, points required to redeem)
+- No relationships (standalone table)
+
+**Database Schema:**
+- ✅ Migration `1766395000000-create-gifticons-system.ts`:
+  - Creates `gifticons` table with status enum
+  - Creates `amount` column (integer, default: 0)
+- ✅ Migration `1766398103142-add-amount-to-gifticons.ts`:
+  - Adds `amount` column to `gifticons` table
+
+**Key Differences from POCA Events:**
+- ❌ No view tracking (no `view_count`, no `poca_event_views` table)
+- ❌ No banners system (only single `image_url`)
+- ✅ `amount` field for points redemption
+- ✅ `content` is HTML from rich text editor (can contain embedded images)
 
 ---

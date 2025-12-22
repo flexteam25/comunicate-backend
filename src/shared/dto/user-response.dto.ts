@@ -15,4 +15,5 @@ export interface UserResponse {
   phone?: string;
   birthDate?: Date;
   gender?: string;
+  points?: number;
 }

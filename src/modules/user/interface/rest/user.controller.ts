@@ -298,6 +298,7 @@ export class UserController {
       phone: dbUser.userProfile?.phone || undefined,
       birthDate: dbUser.userProfile?.birthDate || undefined,
       gender: dbUser.userProfile?.gender || undefined,
+      points: dbUser.userProfile?.points ?? 0,
       isActive: dbUser.isActive,
       lastLoginAt: dbUser.lastLoginAt || undefined,
       roles: roles.length > 0 ? roles : [],

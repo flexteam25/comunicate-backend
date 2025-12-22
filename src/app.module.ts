@@ -56,6 +56,12 @@ import { SiteReviewComment } from './modules/site-review/domain/entities/site-re
 import { SiteManagerModule } from './modules/site-manager/site-manager.module';
 import { SiteManager } from './modules/site-manager/domain/entities/site-manager.entity';
 import { SiteManagerApplication } from './modules/site-manager/domain/entities/site-manager-application.entity';
+import { PocaEventModule } from './modules/poca-event/poca-event.module';
+import { PocaEvent } from './modules/poca-event/domain/entities/poca-event.entity';
+import { PocaEventBanner } from './modules/poca-event/domain/entities/poca-event-banner.entity';
+import { PocaEventView } from './modules/poca-event/domain/entities/poca-event-view.entity';
+import { GifticonModule } from './modules/gifticon/gifticon.module';
+import { Gifticon } from './modules/gifticon/domain/entities/gifticon.entity';
 
 @Module({
   imports: [
@@ -107,6 +113,10 @@ import { SiteManagerApplication } from './modules/site-manager/domain/entities/s
         SiteReviewComment,
         SiteManager,
         SiteManagerApplication,
+        PocaEvent,
+        PocaEventBanner,
+        PocaEventView,
+        Gifticon,
       ],
       synchronize: false,
       logging: false,
@@ -127,6 +137,8 @@ import { SiteManagerApplication } from './modules/site-manager/domain/entities/s
     ScamReportModule,
     SiteReviewModule,
     SiteManagerModule,
+    PocaEventModule,
+    GifticonModule,
   ],
   controllers: [AppController],
   providers: [AppService],
