@@ -4,8 +4,8 @@ import { InquiryStatus, InquiryCategory } from '../../../domain/entities/inquiry
 
 export class ListInquiriesQueryDto {
   @IsOptional()
-  @IsUUID('4', { message: 'userId must be a valid UUID' })
-  userId?: string;
+  @IsString({ message: 'userName must be a string' })
+  userName?: string;
 
   @IsOptional()
   @IsEnum(InquiryStatus, { message: 'status must be a valid inquiry status' })
@@ -18,8 +18,8 @@ export class ListInquiriesQueryDto {
   category?: InquiryCategory;
 
   @IsOptional()
-  @IsUUID('4', { message: 'adminId must be a valid UUID' })
-  adminId?: string;
+  @IsString({ message: 'adminName must be a string' })
+  adminName?: string;
 
   @IsOptional()
   @IsString({ message: 'cursor must be a string' })

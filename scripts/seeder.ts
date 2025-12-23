@@ -36,6 +36,12 @@ import { PocaEvent } from '../src/modules/poca-event/domain/entities/poca-event.
 import { PocaEventBanner } from '../src/modules/poca-event/domain/entities/poca-event-banner.entity';
 import { PocaEventView } from '../src/modules/poca-event/domain/entities/poca-event-view.entity';
 import { Gifticon } from '../src/modules/gifticon/domain/entities/gifticon.entity';
+import { Post } from '../src/modules/post/domain/entities/post.entity';
+import { PostCategory } from '../src/modules/post/domain/entities/post-category.entity';
+import { PostComment } from '../src/modules/post/domain/entities/post-comment.entity';
+import { PostCommentImage } from '../src/modules/post/domain/entities/post-comment-image.entity';
+import { PostReaction } from '../src/modules/post/domain/entities/post-reaction.entity';
+import { PostView } from '../src/modules/post/domain/entities/post-view.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -110,6 +116,12 @@ function createDataSource(): DataSource {
       PocaEventBanner,
       PocaEventView,
       Gifticon,
+      Post,
+      PostCategory,
+      PostComment,
+      PostCommentImage,
+      PostReaction,
+      PostView,
     ],
     synchronize: false,
     logging: true,

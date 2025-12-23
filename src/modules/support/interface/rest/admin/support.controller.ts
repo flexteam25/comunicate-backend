@@ -25,13 +25,24 @@ import {
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
-import { Inquiry, InquiryStatus } from '../../../domain/entities/inquiry.entity';
+import {
+  Inquiry,
+  InquiryStatus,
+  InquiryCategory,
+} from '../../../domain/entities/inquiry.entity';
 
 const INQUIRY_STATUS_OPTIONS = [
   { value: InquiryStatus.PENDING, text: 'Pending' },
   { value: InquiryStatus.PROCESSING, text: 'Processing' },
   { value: InquiryStatus.CLOSED, text: 'Closed' },
   { value: InquiryStatus.RESOLVED, text: 'Resolved' },
+];
+
+const INQUIRY_CATEGORY_OPTIONS = [
+  { value: InquiryCategory.INQUIRY, text: 'Inquiry' },
+  { value: InquiryCategory.FEEDBACK, text: 'Feedback' },
+  { value: InquiryCategory.BUG, text: 'Bug' },
+  { value: InquiryCategory.ADVERTISEMENT, text: 'Advertisement' },
 ];
 
 @Controller('admin/support')
@@ -57,16 +68,23 @@ export class AdminSupportController {
     return ApiResponseUtil.success(INQUIRY_STATUS_OPTIONS);
   }
 
+  @Get('inquiry-categories')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('support.inquiry.view')
+  async getInquiryCategories(): Promise<ApiResponse<any>> {
+    return ApiResponseUtil.success(INQUIRY_CATEGORY_OPTIONS);
+  }
+
   @Get('inquiries')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.inquiry.view')
   async listInquiries(@Query() query: ListInquiriesQueryDto): Promise<ApiResponse<any>> {
     const result = await this.listInquiriesUseCase.execute({
       filters: {
-        userId: query.userId,
+        userName: query.userName,
         status: query.status,
         category: query.category,
-        adminId: query.adminId,
+        adminName: query.adminName,
       },
       cursor: query.cursor,
       limit: query.limit,

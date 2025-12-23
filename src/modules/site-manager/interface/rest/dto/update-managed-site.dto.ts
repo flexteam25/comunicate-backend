@@ -6,6 +6,7 @@ import {
   IsNumber,
   Min,
   Max,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -51,4 +52,19 @@ export class UpdateManagedSiteDto {
   @IsNumber({}, { message: 'Experience must be a number' })
   @Min(0, { message: 'Experience must be at least 0' })
   experience?: number;
+
+  @IsOptional()
+  @IsString({ message: 'Delete logo flag must be a string' })
+  @IsIn(['true', 'false'], { message: 'Delete logo flag must be "true" or "false"' })
+  deleteLogo?: 'true' | 'false';
+
+  @IsOptional()
+  @IsString({ message: 'Delete main image flag must be a string' })
+  @IsIn(['true', 'false'], { message: 'Delete main image flag must be "true" or "false"' })
+  deleteMainImage?: 'true' | 'false';
+
+  @IsOptional()
+  @IsString({ message: 'Delete site image flag must be a string' })
+  @IsIn(['true', 'false'], { message: 'Delete site image flag must be "true" or "false"' })
+  deleteSiteImage?: 'true' | 'false';
 }

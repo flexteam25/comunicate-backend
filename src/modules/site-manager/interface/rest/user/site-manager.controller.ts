@@ -10,7 +10,6 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
-  BadRequestException,
   UseInterceptors,
   UploadedFiles,
 } from '@nestjs/common';
@@ -30,7 +29,7 @@ import { ListMyApplicationsQueryDto } from '../dto/list-my-applications-query.dt
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
-import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import { MulterFile } from '../../../../../shared/services/upload';
 import { Site } from '../../../../site/domain/entities/site.entity';
 import { SiteResponse } from '../../../../site/interface/rest/dto/site-response.dto';
 
@@ -44,7 +43,6 @@ export class SiteManagerController {
     private readonly listMyApplicationsUseCase: ListMyApplicationsUseCase,
     private readonly getManagedSitesUseCase: GetManagedSitesUseCase,
     private readonly updateManagedSiteUseCase: UpdateManagedSiteUseCase,
-    private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -125,24 +123,24 @@ export class SiteManagerController {
     return this.mapSiteToResponse(manager.site);
   }
 
-  @Post(':siteId/manager-applications')
-  @HttpCode(HttpStatus.CREATED)
-  async applySiteManager(
-    @Param('siteId', new ParseUUIDPipe()) siteId: string,
-    @CurrentUser() user: CurrentUserPayload,
-    @Body() dto: ApplySiteManagerDto,
-  ): Promise<ApiResponse<any>> {
-    const application = await this.applySiteManagerUseCase.execute({
-      userId: user.userId,
-      siteId,
-      message: dto.message,
-    });
+  //   @Post(':siteId/manager-applications')
+  //   @HttpCode(HttpStatus.CREATED)
+  //   async applySiteManager(
+  //     @Param('siteId', new ParseUUIDPipe()) siteId: string,
+  //     @CurrentUser() user: CurrentUserPayload,
+  //     @Body() dto: ApplySiteManagerDto,
+  //   ): Promise<ApiResponse<any>> {
+  //     const application = await this.applySiteManagerUseCase.execute({
+  //       userId: user.userId,
+  //       siteId,
+  //       message: dto.message,
+  //     });
 
-    return ApiResponseUtil.success(
-      this.mapApplicationToResponse(application),
-      'Application submitted successfully',
-    );
-  }
+  //     return ApiResponseUtil.success(
+  //       this.mapApplicationToResponse(application),
+  //       'Application submitted successfully',
+  //     );
+  //   }
 
   @Get('my-managed-sites')
   @HttpCode(HttpStatus.OK)
@@ -178,77 +176,23 @@ export class SiteManagerController {
       siteImage?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    // Upload images if provided
-    let logoUrl: string | undefined;
-    let mainImageUrl: string | undefined;
-    let siteImageUrl: string | undefined;
-
-    if (files) {
-      // Upload logo
-      if (files.logo && files.logo[0]) {
-        const file = files.logo[0];
-        // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Logo file size exceeds 5MB');
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid logo file type. Allowed: jpg, jpeg, png, webp',
-          );
-        }
-        const logoResult = await this.uploadService.uploadSiteImage(file, siteId, 'logo');
-        logoUrl = logoResult.relativePath;
-      }
-
-      // Upload main image
-      if (files.mainImage && files.mainImage[0]) {
-        const file = files.mainImage[0];
-        // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Main image file size exceeds 5MB');
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid main image file type. Allowed: jpg, jpeg, png, webp',
-          );
-        }
-        const mainImageResult = await this.uploadService.uploadSiteImage(
-          files.mainImage[0],
-          siteId,
-          'main',
-        );
-        mainImageUrl = mainImageResult.relativePath;
-      }
-
-      // Upload site image
-      if (files.siteImage && files.siteImage[0]) {
-        const file = files.siteImage[0];
-        // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Site image file size exceeds 5MB');
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid site image file type. Allowed: jpg, jpeg, png, webp',
-          );
-        }
-        const siteImageResult = await this.uploadService.uploadSiteImage(
-          files.siteImage[0],
-          siteId,
-          'site',
-        );
-        siteImageUrl = siteImageResult.relativePath;
-      }
-    }
-
-    // Update site with all data
     const site = await this.updateManagedSiteUseCase.execute({
       userId: user.userId,
       siteId,
-      ...dto,
-      logoUrl,
-      mainImageUrl,
-      siteImageUrl,
+      name: dto.name,
+      categoryId: dto.categoryId,
+      tierId: dto.tierId,
+      permanentUrl: dto.permanentUrl,
+      description: dto.description,
+      firstCharge: dto.firstCharge,
+      recharge: dto.recharge,
+      experience: dto.experience,
+      logo: files?.logo?.[0],
+      mainImage: files?.mainImage?.[0],
+      siteImage: files?.siteImage?.[0],
+      deleteLogo: dto.deleteLogo === 'true',
+      deleteMainImage: dto.deleteMainImage === 'true',
+      deleteSiteImage: dto.deleteSiteImage === 'true',
     });
 
     return ApiResponseUtil.success(
@@ -289,23 +233,23 @@ export class ManagerApplicationController {
     };
   }
 
-  @Get('my-submissions')
-  @HttpCode(HttpStatus.OK)
-  async listMyApplications(
-    @CurrentUser() user: CurrentUserPayload,
-    @Query() query: ListMyApplicationsQueryDto,
-  ): Promise<ApiResponse<any>> {
-    const result = await this.listMyApplicationsUseCase.execute({
-      userId: user.userId,
-      status: query.status,
-      cursor: query.cursor,
-      limit: query.limit,
-    });
+  //   @Get('my-submissions')
+  //   @HttpCode(HttpStatus.OK)
+  //   async listMyApplications(
+  //     @CurrentUser() user: CurrentUserPayload,
+  //     @Query() query: ListMyApplicationsQueryDto,
+  //   ): Promise<ApiResponse<any>> {
+  //     const result = await this.listMyApplicationsUseCase.execute({
+  //       userId: user.userId,
+  //       status: query.status,
+  //       cursor: query.cursor,
+  //       limit: query.limit,
+  //     });
 
-    return ApiResponseUtil.success({
-      data: result.data.map((app) => this.mapApplicationToResponse(app)),
-      nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
-    });
-  }
+  //     return ApiResponseUtil.success({
+  //       data: result.data.map((app) => this.mapApplicationToResponse(app)),
+  //       nextCursor: result.nextCursor,
+  //       hasMore: result.hasMore,
+  //     });
+  //   }
 }

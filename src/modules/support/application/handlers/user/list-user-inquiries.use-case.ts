@@ -27,7 +27,6 @@ export class ListUserInquiriesUseCase {
     command: ListUserInquiriesCommand,
   ): Promise<CursorPaginationResult<Inquiry>> {
     const filters: InquiryFilters = {
-      userId: command.userId,
       status: command.status,
       category: command.category,
     };

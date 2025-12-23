@@ -118,8 +118,8 @@ export class ScamReportController {
     if (files?.images && files.images.length > 0) {
       for (const file of files.images) {
         // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Image file size exceeds 5MB');
+        if (file.size > 20 * 1024 * 1024) {
+          throw new BadRequestException('Image file size exceeds 20MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
           throw new BadRequestException(
@@ -223,8 +223,8 @@ export class ScamReportController {
       imageUrls = [];
       for (const file of files.images) {
         // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Image file size exceeds 5MB');
+        if (file.size > 20 * 1024 * 1024) {
+          throw new BadRequestException('Image file size exceeds 20MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
           throw new BadRequestException(
@@ -329,8 +329,8 @@ export class ScamReportController {
     if (files?.images && files.images.length > 0) {
       for (const file of files.images) {
         // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Image file size exceeds 5MB');
+        if (file.size > 20 * 1024 * 1024) {
+          throw new BadRequestException('Image file size exceeds 20MB');
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
           throw new BadRequestException(

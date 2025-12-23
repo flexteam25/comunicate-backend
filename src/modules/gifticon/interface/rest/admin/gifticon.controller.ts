@@ -30,7 +30,7 @@ import { ListAdminGifticonsQueryDto } from '../dto/list-admin-gifticons-query.dt
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
-import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import { MulterFile } from '../../../../../shared/services/upload';
 
 @Controller('admin/gifticons')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -43,7 +43,6 @@ export class AdminGifticonController {
     private readonly deleteGifticonUseCase: DeleteGifticonUseCase,
     private readonly adminListGifticonsUseCase: AdminListGifticonsUseCase,
     private readonly adminGetGifticonUseCase: AdminGetGifticonUseCase,
-    private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -77,24 +76,6 @@ export class AdminGifticonController {
     @Body() dto: CreateGifticonDto,
     @UploadedFile() file?: MulterFile,
   ): Promise<ApiResponse<any>> {
-    let imageUrl: string | undefined;
-
-    // Upload image if provided
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        throw new BadRequestException('Image file size exceeds 5MB');
-      }
-      if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-        throw new BadRequestException(
-          'Invalid image file type. Allowed: jpg, jpeg, png, webp',
-        );
-      }
-      const uploadResult = await this.uploadService.uploadImage(file, {
-        folder: 'gifticons',
-      });
-      imageUrl = uploadResult.relativePath;
-    }
-
     const gifticon = await this.createGifticonUseCase.execute({
       title: dto.title,
       slug: dto.slug,
@@ -103,7 +84,7 @@ export class AdminGifticonController {
       status: dto.status,
       startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
       endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
-      imageUrl,
+      image: file,
       amount: dto.amount,
     });
 
@@ -122,27 +103,6 @@ export class AdminGifticonController {
     @Body() dto: UpdateGifticonDto,
     @UploadedFile() file?: MulterFile,
   ): Promise<ApiResponse<any>> {
-    let imageUrl: string | undefined;
-
-    // Handle deletion flag
-    if (dto.deleteImage === 'true') {
-      imageUrl = null;
-    } else if (file) {
-      // Upload new image if provided
-      if (file.size > 5 * 1024 * 1024) {
-        throw new BadRequestException('Image file size exceeds 5MB');
-      }
-      if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-        throw new BadRequestException(
-          'Invalid image file type. Allowed: jpg, jpeg, png, webp',
-        );
-      }
-      const uploadResult = await this.uploadService.uploadImage(file, {
-        folder: 'gifticons',
-      });
-      imageUrl = uploadResult.relativePath;
-    }
-
     const gifticon = await this.updateGifticonUseCase.execute({
       gifticonId: id,
       title: dto.title,
@@ -152,7 +112,8 @@ export class AdminGifticonController {
       status: dto.status,
       startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
       endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
-      imageUrl: imageUrl !== undefined ? imageUrl : undefined,
+      image: file,
+      deleteImage: dto.deleteImage === 'true',
       amount: dto.amount,
     });
 

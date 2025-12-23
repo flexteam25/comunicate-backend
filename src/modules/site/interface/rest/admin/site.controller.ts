@@ -12,7 +12,6 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFiles,
-  BadRequestException,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
@@ -37,7 +36,7 @@ import { RequirePermission } from '../../../../admin/infrastructure/decorators/r
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ConfigService } from '@nestjs/config';
 import { Site } from '../../../domain/entities/site.entity';
-import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import { MulterFile } from '../../../../../shared/services/upload';
 import { RestoreSiteUseCase } from '../../../application/handlers/admin/restore-site.use-case';
 import { AddSiteDomainUseCase } from '../../../application/handlers/admin/add-site-domain.use-case';
 import { UpdateSiteDomainUseCase } from '../../../application/handlers/admin/update-site-domain.use-case';
@@ -57,7 +56,6 @@ export class AdminSiteController {
     private readonly assignBadgeUseCase: AssignBadgeToSiteUseCase,
     private readonly removeBadgeUseCase: RemoveBadgeFromSiteUseCase,
     private readonly configService: ConfigService,
-    private readonly uploadService: UploadService,
     private readonly restoreSiteUseCase: RestoreSiteUseCase,
     private readonly addSiteDomainUseCase: AddSiteDomainUseCase,
     private readonly updateSiteDomainUseCase: UpdateSiteDomainUseCase,
@@ -137,100 +135,19 @@ export class AdminSiteController {
       siteImage?: MulterFile[];
     },
   ): Promise<ApiResponse<SiteResponse>> {
-    // Create site first
     const site = await this.createSiteUseCase.execute({
       name: dto.name,
       categoryId: dto.categoryId,
       tierId: dto.tierId,
       permanentUrl: dto.permanentUrl,
-      mainImageUrl: dto.mainImageUrl,
-      siteImageUrl: dto.siteImageUrl,
       description: dto.description,
       firstCharge: dto.firstCharge,
       recharge: dto.recharge,
       experience: dto.experience,
+      logo: files?.logo?.[0],
+      mainImage: files?.mainImage?.[0],
+      siteImage: files?.siteImage?.[0],
     });
-
-    // Upload images if provided
-    let logoUrl: string | undefined;
-    let mainImageUrl: string | undefined;
-    let siteImageUrl: string | undefined;
-
-    if (files) {
-      // Upload logo
-      if (files.logo && files.logo[0]) {
-        const file = files.logo[0];
-        // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Logo file size exceeds 5MB');
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid logo file type. Allowed: jpg, jpeg, png, webp',
-          );
-        }
-        const logoResult = await this.uploadService.uploadSiteImage(
-          file,
-          site.id,
-          'logo',
-        );
-        logoUrl = logoResult.relativePath;
-      }
-
-      // Upload main image
-      if (files.mainImage && files.mainImage[0]) {
-        const file = files.mainImage[0];
-        // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Main image file size exceeds 5MB');
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid main image file type. Allowed: jpg, jpeg, png, webp',
-          );
-        }
-        const mainImageResult = await this.uploadService.uploadSiteImage(
-          files.mainImage[0],
-          site.id,
-          'main',
-        );
-        mainImageUrl = mainImageResult.relativePath;
-      }
-
-      // Upload site image
-      if (files.siteImage && files.siteImage[0]) {
-        const file = files.siteImage[0];
-        // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Site image file size exceeds 5MB');
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid site image file type. Allowed: jpg, jpeg, png, webp',
-          );
-        }
-        const siteImageResult = await this.uploadService.uploadSiteImage(
-          files.siteImage[0],
-          site.id,
-          'site',
-        );
-        siteImageUrl = siteImageResult.relativePath;
-      }
-
-      // Update site with image URLs
-      if (logoUrl || mainImageUrl || siteImageUrl) {
-        const updatedSite = await this.updateSiteUseCase.execute({
-          siteId: site.id,
-          logoUrl,
-          mainImageUrl,
-          siteImageUrl,
-        });
-        return ApiResponseUtil.success(
-          this.mapSiteToResponse(updatedSite),
-          'Site created successfully',
-        );
-      }
-    }
 
     return ApiResponseUtil.success(
       this.mapSiteToResponse(site),
@@ -296,76 +213,23 @@ export class AdminSiteController {
       siteImage?: MulterFile[];
     },
   ): Promise<ApiResponse<SiteResponse>> {
-    // Upload images if provided
-    let logoUrl: string | undefined;
-    let mainImageUrl: string | undefined;
-    let siteImageUrl: string | undefined;
-
-    if (files) {
-      // Upload logo
-      if (files.logo && files.logo[0]) {
-        const file = files.logo[0];
-        // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Logo file size exceeds 5MB');
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid logo file type. Allowed: jpg, jpeg, png, webp',
-          );
-        }
-        const logoResult = await this.uploadService.uploadSiteImage(file, id, 'logo');
-        logoUrl = logoResult.relativePath;
-      }
-
-      // Upload main image
-      if (files.mainImage && files.mainImage[0]) {
-        const file = files.mainImage[0];
-        // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Main image file size exceeds 5MB');
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid main image file type. Allowed: jpg, jpeg, png, webp',
-          );
-        }
-        const mainImageResult = await this.uploadService.uploadSiteImage(
-          files.mainImage[0],
-          id,
-          'main',
-        );
-        mainImageUrl = mainImageResult.relativePath;
-      }
-
-      // Upload site image
-      if (files.siteImage && files.siteImage[0]) {
-        const file = files.siteImage[0];
-        // Validate file
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException('Site image file size exceeds 5MB');
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid site image file type. Allowed: jpg, jpeg, png, webp',
-          );
-        }
-        const siteImageResult = await this.uploadService.uploadSiteImage(
-          files.siteImage[0],
-          id,
-          'site',
-        );
-        siteImageUrl = siteImageResult.relativePath;
-      }
-    }
-
-    // Update site with all data
     const site = await this.updateSiteUseCase.execute({
       siteId: id,
-      ...dto,
-      logoUrl,
-      mainImageUrl,
-      siteImageUrl,
+      name: dto.name,
+      categoryId: dto.categoryId,
+      tierId: dto.tierId,
+      permanentUrl: dto.permanentUrl,
+      description: dto.description,
+      status: dto.status,
+      firstCharge: dto.firstCharge,
+      recharge: dto.recharge,
+      experience: dto.experience,
+      logo: files?.logo?.[0],
+      mainImage: files?.mainImage?.[0],
+      siteImage: files?.siteImage?.[0],
+      deleteLogo: dto.deleteLogo === 'true',
+      deleteMainImage: dto.deleteMainImage === 'true',
+      deleteSiteImage: dto.deleteSiteImage === 'true',
     });
     return ApiResponseUtil.success(
       this.mapSiteToResponse(site),

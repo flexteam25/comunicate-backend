@@ -8,6 +8,8 @@ import { GifticonStatus } from '../../../domain/entities/gifticon.entity';
 import { IGifticonRepository } from '../../../infrastructure/persistence/repositories/gifticon.repository';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
+import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import { randomUUID } from 'crypto';
 
 export interface CreateGifticonCommand {
   title: string;
@@ -17,7 +19,7 @@ export interface CreateGifticonCommand {
   status?: GifticonStatus;
   startsAt?: Date;
   endsAt?: Date;
-  imageUrl?: string;
+  image?: MulterFile;
   amount: number;
 }
 
@@ -27,64 +29,102 @@ export class CreateGifticonUseCase {
     @Inject('IGifticonRepository')
     private readonly gifticonRepository: IGifticonRepository,
     private readonly transactionService: TransactionService,
+    private readonly uploadService: UploadService,
   ) {}
 
   async execute(command: CreateGifticonCommand): Promise<Gifticon> {
-    return this.transactionService.executeInTransaction(
-      async (manager: EntityManager) => {
-        const gifticonRepo = manager.getRepository(Gifticon);
+    // Validate file size and type if image provided
+    if (command.image) {
+      const maxSize = 20 * 1024 * 1024; // 20MB
+      if (command.image.size > maxSize) {
+        throw new BadRequestException('Image file size exceeds 20MB');
+      }
+      const allowedTypes = /(jpg|jpeg|png|webp)$/i;
+      if (!allowedTypes.test(command.image.mimetype)) {
+        throw new BadRequestException(
+          'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+        );
+      }
+    }
 
-        // Generate slug if not provided
-        let slug = command.slug;
-        if (!slug) {
-          slug = this.generateSlug(command.title);
-          // Ensure uniqueness
-          let counter = 1;
-          let uniqueSlug = slug;
-          while (
-            await gifticonRepo.findOne({
-              where: { slug: uniqueSlug, deletedAt: null },
-            })
-          ) {
-            uniqueSlug = `${slug}-${counter}`;
-            counter++;
+    // Generate gifticon ID first
+    const gifticonId = randomUUID();
+
+    // Upload image before transaction
+    let imageUrl: string | undefined;
+    if (command.image) {
+      const result = await this.uploadService.uploadImage(command.image, {
+        folder: 'gifticons',
+      });
+      imageUrl = result.relativePath;
+    }
+
+    // Create gifticon within transaction
+    try {
+      const gifticon = await this.transactionService.executeInTransaction(
+        async (manager: EntityManager) => {
+          const gifticonRepo = manager.getRepository(Gifticon);
+
+          // Generate slug if not provided
+          let slug = command.slug;
+          if (!slug) {
+            slug = this.generateSlug(command.title);
+            // Ensure uniqueness
+            let counter = 1;
+            let uniqueSlug = slug;
+            while (
+              await gifticonRepo.findOne({
+                where: { slug: uniqueSlug, deletedAt: null },
+              })
+            ) {
+              uniqueSlug = `${slug}-${counter}`;
+              counter++;
+            }
+            slug = uniqueSlug;
+          } else {
+            // Check if slug already exists
+            const existing = await gifticonRepo.findOne({
+              where: { slug, deletedAt: null },
+            });
+            if (existing) {
+              throw new BadRequestException('Slug already exists');
+            }
           }
-          slug = uniqueSlug;
-        } else {
-          // Check if slug already exists
-          const existing = await gifticonRepo.findOne({
-            where: { slug, deletedAt: null },
+
+          // Validate dates
+          if (command.startsAt && command.endsAt) {
+            if (command.startsAt >= command.endsAt) {
+              throw new BadRequestException('Start date must be before end date');
+            }
+          }
+
+          // Create gifticon
+          const gifticonEntity = gifticonRepo.create({
+            id: gifticonId,
+            title: command.title,
+            slug,
+            summary: command.summary,
+            content: command.content,
+            status: command.status || GifticonStatus.DRAFT,
+            startsAt: command.startsAt,
+            endsAt: command.endsAt,
+            imageUrl,
+            amount: command.amount,
           });
-          if (existing) {
-            throw new BadRequestException('Slug already exists');
-          }
-        }
 
-        // Validate dates
-        if (command.startsAt && command.endsAt) {
-          if (command.startsAt >= command.endsAt) {
-            throw new BadRequestException(
-              'Start date must be before end date',
-            );
-          }
-        }
-
-        // Create gifticon
-        const gifticon = gifticonRepo.create({
-          title: command.title,
-          slug,
-          summary: command.summary,
-          content: command.content,
-          status: command.status || GifticonStatus.DRAFT,
-          startsAt: command.startsAt,
-          endsAt: command.endsAt,
-          imageUrl: command.imageUrl,
-          amount: command.amount,
+          return gifticonRepo.save(gifticonEntity);
+        },
+      );
+      return gifticon;
+    } catch (transactionError) {
+      // If transaction fails, cleanup uploaded file (best effort)
+      if (imageUrl) {
+        await this.uploadService.deleteFile(imageUrl).catch(() => {
+          // Ignore cleanup errors
         });
-
-        return gifticonRepo.save(gifticon);
-      },
-    );
+      }
+      throw transactionError;
+    }
   }
 
   private generateSlug(title: string): string {

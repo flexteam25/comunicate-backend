@@ -166,7 +166,8 @@ export class UploadService {
       const processedBuffer = await this.convertToWebP(file.buffer, quality);
 
       // Generate filename based on image type
-      const prefix = imageType === 'logo' ? 'logo' : 'main';
+      const prefix =
+        imageType === 'logo' ? 'logo' : imageType === 'site' ? 'site' : 'main';
       const filename = this.generateFilename(prefix, '.webp');
 
       // Save to storage with siteId as subfolder: sites/{siteId}/

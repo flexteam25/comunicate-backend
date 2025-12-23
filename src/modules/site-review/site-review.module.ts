@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { SiteReviewPersistenceModule } from './site-review-persistence.module';
 import { SitePersistenceModule } from '../site/site-persistence.module';
 import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
@@ -23,7 +23,7 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
 @Module({
   imports: [
     SiteReviewPersistenceModule,
-    forwardRef(() => SitePersistenceModule),
+    SitePersistenceModule,
     UserTokenRepositoryModule,
     ServicesModule,
     AdminGuardsModule,

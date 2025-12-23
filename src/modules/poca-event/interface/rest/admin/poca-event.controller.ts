@@ -32,7 +32,7 @@ import { ListAdminPocaEventsQueryDto } from '../dto/list-admin-poca-events-query
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
-import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import { MulterFile } from '../../../../../shared/services/upload';
 
 @Controller('admin/poca-events')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -45,7 +45,6 @@ export class AdminPocaEventController {
     private readonly deletePocaEventUseCase: DeletePocaEventUseCase,
     private readonly adminListPocaEventsUseCase: AdminListPocaEventsUseCase,
     private readonly adminGetPocaEventUseCase: AdminGetPocaEventUseCase,
-    private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -93,29 +92,10 @@ export class AdminPocaEventController {
       banners?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    let primaryBannerUrl: string | undefined;
-    let banners: Array<{ imageUrl: string; order: number }> | undefined;
+    // Parse banners order if provided
+    let banners: Array<{ image: MulterFile; order: number }> | undefined;
 
-    // Upload primary banner if provided
-    if (files?.primaryBanner && files.primaryBanner[0]) {
-      const file = files.primaryBanner[0];
-      if (file.size > 5 * 1024 * 1024) {
-        throw new BadRequestException('Primary banner file size exceeds 5MB');
-      }
-      if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-        throw new BadRequestException(
-          'Invalid primary banner file type. Allowed: jpg, jpeg, png, webp',
-        );
-      }
-      const uploadResult = await this.uploadService.uploadImage(file, {
-        folder: 'poca-events',
-      });
-      primaryBannerUrl = uploadResult.relativePath;
-    }
-
-    // Upload banners if provided
     if (files?.banners && files.banners.length > 0) {
-      // Parse banners order if provided
       let orders: number[] = [];
       if (dto.bannersOrder) {
         try {
@@ -135,27 +115,10 @@ export class AdminPocaEventController {
         orders = files.banners.map((_, index) => index);
       }
 
-      banners = [];
-      for (let i = 0; i < files.banners.length; i++) {
-        const file = files.banners[i];
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException(
-            `Banner ${i + 1} file size exceeds 5MB`,
-          );
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            `Invalid banner ${i + 1} file type. Allowed: jpg, jpeg, png, webp`,
-          );
-        }
-        const uploadResult = await this.uploadService.uploadImage(file, {
-          folder: 'poca-events',
-        });
-        banners.push({
-          imageUrl: uploadResult.relativePath,
-          order: orders[i],
-        });
-      }
+      banners = files.banners.map((image, index) => ({
+        image,
+        order: orders[index],
+      }));
     }
 
     const event = await this.createPocaEventUseCase.execute({
@@ -166,7 +129,7 @@ export class AdminPocaEventController {
       status: dto.status,
       startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
       endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
-      primaryBannerUrl,
+      primaryBanner: files?.primaryBanner?.[0],
       banners,
     });
 
@@ -194,29 +157,10 @@ export class AdminPocaEventController {
       banners?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    let primaryBannerUrl: string | undefined;
-    let banners: Array<{ imageUrl: string; order: number }> | undefined;
+    // Parse banners order if provided
+    let banners: Array<{ image: MulterFile; order: number }> | undefined;
 
-    // Upload primary banner if provided
-    if (files?.primaryBanner && files.primaryBanner[0]) {
-      const file = files.primaryBanner[0];
-      if (file.size > 5 * 1024 * 1024) {
-        throw new BadRequestException('Primary banner file size exceeds 5MB');
-      }
-      if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-        throw new BadRequestException(
-          'Invalid primary banner file type. Allowed: jpg, jpeg, png, webp',
-        );
-      }
-      const uploadResult = await this.uploadService.uploadImage(file, {
-        folder: 'poca-events',
-      });
-      primaryBannerUrl = uploadResult.relativePath;
-    }
-
-    // Upload banners if provided
     if (files?.banners && files.banners.length > 0) {
-      // Parse banners order if provided
       let orders: number[] = [];
       if (dto.bannersOrder) {
         try {
@@ -236,35 +180,10 @@ export class AdminPocaEventController {
         orders = files.banners.map((_, index) => index);
       }
 
-      banners = [];
-      for (let i = 0; i < files.banners.length; i++) {
-        const file = files.banners[i];
-        if (file.size > 5 * 1024 * 1024) {
-          throw new BadRequestException(
-            `Banner ${i + 1} file size exceeds 5MB`,
-          );
-        }
-        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            `Invalid banner ${i + 1} file type. Allowed: jpg, jpeg, png, webp`,
-          );
-        }
-        const uploadResult = await this.uploadService.uploadImage(file, {
-          folder: 'poca-events',
-        });
-        banners.push({
-          imageUrl: uploadResult.relativePath,
-          order: orders[i],
-        });
-      }
-    }
-
-    // Handle deletion flags
-    if (dto.deletePrimaryBanner === 'true') {
-      primaryBannerUrl = null;
-    }
-    if (dto.deleteBanners === 'true') {
-      banners = [];
+      banners = files.banners.map((image, index) => ({
+        image,
+        order: orders[index],
+      }));
     }
 
     const event = await this.updatePocaEventUseCase.execute({
@@ -276,8 +195,10 @@ export class AdminPocaEventController {
       status: dto.status,
       startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
       endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
-      primaryBannerUrl: primaryBannerUrl !== undefined ? primaryBannerUrl : undefined,
-      banners: banners !== undefined ? banners : undefined,
+      primaryBanner: files?.primaryBanner?.[0],
+      deletePrimaryBanner: dto.deletePrimaryBanner === 'true',
+      banners,
+      deleteBanners: dto.deleteBanners === 'true',
     });
 
     return ApiResponseUtil.success(

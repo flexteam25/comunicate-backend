@@ -57,4 +57,16 @@ export class UpdateSiteDto {
   @IsNumber()
   @Min(0)
   experience?: number;
+
+  @IsOptional()
+  @IsString()
+  deleteLogo?: string;
+
+  @IsOptional()
+  @IsString()
+  deleteMainImage?: string;
+
+  @IsOptional()
+  @IsString()
+  deleteSiteImage?: string;
 }

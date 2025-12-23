@@ -62,6 +62,13 @@ import { PocaEventBanner } from './modules/poca-event/domain/entities/poca-event
 import { PocaEventView } from './modules/poca-event/domain/entities/poca-event-view.entity';
 import { GifticonModule } from './modules/gifticon/gifticon.module';
 import { Gifticon } from './modules/gifticon/domain/entities/gifticon.entity';
+import { PostModule } from './modules/post/post.module';
+import { Post } from './modules/post/domain/entities/post.entity';
+import { PostCategory } from './modules/post/domain/entities/post-category.entity';
+import { PostComment } from './modules/post/domain/entities/post-comment.entity';
+import { PostCommentImage } from './modules/post/domain/entities/post-comment-image.entity';
+import { PostReaction } from './modules/post/domain/entities/post-reaction.entity';
+import { PostView } from './modules/post/domain/entities/post-view.entity';
 
 @Module({
   imports: [
@@ -117,6 +124,12 @@ import { Gifticon } from './modules/gifticon/domain/entities/gifticon.entity';
         PocaEventBanner,
         PocaEventView,
         Gifticon,
+        Post,
+        PostCategory,
+        PostComment,
+        PostCommentImage,
+        PostReaction,
+        PostView,
       ],
       synchronize: false,
       logging: false,
@@ -139,6 +152,7 @@ import { Gifticon } from './modules/gifticon/domain/entities/gifticon.entity';
     SiteManagerModule,
     PocaEventModule,
     GifticonModule,
+    PostModule,
   ],
   controllers: [AppController],
   providers: [AppService],

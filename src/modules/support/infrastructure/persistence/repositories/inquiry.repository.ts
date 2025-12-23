@@ -2,10 +2,10 @@ import { Inquiry, InquiryStatus, InquiryCategory } from '../../../domain/entitie
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 export interface InquiryFilters {
-  userId?: string;
+  userName?: string;
   status?: InquiryStatus;
   category?: InquiryCategory;
-  adminId?: string;
+  adminName?: string;
 }
 
 export interface IInquiryRepository {

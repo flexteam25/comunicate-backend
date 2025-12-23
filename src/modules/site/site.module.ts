@@ -30,7 +30,6 @@ import { UserHistorySitePersistenceModule } from '../user/user-history-site-pers
 import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
 import { OptionalJwtAuthGuard } from '../../shared/guards/optional-jwt-auth.guard';
 import { ScamReportModule } from '../scam-report/scam-report.module';
-import { forwardRef } from '@nestjs/common';
 
 @Module({
   imports: [
@@ -41,7 +40,7 @@ import { forwardRef } from '@nestjs/common';
     UserHistorySitePersistenceModule,
     UserTokenRepositoryModule,
     UploadModule.register({ storageType: 'local' }),
-    forwardRef(() => ScamReportModule),
+    ScamReportModule,
   ],
   providers: [
     CreateSiteUseCase,

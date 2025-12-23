@@ -1291,3 +1291,121 @@ const siteImageUrl = await this.uploadService.uploadSiteImage(
 - ✅ `content` is HTML from rich text editor (can contain embedded images)
 
 ---
+
+### 33. POCA Posts System
+
+**Location:** `src/modules/post/`
+
+**User APIs (`/api/posts`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/posts` | List published posts (cursor pagination) | ❌ |
+| `GET` | `/api/posts/:id` | Get post detail (tracks view) | ❌ |
+| `GET` | `/api/posts/:id/comments` | List comments for post | ❌ |
+| `GET` | `/api/post-categories` | List post categories | ❌ |
+| `POST` | `/api/posts` | Create post (requires approval) | ✅ |
+| `PUT` | `/api/posts/:id` | Update own post (within 1 hour) | ✅ |
+| `DELETE` | `/api/posts/:id` | Soft delete own post (within 1 hour) | ✅ |
+| `POST` | `/api/posts/:id/react` | React to post (like/dislike) | ✅ |
+| `POST` | `/api/posts/:id/comments` | Add comment to post | ✅ |
+| `DELETE` | `/api/posts/comments/:commentId` | Soft delete own comment | ✅ |
+
+**Admin APIs (`/admin/posts`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/admin/posts` | Create post | ✅ |
+| `GET` | `/admin/posts` | List all posts (cursor pagination) | ✅ |
+| `GET` | `/admin/posts/:id` | Get post detail | ✅ |
+| `PUT` | `/admin/posts/:id` | Update post (full permissions) | ✅ |
+| `DELETE` | `/admin/posts/:id` | Soft delete post | ✅ |
+| `POST` | `/admin/post-categories` | Create category | ✅ |
+| `GET` | `/admin/post-categories` | List categories | ✅ |
+| `GET` | `/admin/post-categories/:id` | Get category | ✅ |
+| `PUT` | `/admin/post-categories/:id` | Update category | ✅ |
+| `DELETE` | `/admin/post-categories/:id` | Soft delete category | ✅ |
+| `PUT` | `/admin/post-categories/restore/:id` | Restore category | ✅ |
+
+**Features:**
+- ✅ Post CRUD with permission checks
+- ✅ Post categories management (CRUD with soft delete and restore)
+- ✅ Status workflow: `isPublished: false` (default) → `true` (approved by admin)
+- ✅ Posts can be created by users or admins (distinguished by `userId` and `adminId`)
+- ✅ User posts: Can create, edit, and soft delete within 1 hour of creation
+- ✅ User posts: Cannot restore deleted posts
+- ✅ Admin posts: Full update permissions (no time limit, can change `isPublished`)
+- ✅ Thumbnail upload: Form-data with `thumbnail` field (single file, max 20MB)
+- ✅ Rich text content: HTML content from editor
+- ✅ Reaction system (like/dislike) with unique constraint per user
+- ✅ Comment system with nested replies support
+- ✅ Top-level comments only by default (filter by `parentCommentId` for replies)
+- ✅ Soft delete for comments (hard delete for reactions)
+- ✅ Child comments not loaded if parent comment is deleted
+- ✅ View tracking: Increments view count and creates `PostView` records
+- ✅ Cursor pagination for listing posts and comments
+- ✅ Filter by category, search by title
+- ✅ Sort by published date, pinned posts first
+- ✅ Dynamic counting: `likeCount`, `dislikeCount`, `commentCount` calculated via raw SQL subqueries
+- ✅ `commentCount` includes deleted comments (for statistics)
+- ✅ User comment tracking: Saves to `user_comments` table for statistics
+- ✅ No `like_count` columns (all counts computed dynamically)
+
+**Post Entity:**
+- Fields: `userId` (nullable), `adminId` (nullable), `categoryId`, `title`, `content`, `thumbnailUrl`, `isPinned`, `isPublished` (default: false), `publishedAt`
+- Relationships: `user`, `admin`, `category`, `comments[]`, `reactions[]`, `views[]`
+- Computed properties: `likeCount`, `dislikeCount`, `commentCount`, `viewCount` (loaded via raw SQL subqueries)
+
+**Post Category Entity:**
+- Fields: `name`, `description`, `deletedAt`
+- Soft delete support with restore functionality
+
+**Post Comment Entity:**
+- Fields: `postId`, `userId`, `parentCommentId` (nullable, for replies), `content`
+- Relationships: `post`, `user`, `parentComment`, `replies[]`, `images[]`
+- Supports nested comments (replies to comments)
+- No `like_count` field (removed)
+
+**Post Reaction Entity:**
+- Fields: `postId`, `userId`, `reactionType` (like/dislike)
+- Unique constraint: One reaction per user per post
+- Hard delete (no soft delete)
+
+**Post View Entity:**
+- Fields: `postId`, `userId` (nullable), `ipAddress`, `userAgent` (nullable)
+- Tracks post views for analytics
+
+**Database Schema:**
+- ✅ Migration `1765620000000-create-post-system.ts`:
+  - Creates `posts` table
+  - Creates `post_categories` table
+  - Creates `post_comments` table
+  - Creates `post_comment_images` table
+  - Creates `post_reactions` table
+  - Creates `post_views` table
+- ✅ Migration `1766479250958-drop-post-user-fk.ts`:
+  - Modifies `posts` table to support both user and admin creators
+  - Drops `created_by_admin` column
+  - Adds `admin_id` column (nullable)
+  - Updates foreign keys to allow nullable `user_id` and `admin_id`
+- ✅ Migration `1766479300000-remove-like-count-from-posts-and-comments.ts`:
+  - Removes `like_count` column from `posts` table
+  - Removes `like_count` column from `post_comments` table
+
+**Counting System:**
+- ✅ `likeCount` and `dislikeCount`: Calculated via raw SQL subqueries counting `post_reactions`
+- ✅ `commentCount`: Calculated via raw SQL subquery counting ALL comments (including deleted)
+- ✅ Counts mapped from raw data to entity properties using `getRawAndEntities()`
+- ✅ Used in both `findByIdWithAggregates` and `findPublished` methods
+
+**Comment Loading Rules:**
+- ✅ Top-level comments: `parentCommentId IS NULL`
+- ✅ Child comments: Only loaded if parent comment exists and is not deleted
+- ✅ If parent comment is deleted, child comments are not retrieved
+
+**User Comment Tracking:**
+- ✅ When user adds a comment, entry is saved to `user_comments` table
+- ✅ Uses polymorphic association: `commentType: CommentType.POST_COMMENT`, `commentId: comment.id`
+- ✅ Used for future statistics
+
+---

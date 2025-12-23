@@ -9,6 +9,7 @@ import { GifticonStatus } from '../../../domain/entities/gifticon.entity';
 import { IGifticonRepository } from '../../../infrastructure/persistence/repositories/gifticon.repository';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
+import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 
 export interface UpdateGifticonCommand {
   gifticonId: string;
@@ -19,7 +20,8 @@ export interface UpdateGifticonCommand {
   status?: GifticonStatus;
   startsAt?: Date;
   endsAt?: Date;
-  imageUrl?: string;
+  image?: MulterFile;
+  deleteImage?: boolean;
   amount?: number;
 }
 
@@ -29,76 +31,133 @@ export class UpdateGifticonUseCase {
     @Inject('IGifticonRepository')
     private readonly gifticonRepository: IGifticonRepository,
     private readonly transactionService: TransactionService,
+    private readonly uploadService: UploadService,
   ) {}
 
   async execute(command: UpdateGifticonCommand): Promise<Gifticon> {
-    return this.transactionService.executeInTransaction(
-      async (manager: EntityManager) => {
-        const gifticonRepo = manager.getRepository(Gifticon);
+    // Get existing gifticon first to check for old file
+    const existingGifticon = await this.gifticonRepository.findById(command.gifticonId);
+    if (!existingGifticon) {
+      throw new NotFoundException('Gifticon not found');
+    }
 
-        const gifticon = await gifticonRepo.findOne({
-          where: { id: command.gifticonId, deletedAt: null },
-        });
+    // Validate file size and type if image provided
+    if (command.image) {
+      const maxSize = 20 * 1024 * 1024; // 20MB
+      if (command.image.size > maxSize) {
+        throw new BadRequestException('Image file size exceeds 20MB');
+      }
+      const allowedTypes = /(jpg|jpeg|png|webp)$/i;
+      if (!allowedTypes.test(command.image.mimetype)) {
+        throw new BadRequestException(
+          'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+        );
+      }
+    }
 
-        if (!gifticon) {
-          throw new NotFoundException('Gifticon not found');
-        }
+    // Store old file URL for cleanup
+    const oldImageUrl = existingGifticon.imageUrl;
 
-        // Validate dates
-        if (command.startsAt && command.endsAt) {
-          if (command.startsAt >= command.endsAt) {
-            throw new BadRequestException(
-              'Start date must be before end date',
-            );
-          }
-        } else if (command.startsAt && gifticon.endsAt) {
-          if (command.startsAt >= gifticon.endsAt) {
-            throw new BadRequestException(
-              'Start date must be before end date',
-            );
-          }
-        } else if (command.endsAt && gifticon.startsAt) {
-          if (gifticon.startsAt >= command.endsAt) {
-            throw new BadRequestException(
-              'Start date must be before end date',
-            );
-          }
-        }
+    // Upload new image before transaction
+    let imageUrl: string | undefined;
+    if (command.image) {
+      const result = await this.uploadService.uploadImage(command.image, {
+        folder: 'gifticons',
+      });
+      imageUrl = result.relativePath;
+    } else if (command.deleteImage) {
+      imageUrl = null;
+    }
 
-        // Check slug uniqueness if provided
-        if (command.slug && command.slug !== gifticon.slug) {
-          const existing = await gifticonRepo.findOne({
-            where: { slug: command.slug, deletedAt: null },
+    // Update gifticon within transaction
+    try {
+      const gifticon = await this.transactionService.executeInTransaction(
+        async (manager: EntityManager) => {
+          const gifticonRepo = manager.getRepository(Gifticon);
+
+          const gifticon = await gifticonRepo.findOne({
+            where: { id: command.gifticonId, deletedAt: null },
           });
-          if (existing) {
-            throw new BadRequestException('Slug already exists');
+
+          if (!gifticon) {
+            throw new NotFoundException('Gifticon not found');
           }
-        }
 
-        // Update gifticon fields
-        if (command.title !== undefined) gifticon.title = command.title;
-        if (command.slug !== undefined) gifticon.slug = command.slug || null;
-        if (command.summary !== undefined) gifticon.summary = command.summary || null;
-        if (command.content !== undefined) gifticon.content = command.content;
-        if (command.status !== undefined) gifticon.status = command.status;
-        if (command.startsAt !== undefined) gifticon.startsAt = command.startsAt || null;
-        if (command.endsAt !== undefined) gifticon.endsAt = command.endsAt || null;
-        if (command.imageUrl !== undefined) gifticon.imageUrl = command.imageUrl || null;
-        if (command.amount !== undefined) gifticon.amount = command.amount;
+          // Validate dates
+          if (command.startsAt && command.endsAt) {
+            if (command.startsAt >= command.endsAt) {
+              throw new BadRequestException(
+                'Start date must be before end date',
+              );
+            }
+          } else if (command.startsAt && gifticon.endsAt) {
+            if (command.startsAt >= gifticon.endsAt) {
+              throw new BadRequestException(
+                'Start date must be before end date',
+              );
+            }
+          } else if (command.endsAt && gifticon.startsAt) {
+            if (gifticon.startsAt >= command.endsAt) {
+              throw new BadRequestException(
+                'Start date must be before end date',
+              );
+            }
+          }
 
-        await gifticonRepo.save(gifticon);
+          // Check slug uniqueness if provided
+          if (command.slug && command.slug !== gifticon.slug) {
+            const existing = await gifticonRepo.findOne({
+              where: { slug: command.slug, deletedAt: null },
+            });
+            if (existing) {
+              throw new BadRequestException('Slug already exists');
+            }
+          }
 
-        // Reload
-        const reloaded = await gifticonRepo.findOne({
-          where: { id: gifticon.id },
+          // Update gifticon fields
+          if (command.title !== undefined) gifticon.title = command.title;
+          if (command.slug !== undefined) gifticon.slug = command.slug || null;
+          if (command.summary !== undefined) gifticon.summary = command.summary || null;
+          if (command.content !== undefined) gifticon.content = command.content;
+          if (command.status !== undefined) gifticon.status = command.status;
+          if (command.startsAt !== undefined) gifticon.startsAt = command.startsAt || null;
+          if (command.endsAt !== undefined) gifticon.endsAt = command.endsAt || null;
+          if (imageUrl !== undefined) gifticon.imageUrl = imageUrl;
+          if (command.amount !== undefined) gifticon.amount = command.amount;
+
+          await gifticonRepo.save(gifticon);
+
+          // Reload
+          const reloaded = await gifticonRepo.findOne({
+            where: { id: gifticon.id },
+          });
+
+          if (!reloaded) {
+            throw new Error('Failed to reload gifticon after update');
+          }
+
+          return reloaded;
+        },
+      );
+
+      // Delete old file after successful update (best effort, asynchronously)
+      if ((imageUrl !== undefined || command.deleteImage) && oldImageUrl) {
+        Promise.allSettled([
+          this.uploadService.deleteFile(oldImageUrl),
+        ]).catch(() => {
+          // Ignore cleanup errors
         });
+      }
 
-        if (!reloaded) {
-          throw new Error('Failed to reload gifticon after update');
-        }
-
-        return reloaded;
-      },
-    );
+      return gifticon;
+    } catch (transactionError) {
+      // If transaction fails, cleanup newly uploaded file (best effort)
+      if (imageUrl) {
+        await this.uploadService.deleteFile(imageUrl).catch(() => {
+          // Ignore cleanup errors
+        });
+      }
+      throw transactionError;
+    }
   }
 }

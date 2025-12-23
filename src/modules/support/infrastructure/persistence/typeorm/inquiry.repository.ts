@@ -36,9 +36,9 @@ export class InquiryRepository implements IInquiryRepository {
       .where('inquiry.deletedAt IS NULL');
 
     // Apply filters
-    if (filters?.userId) {
-      queryBuilder.andWhere('inquiry.userId = :userId', {
-        userId: filters.userId,
+    if (filters?.userName) {
+      queryBuilder.andWhere('LOWER(user.displayName) LIKE LOWER(:userName)', {
+        userName: `%${filters.userName}%`,
       });
     }
     if (filters?.status) {
@@ -51,9 +51,9 @@ export class InquiryRepository implements IInquiryRepository {
         category: filters.category,
       });
     }
-    if (filters?.adminId) {
-      queryBuilder.andWhere('inquiry.adminId = :adminId', {
-        adminId: filters.adminId,
+    if (filters?.adminName) {
+      queryBuilder.andWhere('LOWER(admin.displayName) LIKE LOWER(:adminName)', {
+        adminName: `%${filters.adminName}%`,
       });
     }
 

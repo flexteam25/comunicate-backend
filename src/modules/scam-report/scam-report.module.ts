@@ -14,16 +14,15 @@ import { ListScamReportCommentsUseCase } from './application/handlers/list-scam-
 import { ReactToScamReportUseCase } from './application/handlers/react-to-scam-report.use-case';
 import { ScamReportController } from './interface/rest/user/scam-report.controller';
 import { AdminScamReportController } from './interface/rest/admin/scam-report.controller';
-import { SiteModule } from '../site/site.module';
+import { SitePersistenceModule } from '../site/site-persistence.module';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { UploadModule } from '../../shared/services/upload';
 import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
-import { forwardRef } from '@nestjs/common';
 
 @Module({
   imports: [
     ScamReportPersistenceModule,
-    forwardRef(() => SiteModule),
+    SitePersistenceModule,
     AdminGuardsModule,
     UploadModule.register({ storageType: 'local' }),
     UserTokenRepositoryModule,

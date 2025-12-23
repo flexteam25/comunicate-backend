@@ -1,6 +1,7 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { SiteManagerPersistenceModule } from './site-manager-persistence.module';
 import { SitePersistenceModule } from '../site/site-persistence.module';
+import { TierModule } from '../tier/tier.module';
 import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
 import { ServicesModule } from '../../shared/services/services.module';
 import { UploadModule } from '../../shared/services/upload';
@@ -22,7 +23,8 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
 @Module({
   imports: [
     SiteManagerPersistenceModule,
-    forwardRef(() => SitePersistenceModule),
+    SitePersistenceModule,
+    TierModule,
     UserTokenRepositoryModule,
     ServicesModule,
     UploadModule.register({ storageType: 'local' }),
