@@ -1,9 +1,8 @@
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import {
-  Injectable,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
-import { PostReaction, ReactionType } from '../../../domain/entities/post-reaction.entity';
+  PostReaction,
+  ReactionType,
+} from '../../../domain/entities/post-reaction.entity';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 import { IPostReactionRepository } from '../../../infrastructure/persistence/repositories/post-reaction.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';

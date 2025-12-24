@@ -36,10 +36,7 @@ export class GifticonRepository implements IGifticonRepository {
       .createQueryBuilder('gifticon')
       .where('gifticon.deletedAt IS NULL')
       .andWhere('gifticon.status = :status', { status: GifticonStatus.PUBLISHED })
-      .andWhere(
-        '(gifticon.startsAt IS NULL OR gifticon.startsAt <= :now)',
-        { now },
-      )
+      .andWhere('(gifticon.startsAt IS NULL OR gifticon.startsAt <= :now)', { now })
       .andWhere('(gifticon.endsAt IS NULL OR gifticon.endsAt >= :now)', { now });
 
     if (isUuid) {
@@ -102,9 +99,7 @@ export class GifticonRepository implements IGifticonRepository {
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-        sortBy
-      ];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;
@@ -190,9 +185,7 @@ export class GifticonRepository implements IGifticonRepository {
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-        sortBy
-      ];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;

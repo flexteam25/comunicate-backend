@@ -14,10 +14,11 @@ export class GetApplicationUseCase {
   ) {}
 
   async execute(command: GetApplicationCommand): Promise<SiteManagerApplication> {
-    const application = await this.applicationRepository.findById(
-      command.applicationId,
-      ['site', 'user', 'admin'],
-    );
+    const application = await this.applicationRepository.findById(command.applicationId, [
+      'site',
+      'user',
+      'admin',
+    ]);
 
     if (!application) {
       throw new NotFoundException('Application not found');

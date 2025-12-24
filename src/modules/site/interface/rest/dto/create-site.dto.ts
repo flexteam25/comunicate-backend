@@ -59,4 +59,8 @@ export class CreateSiteDto {
   @IsNumber()
   @Min(0)
   experience?: number;
+
+  @IsOptional()
+  @IsUUID()
+  partnerUid?: string;
 }

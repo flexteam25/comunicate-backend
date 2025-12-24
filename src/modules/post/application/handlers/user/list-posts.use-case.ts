@@ -19,9 +19,7 @@ export class ListPublicPostsUseCase {
     private readonly postRepository: IPostRepository,
   ) {}
 
-  async execute(
-    command: ListPublicPostsCommand,
-  ): Promise<CursorPaginationResult<Post>> {
+  async execute(command: ListPublicPostsCommand): Promise<CursorPaginationResult<Post>> {
     return this.postRepository.findPublished(
       {
         categoryId: command.categoryId,

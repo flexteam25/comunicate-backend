@@ -30,11 +30,13 @@ import { UserHistorySitePersistenceModule } from '../user/user-history-site-pers
 import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
 import { OptionalJwtAuthGuard } from '../../shared/guards/optional-jwt-auth.guard';
 import { ScamReportModule } from '../scam-report/scam-report.module';
+import { SiteManagerPersistenceModule } from '../site-manager/site-manager-persistence.module';
 
 @Module({
   imports: [
     TypeOrmModule,
     SitePersistenceModule,
+    SiteManagerPersistenceModule,
     TierModule,
     AdminGuardsModule,
     UserHistorySitePersistenceModule,

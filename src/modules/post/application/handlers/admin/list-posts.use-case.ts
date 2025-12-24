@@ -21,9 +21,7 @@ export class ListPostsUseCase {
     private readonly postRepository: IPostRepository,
   ) {}
 
-  async execute(
-    command: ListPostsCommand,
-  ): Promise<CursorPaginationResult<Post>> {
+  async execute(command: ListPostsCommand): Promise<CursorPaginationResult<Post>> {
     return this.postRepository.findAllAdmin(
       {
         isPublished: command.isPublished,

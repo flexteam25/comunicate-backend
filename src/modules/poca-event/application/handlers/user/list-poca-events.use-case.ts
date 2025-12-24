@@ -18,9 +18,6 @@ export class ListPocaEventsUseCase {
   async execute(
     command: ListPocaEventsCommand,
   ): Promise<CursorPaginationResult<PocaEvent>> {
-    return this.pocaEventRepository.findVisibleWithCursor(
-      command.cursor,
-      command.limit,
-    );
+    return this.pocaEventRepository.findVisibleWithCursor(command.cursor, command.limit);
   }
 }

@@ -28,9 +28,7 @@ export class ApproveApplicationUseCase {
     private readonly transactionService: TransactionService,
   ) {}
 
-  async execute(
-    command: ApproveApplicationCommand,
-  ): Promise<SiteManagerApplication> {
+  async execute(command: ApproveApplicationCommand): Promise<SiteManagerApplication> {
     return this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         const appRepo = manager.getRepository(SiteManagerApplication);
@@ -49,9 +47,7 @@ export class ApproveApplicationUseCase {
 
         // Check status is pending
         if (application.status !== SiteManagerApplicationStatus.PENDING) {
-          throw new BadRequestException(
-            'Application has already been processed',
-          );
+          throw new BadRequestException('Application has already been processed');
         }
 
         // Double-check user is NOT already manager (handle race condition)
@@ -64,9 +60,7 @@ export class ApproveApplicationUseCase {
         });
 
         if (existingManager) {
-          throw new BadRequestException(
-            'User is already a manager for this site',
-          );
+          throw new BadRequestException('User is already a manager for this site');
         }
 
         // Update application

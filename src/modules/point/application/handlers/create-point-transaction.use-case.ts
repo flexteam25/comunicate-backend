@@ -1,6 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { PointTransaction, PointTransactionType } from '../../domain/entities/point-transaction.entity';
+import {
+  PointTransaction,
+  PointTransactionType,
+} from '../../domain/entities/point-transaction.entity';
 import { IPointTransactionRepository } from '../../infrastructure/persistence/repositories/point-transaction.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 
@@ -46,9 +49,7 @@ export class CreatePointTransactionUseCase {
    * Create a new point transaction within a transaction
    * Ensures data consistency
    */
-  async execute(
-    command: CreatePointTransactionCommand,
-  ): Promise<PointTransaction> {
+  async execute(command: CreatePointTransactionCommand): Promise<PointTransaction> {
     return this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         const transactionRepo = manager.getRepository(PointTransaction);

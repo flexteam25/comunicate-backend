@@ -19,13 +19,11 @@ export class GetRedemptionDetailUseCase {
     private readonly redemptionRepository: IGifticonRedemptionRepository,
   ) {}
 
-  async execute(
-    command: GetRedemptionDetailCommand,
-  ): Promise<GifticonRedemption> {
-    const redemption = await this.redemptionRepository.findById(
-      command.redemptionId,
-      ['gifticon', 'user'],
-    );
+  async execute(command: GetRedemptionDetailCommand): Promise<GifticonRedemption> {
+    const redemption = await this.redemptionRepository.findById(command.redemptionId, [
+      'gifticon',
+      'user',
+    ]);
 
     if (!redemption) {
       throw new NotFoundException('Redemption not found');

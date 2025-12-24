@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { Post } from '../../../domain/entities/post.entity';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
@@ -77,9 +82,7 @@ export class UpdatePostUseCase {
 
           // Validate category if provided
           if (command.categoryId) {
-            const category = await this.categoryRepository.findById(
-              command.categoryId,
-            );
+            const category = await this.categoryRepository.findById(command.categoryId);
             if (!category) {
               throw new NotFoundException('Category not found');
             }
@@ -92,28 +95,31 @@ export class UpdatePostUseCase {
               command.postId,
             );
             if (duplicatePost) {
-              throw new BadRequestException(
-                'A post with this title already exists',
-              );
+              throw new BadRequestException('A post with this title already exists');
             }
           }
 
           const updateData: Partial<Post> = {};
-          if (command.categoryId !== undefined) updateData.categoryId = command.categoryId;
+          if (command.categoryId !== undefined)
+            updateData.categoryId = command.categoryId;
           if (command.title !== undefined) updateData.title = command.title;
           if (command.content !== undefined) updateData.content = command.content;
-          if (command.thumbnail !== undefined || command.deleteThumbnail === true || command.deleteThumbnail === 'true') {
-            updateData.thumbnailUrl = thumbnailUrl as string | null;
+          if (
+            command.thumbnail !== undefined ||
+            command.deleteThumbnail === true ||
+            command.deleteThumbnail === 'true'
+          ) {
+            updateData.thumbnailUrl = thumbnailUrl;
           }
-    // Only admin can publish/unpublish posts (via admin API)
-    if (command.isPublished !== undefined) {
-      updateData.isPublished = command.isPublished;
-      if (command.isPublished && !existingPost.publishedAt) {
-        updateData.publishedAt = new Date();
-      } else if (!command.isPublished) {
-        updateData.publishedAt = null;
-      }
-    }
+          // Only admin can publish/unpublish posts (via admin API)
+          if (command.isPublished !== undefined) {
+            updateData.isPublished = command.isPublished;
+            if (command.isPublished && !existingPost.publishedAt) {
+              updateData.publishedAt = new Date();
+            } else if (!command.isPublished) {
+              updateData.publishedAt = null;
+            }
+          }
           if (command.isPinned !== undefined) updateData.isPinned = command.isPinned;
 
           await postRepo.update(command.postId, updateData);
@@ -137,7 +143,10 @@ export class UpdatePostUseCase {
           await this.uploadService.deleteFile(thumbnailUrl);
         } catch (deleteError) {
           // Log but don't throw - best effort cleanup
-          console.error('Failed to cleanup thumbnail after transaction failure:', deleteError);
+          console.error(
+            'Failed to cleanup thumbnail after transaction failure:',
+            deleteError,
+          );
         }
       }
       throw error;

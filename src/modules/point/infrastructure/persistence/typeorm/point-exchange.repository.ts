@@ -15,10 +15,7 @@ export class PointExchangeRepository implements IPointExchangeRepository {
     private readonly repository: Repository<PointExchange>,
   ) {}
 
-  async findById(
-    id: string,
-    relations?: string[],
-  ): Promise<PointExchange | null> {
+  async findById(id: string, relations?: string[]): Promise<PointExchange | null> {
     return this.repository.findOne({
       where: { id },
       relations,
@@ -78,9 +75,7 @@ export class PointExchangeRepository implements IPointExchangeRepository {
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-        sortBy
-      ];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;
@@ -158,9 +153,7 @@ export class PointExchangeRepository implements IPointExchangeRepository {
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-        sortBy
-      ];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;
@@ -176,10 +169,7 @@ export class PointExchangeRepository implements IPointExchangeRepository {
     return this.repository.save(entity);
   }
 
-  async update(
-    id: string,
-    data: Partial<PointExchange>,
-  ): Promise<PointExchange> {
+  async update(id: string, data: Partial<PointExchange>): Promise<PointExchange> {
     await this.repository.update(id, {
       ...data,
       updatedAt: new Date(),

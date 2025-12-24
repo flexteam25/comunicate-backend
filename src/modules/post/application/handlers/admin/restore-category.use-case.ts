@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  BadRequestException,
+} from '@nestjs/common';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';

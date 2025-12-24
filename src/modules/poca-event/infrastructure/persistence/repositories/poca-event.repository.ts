@@ -4,10 +4,7 @@ import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagin
 
 export interface IPocaEventRepository {
   findById(id: string, relations?: string[]): Promise<PocaEvent | null>;
-  findByIdOrSlugPublic(
-    idOrSlug: string,
-    relations?: string[],
-  ): Promise<PocaEvent | null>;
+  findByIdOrSlugPublic(idOrSlug: string, relations?: string[]): Promise<PocaEvent | null>;
   findVisibleWithCursor(
     cursor?: string,
     limit?: number,

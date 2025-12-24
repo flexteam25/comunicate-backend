@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+} from '@nestjs/common';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 
 export interface DeletePostCommand {
@@ -27,7 +32,9 @@ export class DeletePostUseCase {
     // Check time limit: can only delete within 1 hour after creation
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
     if (post.createdAt < oneHourAgo) {
-      throw new ForbiddenException('You can only delete posts within 1 hour after creation');
+      throw new ForbiddenException(
+        'You can only delete posts within 1 hour after creation',
+      );
     }
 
     // Soft delete

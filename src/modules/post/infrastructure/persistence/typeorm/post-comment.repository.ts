@@ -70,10 +70,7 @@ export class PostCommentRepository implements IPostCommentRepository {
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      nextCursor = CursorPaginationUtil.encodeCursor(
-        lastItem.id,
-        lastItem.createdAt,
-      );
+      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt);
     }
 
     return { data, nextCursor, hasMore };
@@ -84,10 +81,7 @@ export class PostCommentRepository implements IPostCommentRepository {
     return this.repository.save(entity);
   }
 
-  async update(
-    id: string,
-    data: Partial<PostComment>,
-  ): Promise<PostComment> {
+  async update(id: string, data: Partial<PostComment>): Promise<PostComment> {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {

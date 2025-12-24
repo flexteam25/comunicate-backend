@@ -1445,3 +1445,176 @@ try {
 - ✅ Used for future statistics
 
 ---
+
+### 34. Gifticon Type Color & Post Creation Fixes
+
+**Commit:** `318241bf0fc378abd73afb559de8aab0f34e1b73`
+
+**Changes:**
+
+**1. Gifticon Type Color Field:**
+- ✅ Added `type_color` column (varchar, 50, nullable) to `gifticons` table
+- ✅ Migration: `1766563282613-add-type-color-to-gifticons.ts`
+- ✅ Added `typeColor` field to `Gifticon` entity
+- ✅ Added `typeColor` to `CreateGifticonDto` and `UpdateGifticonDto` (optional, max 50 characters)
+- ✅ Updated `CreateGifticonCommand` and `UpdateGifticonCommand` interfaces
+- ✅ Updated admin and user controllers to include `typeColor` in responses
+- ✅ Added `typeColor` to `gifticonSnapshot` in redemption records for data integrity
+
+**API Changes:**
+- `POST /admin/gifticons`: Added optional `typeColor` field in request body
+- `PUT /admin/gifticons/:id`: Added optional `typeColor` field in request body
+- All gifticon responses now include `typeColor` field
+
+**2. User Post Creation Restrictions:**
+- ✅ Removed `isPublished` and `isPinned` fields from user post creation
+- ✅ User-created posts are always set to:
+  - `isPublished = false` (requires admin approval to publish)
+  - `isPinned = false` (users cannot pin posts)
+  - `publishedAt = null`
+- ✅ Updated `CreatePostCommand` interface in user create post use case (removed `isPinned` and `isPublished`)
+- ✅ Updated user post controller to not pass `isPinned` and `isPublished` to use case
+- ✅ Admin post creation remains unchanged (admin can set `isPublished` and `isPinned`)
+
+**Rationale:**
+- Gifticon type color: Allows categorization/visual distinction of gifticons
+- Post creation: Ensures user posts require admin approval before being published, maintaining content quality control
+
+---
+
+### 35. Partner System Implementation
+
+**Commit:** Implementation of partner request and management system
+
+**Overview:**
+Implemented a complete partner system that allows users to request partner status during registration, and admins to approve/reject these requests. Partners can then be assigned to sites as managers during site creation.
+
+**Database & Entity:**
+- ✅ Created `partner_requests` table with fields:
+  - `id`, `user_id`, `status` (pending/approved/rejected enum)
+  - `admin_id` (nullable), `reviewed_at` (nullable), `rejection_reason` (nullable, text)
+  - `created_at`, `updated_at`, `deleted_at` (soft delete)
+- ✅ Migration: `1766565658312-create-partner-requests-system.ts`
+- ✅ Created `PartnerRequest` entity with relationships to `User` and `Admin`
+- ✅ Implemented `IPartnerRequestRepository` interface and TypeORM repository
+- ✅ Added indexes on `user_id` and `status` columns
+
+**Role & Permission:**
+- ✅ Added `partner` role (RoleType.USER) to seeder
+- ✅ Added `partner.manage` permission (PermissionType.ADMIN) to seeder
+- ✅ Permission required for all admin partner management operations
+
+**User Registration with Partner Flag:**
+- ✅ Updated `RegisterDto` to include optional `partner?: boolean` field
+- ✅ Uses `@TransformToBoolean` decorator for string/number to boolean conversion
+- ✅ Updated `RegisterUseCase` to create `PartnerRequest` with status `PENDING` when `partner === true`
+- ✅ Request created within same transaction as user creation
+- ✅ Logic: New user registration doesn't require checking existing requests/roles (user doesn't exist yet)
+
+**User APIs (New):**
+1. **GET /api/partner/request** - View own partner request status
+   - Controller: `PartnerController.getMyPartnerRequest`
+   - Use case: `GetMyPartnerRequestUseCase`
+   - Auth: JWT (user authentication required)
+   - Response: `{ id, userId, status, adminId, reviewedAt, rejectionReason, createdAt, updatedAt }`
+
+**Admin APIs (New):**
+1. **GET /admin/partner/requests** - List all partner requests
+   - Controller: `AdminPartnerController.listPartnerRequests`
+   - Use case: `ListPartnerRequestsUseCase`
+   - Auth: Admin JWT + Permission `partner.manage`
+   - Query params: `status?` (pending/approved/rejected), `userId?`, `cursor?`, `limit?`
+   - Response: Paginated list with `user` and `admin` relations
+   - Supports cursor pagination
+
+2. **POST /admin/partner/requests/:id/approve** - Approve a partner request
+   - Controller: `AdminPartnerController.approvePartnerRequest`
+   - Use case: `ApprovePartnerRequestUseCase`
+   - Auth: Admin JWT + Permission `partner.manage`
+   - Logic:
+     - Validates request exists and status is `PENDING`
+     - Finds partner role by name
+     - Adds partner role to user if not already exists
+     - Updates request status to `APPROVED`, sets `adminId` and `reviewedAt`
+     - Uses pessimistic locking (`SELECT FOR UPDATE`) to prevent race conditions
+     - All operations within transaction
+
+3. **POST /admin/partner/requests/:id/reject** - Reject a partner request
+   - Controller: `AdminPartnerController.rejectPartnerRequest`
+   - Use case: `RejectPartnerRequestUseCase`
+   - Auth: Admin JWT + Permission `partner.manage`
+   - Body: `{ reason?: string }` (optional rejection reason)
+   - Logic:
+     - Validates request exists and status is `PENDING`
+     - Updates request status to `REJECTED`, sets `adminId`, `reviewedAt`, and `rejectionReason`
+     - Uses pessimistic locking to prevent race conditions
+     - All operations within transaction
+
+4. **GET /admin/partner/users** - List users with partner role
+   - Controller: `AdminPartnerController.listPartnerUsers`
+   - Use case: `ListPartnerUsersUseCase`
+   - Auth: Admin JWT + Permission `partner.manage`
+   - Query params: `cursor?`, `limit?`
+   - Response: Paginated list of users who have the `partner` role
+   - Includes user profile information (bio, phone)
+   - Used for selecting partners when creating sites
+
+**Site Creation Enhancement:**
+- ✅ Updated `CreateSiteDto` to include optional `partnerUid?: string` field
+- ✅ Updated `CreateSiteUseCase` to handle partner assignment:
+  - If `partnerUid` is provided:
+    - Validates user exists and is not deleted
+    - Validates user has `partner` role
+    - Creates `SiteManager` record with:
+      - `user_id` = partnerUid
+      - `site_id` = newly created site
+      - `is_active` = true
+      - `role` = SiteManagerRole.MANAGER
+  - All operations within same transaction as site creation
+- ✅ Partner users can then use existing site manager APIs (`/api/site-management/my-managed-sites`, update site endpoints)
+
+**Business Logic & Validation:**
+- ✅ Users can only view their own partner request
+- ✅ Admins require `partner.manage` permission for all partner operations
+- ✅ Approve request automatically assigns partner role to user
+- ✅ Reject request stores optional rejection reason
+- ✅ Site creation validates partner user has partner role
+- ✅ Pessimistic locking prevents concurrent approval/rejection of same request
+- ✅ All critical operations use database transactions for data consistency
+- ✅ Soft delete support for partner requests (for audit trail)
+
+**Key Files:**
+
+**New Files:**
+- `src/migrations/1766565658312-create-partner-requests-system.ts`
+- `src/modules/partner/domain/entities/partner-request.entity.ts`
+- `src/modules/partner/infrastructure/persistence/repositories/partner-request.repository.ts`
+- `src/modules/partner/infrastructure/persistence/typeorm/partner-request.repository.ts`
+- `src/modules/partner/application/handlers/user/get-my-partner-request.use-case.ts`
+- `src/modules/partner/application/handlers/admin/list-partner-requests.use-case.ts`
+- `src/modules/partner/application/handlers/admin/approve-partner-request.use-case.ts`
+- `src/modules/partner/application/handlers/admin/reject-partner-request.use-case.ts`
+- `src/modules/partner/application/handlers/admin/list-partner-users.use-case.ts`
+- `src/modules/partner/interface/rest/dto/list-partner-requests-query.dto.ts`
+- `src/modules/partner/interface/rest/dto/reject-partner-request.dto.ts`
+- `src/modules/partner/interface/rest/dto/list-partner-users-query.dto.ts`
+- `src/modules/partner/interface/rest/user/partner.controller.ts`
+- `src/modules/partner/interface/rest/admin/partner.controller.ts`
+- `src/modules/partner/partner-persistence.module.ts`
+- `src/modules/partner/partner.module.ts`
+
+**Modified Files:**
+- `src/seeders/auth-user-seeder.ts` - Added `partner` role and `partner.manage` permission
+- `src/modules/auth/interface/rest/dto/register.dto.ts` - Added `partner?: boolean` field
+- `src/modules/auth/application/handlers/register.use-case.ts` - Added partner request creation logic
+- `src/modules/auth/auth.module.ts` - Imported `PartnerPersistenceModule`
+- `src/modules/site/interface/rest/dto/create-site.dto.ts` - Added `partnerUid?: string` field
+- `src/modules/site/application/handlers/admin/create-site.use-case.ts` - Added partner validation and site_manager creation
+- `src/modules/site/site.module.ts` - Imported `SiteManagerPersistenceModule` (if not already)
+- `src/app.module.ts` - Imported `PartnerModule`, added `PartnerRequest` to entities array
+
+**API Summary:**
+- **New APIs:** 5 endpoints (1 user, 4 admin)
+- **Modified APIs:** 2 endpoints (register added field, create site added field)
+
+---

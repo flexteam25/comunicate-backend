@@ -25,10 +25,7 @@ export class PostReactionRepository implements IPostReactionRepository {
     return this.repository.save(entity);
   }
 
-  async update(
-    id: string,
-    data: Partial<PostReaction>,
-  ): Promise<PostReaction> {
+  async update(id: string, data: Partial<PostReaction>): Promise<PostReaction> {
     await this.repository.update(id, data);
     const updated = await this.repository.findOne({ where: { id } });
     if (!updated) {

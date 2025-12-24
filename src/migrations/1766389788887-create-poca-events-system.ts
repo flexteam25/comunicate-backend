@@ -309,22 +309,13 @@ export class CreatePocaEventsSystem1766389788887 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop indexes
-    await queryRunner.dropIndex(
-      'poca_event_views',
-      'IDX_poca_event_views_user_id',
-    );
-    await queryRunner.dropIndex(
-      'poca_event_views',
-      'IDX_poca_event_views_event_id',
-    );
+    await queryRunner.dropIndex('poca_event_views', 'IDX_poca_event_views_user_id');
+    await queryRunner.dropIndex('poca_event_views', 'IDX_poca_event_views_event_id');
     await queryRunner.dropIndex(
       'poca_event_banners',
       'IDX_poca_event_banners_event_order',
     );
-    await queryRunner.dropIndex(
-      'poca_event_banners',
-      'IDX_poca_event_banners_event_id',
-    );
+    await queryRunner.dropIndex('poca_event_banners', 'IDX_poca_event_banners_event_id');
     await queryRunner.dropIndex('poca_events', 'IDX_poca_events_ends_at');
     await queryRunner.dropIndex('poca_events', 'IDX_poca_events_starts_at');
     await queryRunner.dropIndex('poca_events', 'IDX_poca_events_slug');

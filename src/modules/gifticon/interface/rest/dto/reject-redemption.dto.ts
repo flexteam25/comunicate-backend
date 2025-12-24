@@ -6,4 +6,3 @@ export class RejectRedemptionDto {
   @MaxLength(1000, { message: 'Reason must not exceed 1000 characters' })
   reason?: string;
 }
-

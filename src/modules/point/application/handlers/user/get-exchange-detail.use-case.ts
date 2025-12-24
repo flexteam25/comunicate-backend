@@ -20,19 +20,16 @@ export class GetExchangeDetailUseCase {
   ) {}
 
   async execute(command: GetExchangeDetailCommand): Promise<PointExchange> {
-    const exchange = await this.pointExchangeRepository.findById(
-      command.exchangeId,
-      ['site'],
-    );
+    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, [
+      'site',
+    ]);
 
     if (!exchange) {
       throw new NotFoundException('Exchange not found');
     }
 
     if (exchange.userId !== command.userId) {
-      throw new UnauthorizedException(
-        'Not authorized to view this exchange',
-      );
+      throw new UnauthorizedException('Not authorized to view this exchange');
     }
 
     return exchange;

@@ -1,4 +1,13 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index, PrimaryGeneratedColumn, UpdateDateColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+  CreateDateColumn,
+} from 'typeorm';
 import { User } from '../../../user/domain/entities/user.entity';
 import { Gifticon } from './gifticon.entity';
 
@@ -52,7 +61,13 @@ export class GifticonRedemption {
   status: GifticonRedemptionStatus;
 
   /** Redemption code for user to use gifticon (UUID format) */
-  @Column({ name: 'redemption_code', type: 'varchar', length: 255, unique: true, nullable: true })
+  @Column({
+    name: 'redemption_code',
+    type: 'varchar',
+    length: 255,
+    unique: true,
+    nullable: true,
+  })
   redemptionCode?: string;
 
   /**

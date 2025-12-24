@@ -35,4 +35,3 @@ import { UploadModule } from '../../shared/services/upload';
   exports: [],
 })
 export class PocaEventModule {}
-

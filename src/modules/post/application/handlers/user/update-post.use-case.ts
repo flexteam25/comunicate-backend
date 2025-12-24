@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { Post } from '../../../domain/entities/post.entity';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
@@ -43,7 +49,9 @@ export class UpdatePostUseCase {
     // Check time limit: can only edit within 1 hour after creation
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
     if (existingPost.createdAt < oneHourAgo) {
-      throw new ForbiddenException('You can only edit posts within 1 hour after creation');
+      throw new ForbiddenException(
+        'You can only edit posts within 1 hour after creation',
+      );
     }
 
     // Validate file size (20MB max)
@@ -88,9 +96,7 @@ export class UpdatePostUseCase {
 
           // Validate category if provided
           if (command.categoryId) {
-            const category = await this.categoryRepository.findById(
-              command.categoryId,
-            );
+            const category = await this.categoryRepository.findById(command.categoryId);
             if (!category) {
               throw new NotFoundException('Category not found');
             }
@@ -103,18 +109,21 @@ export class UpdatePostUseCase {
               command.postId,
             );
             if (duplicatePost) {
-              throw new BadRequestException(
-                'A post with this title already exists',
-              );
+              throw new BadRequestException('A post with this title already exists');
             }
           }
 
           const updateData: Partial<Post> = {};
-          if (command.categoryId !== undefined) updateData.categoryId = command.categoryId;
+          if (command.categoryId !== undefined)
+            updateData.categoryId = command.categoryId;
           if (command.title !== undefined) updateData.title = command.title;
           if (command.content !== undefined) updateData.content = command.content;
-          if (command.thumbnail !== undefined || command.deleteThumbnail === true || command.deleteThumbnail === 'true') {
-            updateData.thumbnailUrl = thumbnailUrl as string | null;
+          if (
+            command.thumbnail !== undefined ||
+            command.deleteThumbnail === true ||
+            command.deleteThumbnail === 'true'
+          ) {
+            updateData.thumbnailUrl = thumbnailUrl;
           }
           // Users cannot change isPublished or isPinned via user API
           if (command.isPinned !== undefined) updateData.isPinned = command.isPinned;
@@ -149,7 +158,12 @@ export class UpdatePostUseCase {
       throw error;
     } finally {
       // Delete old thumbnail file after successful transaction (best effort, async)
-      if (oldThumbnailUrl && (command.thumbnail || command.deleteThumbnail === true || command.deleteThumbnail === 'true')) {
+      if (
+        oldThumbnailUrl &&
+        (command.thumbnail ||
+          command.deleteThumbnail === true ||
+          command.deleteThumbnail === 'true')
+      ) {
         this.uploadService.deleteFile(oldThumbnailUrl).catch((error) => {
           console.error('Failed to delete old thumbnail:', error);
         });

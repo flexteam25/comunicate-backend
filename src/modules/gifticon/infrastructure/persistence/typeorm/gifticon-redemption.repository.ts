@@ -9,18 +9,13 @@ import {
 } from '../../../../../shared/utils/cursor-pagination.util';
 
 @Injectable()
-export class GifticonRedemptionRepository
-  implements IGifticonRedemptionRepository
-{
+export class GifticonRedemptionRepository implements IGifticonRedemptionRepository {
   constructor(
     @InjectRepository(GifticonRedemption)
     private readonly repository: Repository<GifticonRedemption>,
   ) {}
 
-  async findById(
-    id: string,
-    relations?: string[],
-  ): Promise<GifticonRedemption | null> {
+  async findById(id: string, relations?: string[]): Promise<GifticonRedemption | null> {
     return this.repository.findOne({
       where: { id },
       relations,
@@ -71,9 +66,7 @@ export class GifticonRedemptionRepository
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-        sortBy
-      ];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;
@@ -150,9 +143,7 @@ export class GifticonRedemptionRepository
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-        sortBy
-      ];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;
@@ -163,9 +154,7 @@ export class GifticonRedemptionRepository
     return { data, nextCursor, hasMore };
   }
 
-  async create(
-    redemption: Partial<GifticonRedemption>,
-  ): Promise<GifticonRedemption> {
+  async create(redemption: Partial<GifticonRedemption>): Promise<GifticonRedemption> {
     const entity = this.repository.create(redemption);
     return this.repository.save(entity);
   }

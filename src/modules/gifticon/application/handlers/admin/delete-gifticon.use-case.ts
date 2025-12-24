@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { IGifticonRepository } from '../../../infrastructure/persistence/repositories/gifticon.repository';
 
 export interface DeleteGifticonCommand {

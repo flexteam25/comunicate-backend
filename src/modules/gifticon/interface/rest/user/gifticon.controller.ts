@@ -48,10 +48,7 @@ export class GifticonController {
       title: gifticon.title,
       slug: gifticon.slug || null,
       summary: gifticon.summary || null,
-      imageUrl: buildFullUrl(
-        this.apiServiceUrl,
-        gifticon.imageUrl || null,
-      ) || null,
+      imageUrl: buildFullUrl(this.apiServiceUrl, gifticon.imageUrl || null) || null,
       amount: gifticon.amount,
       typeColor: gifticon.typeColor || null,
       startsAt: gifticon.startsAt || null,
@@ -70,9 +67,7 @@ export class GifticonController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async listGifticons(
-    @Query() query: ListGifticonsQueryDto,
-  ): Promise<ApiResponse<any>> {
+  async listGifticons(@Query() query: ListGifticonsQueryDto): Promise<ApiResponse<any>> {
     const result = await this.listGifticonsUseCase.execute({
       cursor: query.cursor,
       limit: query.limit,
@@ -221,9 +216,7 @@ export class GifticonController {
 
   @Get(':idOrSlug')
   @HttpCode(HttpStatus.OK)
-  async getGifticon(
-    @Param('idOrSlug') idOrSlug: string,
-  ): Promise<ApiResponse<any>> {
+  async getGifticon(@Param('idOrSlug') idOrSlug: string): Promise<ApiResponse<any>> {
     const gifticon = await this.getGifticonUseCase.execute({ idOrSlug });
 
     return ApiResponseUtil.success(this.mapGifticonDetailToResponse(gifticon));

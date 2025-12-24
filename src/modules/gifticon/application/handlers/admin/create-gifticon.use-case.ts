@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { Gifticon } from '../../../domain/entities/gifticon.entity';
 import { GifticonStatus } from '../../../domain/entities/gifticon.entity';
 import { IGifticonRepository } from '../../../infrastructure/persistence/repositories/gifticon.repository';

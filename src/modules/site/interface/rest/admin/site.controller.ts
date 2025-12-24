@@ -144,6 +144,7 @@ export class AdminSiteController {
       firstCharge: dto.firstCharge,
       recharge: dto.recharge,
       experience: dto.experience,
+      partnerUid: dto.partnerUid,
       logo: files?.logo?.[0],
       mainImage: files?.mainImage?.[0],
       siteImage: files?.siteImage?.[0],

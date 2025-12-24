@@ -5,6 +5,10 @@ import { PasswordService } from '../../../../shared/services/password.service';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { User } from '../../../user/domain/entities/user.entity';
 import { UserProfile } from 'src/modules/user/domain/entities/user-profile.entity';
+import {
+  PartnerRequest,
+  PartnerRequestStatus,
+} from '../../../partner/domain/entities/partner-request.entity';
 
 export interface RegisterCommand {
   email: string;
@@ -14,6 +18,7 @@ export interface RegisterCommand {
   phone?: string;
   birthDate?: Date;
   gender?: string;
+  partner?: boolean;
 }
 
 @Injectable()
@@ -55,7 +60,19 @@ export class RegisterUseCase {
         profile.user = user;
         user.userProfile = profile;
 
-        return entityManager.save(User, user);
+        const savedUser = await entityManager.save(User, user);
+
+        // Create partner request if partner flag is true
+        if (command.partner === true) {
+          const partnerRequestRepo = entityManager.getRepository(PartnerRequest);
+          const partnerRequest = partnerRequestRepo.create({
+            userId: savedUser.id,
+            status: PartnerRequestStatus.PENDING,
+          });
+          await partnerRequestRepo.save(partnerRequest);
+        }
+
+        return savedUser;
       },
     );
   }

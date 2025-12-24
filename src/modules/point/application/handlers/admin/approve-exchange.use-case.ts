@@ -4,11 +4,12 @@ import {
   BadRequestException,
   Inject,
 } from '@nestjs/common';
-import { PointExchange, PointExchangeStatus } from '../../../domain/entities/point-exchange.entity';
-import { IPointExchangeRepository } from '../../../infrastructure/persistence/repositories/point-exchange.repository';
 import {
-  CurrentAdminPayload,
-} from '../../../../admin/infrastructure/decorators/current-admin.decorator';
+  PointExchange,
+  PointExchangeStatus,
+} from '../../../domain/entities/point-exchange.entity';
+import { IPointExchangeRepository } from '../../../infrastructure/persistence/repositories/point-exchange.repository';
+import { CurrentAdminPayload } from '../../../../admin/infrastructure/decorators/current-admin.decorator';
 
 export interface ApproveExchangeCommand {
   exchangeId: string;
@@ -23,9 +24,7 @@ export class ApproveExchangeUseCase {
   ) {}
 
   async execute(command: ApproveExchangeCommand): Promise<PointExchange> {
-    const exchange = await this.pointExchangeRepository.findById(
-      command.exchangeId,
-    );
+    const exchange = await this.pointExchangeRepository.findById(command.exchangeId);
 
     if (!exchange) {
       throw new NotFoundException('Exchange not found');

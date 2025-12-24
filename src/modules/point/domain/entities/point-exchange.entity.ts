@@ -1,4 +1,13 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  Index,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { User } from '../../../user/domain/entities/user.entity';
 import { Site } from '../../../site/domain/entities/site.entity';
 import { Admin } from '../../../admin/domain/entities/admin.entity';

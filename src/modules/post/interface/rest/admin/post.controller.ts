@@ -110,9 +110,7 @@ export class AdminPostController {
   @Post('categories')
   @RequirePermission('posts.manage')
   @HttpCode(HttpStatus.CREATED)
-  async createCategory(
-    @Body() dto: CreateCategoryDto,
-  ): Promise<ApiResponse<any>> {
+  async createCategory(@Body() dto: CreateCategoryDto): Promise<ApiResponse<any>> {
     const category = await this.createCategoryUseCase.execute(dto);
     return ApiResponseUtil.success(
       this.mapCategoryToResponse(category),
@@ -166,9 +164,7 @@ export class AdminPostController {
   @Get()
   @RequirePermission('posts.manage')
   @HttpCode(HttpStatus.OK)
-  async listPosts(
-    @Query() query: ListAdminPostsQueryDto,
-  ): Promise<ApiResponse<any>> {
+  async listPosts(@Query() query: ListAdminPostsQueryDto): Promise<ApiResponse<any>> {
     const result = await this.listPostsUseCase.execute({
       isPublished: query.isPublished,
       categoryId: query.categoryId,
@@ -190,9 +186,7 @@ export class AdminPostController {
   @Get(':id')
   @RequirePermission('posts.manage')
   @HttpCode(HttpStatus.OK)
-  async getPost(
-    @Param('id', new ParseUUIDPipe()) id: string,
-  ): Promise<ApiResponse<any>> {
+  async getPost(@Param('id', new ParseUUIDPipe()) id: string): Promise<ApiResponse<any>> {
     const post = await this.getPostUseCase.execute({ postId: id });
     return ApiResponseUtil.success(this.mapPostToResponse(post));
   }

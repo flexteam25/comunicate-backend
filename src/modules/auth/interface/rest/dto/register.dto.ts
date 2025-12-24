@@ -5,8 +5,10 @@ import {
   IsOptional,
   MaxLength,
   IsDate,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export class RegisterDto {
   @IsEmail()
@@ -40,4 +42,9 @@ export class RegisterDto {
   @IsString()
   @MaxLength(10)
   gender?: string;
+
+  @IsOptional()
+  @TransformToBoolean
+  @IsBoolean()
+  partner?: boolean;
 }

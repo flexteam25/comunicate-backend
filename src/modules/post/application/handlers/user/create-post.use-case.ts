@@ -109,7 +109,10 @@ export class CreatePostUseCase {
           await this.uploadService.deleteFile(thumbnailUrl);
         } catch (deleteError) {
           // Log but don't throw - best effort cleanup
-          console.error('Failed to cleanup thumbnail after transaction failure:', deleteError);
+          console.error(
+            'Failed to cleanup thumbnail after transaction failure:',
+            deleteError,
+          );
         }
       }
       throw error;

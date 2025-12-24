@@ -6,9 +6,7 @@ import {
   TableIndex,
 } from 'typeorm';
 
-export class CreatePointTransactionsSystem1766540906228
-  implements MigrationInterface
-{
+export class CreatePointTransactionsSystem1766540906228 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Set timezone to UTC for this session
     await queryRunner.query("SET timezone = 'UTC'");
@@ -149,22 +147,13 @@ export class CreatePointTransactionsSystem1766540906228
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop indexes
-    await queryRunner.dropIndex(
-      'point_transactions',
-      'IDX_point_transactions_reference',
-    );
-    await queryRunner.dropIndex(
-      'point_transactions',
-      'IDX_point_transactions_category',
-    );
+    await queryRunner.dropIndex('point_transactions', 'IDX_point_transactions_reference');
+    await queryRunner.dropIndex('point_transactions', 'IDX_point_transactions_category');
     await queryRunner.dropIndex(
       'point_transactions',
       'IDX_point_transactions_created_at',
     );
-    await queryRunner.dropIndex(
-      'point_transactions',
-      'IDX_point_transactions_user_id',
-    );
+    await queryRunner.dropIndex('point_transactions', 'IDX_point_transactions_user_id');
 
     // Drop foreign keys
     const table = await queryRunner.getTable('point_transactions');

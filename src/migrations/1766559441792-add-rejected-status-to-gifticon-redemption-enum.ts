@@ -1,7 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddRejectedStatusToGifticonRedemptionEnum1766559441792 implements MigrationInterface
-{
+export class AddRejectedStatusToGifticonRedemptionEnum1766559441792 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add 'rejected' value to the enum type
     // Use DO block to handle the case where the value might already exist

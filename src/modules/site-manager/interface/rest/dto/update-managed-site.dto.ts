@@ -60,11 +60,15 @@ export class UpdateManagedSiteDto {
 
   @IsOptional()
   @IsString({ message: 'Delete main image flag must be a string' })
-  @IsIn(['true', 'false'], { message: 'Delete main image flag must be "true" or "false"' })
+  @IsIn(['true', 'false'], {
+    message: 'Delete main image flag must be "true" or "false"',
+  })
   deleteMainImage?: 'true' | 'false';
 
   @IsOptional()
   @IsString({ message: 'Delete site image flag must be a string' })
-  @IsIn(['true', 'false'], { message: 'Delete site image flag must be "true" or "false"' })
+  @IsIn(['true', 'false'], {
+    message: 'Delete site image flag must be "true" or "false"',
+  })
   deleteSiteImage?: 'true' | 'false';
 }

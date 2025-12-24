@@ -20,9 +20,7 @@ export class PocaEventRepository implements IPocaEventRepository {
     return this.repository.findOne({
       where: { id, deletedAt: null },
       ...(relations && relations.length > 0 ? { relations } : {}),
-      order: relations?.includes('banners')
-        ? { banners: { order: 'ASC' } }
-        : undefined,
+      order: relations?.includes('banners') ? { banners: { order: 'ASC' } } : undefined,
     });
   }
 
@@ -39,10 +37,7 @@ export class PocaEventRepository implements IPocaEventRepository {
       .createQueryBuilder('event')
       .where('event.deletedAt IS NULL')
       .andWhere('event.status = :status', { status: PocaEventStatus.PUBLISHED })
-      .andWhere(
-        '(event.startsAt IS NULL OR event.startsAt <= :now)',
-        { now },
-      )
+      .andWhere('(event.startsAt IS NULL OR event.startsAt <= :now)', { now })
       .andWhere('(event.endsAt IS NULL OR event.endsAt >= :now)', { now });
 
     if (isUuid) {
@@ -112,9 +107,7 @@ export class PocaEventRepository implements IPocaEventRepository {
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-        sortBy
-      ];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;
@@ -202,9 +195,7 @@ export class PocaEventRepository implements IPocaEventRepository {
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-        sortBy
-      ];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;

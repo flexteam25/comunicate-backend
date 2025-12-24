@@ -29,6 +29,11 @@ export class AuthUserSeeder {
           type: RoleType.USER,
         },
         {
+          name: 'partner',
+          description: 'Partner role',
+          type: RoleType.USER,
+        },
+        {
           name: 'admin',
           description: 'Administrator role',
           type: RoleType.ADMIN,
@@ -163,6 +168,11 @@ export class AuthUserSeeder {
         {
           name: 'site-manager-applications.approve',
           description: 'Approve site manager applications',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'partner.manage',
+          description: 'Manage partner requests',
           type: PermissionType.ADMIN,
         },
         {

@@ -27,4 +27,3 @@ export const transformToBoolean = ({ value }: { value: any }): boolean | undefin
 };
 
 export const TransformToBoolean = Transform(transformToBoolean);
-

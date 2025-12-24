@@ -35,9 +35,7 @@ export class GetPointHistoryUseCase {
   ): Promise<CursorPaginationResult<PointTransaction>> {
     // Convert type from 'all' to undefined to get all transactions
     const transactionType =
-      command.type && command.type !== 'all'
-        ? (command.type as 'earn' | 'spend' | 'refund')
-        : undefined;
+      command.type && command.type !== 'all' ? command.type : undefined;
 
     return this.pointTransactionRepository.findByUserIdWithCursor(
       command.userId,

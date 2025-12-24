@@ -4,10 +4,7 @@ import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagin
 
 export interface IGifticonRepository {
   findById(id: string, relations?: string[]): Promise<Gifticon | null>;
-  findByIdOrSlugPublic(
-    idOrSlug: string,
-    relations?: string[],
-  ): Promise<Gifticon | null>;
+  findByIdOrSlugPublic(idOrSlug: string, relations?: string[]): Promise<Gifticon | null>;
   findVisibleWithCursor(
     cursor?: string,
     limit?: number,

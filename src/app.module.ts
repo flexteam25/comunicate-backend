@@ -73,6 +73,8 @@ import { PointTransaction } from './modules/point/domain/entities/point-transact
 import { PointExchange } from './modules/point/domain/entities/point-exchange.entity';
 import { GifticonRedemption } from './modules/gifticon/domain/entities/gifticon-redemption.entity';
 import { PointModule } from './modules/point/point.module';
+import { PartnerModule } from './modules/partner/partner.module';
+import { PartnerRequest } from './modules/partner/domain/entities/partner-request.entity';
 
 @Module({
   imports: [
@@ -137,6 +139,7 @@ import { PointModule } from './modules/point/point.module';
         PointTransaction,
         PointExchange,
         GifticonRedemption,
+        PartnerRequest,
       ],
       synchronize: false,
       logging: false,
@@ -161,6 +164,7 @@ import { PointModule } from './modules/point/point.module';
     GifticonModule,
     PostModule,
     PointModule,
+    PartnerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

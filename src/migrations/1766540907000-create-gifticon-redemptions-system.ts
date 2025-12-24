@@ -6,9 +6,7 @@ import {
   TableIndex,
 } from 'typeorm';
 
-export class CreateGifticonRedemptionsSystem1766540907000
-  implements MigrationInterface
-{
+export class CreateGifticonRedemptionsSystem1766540907000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Set timezone to UTC for this session
     await queryRunner.query("SET timezone = 'UTC'");
@@ -68,7 +66,8 @@ export class CreateGifticonRedemptionsSystem1766540907000
             name: 'gifticon_snapshot',
             type: 'jsonb',
             isNullable: true,
-            comment: 'Gifticon information snapshot at redemption time (JSON: { title, amount, imageUrl, summary })',
+            comment:
+              'Gifticon information snapshot at redemption time (JSON: { title, amount, imageUrl, summary })',
           },
           {
             name: 'cancelled_at',

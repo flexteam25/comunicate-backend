@@ -17,11 +17,6 @@ export interface IGifticonRedemptionRepository {
     cursor?: string,
     limit?: number,
   ): Promise<CursorPaginationResult<GifticonRedemption>>;
-  create(
-    redemption: Partial<GifticonRedemption>,
-  ): Promise<GifticonRedemption>;
-  update(
-    id: string,
-    data: Partial<GifticonRedemption>,
-  ): Promise<GifticonRedemption>;
+  create(redemption: Partial<GifticonRedemption>): Promise<GifticonRedemption>;
+  update(id: string, data: Partial<GifticonRedemption>): Promise<GifticonRedemption>;
 }

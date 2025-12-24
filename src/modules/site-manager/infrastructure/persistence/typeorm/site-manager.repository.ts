@@ -11,20 +11,14 @@ export class SiteManagerRepository implements ISiteManagerRepository {
     private readonly repository: Repository<SiteManager>,
   ) {}
 
-  async findById(
-    id: string,
-    relations?: string[],
-  ): Promise<SiteManager | null> {
+  async findById(id: string, relations?: string[]): Promise<SiteManager | null> {
     return this.repository.findOne({
       where: { id },
       ...(relations && relations.length > 0 ? { relations } : {}),
     });
   }
 
-  async findBySiteAndUser(
-    siteId: string,
-    userId: string,
-  ): Promise<SiteManager | null> {
+  async findBySiteAndUser(siteId: string, userId: string): Promise<SiteManager | null> {
     return this.repository.findOne({
       where: { siteId, userId, isActive: true },
       relations: ['site', 'user'],

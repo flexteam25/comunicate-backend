@@ -10,9 +10,7 @@ import {
 } from '../../../../../shared/utils/cursor-pagination.util';
 
 @Injectable()
-export class SiteManagerApplicationRepository
-  implements ISiteManagerApplicationRepository
-{
+export class SiteManagerApplicationRepository implements ISiteManagerApplicationRepository {
   constructor(
     @InjectRepository(SiteManagerApplication)
     private readonly repository: Repository<SiteManagerApplication>,

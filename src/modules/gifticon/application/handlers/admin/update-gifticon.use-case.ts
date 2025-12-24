@@ -87,21 +87,15 @@ export class UpdateGifticonUseCase {
           // Validate dates
           if (command.startsAt && command.endsAt) {
             if (command.startsAt >= command.endsAt) {
-              throw new BadRequestException(
-                'Start date must be before end date',
-              );
+              throw new BadRequestException('Start date must be before end date');
             }
           } else if (command.startsAt && gifticon.endsAt) {
             if (command.startsAt >= gifticon.endsAt) {
-              throw new BadRequestException(
-                'Start date must be before end date',
-              );
+              throw new BadRequestException('Start date must be before end date');
             }
           } else if (command.endsAt && gifticon.startsAt) {
             if (gifticon.startsAt >= command.endsAt) {
-              throw new BadRequestException(
-                'Start date must be before end date',
-              );
+              throw new BadRequestException('Start date must be before end date');
             }
           }
 
@@ -121,11 +115,13 @@ export class UpdateGifticonUseCase {
           if (command.summary !== undefined) gifticon.summary = command.summary || null;
           if (command.content !== undefined) gifticon.content = command.content;
           if (command.status !== undefined) gifticon.status = command.status;
-          if (command.startsAt !== undefined) gifticon.startsAt = command.startsAt || null;
+          if (command.startsAt !== undefined)
+            gifticon.startsAt = command.startsAt || null;
           if (command.endsAt !== undefined) gifticon.endsAt = command.endsAt || null;
           if (imageUrl !== undefined) gifticon.imageUrl = imageUrl;
           if (command.amount !== undefined) gifticon.amount = command.amount;
-          if (command.typeColor !== undefined) gifticon.typeColor = command.typeColor || null;
+          if (command.typeColor !== undefined)
+            gifticon.typeColor = command.typeColor || null;
 
           await gifticonRepo.save(gifticon);
 
@@ -144,9 +140,7 @@ export class UpdateGifticonUseCase {
 
       // Delete old file after successful update (best effort, asynchronously)
       if ((imageUrl !== undefined || command.deleteImage) && oldImageUrl) {
-        Promise.allSettled([
-          this.uploadService.deleteFile(oldImageUrl),
-        ]).catch(() => {
+        Promise.allSettled([this.uploadService.deleteFile(oldImageUrl)]).catch(() => {
           // Ignore cleanup errors
         });
       }

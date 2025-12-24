@@ -78,9 +78,7 @@ export class AdminPointExchangeController {
   @Get()
   @RequirePermission('points.exchange.manage')
   @HttpCode(HttpStatus.OK)
-  async listExchanges(
-    @Query() query: ListExchangesQueryDto,
-  ): Promise<ApiResponse<any>> {
+  async listExchanges(@Query() query: ListExchangesQueryDto): Promise<ApiResponse<any>> {
     const result = await this.listExchangesUseCase.execute({
       status: query.status,
       siteId: query.siteId,

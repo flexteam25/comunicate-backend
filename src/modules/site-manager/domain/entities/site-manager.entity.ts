@@ -53,4 +53,3 @@ export class SiteManager {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }
-

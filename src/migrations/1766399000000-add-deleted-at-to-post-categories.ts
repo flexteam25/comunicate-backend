@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
-export class AddDeletedAtToPostCategories1766399000000
-  implements MigrationInterface
-{
+export class AddDeletedAtToPostCategories1766399000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Check if column already exists
     const table = await queryRunner.getTable('post_categories');

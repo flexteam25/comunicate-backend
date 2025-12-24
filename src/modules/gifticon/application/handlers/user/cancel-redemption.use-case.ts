@@ -6,12 +6,18 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { GifticonRedemption, GifticonRedemptionStatus } from '../../../domain/entities/gifticon-redemption.entity';
+import {
+  GifticonRedemption,
+  GifticonRedemptionStatus,
+} from '../../../domain/entities/gifticon-redemption.entity';
 import { IGifticonRedemptionRepository } from '../../../infrastructure/persistence/repositories/gifticon-redemption.repository';
 import { IUserRepository } from '../../../../user/infrastructure/persistence/repositories/user.repository';
 import { UserProfile } from '../../../../user/domain/entities/user-profile.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
-import { PointTransaction, PointTransactionType } from '../../../../point/domain/entities/point-transaction.entity';
+import {
+  PointTransaction,
+  PointTransactionType,
+} from '../../../../point/domain/entities/point-transaction.entity';
 
 export interface CancelRedemptionCommand {
   redemptionId: string;
@@ -36,9 +42,7 @@ export class CancelRedemptionUseCase {
   ) {}
 
   async execute(command: CancelRedemptionCommand): Promise<GifticonRedemption> {
-    const redemption = await this.redemptionRepository.findById(
-      command.redemptionId,
-    );
+    const redemption = await this.redemptionRepository.findById(command.redemptionId);
 
     if (!redemption) {
       throw new NotFoundException('Redemption not found');

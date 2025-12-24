@@ -73,4 +73,3 @@ export class UpdateInquirySystem1766137602873 implements MigrationInterface {
     await queryRunner.query(`DROP TYPE IF EXISTS inquiry_category_enum;`);
   }
 }
-

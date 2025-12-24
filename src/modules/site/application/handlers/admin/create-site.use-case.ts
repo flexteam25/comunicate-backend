@@ -1,12 +1,25 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Inject,
+} from '@nestjs/common';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
 import { ISiteCategoryRepository } from '../../../infrastructure/persistence/repositories/site-category.repository';
 import { ITierRepository } from '../../../../tier/infrastructure/persistence/repositories/tier.repository';
+import { ISiteManagerRepository } from '../../../../site-manager/infrastructure/persistence/repositories/site-manager.repository';
 import { Site, SiteStatus } from '../../../domain/entities/site.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { randomUUID } from 'crypto';
+import {
+  SiteManager,
+  SiteManagerRole,
+} from '../../../../site-manager/domain/entities/site-manager.entity';
+import { User } from '../../../../user/domain/entities/user.entity';
+import { UserRole } from '../../../../user/domain/entities/user-role.entity';
+import { Role } from '../../../../user/domain/entities/role.entity';
 
 export interface CreateSiteCommand {
   name: string;
@@ -20,6 +33,7 @@ export interface CreateSiteCommand {
   firstCharge?: number;
   recharge?: number;
   experience?: number;
+  partnerUid?: string;
 }
 @Injectable()
 export class CreateSiteUseCase {
@@ -30,6 +44,8 @@ export class CreateSiteUseCase {
     private readonly siteCategoryRepository: ISiteCategoryRepository,
     @Inject('ITierRepository')
     private readonly tierRepository: ITierRepository,
+    @Inject('ISiteManagerRepository')
+    private readonly siteManagerRepository: ISiteManagerRepository,
     private readonly transactionService: TransactionService,
     private readonly uploadService: UploadService,
   ) {}
@@ -47,6 +63,11 @@ export class CreateSiteUseCase {
       if (!tier) {
         throw new BadRequestException('Tier not found');
       }
+    }
+
+    // Validate partner user if provided
+    if (command.partnerUid) {
+      // Validation will be done in transaction
     }
 
     // Validate file sizes (20MB max)
@@ -119,6 +140,10 @@ export class CreateSiteUseCase {
       const site = await this.transactionService.executeInTransaction(
         async (manager: EntityManager) => {
           const siteRepo = manager.getRepository(Site);
+          const userRepo = manager.getRepository(User);
+          const roleRepo = manager.getRepository(Role);
+          const userRoleRepo = manager.getRepository(UserRole);
+          const siteManagerRepo = manager.getRepository(SiteManager);
 
           // Check duplicate name (case-insensitive), excluding soft-deleted
           const duplicate = await siteRepo
@@ -128,6 +153,38 @@ export class CreateSiteUseCase {
             .getOne();
           if (duplicate) {
             throw new BadRequestException('Site with this name already exists');
+          }
+
+          // Validate partner user if provided
+          if (command.partnerUid) {
+            const partnerUser = await userRepo.findOne({
+              where: { id: command.partnerUid, deletedAt: null },
+            });
+
+            if (!partnerUser) {
+              throw new NotFoundException('Partner user not found');
+            }
+
+            // Find partner role
+            const partnerRole = await roleRepo.findOne({
+              where: { name: 'partner', deletedAt: null },
+            });
+
+            if (!partnerRole) {
+              throw new NotFoundException('Partner role not found');
+            }
+
+            // Check if user has partner role
+            const userRole = await userRoleRepo.findOne({
+              where: {
+                userId: command.partnerUid,
+                roleId: partnerRole.id,
+              },
+            });
+
+            if (!userRole) {
+              throw new BadRequestException('User does not have partner role');
+            }
           }
 
           const site = siteRepo.create({
@@ -148,7 +205,20 @@ export class CreateSiteUseCase {
             averageRating: 0,
           });
 
-          return siteRepo.save(site);
+          const savedSite = await siteRepo.save(site);
+
+          // Create site_manager record if partnerUid is provided
+          if (command.partnerUid) {
+            const siteManager = siteManagerRepo.create({
+              siteId: savedSite.id,
+              userId: command.partnerUid,
+              role: SiteManagerRole.MANAGER,
+              isActive: true,
+            });
+            await siteManagerRepo.save(siteManager);
+          }
+
+          return savedSite;
         },
       );
       return site;

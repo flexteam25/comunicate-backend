@@ -9,9 +9,7 @@ import {
 } from '../../../../../shared/utils/cursor-pagination.util';
 
 @Injectable()
-export class PointTransactionRepository
-  implements IPointTransactionRepository
-{
+export class PointTransactionRepository implements IPointTransactionRepository {
   constructor(
     @InjectRepository(PointTransaction)
     private readonly repository: Repository<PointTransaction>,
@@ -69,9 +67,7 @@ export class PointTransactionRepository
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[
-        sortBy
-      ];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;
@@ -82,9 +78,7 @@ export class PointTransactionRepository
     return { data, nextCursor, hasMore };
   }
 
-  async create(
-    transaction: Partial<PointTransaction>,
-  ): Promise<PointTransaction> {
+  async create(transaction: Partial<PointTransaction>): Promise<PointTransaction> {
     const entity = this.repository.create(transaction);
     return this.repository.save(entity);
   }

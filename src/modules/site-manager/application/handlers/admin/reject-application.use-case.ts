@@ -20,12 +20,8 @@ export class RejectApplicationUseCase {
     private readonly applicationRepository: ISiteManagerApplicationRepository,
   ) {}
 
-  async execute(
-    command: RejectApplicationCommand,
-  ): Promise<SiteManagerApplication> {
-    const application = await this.applicationRepository.findById(
-      command.applicationId,
-    );
+  async execute(command: RejectApplicationCommand): Promise<SiteManagerApplication> {
+    const application = await this.applicationRepository.findById(command.applicationId);
 
     if (!application) {
       throw new NotFoundException('Application not found');
@@ -36,14 +32,11 @@ export class RejectApplicationUseCase {
     }
 
     // Update application
-    const updated = await this.applicationRepository.update(
-      command.applicationId,
-      {
-        status: SiteManagerApplicationStatus.REJECTED,
-        adminId: command.adminId,
-        reviewedAt: new Date(),
-      },
-    );
+    const updated = await this.applicationRepository.update(command.applicationId, {
+      status: SiteManagerApplicationStatus.REJECTED,
+      adminId: command.adminId,
+      reviewedAt: new Date(),
+    });
 
     // Reload with relations
     const reloaded = await this.applicationRepository.findById(updated.id, [

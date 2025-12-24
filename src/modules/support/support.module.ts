@@ -40,9 +40,6 @@ import { ListUserInquiriesUseCase } from './application/handlers/user/list-user-
     ReplyInquiryUseCase,
     TransactionService,
   ],
-  exports: [
-    'IInquiryRepository',
-    InquiryRepository,
-  ],
+  exports: ['IInquiryRepository', InquiryRepository],
 })
 export class SupportModule {}

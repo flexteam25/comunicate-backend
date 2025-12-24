@@ -5,13 +5,19 @@ import {
   Inject,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { PointExchange, PointExchangeStatus } from '../../../domain/entities/point-exchange.entity';
+import {
+  PointExchange,
+  PointExchangeStatus,
+} from '../../../domain/entities/point-exchange.entity';
 import { IPointExchangeRepository } from '../../../infrastructure/persistence/repositories/point-exchange.repository';
 import { ISiteRepository } from '../../../../site/infrastructure/persistence/repositories/site.repository';
 import { IUserRepository } from '../../../../user/infrastructure/persistence/repositories/user.repository';
 import { UserProfile } from '../../../../user/domain/entities/user-profile.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
-import { PointTransaction, PointTransactionType } from '../../../domain/entities/point-transaction.entity';
+import {
+  PointTransaction,
+  PointTransactionType,
+} from '../../../domain/entities/point-transaction.entity';
 
 /**
  * Command to request point exchange to site currency

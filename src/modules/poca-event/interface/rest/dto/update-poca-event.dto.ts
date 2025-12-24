@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsDateString,
-  MaxLength,
-} from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsDateString, MaxLength } from 'class-validator';
 import { PocaEventStatus } from '../../../domain/entities/poca-event.entity';
 
 export class UpdatePocaEventDto {
@@ -53,4 +47,3 @@ export class UpdatePocaEventDto {
   @IsString({ message: 'Delete banners must be a string' })
   deleteBanners?: string; // "true" to delete all banners
 }
-

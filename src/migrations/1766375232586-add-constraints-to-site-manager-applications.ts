@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner, TableIndex } from 'typeorm';
 
-export class AddConstraintsToSiteManagerApplications1766375232586
-  implements MigrationInterface
-{
+export class AddConstraintsToSiteManagerApplications1766375232586 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Set timezone to UTC for this session
     await queryRunner.query("SET timezone = 'UTC'");
@@ -78,4 +76,3 @@ export class AddConstraintsToSiteManagerApplications1766375232586
     `);
   }
 }
-

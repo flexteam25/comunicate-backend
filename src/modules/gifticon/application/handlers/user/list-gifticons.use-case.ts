@@ -18,9 +18,6 @@ export class ListGifticonsUseCase {
   async execute(
     command: ListGifticonsCommand,
   ): Promise<CursorPaginationResult<Gifticon>> {
-    return this.gifticonRepository.findVisibleWithCursor(
-      command.cursor,
-      command.limit,
-    );
+    return this.gifticonRepository.findVisibleWithCursor(command.cursor, command.limit);
   }
 }

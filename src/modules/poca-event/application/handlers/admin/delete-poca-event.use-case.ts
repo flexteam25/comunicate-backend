@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { IPocaEventRepository } from '../../../infrastructure/persistence/repositories/poca-event.repository';
 
 export interface DeletePocaEventCommand {

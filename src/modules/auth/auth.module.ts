@@ -12,9 +12,16 @@ import { UserModule } from '../user/user.module';
 import { PasswordService } from '../../shared/services/password.service';
 import { JwtService } from '../../shared/services/jwt.service';
 import { QueueClientModule } from '../../shared/queue/queue-client.module';
+import { PartnerPersistenceModule } from '../partner/partner-persistence.module';
 
 @Module({
-  imports: [UserTokenRepositoryModule, ConfigModule, UserModule, QueueClientModule],
+  imports: [
+    UserTokenRepositoryModule,
+    ConfigModule,
+    UserModule,
+    QueueClientModule,
+    PartnerPersistenceModule,
+  ],
   controllers: [AuthController],
   providers: [
     RegisterUseCase,

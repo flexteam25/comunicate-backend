@@ -1,9 +1,4 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableIndex,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
 
 export class CreateGifticonsSystem1766394874941 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

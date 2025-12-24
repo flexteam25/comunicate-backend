@@ -63,6 +63,7 @@ export class AuthController {
       phone: dto.phone,
       birthDate: dto.birthDate,
       gender: dto.gender,
+      partner: dto.partner,
     });
 
     // Auto login after registration

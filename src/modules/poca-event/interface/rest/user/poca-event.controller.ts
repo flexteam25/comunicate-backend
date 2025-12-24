@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  HttpCode,
-  HttpStatus,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { ListPocaEventsUseCase } from '../../../application/handlers/user/list-poca-events.use-case';
 import { GetPocaEventUseCase } from '../../../application/handlers/user/get-poca-event.use-case';
@@ -50,10 +42,8 @@ export class PocaEventController {
       title: event.title,
       slug: event.slug || null,
       summary: event.summary || null,
-      primaryBannerUrl: buildFullUrl(
-        this.apiServiceUrl,
-        event.primaryBannerUrl || null,
-      ) || null,
+      primaryBannerUrl:
+        buildFullUrl(this.apiServiceUrl, event.primaryBannerUrl || null) || null,
       startsAt: event.startsAt || null,
       endsAt: event.endsAt || null,
       viewCount: event.viewCount || 0,

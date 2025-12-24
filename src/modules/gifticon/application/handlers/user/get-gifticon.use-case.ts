@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { Gifticon } from '../../../domain/entities/gifticon.entity';
 import { IGifticonRepository } from '../../../infrastructure/persistence/repositories/gifticon.repository';
 
@@ -18,9 +14,7 @@ export class GetGifticonUseCase {
   ) {}
 
   async execute(command: GetGifticonCommand): Promise<Gifticon> {
-    const gifticon = await this.gifticonRepository.findByIdOrSlugPublic(
-      command.idOrSlug,
-    );
+    const gifticon = await this.gifticonRepository.findByIdOrSlugPublic(command.idOrSlug);
 
     if (!gifticon) {
       throw new NotFoundException('Gifticon not found');

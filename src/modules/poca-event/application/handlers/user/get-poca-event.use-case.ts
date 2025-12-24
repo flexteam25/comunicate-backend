@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { PocaEvent } from '../../../domain/entities/poca-event.entity';
 import { IPocaEventRepository } from '../../../infrastructure/persistence/repositories/poca-event.repository';
 import { IPocaEventViewRepository } from '../../../infrastructure/persistence/repositories/poca-event-view.repository';
@@ -24,10 +20,9 @@ export class GetPocaEventUseCase {
   ) {}
 
   async execute(command: GetPocaEventCommand): Promise<PocaEvent> {
-    const event = await this.pocaEventRepository.findByIdOrSlugPublic(
-      command.idOrSlug,
-      ['banners'],
-    );
+    const event = await this.pocaEventRepository.findByIdOrSlugPublic(command.idOrSlug, [
+      'banners',
+    ]);
 
     if (!event) {
       throw new NotFoundException('Event not found');

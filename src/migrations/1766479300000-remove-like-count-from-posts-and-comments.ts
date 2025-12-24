@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
-export class RemoveLikeCountFromPostsAndComments1766479300000
-  implements MigrationInterface
-{
+export class RemoveLikeCountFromPostsAndComments1766479300000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // posts table
     const postsTable = await queryRunner.getTable('posts');
@@ -13,8 +11,7 @@ export class RemoveLikeCountFromPostsAndComments1766479300000
 
     // post_comments table
     const postCommentsTable = await queryRunner.getTable('post_comments');
-    const postCommentsLikeCountColumn =
-      postCommentsTable?.findColumnByName('like_count');
+    const postCommentsLikeCountColumn = postCommentsTable?.findColumnByName('like_count');
     if (postCommentsLikeCountColumn) {
       await queryRunner.dropColumn('post_comments', 'like_count');
     }
@@ -38,8 +35,7 @@ export class RemoveLikeCountFromPostsAndComments1766479300000
 
     // Re-add like_count to post_comments
     const postCommentsTable = await queryRunner.getTable('post_comments');
-    const postCommentsLikeCountColumn =
-      postCommentsTable?.findColumnByName('like_count');
+    const postCommentsLikeCountColumn = postCommentsTable?.findColumnByName('like_count');
     if (!postCommentsLikeCountColumn) {
       await queryRunner.addColumn(
         'post_comments',

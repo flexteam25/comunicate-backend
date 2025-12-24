@@ -6,9 +6,7 @@ import { SiteManagerRepository } from './infrastructure/persistence/typeorm/site
 import { SiteManagerApplicationRepository } from './infrastructure/persistence/typeorm/site-manager-application.repository';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([SiteManager, SiteManagerApplication]),
-  ],
+  imports: [TypeOrmModule.forFeature([SiteManager, SiteManagerApplication])],
   exports: [
     TypeOrmModule,
     'ISiteManagerRepository',

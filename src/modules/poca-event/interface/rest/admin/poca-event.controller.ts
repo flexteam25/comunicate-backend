@@ -60,10 +60,8 @@ export class AdminPocaEventController {
       status: event.status,
       startsAt: event.startsAt || null,
       endsAt: event.endsAt || null,
-      primaryBannerUrl: buildFullUrl(
-        this.apiServiceUrl,
-        event.primaryBannerUrl || null,
-      ) || null,
+      primaryBannerUrl:
+        buildFullUrl(this.apiServiceUrl, event.primaryBannerUrl || null) || null,
       viewCount: event.viewCount || 0,
       banners: (event.banners || []).map((banner: any) => ({
         id: banner.id,

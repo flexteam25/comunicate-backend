@@ -74,10 +74,7 @@ export class AdminGifticonController {
       typeColor: gifticon.typeColor || null,
       startsAt: gifticon.startsAt || null,
       endsAt: gifticon.endsAt || null,
-      imageUrl: buildFullUrl(
-        this.apiServiceUrl,
-        gifticon.imageUrl || null,
-      ) || null,
+      imageUrl: buildFullUrl(this.apiServiceUrl, gifticon.imageUrl || null) || null,
       createdAt: gifticon.createdAt,
       updatedAt: gifticon.updatedAt,
     };

@@ -1,6 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
-import { Inquiry, InquiryStatus, InquiryCategory } from '../../../domain/entities/inquiry.entity';
+import {
+  Inquiry,
+  InquiryStatus,
+  InquiryCategory,
+} from '../../../domain/entities/inquiry.entity';
 import {
   IInquiryRepository,
   InquiryFilters,

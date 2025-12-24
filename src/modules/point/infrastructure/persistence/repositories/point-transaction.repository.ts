@@ -10,7 +10,5 @@ export interface IPointTransactionRepository {
     cursor?: string,
     limit?: number,
   ): Promise<CursorPaginationResult<PointTransaction>>;
-  create(
-    transaction: Partial<PointTransaction>,
-  ): Promise<PointTransaction>;
+  create(transaction: Partial<PointTransaction>): Promise<PointTransaction>;
 }

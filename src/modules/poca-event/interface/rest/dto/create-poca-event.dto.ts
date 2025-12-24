@@ -46,4 +46,3 @@ export class CreatePocaEventDto {
   @IsString({ message: 'Banners order must be a JSON string array' })
   bannersOrder?: string; // JSON string array of numbers: "[0, 1, 2]"
 }
-

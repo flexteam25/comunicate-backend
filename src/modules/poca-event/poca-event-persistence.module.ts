@@ -7,9 +7,7 @@ import { PocaEventRepository } from './infrastructure/persistence/typeorm/poca-e
 import { PocaEventViewRepository } from './infrastructure/persistence/typeorm/poca-event-view.repository';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([PocaEvent, PocaEventBanner, PocaEventView]),
-  ],
+  imports: [TypeOrmModule.forFeature([PocaEvent, PocaEventBanner, PocaEventView])],
   exports: [
     TypeOrmModule,
     'IPocaEventRepository',

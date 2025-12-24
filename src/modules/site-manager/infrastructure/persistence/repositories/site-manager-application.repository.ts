@@ -3,10 +3,7 @@ import { SiteManagerApplicationStatus } from '../../../domain/entities/site-mana
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 export interface ISiteManagerApplicationRepository {
-  findById(
-    id: string,
-    relations?: string[],
-  ): Promise<SiteManagerApplication | null>;
+  findById(id: string, relations?: string[]): Promise<SiteManagerApplication | null>;
   findBySiteAndUser(
     siteId: string,
     userId: string,
@@ -33,12 +30,9 @@ export interface ISiteManagerApplicationRepository {
     cursor?: string,
     limit?: number,
   ): Promise<CursorPaginationResult<SiteManagerApplication>>;
-  create(
-    application: Partial<SiteManagerApplication>,
-  ): Promise<SiteManagerApplication>;
+  create(application: Partial<SiteManagerApplication>): Promise<SiteManagerApplication>;
   update(
     id: string,
     data: Partial<SiteManagerApplication>,
   ): Promise<SiteManagerApplication>;
 }
-

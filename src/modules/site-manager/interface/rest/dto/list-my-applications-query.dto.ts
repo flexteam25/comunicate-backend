@@ -1,11 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  IsEnum,
-  IsInt,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SiteManagerApplicationStatus } from '../../../domain/entities/site-manager-application.entity';
 

@@ -1,6 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { IInquiryRepository } from '../../../infrastructure/persistence/repositories/inquiry.repository';
-import { Inquiry, InquiryStatus, InquiryCategory } from '../../../domain/entities/inquiry.entity';
+import {
+  Inquiry,
+  InquiryStatus,
+  InquiryCategory,
+} from '../../../domain/entities/inquiry.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 

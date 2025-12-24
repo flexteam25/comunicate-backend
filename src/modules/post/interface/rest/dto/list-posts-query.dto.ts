@@ -22,7 +22,9 @@ export class ListPostsQueryDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(PostSortBy, { message: 'Sort by must be one of: createdAt, publishedAt, likeCount' })
+  @IsEnum(PostSortBy, {
+    message: 'Sort by must be one of: createdAt, publishedAt, likeCount',
+  })
   sortBy?: PostSortBy;
 
   @IsOptional()

@@ -1,4 +1,13 @@
-import { IsOptional, IsUUID, IsString, IsBoolean, IsEnum, IsInt, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsUUID,
+  IsString,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 import { PostSortBy, SortOrder } from './list-posts-query.dto';
@@ -22,7 +31,9 @@ export class ListAdminPostsQueryDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(PostSortBy, { message: 'Sort by must be one of: createdAt, publishedAt, likeCount' })
+  @IsEnum(PostSortBy, {
+    message: 'Sort by must be one of: createdAt, publishedAt, likeCount',
+  })
   sortBy?: PostSortBy;
 
   @IsOptional()

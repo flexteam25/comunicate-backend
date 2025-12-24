@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
-import { Inquiry, InquiryStatus, InquiryCategory } from '../../../domain/entities/inquiry.entity';
+import {
+  Inquiry,
+  InquiryStatus,
+  InquiryCategory,
+} from '../../../domain/entities/inquiry.entity';
 import { IInquiryRepository } from '../../../infrastructure/persistence/repositories/inquiry.repository';
 
 export interface UpdateUserInquiryCommand {
