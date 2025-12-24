@@ -187,6 +187,7 @@ export class PostRepository implements IPostRepository {
       search?: string;
       sortBy?: string;
       sortOrder?: 'ASC' | 'DESC';
+      userId?: string; // Optional userId to get user's reaction
     },
     cursor?: string,
     limit = 20,
@@ -213,7 +214,20 @@ export class PostRepository implements IPostRepository {
         'post_reactions',
         'dislikeReaction',
         "dislikeReaction.post_id = post.id AND dislikeReaction.reaction_type = 'dislike'",
-      )
+      );
+
+    // Join user's reaction if userId is provided
+    if (filters?.userId) {
+      queryBuilder.leftJoin(
+        'post_reactions',
+        'userReaction',
+        'userReaction.post_id = post.id AND userReaction.user_id = :userId',
+        { userId: filters.userId },
+      );
+      queryBuilder.addSelect('userReaction.reaction_type', 'userReactionType');
+    }
+
+    queryBuilder
       .addSelect('COUNT(DISTINCT likeReaction.id)', 'likeCount')
       .addSelect('COUNT(DISTINCT dislikeReaction.id)', 'dislikeCount')
       .addSelect(
@@ -226,6 +240,11 @@ export class PostRepository implements IPostRepository {
       .addGroupBy('category.id')
       .where('post.deletedAt IS NULL')
       .andWhere('post.isPublished = :isPublished', { isPublished: true });
+
+    // Add userReactionType to GROUP BY if userId is provided
+    if (filters?.userId) {
+      queryBuilder.addGroupBy('userReaction.reaction_type');
+    }
 
     if (filters?.categoryId) {
       queryBuilder.andWhere('post.categoryId = :categoryId', {
@@ -359,6 +378,11 @@ export class PostRepository implements IPostRepository {
               String(rawData.commentCount || '0'),
               10,
             );
+            // Map user reaction if userId is provided
+            if (filters?.userId) {
+              const userReactionType = rawData.userReactionType as string | null;
+              (post as any).reacted = userReactionType || null;
+            }
           }
           orderedEntities.push(post);
         }
@@ -397,12 +421,17 @@ export class PostRepository implements IPostRepository {
     const hasMore = result.entities.length > realLimit;
     const data = result.entities.slice(0, realLimit);
 
-    // Map likeCount, dislikeCount, and commentCount from raw data to entities
+    // Map likeCount, dislikeCount, commentCount, and reacted from raw data to entities
     data.forEach((post, index) => {
       const rawData = result.raw[index];
       (post as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
       (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
       (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
+      // Map user reaction if userId is provided
+      if (filters?.userId) {
+        const userReactionType = rawData?.userReactionType as string | null;
+        (post as any).reacted = userReactionType || null;
+      }
     });
 
     let nextCursor: string | null = null;

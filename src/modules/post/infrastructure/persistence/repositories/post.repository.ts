@@ -23,6 +23,7 @@ export interface IPostRepository {
       search?: string;
       sortBy?: string;
       sortOrder?: 'ASC' | 'DESC';
+      userId?: string; // Optional userId to get user's reaction
     },
     cursor?: string,
     limit?: number,

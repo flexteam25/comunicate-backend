@@ -99,6 +99,7 @@ export class PostController {
       likeCount: post.likeCount || 0,
       dislikeCount: post.dislikeCount || 0,
       commentCount: post.commentCount || 0,
+      reacted: post.reacted || null, // 'like', 'dislike', or null
       isPinned: post.isPinned || false,
       publishedAt: post.publishedAt || null,
       createdAt: post.createdAt,
@@ -127,7 +128,10 @@ export class PostController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async listPosts(@Query() query: ListPostsQueryDto): Promise<ApiResponse<any>> {
+  async listPosts(
+    @Query() query: ListPostsQueryDto,
+    @CurrentUser() user?: CurrentUserPayload,
+  ): Promise<ApiResponse<any>> {
     const result = await this.listPublicPostsUseCase.execute({
       categoryId: query.categoryId,
       search: query.search,
@@ -135,6 +139,7 @@ export class PostController {
       sortOrder: query.sortOrder,
       cursor: query.cursor,
       limit: query.limit,
+      userId: user?.userId,
     });
 
     return ApiResponseUtil.success({

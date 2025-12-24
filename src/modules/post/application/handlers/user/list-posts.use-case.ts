@@ -10,6 +10,7 @@ export interface ListPublicPostsCommand {
   sortOrder?: 'ASC' | 'DESC';
   cursor?: string;
   limit?: number;
+  userId?: string; // Optional userId to get user's reaction
 }
 
 @Injectable()
@@ -26,6 +27,7 @@ export class ListPublicPostsUseCase {
         search: command.search,
         sortBy: command.sortBy,
         sortOrder: command.sortOrder,
+        userId: command.userId,
       },
       command.cursor,
       command.limit,
