@@ -6,6 +6,7 @@ import {
   IsBoolean,
   MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreatePostDto {
   @IsUUID()
@@ -23,5 +24,6 @@ export class CreatePostDto {
 
   @IsOptional()
   @IsBoolean({ message: 'Is pinned must be a boolean' })
+  @Type(() => Boolean)
   isPinned?: boolean;
 }

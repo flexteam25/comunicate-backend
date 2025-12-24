@@ -6,6 +6,7 @@ import {
   MaxLength,
   IsIn,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class UpdatePostDto {
   @IsOptional()
@@ -23,10 +24,12 @@ export class UpdatePostDto {
 
   @IsOptional()
   @IsBoolean({ message: 'Is published must be a boolean' })
+  @Type(() => Boolean)
   isPublished?: boolean;
 
   @IsOptional()
   @IsBoolean({ message: 'Is pinned must be a boolean' })
+  @Type(() => Boolean)
   isPinned?: boolean;
 
   @IsOptional()
