@@ -1,5 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
-import { BaseEntity } from '../../../../shared/domain/base-entity';
+import { Entity, Column, ManyToOne, JoinColumn, Index, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 import { Post } from './post.entity';
 import { User } from '../../../user/domain/entities/user.entity';
 
@@ -7,7 +6,10 @@ import { User } from '../../../user/domain/entities/user.entity';
 @Index('IDX_post_views_post_id', ['postId'])
 @Index('IDX_post_views_user_id', ['userId'])
 @Index('IDX_post_views_created_at', ['createdAt'])
-export class PostView extends BaseEntity {
+export class PostView {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
   @Column({ name: 'post_id', type: 'uuid' })
   postId: string;
 
@@ -16,6 +18,9 @@ export class PostView extends BaseEntity {
 
   @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
   ipAddress?: string;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 
   @ManyToOne(() => Post, (post) => post.views, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'post_id' })
