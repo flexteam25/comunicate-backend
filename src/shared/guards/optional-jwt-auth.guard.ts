@@ -40,14 +40,14 @@ export class OptionalJwtAuthGuard implements CanActivate {
     let payload: JwtPayload;
     try {
       payload = this.jwtService.verifyAccessToken(token);
-    } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token');
+    } catch {
+      return true;
     }
 
     // Check if token is revoked in database
     const tokenRecord = await this.userTokenRepository.findByTokenId(payload.jti);
     if (!tokenRecord || !tokenRecord.isValid()) {
-      throw new UnauthorizedException('Token has been revoked, expired, or not found');
+      return true;
     }
 
     // Attach user info to request
