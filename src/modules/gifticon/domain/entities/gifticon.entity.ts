@@ -43,4 +43,7 @@ export class Gifticon extends BaseEntity {
 
   @Column({ type: 'integer', nullable: false, default: 0 })
   amount: number;
+
+  @Column({ name: 'type_color', type: 'varchar', length: 50, nullable: true })
+  typeColor?: string;
 }

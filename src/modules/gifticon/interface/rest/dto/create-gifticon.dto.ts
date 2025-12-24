@@ -49,4 +49,9 @@ export class CreateGifticonDto {
   @Min(0, { message: 'Amount must be at least 0' })
   @Type(() => Number)
   amount: number;
+
+  @IsOptional()
+  @IsString({ message: 'Type color must be a string' })
+  @MaxLength(50, { message: 'Type color must not exceed 50 characters' })
+  typeColor?: string;
 }

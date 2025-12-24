@@ -71,6 +71,7 @@ export class AdminGifticonController {
       content: gifticon.content,
       status: gifticon.status,
       amount: gifticon.amount,
+      typeColor: gifticon.typeColor || null,
       startsAt: gifticon.startsAt || null,
       endsAt: gifticon.endsAt || null,
       imageUrl: buildFullUrl(
@@ -100,6 +101,7 @@ export class AdminGifticonController {
       endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
       image: file,
       amount: dto.amount,
+      typeColor: dto.typeColor,
     });
 
     return ApiResponseUtil.success(
@@ -129,6 +131,7 @@ export class AdminGifticonController {
       image: file,
       deleteImage: dto.deleteImage === 'true',
       amount: dto.amount,
+      typeColor: dto.typeColor,
     });
 
     return ApiResponseUtil.success(
@@ -203,6 +206,7 @@ export class AdminGifticonController {
                   ? buildFullUrl(this.apiServiceUrl, redemption.gifticonSnapshot.imageUrl)
                   : null,
                 summary: redemption.gifticonSnapshot.summary || null,
+                typeColor: redemption.gifticonSnapshot.typeColor || null,
               }
             : null,
         pointsUsed: redemption.pointsUsed,

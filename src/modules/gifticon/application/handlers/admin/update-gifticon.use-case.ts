@@ -23,6 +23,7 @@ export interface UpdateGifticonCommand {
   image?: MulterFile;
   deleteImage?: boolean;
   amount?: number;
+  typeColor?: string;
 }
 
 @Injectable()
@@ -124,6 +125,7 @@ export class UpdateGifticonUseCase {
           if (command.endsAt !== undefined) gifticon.endsAt = command.endsAt || null;
           if (imageUrl !== undefined) gifticon.imageUrl = imageUrl;
           if (command.amount !== undefined) gifticon.amount = command.amount;
+          if (command.typeColor !== undefined) gifticon.typeColor = command.typeColor || null;
 
           await gifticonRepo.save(gifticon);
 

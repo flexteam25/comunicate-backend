@@ -21,6 +21,7 @@ export interface CreateGifticonCommand {
   endsAt?: Date;
   image?: MulterFile;
   amount: number;
+  typeColor?: string;
 }
 
 @Injectable()
@@ -110,6 +111,7 @@ export class CreateGifticonUseCase {
             endsAt: command.endsAt,
             imageUrl,
             amount: command.amount,
+            typeColor: command.typeColor,
           });
 
           return gifticonRepo.save(gifticonEntity);

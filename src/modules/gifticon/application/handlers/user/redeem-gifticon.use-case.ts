@@ -118,6 +118,7 @@ export class RedeemGifticonUseCase {
             amount: gifticon.amount,
             imageUrl: gifticon.imageUrl,
             summary: gifticon.summary,
+            typeColor: gifticon.typeColor,
           },
         });
         const savedRedemption = await redemptionRepo.save(redemption);

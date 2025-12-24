@@ -53,6 +53,7 @@ export class GifticonController {
         gifticon.imageUrl || null,
       ) || null,
       amount: gifticon.amount,
+      typeColor: gifticon.typeColor || null,
       startsAt: gifticon.startsAt || null,
       endsAt: gifticon.endsAt || null,
       createdAt: gifticon.createdAt,
@@ -109,6 +110,7 @@ export class GifticonController {
                 ? buildFullUrl(this.apiServiceUrl, redemption.gifticonSnapshot.imageUrl)
                 : null,
               summary: redemption.gifticonSnapshot.summary || null,
+              typeColor: redemption.gifticonSnapshot.typeColor || null,
             }
           : redemption.gifticon
             ? this.mapGifticonToResponse(redemption.gifticon)
@@ -183,6 +185,7 @@ export class GifticonController {
                 ? buildFullUrl(this.apiServiceUrl, redemption.gifticonSnapshot.imageUrl)
                 : null,
               summary: redemption.gifticonSnapshot.summary || null,
+              typeColor: redemption.gifticonSnapshot.typeColor || null,
             }
           : null,
         pointsUsed: redemption.pointsUsed,

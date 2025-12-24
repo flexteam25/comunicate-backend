@@ -65,6 +65,7 @@ export class GifticonRedemption {
     amount: number;
     imageUrl?: string;
     summary?: string;
+    typeColor?: string;
   };
 
   /** Time when redemption was cancelled */

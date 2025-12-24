@@ -53,4 +53,9 @@ export class UpdateGifticonDto {
   @IsOptional()
   @IsString({ message: 'Delete image must be a string' })
   deleteImage?: string; // "true" to delete image
+
+  @IsOptional()
+  @IsString({ message: 'Type color must be a string' })
+  @MaxLength(50, { message: 'Type color must not exceed 50 characters' })
+  typeColor?: string;
 }
