@@ -13,6 +13,9 @@ export class UserProfile {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'user_id', type: 'uuid' })
+  userId: string;
+
   @Column({ name: 'bio', type: 'text', nullable: true })
   bio?: string;
 

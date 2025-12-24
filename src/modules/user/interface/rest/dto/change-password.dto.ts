@@ -1,4 +1,5 @@
 import { IsString, MinLength, IsOptional, IsBoolean } from 'class-validator';
+import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export class ChangePasswordDto {
   @IsString()
@@ -13,6 +14,7 @@ export class ChangePasswordDto {
   passwordConfirmation: string;
 
   @IsOptional()
+  @TransformToBoolean
   @IsBoolean()
   logoutAll?: boolean;
 }

@@ -14,6 +14,7 @@ export interface CreatePostCommand {
   content: string;
   thumbnail?: MulterFile;
   isPinned?: boolean;
+  isPublished?: boolean;
 }
 
 @Injectable()
@@ -31,6 +32,12 @@ export class CreatePostUseCase {
     const category = await this.categoryRepository.findById(command.categoryId);
     if (!category) {
       throw new BadRequestException('Category not found');
+    }
+
+    // Check for duplicate title
+    const existingPost = await this.postRepository.findByTitle(command.title);
+    if (existingPost) {
+      throw new BadRequestException('A post with this title already exists');
     }
 
     // Validate file size (20MB max)
@@ -78,9 +85,9 @@ export class CreatePostUseCase {
             title: command.title,
             content: command.content,
             thumbnailUrl,
-            isPublished: false, // Always false on creation, only admin can publish via update
+            isPublished: command.isPublished || false,
             isPinned: command.isPinned || false,
-            publishedAt: null,
+            publishedAt: command.isPublished ? new Date() : null,
           });
 
           const savedPost = await postRepo.save(post);

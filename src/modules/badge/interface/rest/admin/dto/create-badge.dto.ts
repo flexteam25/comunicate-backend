@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean } from 'class-validator';
 import { BadgeType } from '../../../../domain/entities/badge.entity';
-import { Type } from 'class-transformer';
+import { TransformToBoolean } from '../../../../../../shared/utils/transform-boolean.util';
 
 export class CreateBadgeDto {
   @IsString()
@@ -19,8 +19,8 @@ export class CreateBadgeDto {
   @IsNotEmpty()
   badgeType: BadgeType;
 
-  @IsBoolean()
   @IsOptional()
-  @Type(() => Boolean)
+  @TransformToBoolean
+  @IsBoolean()
   isActive?: boolean;
 }

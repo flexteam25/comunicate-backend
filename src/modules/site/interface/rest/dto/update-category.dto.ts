@@ -1,4 +1,5 @@
 import { IsString, IsOptional, MaxLength, IsBoolean } from 'class-validator';
+import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export class UpdateCategoryDto {
   @IsOptional()
@@ -11,6 +12,7 @@ export class UpdateCategoryDto {
   description?: string;
 
   @IsOptional()
+  @TransformToBoolean
   @IsBoolean()
   isActive?: boolean;
 }

@@ -1,5 +1,6 @@
 import { IsString, IsOptional, IsInt, Min, MaxLength, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export class UpdateTierDto {
   @IsOptional()
@@ -23,6 +24,7 @@ export class UpdateTierDto {
   color?: string;
 
   @IsOptional()
+  @TransformToBoolean
   @IsBoolean()
   isActive?: boolean;
 }

@@ -32,8 +32,8 @@ async function bootstrap() {
   // Enable validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      whitelist: true, // Remove properties that don't have decorators in DTO
+      forbidNonWhitelisted: false, // Allow non-whitelisted properties to pass through but ignore them
       transform: true,
       stopAtFirstError: true,
     }),

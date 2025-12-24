@@ -69,6 +69,10 @@ import { PostComment } from './modules/post/domain/entities/post-comment.entity'
 import { PostCommentImage } from './modules/post/domain/entities/post-comment-image.entity';
 import { PostReaction } from './modules/post/domain/entities/post-reaction.entity';
 import { PostView } from './modules/post/domain/entities/post-view.entity';
+import { PointTransaction } from './modules/point/domain/entities/point-transaction.entity';
+import { PointExchange } from './modules/point/domain/entities/point-exchange.entity';
+import { GifticonRedemption } from './modules/gifticon/domain/entities/gifticon-redemption.entity';
+import { PointModule } from './modules/point/point.module';
 
 @Module({
   imports: [
@@ -130,6 +134,9 @@ import { PostView } from './modules/post/domain/entities/post-view.entity';
         PostCommentImage,
         PostReaction,
         PostView,
+        PointTransaction,
+        PointExchange,
+        GifticonRedemption,
       ],
       synchronize: false,
       logging: false,
@@ -153,6 +160,7 @@ import { PostView } from './modules/post/domain/entities/post-view.entity';
     PocaEventModule,
     GifticonModule,
     PostModule,
+    PointModule,
   ],
   controllers: [AppController],
   providers: [AppService],

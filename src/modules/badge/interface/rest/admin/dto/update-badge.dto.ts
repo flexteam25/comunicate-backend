@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
+import { TransformToBoolean } from '../../../../../../shared/utils/transform-boolean.util';
 
 export class UpdateBadgeDto {
   @IsString()
@@ -14,8 +14,8 @@ export class UpdateBadgeDto {
   @IsOptional()
   iconUrl?: string;
 
-  @IsBoolean()
   @IsOptional()
-  @Type(() => Boolean)
+  @TransformToBoolean
+  @IsBoolean()
   isActive?: boolean;
 }

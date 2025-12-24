@@ -294,6 +294,7 @@ export class PostController {
       content: dto.content,
       thumbnail,
       isPinned: dto.isPinned,
+      isPublished: dto.isPublished,
     });
 
     return ApiResponseUtil.success(

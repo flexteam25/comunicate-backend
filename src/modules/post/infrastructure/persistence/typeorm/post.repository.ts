@@ -67,6 +67,19 @@ export class PostRepository implements IPostRepository {
     return post;
   }
 
+  async findByTitle(title: string, excludePostId?: string): Promise<Post | null> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('post')
+      .where('post.deletedAt IS NULL')
+      .andWhere('LOWER(post.title) = LOWER(:title)', { title });
+
+    if (excludePostId) {
+      queryBuilder.andWhere('post.id != :excludePostId', { excludePostId });
+    }
+
+    return queryBuilder.getOne();
+  }
+
   async findAllAdmin(
     filters?: {
       isPublished?: boolean;

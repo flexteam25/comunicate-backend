@@ -1,0 +1,109 @@
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+  ForbiddenException,
+} from '@nestjs/common';
+import { EntityManager } from 'typeorm';
+import { GifticonRedemption, GifticonRedemptionStatus } from '../../../domain/entities/gifticon-redemption.entity';
+import { IGifticonRedemptionRepository } from '../../../infrastructure/persistence/repositories/gifticon-redemption.repository';
+import { IUserRepository } from '../../../../user/infrastructure/persistence/repositories/user.repository';
+import { UserProfile } from '../../../../user/domain/entities/user-profile.entity';
+import { TransactionService } from '../../../../../shared/services/transaction.service';
+import { PointTransaction, PointTransactionType } from '../../../../point/domain/entities/point-transaction.entity';
+
+export interface CancelRedemptionCommand {
+  redemptionId: string;
+  userId: string;
+}
+
+/**
+ * Use case for user to cancel gifticon redemption
+ * - Only allow cancel if status = pending
+ * - Only allow user to cancel their own redemption
+ * - Refund points to user
+ * - Update status = cancelled
+ */
+@Injectable()
+export class CancelRedemptionUseCase {
+  constructor(
+    @Inject('IGifticonRedemptionRepository')
+    private readonly redemptionRepository: IGifticonRedemptionRepository,
+    @Inject('IUserRepository')
+    private readonly userRepository: IUserRepository,
+    private readonly transactionService: TransactionService,
+  ) {}
+
+  async execute(command: CancelRedemptionCommand): Promise<GifticonRedemption> {
+    const redemption = await this.redemptionRepository.findById(
+      command.redemptionId,
+    );
+
+    if (!redemption) {
+      throw new NotFoundException('Redemption not found');
+    }
+
+    if (redemption.userId !== command.userId) {
+      throw new ForbiddenException('You can only cancel your own redemptions');
+    }
+
+    if (redemption.status !== GifticonRedemptionStatus.PENDING) {
+      throw new BadRequestException('Only pending redemptions can be cancelled');
+    }
+
+    // Execute refund and status update in transaction
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        // Reload user profile with pessimistic lock to prevent race condition
+        const userProfileRepo = manager.getRepository(UserProfile);
+        const userProfile = await userProfileRepo.findOne({
+          where: { userId: redemption.userId },
+          lock: { mode: 'pessimistic_write' },
+        });
+
+        if (!userProfile) {
+          throw new NotFoundException('User profile not found');
+        }
+
+        // Refund points to user
+        const newBalance = userProfile.points + redemption.pointsUsed;
+        userProfile.points = newBalance;
+        await userProfileRepo.save(userProfile);
+
+        // Update redemption status = cancelled
+        const redemptionRepo = manager.getRepository(GifticonRedemption);
+        await redemptionRepo.update(command.redemptionId, {
+          status: GifticonRedemptionStatus.CANCELLED,
+          cancelledAt: new Date(),
+          cancelledBy: command.userId,
+        });
+
+        // Create refund transaction for history
+        const pointTransactionRepo = manager.getRepository(PointTransaction);
+        const pointTransaction = pointTransactionRepo.create({
+          userId: redemption.userId,
+          type: PointTransactionType.REFUND,
+          amount: redemption.pointsUsed, // Positive for refund
+          balanceAfter: newBalance,
+          category: 'gifticon_redemption_refund',
+          referenceType: 'gifticon_redemption',
+          referenceId: redemption.id,
+          description: `Gifticon Redemption Refund: ${redemption.gifticonSnapshot?.title || 'Unknown'} ${redemption.pointsUsed}원`,
+        });
+        await pointTransactionRepo.save(pointTransaction);
+
+        // Get updated redemption to return
+        const updatedRedemption = await redemptionRepo.findOne({
+          where: { id: command.redemptionId },
+        });
+
+        if (!updatedRedemption) {
+          throw new NotFoundException('Redemption not found after update');
+        }
+
+        return updatedRedemption;
+      },
+    );
+  }
+}

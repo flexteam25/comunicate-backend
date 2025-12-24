@@ -1,14 +1,27 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   Query,
+  UseGuards,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../../../../shared/decorators/current-user.decorator';
 import { ListGifticonsUseCase } from '../../../application/handlers/user/list-gifticons.use-case';
 import { GetGifticonUseCase } from '../../../application/handlers/user/get-gifticon.use-case';
+import { RedeemGifticonUseCase } from '../../../application/handlers/user/redeem-gifticon.use-case';
+import { GetMyRedemptionsUseCase } from '../../../application/handlers/user/get-my-redemptions.use-case';
+import { GetRedemptionDetailUseCase } from '../../../application/handlers/user/get-redemption-detail.use-case';
+import { CancelRedemptionUseCase } from '../../../application/handlers/user/cancel-redemption.use-case';
 import { ListGifticonsQueryDto } from '../dto/list-gifticons-query.dto';
+import { GetMyRedemptionsQueryDto } from '../dto/get-my-redemptions-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
@@ -20,6 +33,10 @@ export class GifticonController {
   constructor(
     private readonly listGifticonsUseCase: ListGifticonsUseCase,
     private readonly getGifticonUseCase: GetGifticonUseCase,
+    private readonly redeemGifticonUseCase: RedeemGifticonUseCase,
+    private readonly getMyRedemptionsUseCase: GetMyRedemptionsUseCase,
+    private readonly getRedemptionDetailUseCase: GetRedemptionDetailUseCase,
+    private readonly cancelRedemptionUseCase: CancelRedemptionUseCase,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -65,6 +82,138 @@ export class GifticonController {
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
     });
+  }
+
+  @Get('my-redemptions')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getMyRedemptions(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: GetMyRedemptionsQueryDto,
+  ): Promise<ApiResponse<any>> {
+    const result = await this.getMyRedemptionsUseCase.execute({
+      userId: user.userId,
+      cursor: query.cursor,
+      limit: query.limit || 20,
+    });
+
+    return ApiResponseUtil.success({
+      data: result.data.map((redemption) => ({
+        id: redemption.id,
+        redemptionCode: redemption.redemptionCode || null,
+        gifticon: redemption.gifticonSnapshot
+          ? {
+              title: redemption.gifticonSnapshot.title,
+              amount: redemption.gifticonSnapshot.amount,
+              imageUrl: redemption.gifticonSnapshot.imageUrl
+                ? buildFullUrl(this.apiServiceUrl, redemption.gifticonSnapshot.imageUrl)
+                : null,
+              summary: redemption.gifticonSnapshot.summary || null,
+            }
+          : redemption.gifticon
+            ? this.mapGifticonToResponse(redemption.gifticon)
+            : null,
+        pointsUsed: redemption.pointsUsed,
+        status: redemption.status,
+        createdAt: redemption.createdAt,
+        updatedAt: redemption.updatedAt,
+      })),
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    });
+  }
+
+  @Get('redemptions/:id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getRedemptionDetail(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<ApiResponse<any>> {
+    const redemption = await this.getRedemptionDetailUseCase.execute({
+      userId: user.userId,
+      redemptionId: id,
+    });
+
+    return ApiResponseUtil.success({
+      id: redemption.id,
+      redemptionCode: redemption.redemptionCode || null,
+      gifticon: redemption.gifticonSnapshot
+        ? {
+            title: redemption.gifticonSnapshot.title,
+            amount: redemption.gifticonSnapshot.amount,
+            imageUrl: redemption.gifticonSnapshot.imageUrl
+              ? buildFullUrl(this.apiServiceUrl, redemption.gifticonSnapshot.imageUrl)
+              : null,
+            summary: redemption.gifticonSnapshot.summary || null,
+          }
+        : redemption.gifticon
+          ? this.mapGifticonDetailToResponse(redemption.gifticon)
+          : null,
+      pointsUsed: redemption.pointsUsed,
+      status: redemption.status,
+      cancelledAt: redemption.cancelledAt || null,
+      cancellationReason: redemption.cancellationReason || null,
+      createdAt: redemption.createdAt,
+      updatedAt: redemption.updatedAt,
+    });
+  }
+
+  @Post(':id/redeem')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async redeemGifticon(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<ApiResponse<any>> {
+    const redemption = await this.redeemGifticonUseCase.execute({
+      userId: user.userId,
+      gifticonId: id,
+    });
+
+    return ApiResponseUtil.success(
+      {
+        id: redemption.id,
+        redemptionCode: redemption.redemptionCode || null,
+        gifticon: redemption.gifticonSnapshot
+          ? {
+              title: redemption.gifticonSnapshot.title,
+              amount: redemption.gifticonSnapshot.amount,
+              imageUrl: redemption.gifticonSnapshot.imageUrl
+                ? buildFullUrl(this.apiServiceUrl, redemption.gifticonSnapshot.imageUrl)
+                : null,
+              summary: redemption.gifticonSnapshot.summary || null,
+            }
+          : null,
+        pointsUsed: redemption.pointsUsed,
+        status: redemption.status,
+        createdAt: redemption.createdAt,
+      },
+      'Gifticon redeemed successfully',
+    );
+  }
+
+  @Post('redemptions/:id/cancel')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async cancelRedemption(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<ApiResponse<any>> {
+    const redemption = await this.cancelRedemptionUseCase.execute({
+      redemptionId: id,
+      userId: user.userId,
+    });
+
+    return ApiResponseUtil.success(
+      {
+        id: redemption.id,
+        status: redemption.status,
+        cancelledAt: redemption.cancelledAt,
+        updatedAt: redemption.updatedAt,
+      },
+      'Redemption cancelled successfully',
+    );
   }
 
   @Get(':idOrSlug')

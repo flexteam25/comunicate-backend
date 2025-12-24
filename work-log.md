@@ -805,7 +805,7 @@ const result = await this.siteRepository.findAllWithCursor({
 
 ---
 
-### 24. Upload Service Enhancements
+### 24. Upload Service Enhancements & File Upload Refactoring
 
 **Location:** `src/shared/services/upload/upload.service.ts`
 
@@ -816,28 +816,49 @@ const result = await this.siteRepository.findAllWithCursor({
 - ✅ Converts to WebP format
 - ✅ Generates unique filenames
 
-**Usage:**
+**File Upload Refactoring:**
+- ✅ **Moved upload logic from controllers to use cases** - All file upload operations now happen in use cases
+- ✅ **Transaction integrity** - Files are uploaded before database transaction, ensuring consistency
+- ✅ **Cleanup orphaned files** - If database transaction fails, uploaded files are automatically deleted
+- ✅ **Max file size: 20MB** - All image uploads now support up to 20MB
+- ✅ **Consistent pattern** - All create/update operations follow: upload → transaction → cleanup on failure
+
+**Refactored Modules:**
+- ✅ **Site Module** - `createSite()`, `updateSite()` - Uploads `logo`, `mainImage`, `siteImage` in use case
+- ✅ **Post Module** - `createPost()`, `updatePost()` (admin/user) - Uploads `thumbnail` in use case
+- ✅ **POCA Event Module** - `createPocaEvent()`, `updatePocaEvent()` - Uploads `primaryBanner`, `banners` in use case
+- ✅ **Gifticon Module** - `createGifticon()`, `updateGifticon()` - Uploads `image` in use case
+- ✅ **Post Comment Module** - `addComment()` - Uploads comment images in use case
+
+**Usage Pattern:**
 ```typescript
-// Upload site logo
-const logoUrl = await this.uploadService.uploadSiteImage(
-  file,
-  siteId,
-  'logo'
-);
+// 1. Upload file before transaction
+let fileUrl: string | undefined;
+if (file) {
+  try {
+    const result = await this.uploadService.uploadImage(file, {
+      folder: 'folder/name',
+    });
+    fileUrl = result.relativePath;
+  } catch (error) {
+    throw new BadRequestException('Failed to upload file');
+  }
+}
 
-// Upload site main image
-const mainImageUrl = await this.uploadService.uploadSiteImage(
-  file,
-  siteId,
-  'main-image'
-);
-
-// Upload site image
-const siteImageUrl = await this.uploadService.uploadSiteImage(
-  file,
-  siteId,
-  'site-image'
-);
+// 2. Create/Update in transaction
+try {
+  return await this.transactionService.executeInTransaction(
+    async (manager: EntityManager) => {
+      // Database operations...
+    },
+  );
+} catch (error) {
+  // 3. Cleanup on failure
+  if (fileUrl) {
+    await this.uploadService.deleteFile(fileUrl);
+  }
+  throw error;
+}
 ```
 
 ---
@@ -849,12 +870,27 @@ const siteImageUrl = await this.uploadService.uploadSiteImage(
 - ✅ Fixed circular dependency issues between modules
 - ✅ Created `UserTokenRepositoryModule` to properly export user token repository
 - ✅ Updated `AuthModule` to use proper module imports
+- ✅ Fixed `JwtAuthGuard` dependency injection issues across multiple modules
 
 **Modules Updated:**
 - `AdminModule` - Exports guards and decorators via `AdminGuardsModule`
 - `AuthModule` - Uses `UserTokenRepositoryModule` for proper dependency injection
-- `SiteModule` - Imports `AdminModule` for admin guard dependencies
+- `SiteModule` - Imports `AdminModule` and `UserTokenRepositoryModule` for guard dependencies
 - `TierModule` - Uses `forwardRef` to handle circular dependencies with `SiteModule`
+- `SiteManagerModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
+- `SiteReviewModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
+- `ScamReportModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
+- `PostModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
+- `PocaEventModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
+- `SupportModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
+- `UserModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
+- `AttendanceModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
+- `GifticonModule` - Imports `UserTokenRepositoryModule` and `PointModule` for guard dependencies
+- `PointModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
+
+**Issue Fixed:**
+- ✅ `UnknownDependenciesException` for `JwtAuthGuard` - `IUserTokenRepository` not available in module context
+- ✅ Solution: Import `UserTokenRepositoryModule` in all modules that use `JwtAuthGuard`
 
 ---
 

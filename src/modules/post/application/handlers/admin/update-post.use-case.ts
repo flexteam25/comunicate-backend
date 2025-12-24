@@ -85,6 +85,19 @@ export class UpdatePostUseCase {
             }
           }
 
+          // Check for duplicate title if title is being updated
+          if (command.title) {
+            const duplicatePost = await this.postRepository.findByTitle(
+              command.title,
+              command.postId,
+            );
+            if (duplicatePost) {
+              throw new BadRequestException(
+                'A post with this title already exists',
+              );
+            }
+          }
+
           const updateData: Partial<Post> = {};
           if (command.categoryId !== undefined) updateData.categoryId = command.categoryId;
           if (command.title !== undefined) updateData.title = command.title;

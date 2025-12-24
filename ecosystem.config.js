@@ -38,8 +38,8 @@ module.exports = {
     {
       name: 'poca-api',
       script: 'dist/src/main.js',
-      instances: 1,
-      exec_mode: 'fork',
+      instances: 2,
+      exec_mode: 'cluster',
       env: {
         NODE_ENV: devEnv.NODE_ENV || 'development',
         PORT: devEnv.PORT || '3008',

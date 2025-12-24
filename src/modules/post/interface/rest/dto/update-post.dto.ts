@@ -6,7 +6,7 @@ import {
   MaxLength,
   IsIn,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export class UpdatePostDto {
   @IsOptional()
@@ -23,13 +23,13 @@ export class UpdatePostDto {
   content?: string;
 
   @IsOptional()
+  @TransformToBoolean
   @IsBoolean({ message: 'Is published must be a boolean' })
-  @Type(() => Boolean)
   isPublished?: boolean;
 
   @IsOptional()
+  @TransformToBoolean
   @IsBoolean({ message: 'Is pinned must be a boolean' })
-  @Type(() => Boolean)
   isPinned?: boolean;
 
   @IsOptional()
