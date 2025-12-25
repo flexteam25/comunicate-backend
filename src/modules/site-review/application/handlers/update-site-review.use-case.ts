@@ -4,15 +4,22 @@ import {
   ForbiddenException,
   Inject,
 } from '@nestjs/common';
+import { EntityManager } from 'typeorm';
 import { ISiteReviewRepository } from '../../infrastructure/persistence/repositories/site-review.repository';
 import { SiteReview } from '../../domain/entities/site-review.entity';
+import { SiteReviewImage } from '../../domain/entities/site-review-image.entity';
+import { TransactionService } from '../../../../shared/services/transaction.service';
 
 export interface UpdateSiteReviewCommand {
   reviewId: string;
   userId: string;
   rating?: number;
-  title?: string;
+  odds?: number;
+  limit?: number;
+  event?: number;
+  speed?: number;
   content?: string;
+  imageUrl?: string;
 }
 
 @Injectable()
@@ -20,10 +27,14 @@ export class UpdateSiteReviewUseCase {
   constructor(
     @Inject('ISiteReviewRepository')
     private readonly siteReviewRepository: ISiteReviewRepository,
+    private readonly transactionService: TransactionService,
   ) {}
 
   async execute(command: UpdateSiteReviewCommand): Promise<SiteReview> {
-    const review = await this.siteReviewRepository.findById(command.reviewId, ['user']);
+    const review = await this.siteReviewRepository.findById(command.reviewId, [
+      'user',
+      'images',
+    ]);
 
     if (!review) {
       throw new NotFoundException('Site review not found');
@@ -45,34 +56,61 @@ export class UpdateSiteReviewUseCase {
       );
     }
 
-    // If review was published, set to unpublished (requires re-approval)
-    const updateData: Partial<SiteReview> = {};
-    if (command.rating !== undefined) updateData.rating = command.rating;
-    if (command.title !== undefined) updateData.title = command.title;
-    if (command.content !== undefined) updateData.content = command.content;
+    return this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const reviewRepo = manager.getRepository(SiteReview);
+        const imageRepo = manager.getRepository(SiteReviewImage);
 
-    if (review.isPublished) {
-      updateData.isPublished = false;
-    }
+        // If review was published, set to unpublished (requires re-approval)
+        const updateData: Partial<SiteReview> = {};
+        if (command.rating !== undefined) updateData.rating = command.rating;
+        if (command.odds !== undefined) updateData.odds = command.odds;
+        if (command.limit !== undefined) updateData.limit = command.limit;
+        if (command.event !== undefined) updateData.event = command.event;
+        if (command.speed !== undefined) updateData.speed = command.speed;
+        if (command.content !== undefined) updateData.content = command.content;
 
-    await this.siteReviewRepository.update(command.reviewId, updateData);
+        if (review.isPublished) {
+          updateData.isPublished = false;
+        }
 
-    // Recalculate site statistics
-    const reviewRepoImpl = this.siteReviewRepository as any;
-    if (reviewRepoImpl.recalculateSiteStatistics) {
-      await reviewRepoImpl.recalculateSiteStatistics(review.siteId);
-    }
+        await reviewRepo.update(command.reviewId, updateData);
 
-    // Reload with relations
-    const reloaded = await this.siteReviewRepository.findById(command.reviewId, [
-      'user',
-      'site',
-    ]);
+        // Handle image update (only 1 image allowed)
+        if (command.imageUrl !== undefined) {
+          // Delete existing images
+          await imageRepo.delete({ siteReviewId: command.reviewId });
 
-    if (!reloaded) {
-      throw new NotFoundException('Site review not found after update');
-    }
+          // Create new image if provided
+          if (command.imageUrl) {
+            const image = imageRepo.create({
+              siteReviewId: command.reviewId,
+              imageUrl: command.imageUrl,
+              order: 0,
+            });
+            await imageRepo.save(image);
+          }
+        }
 
-    return reloaded;
+        // Reload with relations
+        const reloaded = await reviewRepo.findOne({
+          where: { id: command.reviewId },
+          relations: ['user', 'site', 'images'],
+        });
+
+        if (!reloaded) {
+          throw new NotFoundException('Site review not found after update');
+        }
+
+        return reloaded;
+      },
+    ).then(async (updatedReview) => {
+      // Recalculate site statistics
+      const reviewRepoImpl = this.siteReviewRepository as any;
+      if (reviewRepoImpl.recalculateSiteStatistics) {
+        await reviewRepoImpl.recalculateSiteStatistics(updatedReview.siteId);
+      }
+      return updatedReview;
+    });
   }
 }

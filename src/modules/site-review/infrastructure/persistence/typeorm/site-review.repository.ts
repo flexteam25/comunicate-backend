@@ -30,6 +30,12 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     if (relations?.includes('site')) {
       queryBuilder.leftJoinAndSelect('review.site', 'site');
     }
+    if (relations?.includes('images')) {
+      queryBuilder.leftJoinAndSelect('review.images', 'images');
+    } else {
+      // Always load images if not explicitly excluded
+      queryBuilder.leftJoinAndSelect('review.images', 'images');
+    }
 
     queryBuilder.addSelect(
       (subQuery) =>
@@ -98,6 +104,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
       .leftJoinAndSelect('review.site', 'site')
+      .leftJoinAndSelect('review.images', 'images')
       .addSelect(
         (subQuery) =>
           subQuery
@@ -138,7 +145,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     }
 
     if (filters?.search) {
-      queryBuilder.andWhere('LOWER(review.title) LIKE LOWER(:search)', {
+      queryBuilder.andWhere('LOWER(review.content) LIKE LOWER(:search)', {
         search: `%${filters.search}%`,
       });
     }
@@ -229,6 +236,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
       .leftJoinAndSelect('review.site', 'site')
+      .leftJoinAndSelect('review.images', 'images')
       .addSelect(
         (subQuery) =>
           subQuery
@@ -363,6 +371,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.site', 'site')
+      .leftJoinAndSelect('review.images', 'images')
       .addSelect(
         (subQuery) =>
           subQuery

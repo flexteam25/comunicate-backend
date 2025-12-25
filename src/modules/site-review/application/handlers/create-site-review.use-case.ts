@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { SiteReview } from '../../domain/entities/site-review.entity';
+import { SiteReviewImage } from '../../domain/entities/site-review-image.entity';
 import { ISiteReviewRepository } from '../../infrastructure/persistence/repositories/site-review.repository';
 import { ISiteRepository } from '../../../site/infrastructure/persistence/repositories/site.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
@@ -13,8 +14,12 @@ export interface CreateSiteReviewCommand {
   userId: string;
   siteId: string;
   rating: number;
-  title: string;
+  odds?: number;
+  limit?: number;
+  event?: number;
+  speed?: number;
   content: string;
+  imageUrl?: string;
 }
 
 @Injectable()
@@ -36,6 +41,7 @@ export class CreateSiteReviewUseCase {
     return this.transactionService
       .executeInTransaction(async (manager: EntityManager) => {
         const reviewRepo = manager.getRepository(SiteReview);
+        const imageRepo = manager.getRepository(SiteReviewImage);
         const userCommentRepo = manager.getRepository(UserComment);
 
         // Check if review exists (upsert pattern)
@@ -54,11 +60,24 @@ export class CreateSiteReviewUseCase {
             userId: command.userId,
             siteId: command.siteId,
             rating: command.rating,
-            title: command.title,
+            odds: command.odds,
+            limit: command.limit,
+            event: command.event,
+            speed: command.speed,
             content: command.content,
             isPublished: false,
           });
           savedReview = await reviewRepo.save(review);
+
+          // Create image if provided
+          if (command.imageUrl) {
+            const image = imageRepo.create({
+              siteReviewId: savedReview.id,
+              imageUrl: command.imageUrl,
+              order: 0,
+            });
+            await imageRepo.save(image);
+          }
 
           // Save to user_comments for statistics
           const userComment = userCommentRepo.create({
@@ -72,7 +91,7 @@ export class CreateSiteReviewUseCase {
         // Reload with relations within transaction
         const reloaded = await reviewRepo.findOne({
           where: { id: savedReview.id },
-          relations: ['user', 'site'],
+          relations: ['user', 'site', 'images'],
         });
 
         if (!reloaded) {

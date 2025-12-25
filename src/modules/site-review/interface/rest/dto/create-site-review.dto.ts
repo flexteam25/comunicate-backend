@@ -2,10 +2,10 @@ import {
   IsString,
   IsNotEmpty,
   IsUUID,
-  MaxLength,
   Min,
   Max,
   IsInt,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -20,10 +20,33 @@ export class CreateSiteReviewDto {
   @Max(5)
   rating: number;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  title: string;
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  odds?: number;
+
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  limit?: number;
+
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  event?: number;
+
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  speed?: number;
 
   @IsString()
   @IsNotEmpty()

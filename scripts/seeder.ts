@@ -42,6 +42,7 @@ import { PostComment } from '../src/modules/post/domain/entities/post-comment.en
 import { PostCommentImage } from '../src/modules/post/domain/entities/post-comment-image.entity';
 import { PostReaction } from '../src/modules/post/domain/entities/post-reaction.entity';
 import { PostView } from '../src/modules/post/domain/entities/post-view.entity';
+import { SiteReviewImage } from '../src/modules/site-review/domain/entities/site-review-image.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -122,6 +123,7 @@ function createDataSource(): DataSource {
       PostCommentImage,
       PostReaction,
       PostView,
+      SiteReviewImage,
     ],
     synchronize: false,
     logging: true,

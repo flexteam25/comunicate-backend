@@ -11,12 +11,17 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 import {
   CurrentUser,
   CurrentUserPayload,
 } from '../../../../../shared/decorators/current-user.decorator';
+import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { CreateSiteReviewUseCase } from '../../../application/handlers/create-site-review.use-case';
 import { UpdateSiteReviewUseCase } from '../../../application/handlers/update-site-review.use-case';
 import { DeleteSiteReviewUseCase } from '../../../application/handlers/delete-site-review.use-case';
@@ -56,6 +61,7 @@ export class SiteReviewController {
     private readonly deleteCommentUseCase: DeleteCommentUseCase,
     private readonly listCommentsUseCase: ListCommentsUseCase,
     private readonly configService: ConfigService,
+    private readonly uploadService: UploadService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -70,8 +76,17 @@ export class SiteReviewController {
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
       rating: review.rating,
-      title: review.title,
+      odds: review.odds || undefined,
+      limit: review.limit || undefined,
+      event: review.event || undefined,
+      speed: review.speed || undefined,
       content: review.content,
+      images: (review.images || []).map((img: any) => ({
+        id: img.id,
+        imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl) || img.imageUrl,
+        order: img.order,
+        createdAt: img.createdAt,
+      })),
       isPublished: review.isPublished,
       reactions: {
         like: review.likeCount || 0,
@@ -100,17 +115,42 @@ export class SiteReviewController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('image'))
   @HttpCode(HttpStatus.CREATED)
   async createSiteReview(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateSiteReviewDto,
+    @UploadedFile() file?: MulterFile,
   ): Promise<ApiResponse<SiteReviewResponseDto>> {
+    let imageUrl: string | undefined;
+
+    // Upload image if provided
+    if (file) {
+      // Validate file
+      if (file.size > 20 * 1024 * 1024) {
+        throw new BadRequestException('Image file size exceeds 20MB');
+      }
+      if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
+        throw new BadRequestException(
+          'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+        );
+      }
+      const uploadResult = await this.uploadService.uploadImage(file, {
+        folder: 'site-reviews',
+      });
+      imageUrl = uploadResult.relativePath;
+    }
+
     const review = await this.createSiteReviewUseCase.execute({
       userId: user.userId,
       siteId: dto.siteId,
       rating: dto.rating,
-      title: dto.title,
+      odds: dto.odds,
+      limit: dto.limit,
+      event: dto.event,
+      speed: dto.speed,
       content: dto.content,
+      imageUrl,
     });
 
     return ApiResponseUtil.success(
@@ -174,18 +214,43 @@ export class SiteReviewController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('image'))
   @HttpCode(HttpStatus.OK)
   async updateSiteReview(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateSiteReviewDto,
+    @UploadedFile() file?: MulterFile,
   ): Promise<ApiResponse<SiteReviewResponseDto>> {
+    let imageUrl: string | undefined;
+
+    // Upload image if provided
+    if (file) {
+      // Validate file
+      if (file.size > 20 * 1024 * 1024) {
+        throw new BadRequestException('Image file size exceeds 20MB');
+      }
+      if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
+        throw new BadRequestException(
+          'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+        );
+      }
+      const uploadResult = await this.uploadService.uploadImage(file, {
+        folder: 'site-reviews',
+      });
+      imageUrl = uploadResult.relativePath;
+    }
+
     const review = await this.updateSiteReviewUseCase.execute({
       reviewId: id,
       userId: user.userId,
       rating: dto.rating,
-      title: dto.title,
+      odds: dto.odds,
+      limit: dto.limit,
+      event: dto.event,
+      speed: dto.speed,
       content: dto.content,
+      imageUrl,
     });
 
     return ApiResponseUtil.success(

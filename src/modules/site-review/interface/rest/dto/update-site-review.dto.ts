@@ -1,16 +1,47 @@
-import { IsString, IsOptional, IsNumber, MaxLength, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  Min,
+  Max,
+  IsInt,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class UpdateSiteReviewDto {
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
   @Min(1)
   @Max(5)
   rating?: number;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  title?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  odds?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  event?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  speed?: number;
 
   @IsOptional()
   @IsString()

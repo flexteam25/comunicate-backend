@@ -17,6 +17,7 @@ export class GetSiteReviewUseCase {
     const review = await this.siteReviewRepository.findById(command.reviewId, [
       'user',
       'site',
+      'images',
     ]);
 
     if (!review) {

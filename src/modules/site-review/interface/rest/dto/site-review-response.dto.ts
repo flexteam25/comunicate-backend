@@ -10,6 +10,13 @@ export class SiteReviewCommentResponseDto {
   updatedAt: Date;
 }
 
+export class SiteReviewImageResponseDto {
+  id: string;
+  imageUrl: string;
+  order: number;
+  createdAt: Date;
+}
+
 export class SiteReviewResponseDto {
   id: string;
   siteId: string;
@@ -18,8 +25,12 @@ export class SiteReviewResponseDto {
   userName: string;
   userAvatarUrl?: string;
   rating: number;
-  title: string;
+  odds?: number;
+  limit?: number;
+  event?: number;
+  speed?: number;
   content: string;
+  images: SiteReviewImageResponseDto[];
   isPublished: boolean;
   reactions: {
     like: number;

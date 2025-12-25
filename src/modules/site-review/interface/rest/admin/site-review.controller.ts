@@ -46,8 +46,17 @@ export class AdminSiteReviewController {
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
       rating: review.rating,
-      title: review.title,
+      odds: review.odds || undefined,
+      limit: review.limit || undefined,
+      event: review.event || undefined,
+      speed: review.speed || undefined,
       content: review.content,
+      images: (review.images || []).map((img: any) => ({
+        id: img.id,
+        imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl) || img.imageUrl,
+        order: img.order,
+        createdAt: img.createdAt,
+      })),
       isPublished: review.isPublished,
       reactions: {
         like: review.likeCount || 0,

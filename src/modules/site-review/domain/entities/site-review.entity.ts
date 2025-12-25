@@ -4,6 +4,7 @@ import { User } from '../../../user/domain/entities/user.entity';
 import { Site } from '../../../site/domain/entities/site.entity';
 import { SiteReviewReaction } from './site-review-reaction.entity';
 import { SiteReviewComment } from './site-review-comment.entity';
+import { SiteReviewImage } from './site-review-image.entity';
 
 @Entity('site_reviews')
 @Index('IDX_site_reviews_site_id', ['siteId'])
@@ -22,8 +23,17 @@ export class SiteReview extends BaseEntity {
   @Column({ type: 'integer' })
   rating: number;
 
-  @Column({ type: 'varchar', length: 255 })
-  title: string;
+  @Column({ type: 'integer', nullable: true, comment: '배당률 (경기 평균 배당률)' })
+  odds?: number;
+
+  @Column({ type: 'integer', nullable: true, comment: '상한선 (스포츠/라이브 한도)' })
+  limit?: number;
+
+  @Column({ type: 'integer', nullable: true, comment: '이벤트 (유저 이벤트)' })
+  event?: number;
+
+  @Column({ type: 'integer', nullable: true, comment: '신속성 (입/출 및 고센 처리속도)' })
+  speed?: number;
 
   @Column({ type: 'text' })
   content: string;
@@ -44,6 +54,9 @@ export class SiteReview extends BaseEntity {
 
   @OneToMany(() => SiteReviewComment, (comment) => comment.siteReview)
   comments: SiteReviewComment[];
+
+  @OneToMany(() => SiteReviewImage, (image) => image.siteReview)
+  images: SiteReviewImage[];
 
   // Computed properties (loaded via subquery or loadRelationCountAndMap)
   likeCount?: number;
