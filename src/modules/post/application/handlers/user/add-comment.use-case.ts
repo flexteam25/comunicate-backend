@@ -9,10 +9,14 @@ import { PostCommentImage } from '../../../domain/entities/post-comment-image.en
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import {
+  CommentHasChildService,
+  CommentType,
+} from '../../../../../shared/services/comment-has-child.service';
 import { EntityManager } from 'typeorm';
 import {
   UserComment,
-  CommentType,
+  CommentType as UserCommentType,
 } from '../../../../user/domain/entities/user-comment.entity';
 
 export interface AddCommentCommand {
@@ -30,6 +34,7 @@ export class AddCommentUseCase {
     private readonly postRepository: IPostRepository,
     private readonly transactionService: TransactionService,
     private readonly uploadService: UploadService,
+    private readonly commentHasChildService: CommentHasChildService,
   ) {}
 
   async execute(command: AddCommentCommand): Promise<PostComment> {
@@ -71,7 +76,7 @@ export class AddCommentUseCase {
 
     // Create comment within transaction
     try {
-      return await this.transactionService.executeInTransaction(
+      const result = await this.transactionService.executeInTransaction(
         async (manager: EntityManager) => {
           const commentRepo = manager.getRepository(PostComment);
           const imageRepo = manager.getRepository(PostCommentImage);
@@ -89,7 +94,7 @@ export class AddCommentUseCase {
           // Save to user_comments for statistics
           const userComment = userCommentRepo.create({
             userId: command.userId,
-            commentType: CommentType.POST_COMMENT,
+            commentType: UserCommentType.POST_COMMENT,
             commentId: savedComment.id,
           });
           await userCommentRepo.save(userComment);
@@ -119,6 +124,16 @@ export class AddCommentUseCase {
           return reloaded;
         },
       );
+
+      // Update has_child for parent comment asynchronously
+      if (result.parentCommentId) {
+        void this.commentHasChildService.updateHasChildAsync(
+          CommentType.POST,
+          result.parentCommentId,
+        );
+      }
+
+      return result;
     } catch (transactionError) {
       // Cleanup uploaded files if transaction fails
       const cleanupPromises = uploadedImageUrls.map((url) =>

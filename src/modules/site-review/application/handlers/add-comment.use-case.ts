@@ -10,6 +10,10 @@ import { ISiteReviewRepository } from '../../infrastructure/persistence/reposito
 import { ISiteReviewCommentRepository } from '../../infrastructure/persistence/repositories/site-review-comment.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import {
+  CommentHasChildService,
+  CommentType as CommentHasChildType,
+} from '../../../../shared/services/comment-has-child.service';
+import {
   UserComment,
   CommentType,
 } from '../../../user/domain/entities/user-comment.entity';
@@ -29,6 +33,7 @@ export class AddCommentUseCase {
     @Inject('ISiteReviewCommentRepository')
     private readonly commentRepository: ISiteReviewCommentRepository,
     private readonly transactionService: TransactionService,
+    private readonly commentHasChildService: CommentHasChildService,
   ) {}
 
   async execute(command: AddCommentCommand): Promise<SiteReviewComment> {
@@ -56,7 +61,7 @@ export class AddCommentUseCase {
       }
     }
 
-    return this.transactionService.executeInTransaction(
+    const result = await this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         const commentRepo = manager.getRepository(SiteReviewComment);
         const userCommentRepo = manager.getRepository(UserComment);
@@ -84,5 +89,15 @@ export class AddCommentUseCase {
         });
       },
     );
+
+    // Update has_child for parent comment asynchronously
+    if (result?.parentCommentId) {
+      void this.commentHasChildService.updateHasChildAsync(
+        CommentHasChildType.SITE_REVIEW,
+        result.parentCommentId,
+      );
+    }
+
+    return result;
   }
 }

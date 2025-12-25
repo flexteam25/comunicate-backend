@@ -6,6 +6,10 @@ import {
 } from '@nestjs/common';
 import { IPostCommentRepository } from '../../../infrastructure/persistence/repositories/post-comment.repository';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
+import {
+  CommentHasChildService,
+  CommentType,
+} from '../../../../../shared/services/comment-has-child.service';
 
 export interface DeleteCommentCommand {
   commentId: string;
@@ -19,6 +23,7 @@ export class DeleteCommentUseCase {
     private readonly commentRepository: IPostCommentRepository,
     @Inject('IPostRepository')
     private readonly postRepository: IPostRepository,
+    private readonly commentHasChildService: CommentHasChildService,
   ) {}
 
   async execute(command: DeleteCommentCommand): Promise<void> {
@@ -32,10 +37,21 @@ export class DeleteCommentUseCase {
       throw new ForbiddenException('You do not have permission to delete this comment');
     }
 
+    // Store parentCommentId before deletion for async update
+    const parentCommentId = comment.parentCommentId;
+
     // Soft delete parent comment
     await this.commentRepository.delete(command.commentId);
 
     // Reparent direct children to root so they remain visible
     await this.commentRepository.reparentChildrenToRoot(command.commentId);
+
+    // Update has_child for parent comment asynchronously
+    if (parentCommentId) {
+      void this.commentHasChildService.updateHasChildAsync(
+        CommentType.POST,
+        parentCommentId,
+      );
+    }
   }
 }

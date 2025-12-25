@@ -5,6 +5,7 @@ export class SiteReviewCommentResponseDto {
   userName?: string;
   userAvatarUrl?: string;
   parentCommentId?: string;
+  hasChild: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

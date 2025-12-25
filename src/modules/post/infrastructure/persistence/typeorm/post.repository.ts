@@ -323,10 +323,7 @@ export class PostRepository implements IPostRepository {
       }
 
       // Execute the modified query
-      const rawResults = (await this.repository.manager.query(
-        modifiedSql,
-        parameters,
-      )) as Array<Record<string, unknown>>;
+      const rawResults = await this.repository.manager.query(modifiedSql, parameters);
 
       if (rawResults.length === 0) {
         return { data: [], nextCursor: null, hasMore: false };
@@ -366,10 +363,7 @@ export class PostRepository implements IPostRepository {
         if (post) {
           const rawData = resultMap.get(id);
           if (rawData) {
-            (post as any).likeCount = parseInt(
-              String(rawData.likeCount || '0'),
-              10,
-            );
+            (post as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
             (post as any).dislikeCount = parseInt(
               String(rawData.dislikeCount || '0'),
               10,

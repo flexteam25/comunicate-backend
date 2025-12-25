@@ -12,6 +12,10 @@ import { IScamReportRepository } from '../../infrastructure/persistence/reposito
 import { IScamReportCommentRepository } from '../../infrastructure/persistence/repositories/scam-report-comment.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import {
+  CommentHasChildService,
+  CommentType as CommentHasChildType,
+} from '../../../../shared/services/comment-has-child.service';
+import {
   UserComment,
   CommentType,
 } from '../../../user/domain/entities/user-comment.entity';
@@ -32,6 +36,7 @@ export class AddCommentUseCase {
     @Inject('IScamReportCommentRepository')
     private readonly scamReportCommentRepository: IScamReportCommentRepository,
     private readonly transactionService: TransactionService,
+    private readonly commentHasChildService: CommentHasChildService,
   ) {}
 
   async execute(command: AddCommentCommand): Promise<ScamReportComment> {
@@ -50,7 +55,7 @@ export class AddCommentUseCase {
       throw new BadRequestException('You can only comment on published scam reports');
     }
 
-    return this.transactionService.executeInTransaction(
+    const result = await this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         const commentRepo = manager.getRepository(ScamReportComment);
         const imageRepo = manager.getRepository(ScamReportCommentImage);
@@ -93,5 +98,15 @@ export class AddCommentUseCase {
         });
       },
     );
+
+    // Update has_child for parent comment asynchronously
+    if (result?.parentCommentId) {
+      void this.commentHasChildService.updateHasChildAsync(
+        CommentHasChildType.SCAM_REPORT,
+        result.parentCommentId,
+      );
+    }
+
+    return result;
   }
 }

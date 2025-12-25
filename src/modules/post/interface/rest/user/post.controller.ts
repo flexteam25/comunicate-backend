@@ -116,6 +116,7 @@ export class PostController {
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null) || null,
       parentCommentId: comment.parentCommentId || null,
+      hasChild: comment.hasChild || false,
       images: (comment.images || []).map((img: any) => ({
         id: img.id,
         imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl) || null,

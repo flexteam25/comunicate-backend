@@ -5,6 +5,10 @@ import {
   Inject,
 } from '@nestjs/common';
 import { IScamReportCommentRepository } from '../../infrastructure/persistence/repositories/scam-report-comment.repository';
+import {
+  CommentHasChildService,
+  CommentType,
+} from '../../../../shared/services/comment-has-child.service';
 
 export interface DeleteCommentCommand {
   commentId: string;
@@ -16,6 +20,7 @@ export class DeleteCommentUseCase {
   constructor(
     @Inject('IScamReportCommentRepository')
     private readonly scamReportCommentRepository: IScamReportCommentRepository,
+    private readonly commentHasChildService: CommentHasChildService,
   ) {}
 
   async execute(command: DeleteCommentCommand): Promise<void> {
@@ -29,6 +34,17 @@ export class DeleteCommentUseCase {
       throw new ForbiddenException('You can only delete your own comments');
     }
 
+    // Store parentCommentId before deletion for async update
+    const parentCommentId = comment.parentCommentId;
+
     await this.scamReportCommentRepository.delete(command.commentId);
+
+    // Update has_child for parent comment asynchronously
+    if (parentCommentId) {
+      void this.commentHasChildService.updateHasChildAsync(
+        CommentType.SCAM_REPORT,
+        parentCommentId,
+      );
+    }
   }
 }

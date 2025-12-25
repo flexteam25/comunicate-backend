@@ -21,6 +21,7 @@ export class ScamReportCommentResponseDto {
   userName?: string;
   userEmail?: string;
   parentCommentId?: string;
+  hasChild: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

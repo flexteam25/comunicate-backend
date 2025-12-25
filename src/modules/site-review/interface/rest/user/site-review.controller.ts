@@ -92,6 +92,7 @@ export class SiteReviewController {
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null) || null,
       parentCommentId: comment.parentCommentId || null,
+      hasChild: comment.hasChild || false,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
     };

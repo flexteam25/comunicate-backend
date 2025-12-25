@@ -22,6 +22,9 @@ export class PostComment extends BaseEntity {
   @Column({ type: 'text' })
   content: string;
 
+  @Column({ name: 'has_child', type: 'boolean', default: false })
+  hasChild: boolean;
+
   @ManyToOne(() => Post, (post) => post.comments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'post_id' })
   post: Post;

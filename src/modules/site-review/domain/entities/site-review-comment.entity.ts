@@ -20,6 +20,9 @@ export class SiteReviewComment extends BaseEntity {
   @Column({ type: 'text' })
   content: string;
 
+  @Column({ name: 'has_child', type: 'boolean', default: false })
+  hasChild: boolean;
+
   @ManyToOne(() => SiteReview, (review) => review.comments, {
     onDelete: 'CASCADE',
   })
