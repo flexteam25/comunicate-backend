@@ -9,6 +9,11 @@ import { TransactionService } from '../../../../shared/services/transaction.serv
 export interface CreateScamReportCommand {
   userId: string;
   siteId?: string;
+  siteUrl: string;
+  siteName: string;
+  siteAccountInfo: string;
+  registrationUrl: string;
+  contact: string;
   title: string;
   description: string;
   amount?: number;
@@ -44,6 +49,11 @@ export class CreateScamReportUseCase {
         const report = reportRepo.create({
           userId: command.userId,
           siteId: command.siteId,
+          siteUrl: command.siteUrl,
+          siteName: command.siteName,
+          siteAccountInfo: command.siteAccountInfo,
+          registrationUrl: command.registrationUrl,
+          contact: command.contact,
           title: command.title,
           description: command.description,
           amount: command.amount,

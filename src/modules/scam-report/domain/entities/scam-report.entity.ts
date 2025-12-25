@@ -25,6 +25,21 @@ export class ScamReport extends BaseEntity {
   @Column({ name: 'site_id', type: 'uuid', nullable: true })
   siteId?: string;
 
+  @Column({ name: 'site_url', type: 'varchar', length: 500 })
+  siteUrl: string;
+
+  @Column({ name: 'site_name', type: 'varchar', length: 255 })
+  siteName: string;
+
+  @Column({ name: 'site_account_info', type: 'text' })
+  siteAccountInfo: string;
+
+  @Column({ name: 'registration_url', type: 'varchar', length: 500 })
+  registrationUrl: string;
+
+  @Column({ type: 'varchar', length: 255 })
+  contact: string;
+
   @Column({ type: 'varchar', length: 255 })
   title: string;
 

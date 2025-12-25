@@ -29,7 +29,11 @@ export class ScamReportCommentResponseDto {
 export class ScamReportResponseDto {
   id: string;
   siteId?: string;
-  siteName?: string;
+  siteUrl: string;
+  siteName: string;
+  siteAccountInfo: string;
+  registrationUrl: string;
+  contact: string;
   userId: string;
   userName?: string;
   userEmail?: string;

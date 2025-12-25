@@ -16,6 +16,30 @@ export class CreateScamReportDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(500)
+  siteUrl: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  siteName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  siteAccountInfo: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  registrationUrl: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  contact: string;
+
+  @IsString()
+  @IsNotEmpty()
   @MaxLength(255)
   title: string;
 

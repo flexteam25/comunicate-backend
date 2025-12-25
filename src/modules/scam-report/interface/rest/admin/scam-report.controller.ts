@@ -51,7 +51,11 @@ export class AdminScamReportController {
     return {
       id: report.id,
       siteId: report.siteId || null,
-      siteName: report.site?.name || null,
+      siteUrl: report.siteUrl,
+      siteName: report.siteName,
+      siteAccountInfo: report.siteAccountInfo,
+      registrationUrl: report.registrationUrl,
+      contact: report.contact,
       userId: report.userId,
       userName: report.user?.displayName || null,
       userEmail: report.user?.email || null,
