@@ -92,4 +92,3 @@ export class AddFieldsToScamReports1766646400000 implements MigrationInterface {
     await queryRunner.dropColumn('scam_reports', 'site_url');
   }
 }
-

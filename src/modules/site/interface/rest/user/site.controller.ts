@@ -77,12 +77,20 @@ export class UserSiteController {
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
       issueCount: site.issueCount || 0,
-      badges: (site.siteBadges || []).map((sb) => ({
-        id: sb.badge.id,
-        name: sb.badge.name,
-        description: sb.badge.description || null,
-        iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
-      })),
+      badges: (site.siteBadges || [])
+        .map((sb) => {
+          // Filter out if badge is null or deleted
+          if (!sb.badge || sb.badge.deletedAt) {
+            return null;
+          }
+          return {
+            id: sb.badge.id,
+            name: sb.badge.name,
+            description: sb.badge.description || null,
+            iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
+          };
+        })
+        .filter((badge): badge is NonNullable<typeof badge> => badge !== null),
       domains: (site.siteDomains || []).map((sd) => ({
         id: sd.id,
         domain: sd.domain,

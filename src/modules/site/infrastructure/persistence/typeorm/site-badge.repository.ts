@@ -12,10 +12,12 @@ export class SiteBadgeRepository implements ISiteBadgeRepository {
   ) {}
 
   async findBySiteId(siteId: string): Promise<SiteBadge[]> {
-    return this.repository.find({
-      where: { siteId },
-      relations: ['badge'],
-    });
+    return this.repository
+      .createQueryBuilder('siteBadge')
+      .leftJoinAndSelect('siteBadge.badge', 'badge')
+      .where('siteBadge.siteId = :siteId', { siteId })
+      .andWhere('badge.deletedAt IS NULL')
+      .getMany();
   }
 
   async assignBadge(siteId: string, badgeId: string): Promise<SiteBadge> {

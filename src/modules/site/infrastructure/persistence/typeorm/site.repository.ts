@@ -16,6 +16,38 @@ export class SiteRepository implements ISiteRepository {
   ) {}
 
   async findById(id: string, relations?: string[]): Promise<Site | null> {
+    // If relations include siteBadges.badge, use query builder to filter deleted badges
+    if (relations && relations.includes('siteBadges.badge')) {
+      const queryBuilder = this.repository
+        .createQueryBuilder('site')
+        .where('site.id = :id', { id })
+        .andWhere('site.deletedAt IS NULL');
+
+      // Add all relations
+      if (relations.includes('category')) {
+        queryBuilder.leftJoinAndSelect('site.category', 'category');
+      }
+      if (relations.includes('tier')) {
+        queryBuilder.leftJoinAndSelect('site.tier', 'tier');
+      }
+      if (relations.includes('siteBadges')) {
+        queryBuilder.leftJoinAndSelect('site.siteBadges', 'siteBadges');
+      }
+      if (relations.includes('siteBadges.badge')) {
+        queryBuilder.leftJoinAndSelect(
+          'siteBadges.badge',
+          'badge',
+          'badge.deletedAt IS NULL',
+        );
+      }
+      if (relations.includes('siteDomains')) {
+        queryBuilder.leftJoinAndSelect('site.siteDomains', 'siteDomains');
+      }
+
+      return queryBuilder.getOne();
+    }
+
+    // Otherwise use standard findOne
     return this.repository.findOne({
       where: { id, deletedAt: null },
       ...(relations && relations.length > 0 ? { relations } : {}),
@@ -44,7 +76,11 @@ export class SiteRepository implements ISiteRepository {
     queryBuilder.leftJoinAndSelect('site.category', 'category');
     queryBuilder.leftJoinAndSelect('site.tier', 'tier');
     queryBuilder.leftJoinAndSelect('site.siteBadges', 'siteBadges');
-    queryBuilder.leftJoinAndSelect('siteBadges.badge', 'badge');
+    queryBuilder.leftJoinAndSelect(
+      'siteBadges.badge',
+      'badge',
+      'badge.deletedAt IS NULL',
+    );
     queryBuilder.leftJoinAndSelect('site.siteDomains', 'siteDomains');
 
     queryBuilder.loadRelationCountAndMap(
@@ -238,9 +274,15 @@ export class SiteRepository implements ISiteRepository {
   }
 
   async findByIds(ids: string[]): Promise<Site[]> {
-    return this.repository.find({
-      where: { id: In(ids), deletedAt: null },
-      relations: ['category', 'tier', 'siteBadges.badge', 'siteDomains'],
-    });
+    return this.repository
+      .createQueryBuilder('site')
+      .leftJoinAndSelect('site.category', 'category')
+      .leftJoinAndSelect('site.tier', 'tier')
+      .leftJoinAndSelect('site.siteBadges', 'siteBadges')
+      .leftJoinAndSelect('siteBadges.badge', 'badge', 'badge.deletedAt IS NULL')
+      .leftJoinAndSelect('site.siteDomains', 'siteDomains')
+      .where('site.id IN (:...ids)', { ids })
+      .andWhere('site.deletedAt IS NULL')
+      .getMany();
   }
 }

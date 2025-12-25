@@ -12,11 +12,13 @@ export class UserBadgeRepository implements IUserBadgeRepository {
   ) {}
 
   async findByUserId(userId: string): Promise<UserBadge[]> {
-    return this.repository.find({
-      where: { userId },
-      relations: ['badge'],
-      order: { earnedAt: 'DESC' },
-    });
+    return this.repository
+      .createQueryBuilder('userBadge')
+      .leftJoinAndSelect('userBadge.badge', 'badge')
+      .where('userBadge.userId = :userId', { userId })
+      .andWhere('badge.deletedAt IS NULL')
+      .orderBy('userBadge.earnedAt', 'DESC')
+      .getMany();
   }
 
   async assignBadge(userId: string, badgeId: string): Promise<UserBadge> {
@@ -45,9 +47,12 @@ export class UserBadgeRepository implements IUserBadgeRepository {
   }
 
   async findByUserAndBadge(userId: string, badgeId: string): Promise<UserBadge | null> {
-    return this.repository.findOne({
-      where: { userId, badgeId },
-      relations: ['badge'],
-    });
+    return this.repository
+      .createQueryBuilder('userBadge')
+      .leftJoinAndSelect('userBadge.badge', 'badge')
+      .where('userBadge.userId = :userId', { userId })
+      .andWhere('userBadge.badgeId = :badgeId', { badgeId })
+      .andWhere('badge.deletedAt IS NULL')
+      .getOne();
   }
 }

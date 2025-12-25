@@ -19,6 +19,29 @@ export class UserRepository implements IUserRepository {
   }
 
   async findById(id: string, relations?: string[]): Promise<User | null> {
+    // If relations include userBadges.badge, use query builder to filter deleted badges
+    if (relations && relations.includes('userBadges.badge')) {
+      const queryBuilder = this.repository
+        .createQueryBuilder('user')
+        .where('user.id = :id', { id })
+        .andWhere('user.deletedAt IS NULL');
+
+      // Add all relations
+      if (relations.includes('userBadges')) {
+        queryBuilder.leftJoinAndSelect('user.userBadges', 'userBadges');
+      }
+      if (relations.includes('userBadges.badge')) {
+        queryBuilder.leftJoinAndSelect(
+          'userBadges.badge',
+          'badge',
+          'badge.deletedAt IS NULL',
+        );
+      }
+
+      return queryBuilder.getOne();
+    }
+
+    // Otherwise use standard findOne
     return this.repository.findOne({
       where: { id, deletedAt: null },
       ...(relations && relations.length > 0 ? { relations } : {}),
@@ -26,10 +49,13 @@ export class UserRepository implements IUserRepository {
   }
 
   async findByIdWithBadges(id: string): Promise<User | null> {
-    return this.repository.findOne({
-      where: { id, deletedAt: null },
-      relations: ['userBadges', 'userBadges.badge'],
-    });
+    return this.repository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
+      .where('user.id = :id', { id })
+      .andWhere('user.deletedAt IS NULL')
+      .getOne();
   }
 
   async create(user: User): Promise<User> {

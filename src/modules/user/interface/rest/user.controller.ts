@@ -145,12 +145,21 @@ export class UserController {
       description: site.description || undefined,
       reviewCount: site.reviewCount,
       averageRating: Number(site.averageRating),
-      badges: (site.siteBadges || []).map((sb) => ({
-        id: sb.badge.id,
-        name: sb.badge.name,
-        description: sb.badge.description || undefined,
-        iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
-      })),
+      badges: (site.siteBadges || [])
+        .map((sb) => {
+          // Filter out if badge is null or deleted
+          if (!sb.badge || sb.badge.deletedAt) {
+            return null;
+          }
+          return {
+            id: sb.badge.id,
+            name: sb.badge.name,
+            description: sb.badge.description || undefined,
+            iconUrl:
+              buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
+          };
+        })
+        .filter((badge): badge is NonNullable<typeof badge> => badge !== null),
       domains: (site.siteDomains || []).map((sd) => ({
         id: sd.id,
         domain: sd.domain,
@@ -273,11 +282,11 @@ export class UserController {
       }
     }
 
-    // Map badges
+    // Map badges (filter out soft-deleted badges)
     const badges: BadgeResponse[] = [];
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
-        if (userBadge?.badge) {
+        if (userBadge?.badge && !userBadge.badge.deletedAt) {
           const badge = userBadge.badge;
           badges.push({
             id: badge.id,
@@ -324,7 +333,7 @@ export class UserController {
     const badges: BadgeResponse[] = [];
 
     for (const userBadge of userBadges) {
-      if (userBadge?.badge) {
+      if (userBadge?.badge && !userBadge.badge.deletedAt) {
         const badge = userBadge.badge;
         badges.push({
           id: badge.id,
@@ -380,12 +389,21 @@ export class UserController {
       description: site.description || undefined,
       reviewCount: site.reviewCount,
       averageRating: Number(site.averageRating),
-      badges: (site.siteBadges || []).map((sb) => ({
-        id: sb.badge?.id || '',
-        name: sb.badge?.name || '',
-        description: sb.badge?.description || undefined,
-        iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge?.iconUrl || null) || undefined,
-      })),
+      badges: (site.siteBadges || [])
+        .map((sb) => {
+          // Filter out if badge is null or deleted
+          if (!sb.badge || sb.badge.deletedAt) {
+            return null;
+          }
+          return {
+            id: sb.badge.id,
+            name: sb.badge.name,
+            description: sb.badge.description || undefined,
+            iconUrl:
+              buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
+          };
+        })
+        .filter((badge): badge is NonNullable<typeof badge> => badge !== null),
       domains: (site.siteDomains || []).map((sd) => ({
         id: sd.id,
         domain: sd.domain,
