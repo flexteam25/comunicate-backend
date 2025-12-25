@@ -56,8 +56,8 @@ export class UpdateSiteReviewUseCase {
       );
     }
 
-    return this.transactionService.executeInTransaction(
-      async (manager: EntityManager) => {
+    return this.transactionService
+      .executeInTransaction(async (manager: EntityManager) => {
         const reviewRepo = manager.getRepository(SiteReview);
         const imageRepo = manager.getRepository(SiteReviewImage);
 
@@ -103,14 +103,14 @@ export class UpdateSiteReviewUseCase {
         }
 
         return reloaded;
-      },
-    ).then(async (updatedReview) => {
-      // Recalculate site statistics
-      const reviewRepoImpl = this.siteReviewRepository as any;
-      if (reviewRepoImpl.recalculateSiteStatistics) {
-        await reviewRepoImpl.recalculateSiteStatistics(updatedReview.siteId);
-      }
-      return updatedReview;
-    });
+      })
+      .then(async (updatedReview) => {
+        // Recalculate site statistics
+        const reviewRepoImpl = this.siteReviewRepository as any;
+        if (reviewRepoImpl.recalculateSiteStatistics) {
+          await reviewRepoImpl.recalculateSiteStatistics(updatedReview.siteId);
+        }
+        return updatedReview;
+      });
   }
 }

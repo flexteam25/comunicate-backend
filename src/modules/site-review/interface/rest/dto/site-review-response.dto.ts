@@ -25,10 +25,10 @@ export class SiteReviewResponseDto {
   userName: string;
   userAvatarUrl?: string;
   rating: number;
-  odds?: number;
-  limit?: number;
-  event?: number;
-  speed?: number;
+  odds: number;
+  limit: number;
+  event: number;
+  speed: number;
   content: string;
   images: SiteReviewImageResponseDto[];
   isPublished: boolean;

@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  Min,
-  Max,
-  IsInt,
-} from 'class-validator';
+import { IsString, IsOptional, Min, Max, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateSiteReviewDto {

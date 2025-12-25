@@ -75,11 +75,11 @@ export class SiteReviewController {
       userName: review.user?.displayName || null,
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
-      rating: review.rating,
-      odds: review.odds || undefined,
-      limit: review.limit || undefined,
-      event: review.event || undefined,
-      speed: review.speed || undefined,
+      rating: review.rating ?? 0,
+      odds: review.odds ?? 0,
+      limit: review.limit ?? 0,
+      event: review.event ?? 0,
+      speed: review.speed ?? 0,
       content: review.content,
       images: (review.images || []).map((img: any) => ({
         id: img.id,
