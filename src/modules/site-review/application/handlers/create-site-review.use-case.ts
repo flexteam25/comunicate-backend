@@ -65,7 +65,7 @@ export class CreateSiteReviewUseCase {
             event: command.event,
             speed: command.speed,
             content: command.content,
-            isPublished: false,
+            isPublished: true, // Now no need approval
           });
           savedReview = await reviewRepo.save(review);
 

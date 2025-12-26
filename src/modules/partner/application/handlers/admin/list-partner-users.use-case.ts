@@ -41,7 +41,9 @@ export class ListPartnerUsersUseCase {
       .where('userRole.roleId = :roleId', { roleId: partnerRole.id })
       .andWhere('user.deletedAt IS NULL')
       .andWhere('userRole.createdAt IS NOT NULL')
-      .leftJoinAndSelect('user.userProfile', 'userProfile');
+      .leftJoinAndSelect('user.userProfile', 'userProfile')
+      .leftJoinAndSelect('user.userRoles', 'userRoles')
+      .leftJoinAndSelect('userRoles.role', 'role');
 
     if (command.cursor) {
       try {

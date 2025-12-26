@@ -26,7 +26,13 @@ export class UserRepository implements IUserRepository {
         .where('user.id = :id', { id })
         .andWhere('user.deletedAt IS NULL');
 
-      // Add all relations
+      // Add all requested relations
+      if (relations.includes('userRoles')) {
+        queryBuilder.leftJoinAndSelect('user.userRoles', 'userRoles');
+      }
+      if (relations.includes('userRoles.role')) {
+        queryBuilder.leftJoinAndSelect('userRoles.role', 'role');
+      }
       if (relations.includes('userBadges')) {
         queryBuilder.leftJoinAndSelect('user.userBadges', 'userBadges');
       }
@@ -36,6 +42,9 @@ export class UserRepository implements IUserRepository {
           'badge',
           'badge.deletedAt IS NULL',
         );
+      }
+      if (relations.includes('userProfile')) {
+        queryBuilder.leftJoinAndSelect('user.userProfile', 'userProfile');
       }
 
       return queryBuilder.getOne();

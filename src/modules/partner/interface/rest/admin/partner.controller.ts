@@ -136,6 +136,20 @@ export class AdminPartnerController {
     );
   }
 
+  private mapUserRoles(user: {
+    userRoles?: Array<{ role?: { name: string } }>;
+  }): string[] {
+    const roles: string[] = [];
+    if (user.userRoles) {
+      for (const userRole of user.userRoles) {
+        if (userRole?.role?.name) {
+          roles.push(userRole.role.name);
+        }
+      }
+    }
+    return roles;
+  }
+
   @Get('users')
   @RequirePermission('partner.manage')
   @HttpCode(HttpStatus.OK)
@@ -153,6 +167,7 @@ export class AdminPartnerController {
         email: user.email,
         displayName: user.displayName || null,
         avatarUrl: buildFullUrl(this.apiServiceUrl, user.avatarUrl || null) || null,
+        roles: this.mapUserRoles(user),
         bio: user.userProfile?.bio || null,
         phone: user.userProfile?.phone || null,
         createdAt: user.createdAt,
