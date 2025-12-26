@@ -51,7 +51,7 @@ interface AdminAuthResponse {
     displayName?: string;
     avatarUrl?: string;
     isSuperAdmin: boolean;
-    roles: string[];
+    roles: string;
   };
   accessToken: string;
   refreshToken: string;
@@ -65,7 +65,7 @@ interface AdminResponse {
   isSuperAdmin: boolean;
   isActive: boolean;
   lastLoginAt?: Date;
-  roles: string[];
+  roles: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -92,7 +92,7 @@ export class AdminController {
 
   private mapAdminRoles(admin: {
     adminRoles?: Array<{ role?: { name: string } }>;
-  }): string[] {
+  }): string {
     const roles: string[] = [];
     if (admin.adminRoles) {
       for (const adminRole of admin.adminRoles) {
@@ -101,7 +101,7 @@ export class AdminController {
         }
       }
     }
-    return roles;
+    return roles.join(',');
   }
 
   @Post('login')

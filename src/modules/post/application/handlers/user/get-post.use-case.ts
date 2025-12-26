@@ -19,7 +19,10 @@ export class GetPostUseCase {
   ) {}
 
   async execute(command: GetPostCommand): Promise<Post> {
-    const post = await this.postRepository.findByIdWithAggregates(command.postId);
+    const post = await this.postRepository.findByIdWithAggregates(
+      command.postId,
+      command.userId,
+    );
 
     if (!post) {
       throw new NotFoundException('Post not found');

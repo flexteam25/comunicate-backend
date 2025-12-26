@@ -22,7 +22,7 @@ export class PostRepository implements IPostRepository {
     });
   }
 
-  async findByIdWithAggregates(id: string): Promise<Post | null> {
+  async findByIdWithAggregates(id: string, userId?: string): Promise<Post | null> {
     const queryBuilder = this.repository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
@@ -53,6 +53,18 @@ export class PostRepository implements IPostRepository {
       .where('post.deletedAt IS NULL')
       .andWhere('post.id = :id', { id });
 
+    // Join user's reaction if userId is provided
+    if (userId) {
+      queryBuilder
+        .leftJoin(
+          'post_reactions',
+          'userReaction',
+          'userReaction.post_id = post.id AND userReaction.user_id = :userId',
+          { userId },
+        )
+        .addSelect('userReaction.reaction_type', 'userReactionType');
+    }
+
     const result = await queryBuilder.getRawAndEntities();
     if (result.entities.length === 0) {
       return null;
@@ -63,6 +75,13 @@ export class PostRepository implements IPostRepository {
     (post as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
     (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
     (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
+
+    // Map user reaction if userId is provided
+    if (userId) {
+      // PostgreSQL may return column names in lowercase when using getRawAndEntities
+      const userReactionType = (rawData?.userReactionType || rawData?.userreactiontype || rawData?.['userReactionType'] || rawData?.['userreactiontype']) as string | null;
+      (post as any).reacted = userReactionType || null;
+    }
 
     return post;
   }
@@ -374,7 +393,12 @@ export class PostRepository implements IPostRepository {
             );
             // Map user reaction if userId is provided
             if (filters?.userId) {
-              const userReactionType = rawData.userReactionType as string | null;
+              // PostgreSQL may return column names in lowercase when using raw queries
+              const userReactionType =
+                (rawData.userReactionType ||
+                  rawData.userreactiontype ||
+                  rawData['userReactionType'] ||
+                  rawData['userreactiontype']) as string | null;
               (post as any).reacted = userReactionType || null;
             }
           }
@@ -423,7 +447,12 @@ export class PostRepository implements IPostRepository {
       (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
       // Map user reaction if userId is provided
       if (filters?.userId) {
-        const userReactionType = rawData?.userReactionType as string | null;
+        // PostgreSQL may return column names in lowercase when using raw queries
+        const userReactionType =
+          (rawData?.userReactionType ||
+            rawData?.userreactiontype ||
+            rawData?.['userReactionType'] ||
+            rawData?.['userreactiontype']) as string | null;
         (post as any).reacted = userReactionType || null;
       }
     });

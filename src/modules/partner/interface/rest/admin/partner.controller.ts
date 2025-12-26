@@ -138,7 +138,7 @@ export class AdminPartnerController {
 
   private mapUserRoles(user: {
     userRoles?: Array<{ role?: { name: string } }>;
-  }): string[] {
+  }): string {
     const roles: string[] = [];
     if (user.userRoles) {
       for (const userRole of user.userRoles) {
@@ -147,7 +147,7 @@ export class AdminPartnerController {
         }
       }
     }
-    return roles;
+    return roles.join(',');
   }
 
   @Get('users')

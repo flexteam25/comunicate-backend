@@ -7,7 +7,7 @@ export interface UserResponse {
   avatarUrl?: string;
   isActive: boolean;
   lastLoginAt?: Date;
-  roles: string[];
+  roles: string;
   badges: BadgeResponse[];
   createdAt: Date;
   updatedAt: Date;

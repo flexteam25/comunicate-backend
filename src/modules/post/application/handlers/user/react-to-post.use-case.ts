@@ -7,7 +7,6 @@ import { IPostRepository } from '../../../infrastructure/persistence/repositorie
 import { IPostReactionRepository } from '../../../infrastructure/persistence/repositories/post-reaction.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
-import { Post } from '../../../domain/entities/post.entity';
 
 export interface ReactToPostCommand {
   postId: string;
@@ -25,7 +24,7 @@ export class ReactToPostUseCase {
     private readonly transactionService: TransactionService,
   ) {}
 
-  async execute(command: ReactToPostCommand): Promise<PostReaction | null> {
+  async execute(command: ReactToPostCommand): Promise<PostReaction> {
     const post = await this.postRepository.findById(command.postId);
     if (!post || !post.isPublished) {
       throw new NotFoundException('Post not found');
@@ -34,7 +33,6 @@ export class ReactToPostUseCase {
     return this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         const reactionRepo = manager.getRepository(PostReaction);
-        const postRepo = manager.getRepository(Post);
 
         const existing = await this.reactionRepository.findByPostIdAndUserId(
           command.postId,
@@ -43,12 +41,10 @@ export class ReactToPostUseCase {
 
         if (existing) {
           if (existing.reactionType === command.reactionType) {
-            // Remove reaction (toggle off)
-            await reactionRepo.delete(existing.id);
-            // Like/dislike counts are computed dynamically from reactions
-            return null;
+            // Already have the same reaction type - return existing (no toggle)
+            return existing;
           } else {
-            // Toggle reaction type
+            // Update reaction type (like -> dislike or dislike -> like)
             existing.reactionType = command.reactionType;
             await reactionRepo.save(existing);
             return existing;
@@ -61,7 +57,6 @@ export class ReactToPostUseCase {
             reactionType: command.reactionType,
           });
           const saved = await reactionRepo.save(reaction);
-          // Like/dislike counts are computed dynamically from reactions
           return saved;
         }
       },

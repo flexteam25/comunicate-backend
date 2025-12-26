@@ -199,13 +199,11 @@ export class PostController {
     });
 
     return ApiResponseUtil.success(
-      reaction
-        ? {
-            id: reaction.id,
-            reactionType: reaction.reactionType,
-          }
-        : null,
-      reaction ? 'Reaction added successfully' : 'Reaction removed successfully',
+      {
+        id: reaction.id,
+        reactionType: reaction.reactionType,
+      },
+      'Reaction added successfully',
     );
   }
 

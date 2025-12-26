@@ -50,7 +50,7 @@ export class AuthController {
 
   private mapUserRoles(user: {
     userRoles?: Array<{ role?: { name: string } }>;
-  }): string[] {
+  }): string {
     const roles: string[] = [];
     if (user.userRoles) {
       for (const userRole of user.userRoles) {
@@ -59,7 +59,7 @@ export class AuthController {
         }
       }
     }
-    return roles;
+    return roles.join(',');
   }
 
   @Post('register')
@@ -106,7 +106,7 @@ export class AuthController {
         email: result.user.email,
         displayName: dbUser?.displayName || undefined,
         avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser?.avatarUrl),
-        roles: dbUser ? this.mapUserRoles(dbUser) : [],
+        roles: dbUser ? this.mapUserRoles(dbUser) : '',
         bio: dbUser?.userProfile?.bio || undefined,
         phone: dbUser?.userProfile?.phone || undefined,
         birthDate: dbUser?.userProfile?.birthDate || undefined,
@@ -152,7 +152,7 @@ export class AuthController {
         email: result.user.email,
         displayName: dbUser?.displayName || undefined,
         avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser?.avatarUrl),
-        roles: dbUser ? this.mapUserRoles(dbUser) : [],
+        roles: dbUser ? this.mapUserRoles(dbUser) : '',
         bio: dbUser?.userProfile?.bio || undefined,
         phone: dbUser?.userProfile?.phone || undefined,
         birthDate: dbUser?.userProfile?.birthDate || undefined,
@@ -185,7 +185,7 @@ export class AuthController {
         email: result.user.email,
         displayName: dbUser?.displayName || undefined,
         avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser?.avatarUrl),
-        roles: dbUser ? this.mapUserRoles(dbUser) : [],
+        roles: dbUser ? this.mapUserRoles(dbUser) : '',
         bio: dbUser?.userProfile?.bio || undefined,
         phone: dbUser?.userProfile?.phone || undefined,
         birthDate: dbUser?.userProfile?.birthDate || undefined,
