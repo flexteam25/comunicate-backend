@@ -14,6 +14,7 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { LoginUseCase } from '../../application/handlers/login.use-case';
@@ -50,6 +51,7 @@ interface AdminAuthResponse {
     displayName?: string;
     avatarUrl?: string;
     isSuperAdmin: boolean;
+    roles: string[];
   };
   accessToken: string;
   refreshToken: string;
@@ -63,6 +65,7 @@ interface AdminResponse {
   isSuperAdmin: boolean;
   isActive: boolean;
   lastLoginAt?: Date;
+  roles: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,26 +90,51 @@ export class AdminController {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
 
+  private mapAdminRoles(admin: {
+    adminRoles?: Array<{ role?: { name: string } }>;
+  }): string[] {
+    const roles: string[] = [];
+    if (admin.adminRoles) {
+      for (const adminRole of admin.adminRoles) {
+        if (adminRole?.role?.name) {
+          roles.push(adminRole.role.name);
+        }
+      }
+    }
+    return roles;
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: AdminLoginDto,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<ApiResponse<AdminAuthResponse>> {
+    const ipAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      (req.headers['x-real-ip'] as string) ||
+      req.ip ||
+      req.socket.remoteAddress ||
+      undefined;
+
     const result = await this.loginUseCase.execute({
       email: dto.email,
       password: dto.password,
       deviceInfo: dto.deviceInfo,
-      ipAddress: req.ip || req.connection?.remoteAddress,
+      ipAddress,
     });
+
+    // Reload admin with roles for response
+    const adminData = await this.getMeUseCase.execute(result.admin.id);
 
     const authResponse: AdminAuthResponse = {
       admin: {
         id: result.admin.id,
         email: result.admin.email,
-        displayName: result.admin.displayName || undefined,
-        avatarUrl: buildFullUrl(this.apiServiceUrl, result.admin.avatarUrl),
-        isSuperAdmin: result.admin.isSuperAdmin,
+        displayName: adminData.displayName || undefined,
+        avatarUrl: buildFullUrl(this.apiServiceUrl, adminData.avatarUrl),
+        isSuperAdmin: adminData.isSuperAdmin,
+        roles: this.mapAdminRoles(adminData),
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -124,13 +152,17 @@ export class AdminController {
       refreshToken: dto.refreshToken,
     });
 
+    // Reload admin with roles for response
+    const adminData = await this.getMeUseCase.execute(result.admin.id);
+
     const authResponse: AdminAuthResponse = {
       admin: {
         id: result.admin.id,
         email: result.admin.email,
-        displayName: result.admin.displayName || undefined,
-        avatarUrl: buildFullUrl(this.apiServiceUrl, result.admin.avatarUrl),
-        isSuperAdmin: result.admin.isSuperAdmin,
+        displayName: adminData.displayName || undefined,
+        avatarUrl: buildFullUrl(this.apiServiceUrl, adminData.avatarUrl),
+        isSuperAdmin: adminData.isSuperAdmin,
+        roles: this.mapAdminRoles(adminData),
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -233,22 +265,26 @@ export class AdminController {
     }
 
     // Update profile with displayName and/or avatarUrl
-    const updatedAdmin = await this.updateProfileUseCase.execute({
+    await this.updateProfileUseCase.execute({
       adminId: admin.adminId,
       displayName: dto.displayName,
       avatarUrl,
     });
 
+    // Reload admin with relations for response
+    const adminData = await this.getMeUseCase.execute(admin.adminId);
+
     const adminResponse: AdminResponse = {
-      id: updatedAdmin.id,
-      email: updatedAdmin.email,
-      displayName: updatedAdmin.displayName || undefined,
-      avatarUrl: buildFullUrl(this.apiServiceUrl, updatedAdmin.avatarUrl),
-      isSuperAdmin: updatedAdmin.isSuperAdmin,
-      isActive: updatedAdmin.isActive,
-      lastLoginAt: updatedAdmin.lastLoginAt,
-      createdAt: updatedAdmin.createdAt,
-      updatedAt: updatedAdmin.updatedAt,
+      id: adminData.id,
+      email: adminData.email,
+      displayName: adminData.displayName || undefined,
+      avatarUrl: buildFullUrl(this.apiServiceUrl, adminData.avatarUrl),
+      isSuperAdmin: adminData.isSuperAdmin,
+      isActive: adminData.isActive,
+      lastLoginAt: adminData.lastLoginAt,
+      roles: this.mapAdminRoles(adminData),
+      createdAt: adminData.createdAt,
+      updatedAt: adminData.updatedAt,
     };
 
     return ApiResponseUtil.success(adminResponse, 'Profile updated successfully');
@@ -270,6 +306,7 @@ export class AdminController {
       isSuperAdmin: adminData.isSuperAdmin,
       isActive: adminData.isActive,
       lastLoginAt: adminData.lastLoginAt,
+      roles: this.mapAdminRoles(adminData),
       createdAt: adminData.createdAt,
       updatedAt: adminData.updatedAt,
     };
@@ -293,16 +330,20 @@ export class AdminController {
       permissionIds: dto.permissionIds,
     });
 
+    // Reload admin with relations for response
+    const adminData = await this.getMeUseCase.execute(newAdmin.id);
+
     const adminResponse: AdminResponse = {
-      id: newAdmin.id,
-      email: newAdmin.email,
-      displayName: newAdmin.displayName || undefined,
-      avatarUrl: buildFullUrl(this.apiServiceUrl, newAdmin.avatarUrl),
-      isSuperAdmin: newAdmin.isSuperAdmin,
-      isActive: newAdmin.isActive,
-      lastLoginAt: newAdmin.lastLoginAt,
-      createdAt: newAdmin.createdAt,
-      updatedAt: newAdmin.updatedAt,
+      id: adminData.id,
+      email: adminData.email,
+      displayName: adminData.displayName || undefined,
+      avatarUrl: buildFullUrl(this.apiServiceUrl, adminData.avatarUrl),
+      isSuperAdmin: adminData.isSuperAdmin,
+      isActive: adminData.isActive,
+      lastLoginAt: adminData.lastLoginAt,
+      roles: this.mapAdminRoles(adminData),
+      createdAt: adminData.createdAt,
+      updatedAt: adminData.updatedAt,
     };
 
     return ApiResponseUtil.success(adminResponse, 'Admin created successfully');

@@ -36,7 +36,6 @@ import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
 import { BadgeResponse } from '../../../../shared/dto/badge-response.dto';
-import { RoleResponse } from '../../../../shared/dto/role-response.dto';
 import { AddFavoriteSiteUseCase } from '../../application/handlers/add-favorite-site.use-case';
 import { RemoveFavoriteSiteUseCase } from '../../application/handlers/remove-favorite-site.use-case';
 import { ListFavoriteSitesUseCase } from '../../application/handlers/list-favorite-sites.use-case';
@@ -62,6 +61,20 @@ export class UserController {
     private readonly getActivityUseCase: GetActivityUseCase,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
+
+  private mapUserRoles(user: {
+    userRoles?: Array<{ role?: { name: string } }>;
+  }): string[] {
+    const roles: string[] = [];
+    if (user.userRoles) {
+      for (const userRole of user.userRoles) {
+        if (userRole?.role?.name) {
+          roles.push(userRole.role.name);
+        }
+      }
+    }
+    return roles;
   }
 
   @Post('favorite-sites')
@@ -225,7 +238,7 @@ export class UserController {
     }
 
     // Update profile with displayName and/or avatarUrl
-    const updatedUser = await this.updateProfileUseCase.execute({
+    await this.updateProfileUseCase.execute({
       userId: user.userId,
       displayName: dto.displayName,
       avatarUrl,
@@ -235,18 +248,51 @@ export class UserController {
       gender: dto.gender,
     });
 
+    // Reload user with relations for response
+    const dbUser = await this.userRepository.findById(user.userId, [
+      'userRoles',
+      'userRoles.role',
+      'userBadges',
+      'userBadges.badge',
+      'userProfile',
+    ]);
+
+    if (!dbUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Map badges (filter out soft-deleted badges)
+    const badges: BadgeResponse[] = [];
+    if (dbUser.userBadges) {
+      for (const userBadge of dbUser.userBadges) {
+        if (userBadge?.badge && !userBadge.badge.deletedAt) {
+          const badge = userBadge.badge;
+          badges.push({
+            id: badge.id,
+            name: badge.name,
+            description: badge.description || undefined,
+            iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+            earnedAt: userBadge.earnedAt,
+          });
+        }
+      }
+    }
+
     const userResponse: UserResponse = {
-      email: updatedUser.email,
-      displayName: updatedUser.displayName || undefined,
-      avatarUrl: buildFullUrl(this.apiServiceUrl, updatedUser.avatarUrl),
-      isActive: updatedUser.isActive,
-      lastLoginAt: updatedUser.lastLoginAt || undefined,
-      createdAt: updatedUser.createdAt,
-      updatedAt: updatedUser.updatedAt,
-      bio: updatedUser.userProfile?.bio || undefined,
-      phone: updatedUser.userProfile?.phone || undefined,
-      birthDate: updatedUser.userProfile?.birthDate || undefined,
-      gender: updatedUser.userProfile?.gender || undefined,
+      email: dbUser.email,
+      displayName: dbUser.displayName || undefined,
+      avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser.avatarUrl),
+      isActive: dbUser.isActive,
+      lastLoginAt: dbUser.lastLoginAt || undefined,
+      roles: this.mapUserRoles(dbUser),
+      badges: badges.length > 0 ? badges : [],
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt,
+      bio: dbUser.userProfile?.bio || undefined,
+      phone: dbUser.userProfile?.phone || undefined,
+      birthDate: dbUser.userProfile?.birthDate || undefined,
+      gender: dbUser.userProfile?.gender || undefined,
+      points: dbUser.userProfile?.points ?? 0,
     };
 
     return ApiResponseUtil.success(userResponse, 'Profile updated successfully');
@@ -267,19 +313,6 @@ export class UserController {
     ]);
     if (!dbUser) {
       throw new NotFoundException('User not found');
-    }
-
-    // Map roles
-    const roles: RoleResponse[] = [];
-    if (dbUser.userRoles) {
-      for (const userRole of dbUser.userRoles) {
-        if (userRole?.role) {
-          roles.push({
-            id: userRole.role.id,
-            name: userRole.role.name,
-          });
-        }
-      }
     }
 
     // Map badges (filter out soft-deleted badges)
@@ -310,7 +343,7 @@ export class UserController {
       points: dbUser.userProfile?.points ?? 0,
       isActive: dbUser.isActive,
       lastLoginAt: dbUser.lastLoginAt || undefined,
-      roles: roles.length > 0 ? roles : [],
+      roles: this.mapUserRoles(dbUser),
       badges: badges.length > 0 ? badges : [],
       createdAt: dbUser.createdAt,
       updatedAt: dbUser.updatedAt,

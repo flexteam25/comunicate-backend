@@ -29,6 +29,7 @@ import {
   CurrentUserPayload,
 } from '../../../../shared/decorators/current-user.decorator';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
+import { Request } from 'express';
 @Controller('api/auth')
 export class AuthController {
   private readonly apiServiceUrl: string;
@@ -47,13 +48,32 @@ export class AuthController {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
 
+  private mapUserRoles(user: {
+    userRoles?: Array<{ role?: { name: string } }>;
+  }): string[] {
+    const roles: string[] = [];
+    if (user.userRoles) {
+      for (const userRole of user.userRoles) {
+        if (userRole?.role?.name) {
+          roles.push(userRole.role.name);
+        }
+      }
+    }
+    return roles;
+  }
+
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() dto: RegisterDto,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<ApiResponse<AuthResponse>> {
-    const ipAddress = req.ip || req.connection?.remoteAddress;
+    const ipAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      (req.headers['x-real-ip'] as string) ||
+      req.ip ||
+      req.socket.remoteAddress ||
+      undefined;
 
     await this.registerUseCase.execute({
       email: dto.email,
@@ -73,16 +93,24 @@ export class AuthController {
       ipAddress,
     });
 
+    // Reload user with roles for response
+    const dbUser = await this.userRepository.findById(result.user.id, [
+      'userRoles',
+      'userRoles.role',
+      'userProfile',
+    ]);
+
     const authResponse: AuthResponse = {
       user: {
         id: result.user.id,
         email: result.user.email,
-        displayName: result.user.displayName || undefined,
-        avatarUrl: buildFullUrl(this.apiServiceUrl, result.user.avatarUrl),
-        bio: result.user.userProfile?.bio || undefined,
-        phone: result.user.userProfile?.phone || undefined,
-        birthDate: result.user.userProfile?.birthDate || undefined,
-        gender: result.user.userProfile?.gender || undefined,
+        displayName: dbUser?.displayName || undefined,
+        avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser?.avatarUrl),
+        roles: dbUser ? this.mapUserRoles(dbUser) : [],
+        bio: dbUser?.userProfile?.bio || undefined,
+        phone: dbUser?.userProfile?.phone || undefined,
+        birthDate: dbUser?.userProfile?.birthDate || undefined,
+        gender: dbUser?.userProfile?.gender || undefined,
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -95,25 +123,40 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
-    @Req() req: any,
+    @Req() req: Request,
   ): Promise<ApiResponse<AuthResponse>> {
+    const ipAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      (req.headers['x-real-ip'] as string) ||
+      req.ip ||
+      req.socket.remoteAddress ||
+      undefined;
+
     const result = await this.loginUseCase.execute({
       email: dto.email,
       password: dto.password,
       deviceInfo: dto.deviceInfo,
-      ipAddress: req.ip || req.connection.remoteAddress,
+      ipAddress,
     });
+
+    // Reload user with roles for response
+    const dbUser = await this.userRepository.findById(result.user.id, [
+      'userRoles',
+      'userRoles.role',
+      'userProfile',
+    ]);
 
     const authResponse: AuthResponse = {
       user: {
         id: result.user.id,
         email: result.user.email,
-        displayName: result.user.displayName || undefined,
-        avatarUrl: buildFullUrl(this.apiServiceUrl, result.user.avatarUrl),
-        bio: result.user.userProfile?.bio || undefined,
-        phone: result.user.userProfile?.phone || undefined,
-        birthDate: result.user.userProfile?.birthDate || undefined,
-        gender: result.user.userProfile?.gender || undefined,
+        displayName: dbUser?.displayName || undefined,
+        avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser?.avatarUrl),
+        roles: dbUser ? this.mapUserRoles(dbUser) : [],
+        bio: dbUser?.userProfile?.bio || undefined,
+        phone: dbUser?.userProfile?.phone || undefined,
+        birthDate: dbUser?.userProfile?.birthDate || undefined,
+        gender: dbUser?.userProfile?.gender || undefined,
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -129,16 +172,24 @@ export class AuthController {
       refreshToken: dto.refreshToken,
     });
 
+    // Reload user with roles for response
+    const dbUser = await this.userRepository.findById(result.user.id, [
+      'userRoles',
+      'userRoles.role',
+      'userProfile',
+    ]);
+
     const authResponse: AuthResponse = {
       user: {
         id: result.user.id,
         email: result.user.email,
-        displayName: result.user.displayName || undefined,
-        avatarUrl: buildFullUrl(this.apiServiceUrl, result.user.avatarUrl),
-        bio: result.user.userProfile?.bio || undefined,
-        phone: result.user.userProfile?.phone || undefined,
-        birthDate: result.user.userProfile?.birthDate || undefined,
-        gender: result.user.userProfile?.gender || undefined,
+        displayName: dbUser?.displayName || undefined,
+        avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser?.avatarUrl),
+        roles: dbUser ? this.mapUserRoles(dbUser) : [],
+        bio: dbUser?.userProfile?.bio || undefined,
+        phone: dbUser?.userProfile?.phone || undefined,
+        birthDate: dbUser?.userProfile?.birthDate || undefined,
+        gender: dbUser?.userProfile?.gender || undefined,
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,

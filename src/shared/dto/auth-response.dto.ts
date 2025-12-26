@@ -4,6 +4,7 @@ export interface AuthResponse {
     email: string;
     displayName?: string;
     avatarUrl?: string;
+    roles: string[];
     bio?: string;
     phone?: string;
     birthDate?: Date;
