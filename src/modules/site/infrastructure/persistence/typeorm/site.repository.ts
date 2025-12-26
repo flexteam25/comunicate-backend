@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Site } from '../../../domain/entities/site.entity';
 import { ISiteRepository, SiteFilters } from '../repositories/site.repository';
 import {
@@ -274,6 +274,11 @@ export class SiteRepository implements ISiteRepository {
   }
 
   async findByIds(ids: string[]): Promise<Site[]> {
+    // Return empty array if no IDs provided (prevents SQL syntax error with IN ())
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+
     return this.repository
       .createQueryBuilder('site')
       .leftJoinAndSelect('site.category', 'category')
