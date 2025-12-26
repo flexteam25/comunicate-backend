@@ -8,6 +8,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerCommand } from './scheduler.command';
 import { LoggerModule } from '../../shared/logger/logger.module';
 import { AttendanceStatisticsSchedulerService } from '../../modules/attendance/infrastructure/queue/attendance-statistics-scheduler.service';
+import { SiteReviewModule } from '../../modules/site-review/site-review.module';
+import { SiteReviewStatisticsSchedulerService } from '../../modules/site-review/infrastructure/queue/site-review-statistics-scheduler.service';
 import { User } from '../../modules/user/domain/entities/user.entity';
 import { UserOldPassword } from '../../modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from '../../modules/auth/domain/entities/user-token.entity';
@@ -43,6 +45,7 @@ import { ScamReportReaction } from '../../modules/scam-report/domain/entities/sc
 import { SiteReview } from '../../modules/site-review/domain/entities/site-review.entity';
 import { SiteReviewReaction } from '../../modules/site-review/domain/entities/site-review-reaction.entity';
 import { SiteReviewComment } from '../../modules/site-review/domain/entities/site-review-comment.entity';
+import { SiteReviewStatistics } from '../../modules/site-review/domain/entities/site-review-statistics.entity';
 import { SiteManager } from '../../modules/site-manager/domain/entities/site-manager.entity';
 import { SiteManagerApplication } from '../../modules/site-manager/domain/entities/site-manager-application.entity';
 import { PocaEvent } from '../../modules/poca-event/domain/entities/poca-event.entity';
@@ -132,6 +135,7 @@ import { PostView } from '../../modules/post/domain/entities/post-view.entity';
         SiteReview,
         SiteReviewReaction,
         SiteReviewComment,
+        SiteReviewStatistics,
         SiteManager,
         SiteManagerApplication,
         PocaEvent,
@@ -172,7 +176,19 @@ import { PostView } from '../../modules/post/domain/entities/post-view.entity';
         removeOnFail: 20,
       },
     }),
+    BullModule.registerQueue({
+      name: 'site-review-statistics',
+      defaultJobOptions: {
+        removeOnComplete: 10,
+        removeOnFail: 20,
+      },
+    }),
+    SiteReviewModule, // Import for SiteReviewStatisticsSchedulerService
   ],
-  providers: [SchedulerCommand, AttendanceStatisticsSchedulerService],
+  providers: [
+    SchedulerCommand,
+    AttendanceStatisticsSchedulerService,
+    SiteReviewStatisticsSchedulerService,
+  ],
 })
 export class SchedulerCommandModule {}

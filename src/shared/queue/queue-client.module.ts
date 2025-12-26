@@ -38,6 +38,13 @@ import { QueueService } from './queue.service';
           removeOnFail: 20,
         },
       },
+      {
+        name: 'site-review-statistics',
+        defaultJobOptions: {
+          removeOnComplete: 10,
+          removeOnFail: 20,
+        },
+      },
     ),
   ],
   providers: [QueueService],

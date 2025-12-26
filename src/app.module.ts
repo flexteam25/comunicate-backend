@@ -54,6 +54,7 @@ import { SiteReview } from './modules/site-review/domain/entities/site-review.en
 import { SiteReviewReaction } from './modules/site-review/domain/entities/site-review-reaction.entity';
 import { SiteReviewComment } from './modules/site-review/domain/entities/site-review-comment.entity';
 import { SiteReviewImage } from './modules/site-review/domain/entities/site-review-image.entity';
+import { SiteReviewStatistics } from './modules/site-review/domain/entities/site-review-statistics.entity';
 import { SiteManagerModule } from './modules/site-manager/site-manager.module';
 import { SiteManager } from './modules/site-manager/domain/entities/site-manager.entity';
 import { SiteManagerApplication } from './modules/site-manager/domain/entities/site-manager-application.entity';
@@ -126,6 +127,7 @@ import { PartnerRequest } from './modules/partner/domain/entities/partner-reques
         SiteReviewReaction,
         SiteReviewComment,
         SiteReviewImage,
+        SiteReviewStatistics,
         SiteManager,
         SiteManagerApplication,
         PocaEvent,

@@ -17,6 +17,7 @@ import {
   UserComment,
   CommentType,
 } from '../../../user/domain/entities/user-comment.entity';
+import { SiteReviewCacheService } from '../../infrastructure/cache/site-review-cache.service';
 
 export interface AddCommentCommand {
   reviewId: string;
@@ -34,6 +35,7 @@ export class AddCommentUseCase {
     private readonly commentRepository: ISiteReviewCommentRepository,
     private readonly transactionService: TransactionService,
     private readonly commentHasChildService: CommentHasChildService,
+    private readonly siteReviewCacheService: SiteReviewCacheService,
   ) {}
 
   async execute(command: AddCommentCommand): Promise<SiteReviewComment> {
@@ -89,6 +91,12 @@ export class AddCommentUseCase {
         });
       },
     );
+
+    // Cache siteId with today's date for statistics calculation
+    if (result) {
+      const todayDate = this.siteReviewCacheService.getTodayDate();
+      await this.siteReviewCacheService.addSiteDate(review.siteId, todayDate);
+    }
 
     // Update has_child for parent comment asynchronously
     if (result?.parentCommentId) {

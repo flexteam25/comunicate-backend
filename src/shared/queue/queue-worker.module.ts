@@ -10,6 +10,8 @@ import { QueueService } from './queue.service';
 import { EmailModule } from '../services/email/email.module';
 import { AttendanceModule } from '../../modules/attendance/attendance.module';
 import { AttendanceStatisticsProcessor } from '../../modules/attendance/infrastructure/queue/attendance-statistics.processor';
+import { SiteReviewModule } from '../../modules/site-review/site-review.module';
+import { SiteReviewStatisticsProcessor } from '../../modules/site-review/infrastructure/queue/site-review-statistics.processor';
 
 @Module({
   imports: [
@@ -46,6 +48,7 @@ import { AttendanceStatisticsProcessor } from '../../modules/attendance/infrastr
     RedisModule,
     EmailModule.forRoot(),
     AttendanceModule, // Import for AttendanceStatisticsProcessor
+    SiteReviewModule, // Import for SiteReviewStatisticsProcessor
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
@@ -77,9 +80,27 @@ import { AttendanceStatisticsProcessor } from '../../modules/attendance/infrastr
           removeOnFail: 20,
         },
       },
+      {
+        name: 'site-review-statistics',
+        defaultJobOptions: {
+          removeOnComplete: 10,
+          removeOnFail: 20,
+        },
+      },
     ),
   ],
-  providers: [EmailProcessor, AttendanceStatisticsProcessor, QueueService],
-  exports: [BullModule, EmailProcessor, AttendanceStatisticsProcessor, QueueService],
+  providers: [
+    EmailProcessor,
+    AttendanceStatisticsProcessor,
+    SiteReviewStatisticsProcessor,
+    QueueService,
+  ],
+  exports: [
+    BullModule,
+    EmailProcessor,
+    AttendanceStatisticsProcessor,
+    SiteReviewStatisticsProcessor,
+    QueueService,
+  ],
 })
 export class QueueWorkerModule {}

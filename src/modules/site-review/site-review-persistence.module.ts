@@ -4,9 +4,11 @@ import { SiteReview } from './domain/entities/site-review.entity';
 import { SiteReviewReaction } from './domain/entities/site-review-reaction.entity';
 import { SiteReviewComment } from './domain/entities/site-review-comment.entity';
 import { SiteReviewImage } from './domain/entities/site-review-image.entity';
+import { SiteReviewStatistics } from './domain/entities/site-review-statistics.entity';
 import { SiteReviewRepository } from './infrastructure/persistence/typeorm/site-review.repository';
 import { SiteReviewReactionRepository } from './infrastructure/persistence/typeorm/site-review-reaction.repository';
 import { SiteReviewCommentRepository } from './infrastructure/persistence/typeorm/site-review-comment.repository';
+import { SiteReviewStatisticsRepository } from './infrastructure/persistence/typeorm/site-review-statistics.repository';
 
 @Module({
   imports: [
@@ -15,6 +17,7 @@ import { SiteReviewCommentRepository } from './infrastructure/persistence/typeor
       SiteReviewReaction,
       SiteReviewComment,
       SiteReviewImage,
+      SiteReviewStatistics,
     ]),
   ],
   exports: [
@@ -22,9 +25,11 @@ import { SiteReviewCommentRepository } from './infrastructure/persistence/typeor
     'ISiteReviewRepository',
     'ISiteReviewReactionRepository',
     'ISiteReviewCommentRepository',
+    'ISiteReviewStatisticsRepository',
     SiteReviewRepository,
     SiteReviewReactionRepository,
     SiteReviewCommentRepository,
+    SiteReviewStatisticsRepository,
   ],
   providers: [
     {
@@ -39,9 +44,14 @@ import { SiteReviewCommentRepository } from './infrastructure/persistence/typeor
       provide: 'ISiteReviewCommentRepository',
       useClass: SiteReviewCommentRepository,
     },
+    {
+      provide: 'ISiteReviewStatisticsRepository',
+      useClass: SiteReviewStatisticsRepository,
+    },
     SiteReviewRepository,
     SiteReviewReactionRepository,
     SiteReviewCommentRepository,
+    SiteReviewStatisticsRepository,
   ],
 })
 export class SiteReviewPersistenceModule {}

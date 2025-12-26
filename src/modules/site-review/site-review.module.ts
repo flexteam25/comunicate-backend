@@ -4,6 +4,7 @@ import { SitePersistenceModule } from '../site/site-persistence.module';
 import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
 import { ServicesModule } from '../../shared/services/services.module';
 import { UploadModule } from '../../shared/services/upload/upload.module';
+import { RedisModule } from '../../shared/redis/redis.module';
 import { CreateSiteReviewUseCase } from './application/handlers/create-site-review.use-case';
 import { UpdateSiteReviewUseCase } from './application/handlers/update-site-review.use-case';
 import { DeleteSiteReviewUseCase } from './application/handlers/delete-site-review.use-case';
@@ -17,6 +18,9 @@ import { ListCommentsUseCase } from './application/handlers/list-comments.use-ca
 import { ApproveSiteReviewUseCase } from './application/handlers/admin/approve-site-review.use-case';
 import { RejectSiteReviewUseCase } from './application/handlers/admin/reject-site-review.use-case';
 import { ListAllSiteReviewsUseCase } from './application/handlers/admin/list-all-site-reviews.use-case';
+import { CalculateSiteReviewStatisticsUseCase } from './application/handlers/calculate-site-review-statistics.use-case';
+import { CalculateSiteReviewStatisticsForDatesUseCase } from './application/handlers/calculate-site-review-statistics-for-dates.use-case';
+import { SiteReviewCacheService } from './infrastructure/cache/site-review-cache.service';
 import { SiteReviewController } from './interface/rest/user/site-review.controller';
 import { AdminSiteReviewController } from './interface/rest/admin/site-review.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
@@ -29,6 +33,7 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
     ServicesModule,
     AdminGuardsModule,
     UploadModule.register(),
+    RedisModule,
   ],
   controllers: [SiteReviewController, AdminSiteReviewController],
   providers: [
@@ -45,7 +50,15 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
     ApproveSiteReviewUseCase,
     RejectSiteReviewUseCase,
     ListAllSiteReviewsUseCase,
+    CalculateSiteReviewStatisticsUseCase,
+    CalculateSiteReviewStatisticsForDatesUseCase,
+    SiteReviewCacheService,
   ],
-  exports: [],
+  exports: [
+    SiteReviewPersistenceModule,
+    CalculateSiteReviewStatisticsUseCase,
+    CalculateSiteReviewStatisticsForDatesUseCase,
+    SiteReviewCacheService,
+  ],
 })
 export class SiteReviewModule {}

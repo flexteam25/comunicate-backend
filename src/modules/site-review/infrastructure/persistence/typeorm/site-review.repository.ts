@@ -462,6 +462,10 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     await this.repository.softDelete(id);
   }
 
+  getRepository(): Repository<SiteReview> {
+    return this.repository;
+  }
+
   async recalculateSiteStatistics(siteId: string): Promise<void> {
     const result = await this.repository
       .createQueryBuilder('review')

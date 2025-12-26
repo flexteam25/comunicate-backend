@@ -9,6 +9,7 @@ import { ISiteReviewRepository } from '../../infrastructure/persistence/reposito
 import { SiteReview } from '../../domain/entities/site-review.entity';
 import { SiteReviewImage } from '../../domain/entities/site-review-image.entity';
 import { TransactionService } from '../../../../shared/services/transaction.service';
+import { SiteReviewCacheService } from '../../infrastructure/cache/site-review-cache.service';
 
 export interface UpdateSiteReviewCommand {
   reviewId: string;
@@ -28,6 +29,7 @@ export class UpdateSiteReviewUseCase {
     @Inject('ISiteReviewRepository')
     private readonly siteReviewRepository: ISiteReviewRepository,
     private readonly transactionService: TransactionService,
+    private readonly siteReviewCacheService: SiteReviewCacheService,
   ) {}
 
   async execute(command: UpdateSiteReviewCommand): Promise<SiteReview> {
@@ -105,8 +107,26 @@ export class UpdateSiteReviewUseCase {
         return reloaded;
       })
       .then(async (updatedReview) => {
+        // Cache siteId with dates for statistics calculation
+        const todayDate = this.siteReviewCacheService.getTodayDate();
+        await this.siteReviewCacheService.addSiteDate(updatedReview.siteId, todayDate);
+
+        // Also cache original date from review creation (timezone +9)
+        // We need to access the method, let's format it inline
+        const originalDateObj = new Date(review.createdAt);
+        const koreaDate = new Date(originalDateObj.getTime() + 9 * 60 * 60 * 1000);
+        const year = koreaDate.getUTCFullYear();
+        const month = String(koreaDate.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(koreaDate.getUTCDate()).padStart(2, '0');
+        const originalDate = `${year}-${month}-${day}`;
+        if (originalDate !== todayDate) {
+          await this.siteReviewCacheService.addSiteDate(updatedReview.siteId, originalDate);
+        }
+
         // Recalculate site statistics
-        const reviewRepoImpl = this.siteReviewRepository as any;
+        const reviewRepoImpl = this.siteReviewRepository as {
+          recalculateSiteStatistics?: (siteId: string) => Promise<void>;
+        };
         if (reviewRepoImpl.recalculateSiteStatistics) {
           await reviewRepoImpl.recalculateSiteStatistics(updatedReview.siteId);
         }

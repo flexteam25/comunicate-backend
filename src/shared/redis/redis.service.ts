@@ -215,4 +215,42 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const info = await this.client.info();
     return info;
   }
+
+  // Set operations (for site review statistics cache)
+  async sAdd(key: string, ...members: string[]): Promise<number> {
+    return await this.client.sAdd(key, members);
+  }
+
+  async sMembers(key: string): Promise<string[]> {
+    return await this.client.sMembers(key);
+  }
+
+  async sRem(key: string, ...members: string[]): Promise<number> {
+    return await this.client.sRem(key, members);
+  }
+
+  // Hash operations (for site review statistics cache with dates)
+  async hSet(key: string, field: string, value: string): Promise<number> {
+    return await this.client.hSet(key, field, value);
+  }
+
+  async hGet(key: string, field: string): Promise<string | null> {
+    return (await this.client.hGet(key, field)) as string | null;
+  }
+
+  async hGetAll(key: string): Promise<Record<string, string>> {
+    return (await this.client.hGetAll(key)) as Record<string, string>;
+  }
+
+  async hDel(key: string, ...fields: string[]): Promise<number> {
+    return await this.client.hDel(key, fields);
+  }
+
+  async hExists(key: string, field: string): Promise<boolean> {
+    return (await this.client.hExists(key, field)) === 1;
+  }
+
+  async hKeys(key: string): Promise<string[]> {
+    return (await this.client.hKeys(key)) as string[];
+  }
 }

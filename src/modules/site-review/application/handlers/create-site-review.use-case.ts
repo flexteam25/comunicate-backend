@@ -9,6 +9,7 @@ import {
   UserComment,
   CommentType,
 } from '../../../user/domain/entities/user-comment.entity';
+import { SiteReviewCacheService } from '../../infrastructure/cache/site-review-cache.service';
 
 export interface CreateSiteReviewCommand {
   userId: string;
@@ -30,6 +31,7 @@ export class CreateSiteReviewUseCase {
     @Inject('ISiteRepository')
     private readonly siteRepository: ISiteRepository,
     private readonly transactionService: TransactionService,
+    private readonly siteReviewCacheService: SiteReviewCacheService,
   ) {}
 
   async execute(command: CreateSiteReviewCommand): Promise<SiteReview> {
@@ -101,8 +103,14 @@ export class CreateSiteReviewUseCase {
         return reloaded;
       })
       .then(async (review) => {
+        // Cache siteId with today's date for statistics calculation
+        const todayDate = this.siteReviewCacheService.getTodayDate();
+        await this.siteReviewCacheService.addSiteDate(command.siteId, todayDate);
+
         // Recalculate site statistics after transaction (only published reviews count)
-        const reviewRepoImpl = this.siteReviewRepository as any;
+        const reviewRepoImpl = this.siteReviewRepository as {
+          recalculateSiteStatistics?: (siteId: string) => Promise<void>;
+        };
         if (reviewRepoImpl.recalculateSiteStatistics) {
           await reviewRepoImpl.recalculateSiteStatistics(command.siteId);
         }

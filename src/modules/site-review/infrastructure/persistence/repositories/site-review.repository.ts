@@ -1,6 +1,8 @@
 import { SiteReview } from '../../../domain/entities/site-review.entity';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
+import { Repository } from 'typeorm';
+
 export interface ISiteReviewRepository {
   findById(id: string, relations?: string[]): Promise<SiteReview | null>;
   findBySiteIdAndUserId(siteId: string, userId: string): Promise<SiteReview | null>;
@@ -38,4 +40,6 @@ export interface ISiteReviewRepository {
   create(review: Partial<SiteReview>): Promise<SiteReview>;
   update(id: string, data: Partial<SiteReview>): Promise<SiteReview>;
   delete(id: string): Promise<void>;
+  // Expose repository for statistics calculation
+  getRepository(): Repository<SiteReview>;
 }
