@@ -42,14 +42,18 @@ export class AuthUserSeeder {
 
       const savedRoles = [];
       for (const roleData of rolesData) {
-        let role = await queryRunner.manager.findOne(Role, {
-          where: { name: roleData.name },
-        });
+        // Find role including soft-deleted ones
+        let role = await queryRunner.manager
+          .createQueryBuilder(Role, 'role')
+          .where('LOWER(role.name) = LOWER(:name)', { name: roleData.name })
+          .withDeleted()
+          .getOne();
 
         if (role) {
-          // Update existing role
+          // Update existing role and restore if soft-deleted
           role.description = roleData.description;
           role.type = roleData.type;
+          role.deletedAt = null; // Restore if soft-deleted
           await queryRunner.manager.save(role);
         } else {
           // Create new role
@@ -253,14 +257,18 @@ export class AuthUserSeeder {
 
       const savedPermissions = [];
       for (const perm of permissions) {
-        let permission = await queryRunner.manager.findOne(Permission, {
-          where: { name: perm.name },
-        });
+        // Find permission including soft-deleted ones
+        let permission = await queryRunner.manager
+          .createQueryBuilder(Permission, 'permission')
+          .where('LOWER(permission.name) = LOWER(:name)', { name: perm.name })
+          .withDeleted()
+          .getOne();
 
         if (permission) {
-          // Update existing permission
+          // Update existing permission and restore if soft-deleted
           permission.description = perm.description;
           permission.type = perm.type;
+          permission.deletedAt = null; // Restore if soft-deleted
           await queryRunner.manager.save(permission);
         } else {
           // Create new permission
@@ -301,14 +309,18 @@ export class AuthUserSeeder {
 
       const savedBadges = [];
       for (const badgeData of badgesData) {
-        let badge = await queryRunner.manager.findOne(Badge, {
-          where: { name: badgeData.name },
-        });
+        // Find badge including soft-deleted ones
+        let badge = await queryRunner.manager
+          .createQueryBuilder(Badge, 'badge')
+          .where('LOWER(badge.name) = LOWER(:name)', { name: badgeData.name })
+          .withDeleted()
+          .getOne();
 
         if (badge) {
-          // Update existing badge
+          // Update existing badge and restore if soft-deleted
           badge.description = badgeData.description;
           badge.badgeType = badgeData.badgeType;
+          badge.deletedAt = null; // Restore if soft-deleted
           await queryRunner.manager.save(badge);
         } else {
           // Create new badge
@@ -322,13 +334,17 @@ export class AuthUserSeeder {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       const passwordHash: string = await bcrypt.hash('password123', 10);
 
-      let regularUser = await queryRunner.manager.findOne(User, {
-        where: { email: 'user@example.com' },
-      });
+      // Find regular user including soft-deleted ones
+      let regularUser = await queryRunner.manager
+        .createQueryBuilder(User, 'user')
+        .where('LOWER(user.email) = LOWER(:email)', { email: 'user@example.com' })
+        .withDeleted()
+        .getOne();
       if (regularUser) {
         regularUser.passwordHash = passwordHash;
         regularUser.displayName = 'Regular User';
         regularUser.isActive = true;
+        regularUser.deletedAt = null; // Restore if soft-deleted
         await queryRunner.manager.save(regularUser);
       } else {
         const newRegularUser = queryRunner.manager.create(User, {
@@ -340,13 +356,17 @@ export class AuthUserSeeder {
         regularUser = await queryRunner.manager.save(newRegularUser);
       }
 
-      let siteOwnerUser = await queryRunner.manager.findOne(User, {
-        where: { email: 'siteowner@example.com' },
-      });
+      // Find site owner user including soft-deleted ones
+      let siteOwnerUser = await queryRunner.manager
+        .createQueryBuilder(User, 'user')
+        .where('LOWER(user.email) = LOWER(:email)', { email: 'siteowner@example.com' })
+        .withDeleted()
+        .getOne();
       if (siteOwnerUser) {
         siteOwnerUser.passwordHash = passwordHash;
         siteOwnerUser.displayName = 'Site Owner';
         siteOwnerUser.isActive = true;
+        siteOwnerUser.deletedAt = null; // Restore if soft-deleted
         await queryRunner.manager.save(siteOwnerUser);
       } else {
         const newSiteOwnerUser = queryRunner.manager.create(User, {

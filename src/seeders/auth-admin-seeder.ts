@@ -39,16 +39,20 @@ export class AuthAdminSeeder {
       // Upsert super admin
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       const superAdminPassword: string = await bcrypt.hash('SuperAdmin@123', 10);
-      let superAdmin = await queryRunner.manager.findOne(Admin, {
-        where: { email: 'superadmin@poca.gg' },
-      });
+      // Find admin including soft-deleted ones
+      let superAdmin = await queryRunner.manager
+        .createQueryBuilder(Admin, 'admin')
+        .where('LOWER(admin.email) = LOWER(:email)', { email: 'superadmin@poca.gg' })
+        .withDeleted()
+        .getOne();
 
       if (superAdmin) {
-        // Update existing super admin
+        // Update existing super admin and restore if soft-deleted
         superAdmin.passwordHash = superAdminPassword;
         superAdmin.displayName = 'Super Admin';
         superAdmin.isActive = true;
         superAdmin.isSuperAdmin = true;
+        superAdmin.deletedAt = null; // Restore if soft-deleted
         await queryRunner.manager.save(superAdmin);
       } else {
         // Create new super admin
