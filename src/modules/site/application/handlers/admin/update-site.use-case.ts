@@ -126,7 +126,7 @@ export class UpdateSiteUseCase {
 
     // Update site within transaction
     try {
-      const site = await this.transactionService.executeInTransaction(
+      const siteId = await this.transactionService.executeInTransaction(
         async (manager: EntityManager) => {
           const siteRepo = manager.getRepository(Site);
 
@@ -183,16 +183,23 @@ export class UpdateSiteUseCase {
             updateData.experience = command.experience;
 
           await siteRepo.update(command.siteId, updateData);
-          const updated = await siteRepo.findOne({
-            where: { id: command.siteId, deletedAt: null },
-          });
-          if (!updated) {
-            throw new NotFoundException('Site not found after update');
-          }
 
-          return updated;
+          return command.siteId; // Return ID to reload with relationships outside transaction
         },
       );
+
+      // Reload site with relationships for response (outside transaction)
+      const siteWithRelations = await this.siteRepository.findById(siteId, [
+        'category',
+        'tier',
+        'siteBadges',
+        'siteBadges.badge',
+        'siteDomains',
+      ]);
+
+      if (!siteWithRelations) {
+        throw new NotFoundException('Site not found after update');
+      }
 
       // Delete old files after successful update (best effort, asynchronously)
       const deletePromises: Promise<void>[] = [];
@@ -219,7 +226,7 @@ export class UpdateSiteUseCase {
         // Ignore cleanup errors
       });
 
-      return site;
+      return siteWithRelations;
     } catch (transactionError) {
       // If transaction fails, cleanup newly uploaded files (best effort)
       const cleanupPromises: Promise<void>[] = [];

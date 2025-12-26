@@ -221,7 +221,21 @@ export class CreateSiteUseCase {
           return savedSite;
         },
       );
-      return site;
+
+      // Reload site with relationships for response
+      const siteWithRelations = await this.siteRepository.findById(site.id, [
+        'category',
+        'tier',
+        'siteBadges',
+        'siteBadges.badge',
+        'siteDomains',
+      ]);
+
+      if (!siteWithRelations) {
+        throw new Error('Site not found after creation');
+      }
+
+      return siteWithRelations;
     } catch (transactionError) {
       // If transaction fails, cleanup uploaded files (best effort)
       const cleanupPromises: Promise<void>[] = [];

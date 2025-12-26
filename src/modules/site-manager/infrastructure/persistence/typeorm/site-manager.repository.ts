@@ -36,7 +36,14 @@ export class SiteManagerRepository implements ISiteManagerRepository {
   async findByUserId(userId: string): Promise<SiteManager[]> {
     return this.repository.find({
       where: { userId, isActive: true },
-      relations: ['site'],
+      relations: [
+        'site',
+        'site.category',
+        'site.tier',
+        'site.siteBadges',
+        'site.siteBadges.badge',
+        'site.siteDomains',
+      ],
       order: { createdAt: 'DESC' },
     });
   }
