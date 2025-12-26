@@ -52,7 +52,7 @@ export class AdminScamReportController {
       id: report.id,
       siteId: report.siteId || null,
       siteUrl: report.siteUrl,
-      siteName: report.siteName,
+      siteName: report.siteName || report.site?.name || null,
       siteAccountInfo: report.siteAccountInfo,
       registrationUrl: report.registrationUrl,
       contact: report.contact,
