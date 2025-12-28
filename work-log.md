@@ -876,7 +876,7 @@ try {
 - `AdminModule` - Exports guards and decorators via `AdminGuardsModule`
 - `AuthModule` - Uses `UserTokenRepositoryModule` for proper dependency injection
 - `SiteModule` - Imports `AdminModule` and `UserTokenRepositoryModule` for guard dependencies
-- `TierModule` - Uses `forwardRef` to handle circular dependencies with `SiteModule`
+- `TierModule` - Imports `SitePersistenceModule` instead of `SiteModule` to avoid circular dependencies (no `forwardRef` needed)
 - `SiteManagerModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
 - `SiteReviewModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
 - `ScamReportModule` - Imports `UserTokenRepositoryModule` for `JwtAuthGuard`
@@ -1616,5 +1616,77 @@ Implemented a complete partner system that allows users to request partner statu
 **API Summary:**
 - **New APIs:** 5 endpoints (1 user, 4 admin)
 - **Modified APIs:** 2 endpoints (register added field, create site added field)
+
+---
+
+### 36. Partner System Enhancements & API Response Updates
+
+**Commits:** `ad3b7fd` → `a49ded5` (6 commits)
+
+**Overview:**
+Enhanced partner system with user-initiated partner requests, improved role responses across all APIs, fixed favorite site API, and added post reaction tracking.
+
+**1. User-Initiated Partner Requests (Commit: `4409f29`)**
+- ✅ Created `CreatePartnerRequestUseCase` for users to request partner status
+- ✅ Added `POST /api/partner/request` endpoint (user can create partner request)
+- ✅ Updated site creation/update to support partner assignment
+- ✅ Enhanced site manager repository to handle partner users
+- ✅ Logic: Users can now create partner requests after registration (not just during registration)
+
+**2. Seeder Fixes (Commit: `f604747`)**
+- ✅ Fixed admin seeder to properly handle role and permission assignments
+- ✅ Fixed user seeder to properly handle role assignments
+- ✅ Improved error handling and data consistency in seeders
+
+**3. Role Response Enhancements (Commit: `18f0e47`)**
+- ✅ Updated `AuthController` to include roles in login/register responses
+- ✅ Updated `UserController` to include roles in user profile responses
+- ✅ Updated `AdminController` to include roles in admin profile responses
+- ✅ Added `roles` field to `AuthResponseDto` and `UserResponseDto`
+- ✅ Roles now consistently included in all user/admin authentication and profile endpoints
+
+**4. Favorite Site API Fix (Commit: `3aae035`)**
+- ✅ Fixed favorite site listing API in site repository
+- ✅ Improved query performance and data loading
+
+**5. Roles & Site Review Fixes (Commit: `4b9c2ce`)**
+- ✅ Fixed role loading in `ListPartnerUsersUseCase` (properly loads user roles)
+- ✅ Added role information to partner users list response
+- ✅ Fixed site review creation to handle role checks properly
+- ✅ Enhanced user repository to load roles correctly
+
+**6. Post Reaction Tracking & Role Response Refinements (Commit: `a49ded5`)**
+- ✅ Added `reacted` field to post responses (indicates if current user has reacted)
+- ✅ Updated `GetPostUseCase` to include user reaction status
+- ✅ Updated `ReactToPostUseCase` to return reaction status
+- ✅ Enhanced post repository to load user reaction status efficiently
+- ✅ Refined role response formatting across all controllers
+- ✅ Improved role mapping in auth, user, and admin controllers
+
+**Key Changes:**
+- **Partner System:** Users can now create partner requests via API endpoint (not just during registration)
+- **Role Responses:** All authentication and profile endpoints now include user/admin roles
+- **Post Reactions:** Post detail and list responses now include `reacted` field (like/dislike/null)
+- **API Consistency:** Improved consistency in role and reaction data across all endpoints
+
+**Files Modified:**
+- `src/modules/partner/application/handlers/user/create-partner-request.use-case.ts` (new)
+- `src/modules/partner/interface/rest/user/partner.controller.ts` (enhanced)
+- `src/modules/auth/interface/rest/auth.controller.ts` (roles added)
+- `src/modules/user/interface/rest/user.controller.ts` (roles added)
+- `src/modules/admin/interface/rest/admin.controller.ts` (roles added)
+- `src/modules/post/interface/rest/user/post.controller.ts` (reacted field added)
+- `src/modules/post/infrastructure/persistence/typeorm/post.repository.ts` (reaction tracking)
+- `src/shared/dto/auth-response.dto.ts` (roles field added)
+- `src/shared/dto/user-response.dto.ts` (roles field enhanced)
+
+**API Changes:**
+- `POST /api/partner/request` - New endpoint for users to create partner requests
+- `GET /api/auth/login` - Now includes `roles` in response
+- `POST /api/auth/register` - Now includes `roles` in response
+- `GET /api/users/me` - Now includes `roles` in response
+- `GET /api/posts/:id` - Now includes `reacted` field (like/dislike/null)
+- `GET /api/posts` - Now includes `reacted` field in list responses
+- `POST /api/posts/:id/react` - Returns updated reaction status
 
 ---

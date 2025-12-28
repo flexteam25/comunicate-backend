@@ -38,4 +38,12 @@ export interface ISiteReviewRepository {
   create(review: Partial<SiteReview>): Promise<SiteReview>;
   update(id: string, data: Partial<SiteReview>): Promise<SiteReview>;
   delete(id: string): Promise<void>;
+  getStatistics(siteId: string): Promise<{
+    averageRating: number;
+    averageOdds: number;
+    averageLimit: number;
+    averageEvent: number;
+    averageSpeed: number;
+    reviewCount: number;
+  }>;
 }

@@ -27,6 +27,7 @@ import { UpdateSiteReviewUseCase } from '../../../application/handlers/update-si
 import { DeleteSiteReviewUseCase } from '../../../application/handlers/delete-site-review.use-case';
 import { ListSiteReviewsUseCase } from '../../../application/handlers/list-site-reviews.use-case';
 import { GetSiteReviewUseCase } from '../../../application/handlers/get-site-review.use-case';
+import { GetSiteReviewStatisticsUseCase } from '../../../application/handlers/get-site-review-statistics.use-case';
 import { ListMySiteReviewsUseCase } from '../../../application/handlers/list-my-site-reviews.use-case';
 import { ReactToSiteReviewUseCase } from '../../../application/handlers/react-to-site-review.use-case';
 import { AddCommentUseCase } from '../../../application/handlers/add-comment.use-case';
@@ -40,6 +41,7 @@ import {
   SiteReviewResponseDto,
   SiteReviewCommentResponseDto,
 } from '../dto/site-review-response.dto';
+import { SiteReviewStatisticsResponseDto } from '../dto/site-review-statistics-response.dto';
 import { ListSiteReviewsQueryDto } from '../dto/list-site-reviews-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
@@ -55,6 +57,7 @@ export class SiteReviewController {
     private readonly deleteSiteReviewUseCase: DeleteSiteReviewUseCase,
     private readonly listSiteReviewsUseCase: ListSiteReviewsUseCase,
     private readonly getSiteReviewUseCase: GetSiteReviewUseCase,
+    private readonly getSiteReviewStatisticsUseCase: GetSiteReviewStatisticsUseCase,
     private readonly listMySiteReviewsUseCase: ListMySiteReviewsUseCase,
     private readonly reactToSiteReviewUseCase: ReactToSiteReviewUseCase,
     private readonly addCommentUseCase: AddCommentUseCase,
@@ -201,6 +204,18 @@ export class SiteReviewController {
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
     });
+  }
+
+  @Get('statistics/:siteId')
+  @HttpCode(HttpStatus.OK)
+  async getSiteReviewStatistics(
+    @Param('siteId', new ParseUUIDPipe()) siteId: string,
+  ): Promise<ApiResponse<SiteReviewStatisticsResponseDto>> {
+    const statistics = await this.getSiteReviewStatisticsUseCase.execute({
+      siteId,
+    });
+
+    return ApiResponseUtil.success(statistics, 'Site review statistics retrieved successfully');
   }
 
   @Get(':id')

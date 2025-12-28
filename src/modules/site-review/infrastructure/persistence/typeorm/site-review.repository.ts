@@ -483,4 +483,41 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       [reviewCount, parseFloat(averageRating.toFixed(2)), siteId],
     );
   }
+
+  async getStatistics(siteId: string): Promise<{
+    averageRating: number;
+    averageOdds: number;
+    averageLimit: number;
+    averageEvent: number;
+    averageSpeed: number;
+    reviewCount: number;
+  }> {
+    const result = await this.repository
+      .createQueryBuilder('review')
+      .select('COUNT(review.id)', 'count')
+      .addSelect('AVG(review.rating)', 'avgRating')
+      .addSelect('AVG(review.odds)', 'avgOdds')
+      .addSelect('AVG(review.limit)', 'avgLimit')
+      .addSelect('AVG(review.event)', 'avgEvent')
+      .addSelect('AVG(review.speed)', 'avgSpeed')
+      .where('review.siteId = :siteId', { siteId })
+      .andWhere('review.isPublished = :isPublished', { isPublished: true })
+      .andWhere('review.deletedAt IS NULL')
+      .getRawOne();
+
+    const parseAvg = (value: string | null | undefined): number => {
+      if (!value) return 0;
+      const num = parseFloat(value);
+      return isNaN(num) ? 0 : parseFloat(num.toFixed(2));
+    };
+
+    return {
+      averageRating: parseAvg(result?.avgRating),
+      averageOdds: parseAvg(result?.avgOdds),
+      averageLimit: parseAvg(result?.avgLimit),
+      averageEvent: parseAvg(result?.avgEvent),
+      averageSpeed: parseAvg(result?.avgSpeed),
+      reviewCount: parseInt(result?.count || '0', 10),
+    };
+  }
 }
