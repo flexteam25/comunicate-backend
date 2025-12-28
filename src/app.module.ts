@@ -76,6 +76,10 @@ import { GifticonRedemption } from './modules/gifticon/domain/entities/gifticon-
 import { PointModule } from './modules/point/point.module';
 import { PartnerModule } from './modules/partner/partner.module';
 import { PartnerRequest } from './modules/partner/domain/entities/partner-request.entity';
+import { SiteEventModule } from './modules/site-event/site-event.module';
+import { SiteEvent } from './modules/site-event/domain/entities/site-event.entity';
+import { SiteEventBanner } from './modules/site-event/domain/entities/site-event-banner.entity';
+import { SiteEventView } from './modules/site-event/domain/entities/site-event-view.entity';
 
 @Module({
   imports: [
@@ -142,6 +146,9 @@ import { PartnerRequest } from './modules/partner/domain/entities/partner-reques
         PointExchange,
         GifticonRedemption,
         PartnerRequest,
+        SiteEvent,
+        SiteEventBanner,
+        SiteEventView,
       ],
       synchronize: false,
       logging: false,
@@ -167,6 +174,7 @@ import { PartnerRequest } from './modules/partner/domain/entities/partner-reques
     PostModule,
     PointModule,
     PartnerModule,
+    SiteEventModule,
   ],
   controllers: [AppController],
   providers: [AppService],
