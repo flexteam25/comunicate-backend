@@ -131,24 +131,24 @@ export class SiteManagerController {
     return this.mapSiteToResponse(manager.site);
   }
 
-  //   @Post(':siteId/manager-applications')
-  //   @HttpCode(HttpStatus.CREATED)
-  //   async applySiteManager(
-  //     @Param('siteId', new ParseUUIDPipe()) siteId: string,
-  //     @CurrentUser() user: CurrentUserPayload,
-  //     @Body() dto: ApplySiteManagerDto,
-  //   ): Promise<ApiResponse<any>> {
-  //     const application = await this.applySiteManagerUseCase.execute({
-  //       userId: user.userId,
-  //       siteId,
-  //       message: dto.message,
-  //     });
+  @Post(':siteId/manager-applications')
+  @HttpCode(HttpStatus.CREATED)
+  async applySiteManager(
+    @Param('siteId', new ParseUUIDPipe()) siteId: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: ApplySiteManagerDto,
+  ): Promise<ApiResponse<any>> {
+    const application = await this.applySiteManagerUseCase.execute({
+      userId: user.userId,
+      siteId,
+      message: dto.message,
+    });
 
-  //     return ApiResponseUtil.success(
-  //       this.mapApplicationToResponse(application),
-  //       'Application submitted successfully',
-  //     );
-  //   }
+    return ApiResponseUtil.success(
+      this.mapApplicationToResponse(application),
+      'Application submitted successfully',
+    );
+  }
 
   @Get('my-managed-sites')
   @HttpCode(HttpStatus.OK)

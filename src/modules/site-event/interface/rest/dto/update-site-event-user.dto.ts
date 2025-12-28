@@ -2,15 +2,13 @@ import {
   IsString,
   IsOptional,
   IsDateString,
-  IsBoolean,
   MaxLength,
   IsArray,
   IsUrl,
   IsUUID,
 } from 'class-validator';
-import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
-export class UpdateSiteEventDto {
+export class UpdateSiteEventUserDto {
   @IsOptional()
   @IsString({ message: 'Title must be a string' })
   @MaxLength(255, { message: 'Title must not exceed 255 characters' })
@@ -29,11 +27,6 @@ export class UpdateSiteEventDto {
   endDate?: string;
 
   @IsOptional()
-  @TransformToBoolean
-  @IsBoolean({ message: 'Is active must be a boolean' })
-  isActive?: boolean;
-
-  @IsOptional()
   @IsArray({ message: 'Link URLs must be an array' })
   @IsUrl({}, { each: true, message: 'Each link URL must be a valid URL' })
   linkUrls?: string[];
@@ -43,4 +36,3 @@ export class UpdateSiteEventDto {
   @IsUUID('4', { each: true, message: 'Each delete banner ID must be a valid UUID' })
   deleteBanners?: string[];
 }
-

@@ -5,6 +5,8 @@ import {
   IsOptional,
   IsDateString,
   MaxLength,
+  IsArray,
+  IsUrl,
 } from 'class-validator';
 
 export class CreateSiteEventDto {
@@ -28,5 +30,9 @@ export class CreateSiteEventDto {
   @IsDateString({}, { message: 'End date must be a valid ISO 8601 date string' })
   @IsNotEmpty({ message: 'End date is required' })
   endDate: string;
-}
 
+  @IsOptional()
+  @IsArray({ message: 'Link URLs must be an array' })
+  @IsUrl({}, { each: true, message: 'Each link URL must be a valid URL' })
+  linkUrls?: string[];
+}

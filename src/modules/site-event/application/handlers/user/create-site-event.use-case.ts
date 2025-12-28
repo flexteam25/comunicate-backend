@@ -22,7 +22,7 @@ export interface CreateSiteEventCommand {
   description?: string;
   startDate: Date;
   endDate: Date;
-  banners?: Array<{ image: MulterFile; linkUrl?: string; order: number }>;
+  banners?: Array<{ image?: MulterFile; linkUrl?: string; order: number }>;
 }
 
 @Injectable()
@@ -65,7 +65,12 @@ export class CreateSiteEventUseCase {
     // Validate and upload banners before transaction
     const maxSize = 20 * 1024 * 1024; // 20MB
     const allowedTypes = /(jpg|jpeg|png|webp)$/i;
-    const uploadedBannerUrls: Array<{ imageUrl: string; linkUrl?: string; order: number }> = [];
+    const uploadedBannerUrls: Array<{
+      imageUrl: string | null;
+      linkUrl?: string;
+      order: number;
+      isUploadedFile: boolean; // Track if this is an uploaded file or a link URL
+    }> = [];
 
     if (command.banners && command.banners.length > 0) {
       if (command.banners.length > 10) {
@@ -74,23 +79,43 @@ export class CreateSiteEventUseCase {
 
       for (let i = 0; i < command.banners.length; i++) {
         const banner = command.banners[i];
-        if (banner.image.size > maxSize) {
-          throw new BadRequestException(`Banner ${i + 1} file size exceeds 20MB`);
-        }
-        if (!allowedTypes.test(banner.image.mimetype)) {
+
+        // Validate: banner must have either image or linkUrl
+        if (!banner.image && !banner.linkUrl) {
           throw new BadRequestException(
-            `Invalid banner ${i + 1} file type. Allowed: jpg, jpeg, png, webp`,
+            `Banner ${i + 1} must have either an image file or a link URL`,
           );
         }
 
-        const uploadResult = await this.uploadService.uploadImage(banner.image, {
-          folder: `site-events/${command.siteId}`,
-        });
-        uploadedBannerUrls.push({
-          imageUrl: uploadResult.relativePath,
-          linkUrl: banner.linkUrl,
-          order: banner.order,
-        });
+        if (banner.image) {
+          // Upload file if image is provided
+          if (banner.image.size > maxSize) {
+            throw new BadRequestException(`Banner ${i + 1} file size exceeds 20MB`);
+          }
+          if (!allowedTypes.test(banner.image.mimetype)) {
+            throw new BadRequestException(
+              `Invalid banner ${i + 1} file type. Allowed: jpg, jpeg, png, webp`,
+            );
+          }
+
+          const uploadResult = await this.uploadService.uploadImage(banner.image, {
+            folder: `site-events/${command.siteId}`,
+          });
+          uploadedBannerUrls.push({
+            imageUrl: uploadResult.relativePath,
+            linkUrl: banner.linkUrl,
+            order: banner.order,
+            isUploadedFile: true,
+          });
+        } else {
+          // If only linkUrl (no file upload), imageUrl should be null
+          uploadedBannerUrls.push({
+            imageUrl: null, // null for link-only banners
+            linkUrl: banner.linkUrl,
+            order: banner.order,
+            isUploadedFile: false, // This is a link URL, not an uploaded file
+          });
+        }
       }
     }
 
@@ -120,7 +145,7 @@ export class CreateSiteEventUseCase {
             const bannerEntities = uploadedBannerUrls.map((banner) =>
               bannerRepo.create({
                 eventId: savedEvent.id,
-                imageUrl: banner.imageUrl,
+                imageUrl: banner.imageUrl, // Can be null for link-only banners
                 linkUrl: banner.linkUrl,
                 order: banner.order,
                 isActive: true,
@@ -143,13 +168,17 @@ export class CreateSiteEventUseCase {
         },
       );
     } catch (error) {
-      // Cleanup uploaded files if transaction fails
+      // Cleanup newly uploaded files if transaction fails (only uploaded files, not link URLs)
       for (const banner of uploadedBannerUrls) {
-        try {
-          await this.uploadService.deleteFile(banner.imageUrl);
-        } catch (deleteError) {
-          // Log but don't throw - best effort cleanup
-          console.error('Failed to cleanup banner after transaction failure:', deleteError);
+        if (banner.isUploadedFile && banner.imageUrl) {
+          try {
+            await this.uploadService.deleteFile(banner.imageUrl);
+          } catch (deleteError) {
+            console.error(
+              'Failed to cleanup banner after transaction failure:',
+              deleteError,
+            );
+          }
         }
       }
       throw error;

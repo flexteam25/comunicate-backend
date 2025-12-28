@@ -59,72 +59,72 @@ export class AdminSiteManagerController {
     };
   }
 
-  // @Get()
-  // @RequirePermission('site.view')
-  // @HttpCode(HttpStatus.OK)
-  // async listApplications(
-  //   @Query() query: ListApplicationsQueryDto,
-  // ): Promise<ApiResponse<any>> {
-  //   const result = await this.listApplicationsUseCase.execute({
-  //     siteName: query.siteName,
-  //     status: query.status,
-  //     cursor: query.cursor,
-  //     limit: query.limit,
-  //   });
+  @Get()
+  @RequirePermission('site.view')
+  @HttpCode(HttpStatus.OK)
+  async listApplications(
+    @Query() query: ListApplicationsQueryDto,
+  ): Promise<ApiResponse<any>> {
+    const result = await this.listApplicationsUseCase.execute({
+      siteName: query.siteName,
+      status: query.status,
+      cursor: query.cursor,
+      limit: query.limit,
+    });
 
-  //   return ApiResponseUtil.success({
-  //     data: result.data.map((app) => this.mapApplicationToResponse(app)),
-  //     nextCursor: result.nextCursor,
-  //     hasMore: result.hasMore,
-  //   });
-  // }
+    return ApiResponseUtil.success({
+      data: result.data.map((app) => this.mapApplicationToResponse(app)),
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    });
+  }
 
-  // @Get(':id')
-  // @RequirePermission('site.view')
-  // @HttpCode(HttpStatus.OK)
-  // async getApplication(
-  //   @Param('id', new ParseUUIDPipe()) id: string,
-  // ): Promise<ApiResponse<any>> {
-  //   const application = await this.getApplicationUseCase.execute({
-  //     applicationId: id,
-  //   });
+  @Get(':id')
+  @RequirePermission('site.view')
+  @HttpCode(HttpStatus.OK)
+  async getApplication(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<any>> {
+    const application = await this.getApplicationUseCase.execute({
+      applicationId: id,
+    });
 
-  //   return ApiResponseUtil.success(this.mapApplicationToResponse(application));
-  // }
+    return ApiResponseUtil.success(this.mapApplicationToResponse(application));
+  }
 
-  // @Put(':id/approve')
-  // @RequirePermission('site-manager-applications.approve')
-  // @HttpCode(HttpStatus.OK)
-  // async approveApplication(
-  //   @Param('id', new ParseUUIDPipe()) id: string,
-  //   @CurrentAdmin() admin: CurrentAdminPayload,
-  // ): Promise<ApiResponse<any>> {
-  //   const application = await this.approveApplicationUseCase.execute({
-  //     applicationId: id,
-  //     adminId: admin.adminId,
-  //   });
+  @Put(':id/approve')
+  @RequirePermission('site-manager-applications.approve')
+  @HttpCode(HttpStatus.OK)
+  async approveApplication(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    const application = await this.approveApplicationUseCase.execute({
+      applicationId: id,
+      adminId: admin.adminId,
+    });
 
-  //   return ApiResponseUtil.success(
-  //     this.mapApplicationToResponse(application),
-  //     'Application approved successfully',
-  //   );
-  // }
+    return ApiResponseUtil.success(
+      this.mapApplicationToResponse(application),
+      'Application approved successfully',
+    );
+  }
 
-  // @Put(':id/reject')
-  // @RequirePermission('site-manager-applications.approve')
-  // @HttpCode(HttpStatus.OK)
-  // async rejectApplication(
-  //   @Param('id', new ParseUUIDPipe()) id: string,
-  //   @CurrentAdmin() admin: CurrentAdminPayload,
-  // ): Promise<ApiResponse<any>> {
-  //   const application = await this.rejectApplicationUseCase.execute({
-  //     applicationId: id,
-  //     adminId: admin.adminId,
-  //   });
+  @Put(':id/reject')
+  @RequirePermission('site-manager-applications.approve')
+  @HttpCode(HttpStatus.OK)
+  async rejectApplication(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    const application = await this.rejectApplicationUseCase.execute({
+      applicationId: id,
+      adminId: admin.adminId,
+    });
 
-  //   return ApiResponseUtil.success(
-  //     this.mapApplicationToResponse(application),
-  //     'Application rejected successfully',
-  //   );
-  // }
+    return ApiResponseUtil.success(
+      this.mapApplicationToResponse(application),
+      'Application rejected successfully',
+    );
+  }
 }

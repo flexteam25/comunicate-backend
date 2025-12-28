@@ -20,4 +20,3 @@ export class ListSiteEventsUseCase {
     return this.siteEventRepository.findBySiteId(command.siteId, command.cursor, command.limit);
   }
 }
-

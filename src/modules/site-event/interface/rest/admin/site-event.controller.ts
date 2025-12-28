@@ -49,9 +49,16 @@ export class AdminSiteEventController {
   }
 
   private mapBannerToResponse(banner: any): any {
+    // If banner has linkUrl, imageUrl should be null
+    const imageUrl = banner.linkUrl
+      ? null
+      : banner.imageUrl
+        ? buildFullUrl(this.apiServiceUrl, banner.imageUrl)
+        : null;
+
     return {
       id: banner.id,
-      imageUrl: buildFullUrl(this.apiServiceUrl, banner.imageUrl),
+      imageUrl,
       linkUrl: banner.linkUrl || null,
       order: banner.order,
       isActive: banner.isActive,
@@ -156,13 +163,33 @@ export class AdminSiteEventController {
       banners?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    let banners: Array<{ image: MulterFile; linkUrl?: string; order: number }> | undefined;
+    let banners:
+      | Array<{ image?: MulterFile; linkUrl?: string; order: number }>
+      | undefined;
 
+    // Handle file uploads
     if (files?.banners && files.banners.length > 0) {
       banners = files.banners.map((image, index) => ({
         image,
         order: index,
       }));
+    }
+
+    // Handle link URLs (banners without file upload)
+    if (dto.linkUrls && dto.linkUrls.length > 0) {
+      if (!banners) {
+        banners = [];
+      }
+      // Add link URLs as banners (use linkUrl as imageUrl)
+      dto.linkUrls.forEach((linkUrl, index) => {
+        const existingIndex = files?.banners ? files.banners.length + index : index;
+        if (banners) {
+          banners.push({
+            linkUrl,
+            order: existingIndex,
+          });
+        }
+      });
     }
 
     const event = await this.createSiteEventUseCase.execute({
@@ -198,14 +225,47 @@ export class AdminSiteEventController {
       banners?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    let banners: Array<{ image: MulterFile; linkUrl?: string; order: number }> | undefined;
+    // Only update banners if files or linkUrls are provided
+    // If neither is provided, banners will be undefined (keep existing banners)
+    let banners:
+      | Array<{ image?: MulterFile; linkUrl?: string; order: number }>
+      | undefined;
 
-    if (files?.banners && files.banners.length > 0) {
-      banners = files.banners.map((image, index) => ({
-        image,
-        order: index,
-      }));
+    const hasFiles = files?.banners && files.banners.length > 0;
+    const hasLinkUrls =
+      dto.linkUrls && Array.isArray(dto.linkUrls) && dto.linkUrls.length > 0;
+
+    // Only set banners if files or linkUrls are provided (and not empty)
+    // Skip if banners array is empty or linkUrls array is empty
+    if (hasFiles || hasLinkUrls) {
+      banners = [];
+
+      // Handle file uploads
+      if (hasFiles && files.banners) {
+        files.banners.forEach((image, index) => {
+          if (banners) {
+            banners.push({
+              image,
+              order: index,
+            });
+          }
+        });
+      }
+
+      // Handle link URLs (banners without file upload)
+      if (hasLinkUrls && dto.linkUrls) {
+        dto.linkUrls.forEach((linkUrl: string, index: number) => {
+          const existingIndex = hasFiles && files?.banners ? files.banners.length + index : index;
+          if (banners) {
+            banners.push({
+              linkUrl,
+              order: existingIndex,
+            });
+          }
+        });
+      }
     }
+    // If neither files nor linkUrls are provided, banners remains undefined (keep existing)
 
     const event = await this.updateSiteEventUseCase.execute({
       eventId: id,
@@ -215,6 +275,8 @@ export class AdminSiteEventController {
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
       isActive: dto.isActive,
       banners,
+      deleteBannerIds:
+        dto.deleteBanners && dto.deleteBanners.length > 0 ? dto.deleteBanners : undefined,
     });
 
     return ApiResponseUtil.success(
@@ -223,4 +285,3 @@ export class AdminSiteEventController {
     );
   }
 }
-

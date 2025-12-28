@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { MulterFile } from '../../../../../shared/services/upload';
@@ -27,7 +28,7 @@ import { UpdateSiteEventUseCase } from '../../../application/handlers/user/updat
 import { ListSiteEventsUseCase } from '../../../application/handlers/user/list-site-events.use-case';
 import { GetSiteEventUseCase } from '../../../application/handlers/user/get-site-event.use-case';
 import { CreateSiteEventDto } from '../dto/create-site-event.dto';
-import { UpdateSiteEventDto } from '../dto/update-site-event.dto';
+import { UpdateSiteEventUserDto } from '../dto/update-site-event-user.dto';
 import { ListSiteEventsQueryDto } from '../dto/list-site-events-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
@@ -49,9 +50,16 @@ export class SiteEventController {
   }
 
   private mapBannerToResponse(banner: any): any {
+    // If banner has linkUrl, imageUrl should be null
+    const imageUrl = banner.linkUrl
+      ? null
+      : banner.imageUrl
+        ? buildFullUrl(this.apiServiceUrl, banner.imageUrl)
+        : null;
+
     return {
       id: banner.id,
-      imageUrl: buildFullUrl(this.apiServiceUrl, banner.imageUrl),
+      imageUrl,
       linkUrl: banner.linkUrl || null,
       order: banner.order,
       isActive: banner.isActive,
@@ -112,7 +120,7 @@ export class SiteEventController {
     @CurrentUser() user?: CurrentUserPayload,
   ): Promise<ApiResponse<any>> {
     if (!query.siteId) {
-      throw new Error('Site ID is required');
+      throw new BadRequestException('Site ID is required');
     }
 
     const result = await this.listSiteEventsUseCase.execute({
@@ -168,16 +176,33 @@ export class SiteEventController {
       banners?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    // Parse banners order if provided
-    let banners: Array<{ image: MulterFile; linkUrl?: string; order: number }> | undefined;
+    let banners:
+      | Array<{ image?: MulterFile; linkUrl?: string; order: number }>
+      | undefined;
 
+    // Handle file uploads
     if (files?.banners && files.banners.length > 0) {
-      // For now, we don't have linkUrl in DTO, so we'll use default order
-      // In the future, we can add bannersData as JSON string similar to poca-event
       banners = files.banners.map((image, index) => ({
         image,
         order: index,
       }));
+    }
+
+    // Handle link URLs (banners without file upload)
+    if (dto.linkUrls && dto.linkUrls.length > 0) {
+      if (!banners) {
+        banners = [];
+      }
+      // Add link URLs as banners (use linkUrl as imageUrl)
+      dto.linkUrls.forEach((linkUrl, index) => {
+        const existingIndex = files?.banners ? files.banners.length + index : index;
+        if (banners) {
+          banners.push({
+            linkUrl,
+            order: existingIndex,
+          });
+        }
+      });
     }
 
     const event = await this.createSiteEventUseCase.execute({
@@ -207,20 +232,53 @@ export class SiteEventController {
   async updateSiteEvent(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() dto: UpdateSiteEventDto,
+    @Body() dto: UpdateSiteEventUserDto,
     @UploadedFiles()
     files?: {
       banners?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
-    let banners: Array<{ image: MulterFile; linkUrl?: string; order: number }> | undefined;
+    // Only update banners if files or linkUrls are provided
+    // If neither is provided, banners will be undefined (keep existing banners)
+    let banners:
+      | Array<{ image?: MulterFile; linkUrl?: string; order: number }>
+      | undefined;
 
-    if (files?.banners && files.banners.length > 0) {
-      banners = files.banners.map((image, index) => ({
-        image,
-        order: index,
-      }));
+    const hasFiles = files?.banners && files.banners.length > 0;
+    const hasLinkUrls =
+      dto.linkUrls && Array.isArray(dto.linkUrls) && dto.linkUrls.length > 0;
+
+    // Only set banners if files or linkUrls are provided (and not empty)
+    // Skip if banners array is empty or linkUrls array is empty
+    if (hasFiles || hasLinkUrls) {
+      banners = [];
+
+      // Handle file uploads
+      if (hasFiles && files.banners) {
+        files.banners.forEach((image, index) => {
+          if (banners) {
+            banners.push({
+              image,
+              order: index,
+            });
+          }
+        });
+      }
+
+      // Handle link URLs (banners without file upload)
+      if (hasLinkUrls && dto.linkUrls) {
+        dto.linkUrls.forEach((linkUrl: string, index: number) => {
+          const existingIndex = hasFiles && files?.banners ? files.banners.length + index : index;
+          if (banners) {
+            banners.push({
+              linkUrl,
+              order: existingIndex,
+            });
+          }
+        });
+      }
     }
+    // If neither files nor linkUrls are provided, banners remains undefined (keep existing)
 
     const event = await this.updateSiteEventUseCase.execute({
       userId: user.userId,
@@ -230,6 +288,8 @@ export class SiteEventController {
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
       banners,
+      deleteBannerIds:
+        dto.deleteBanners && dto.deleteBanners.length > 0 ? dto.deleteBanners : undefined,
     });
 
     return ApiResponseUtil.success(
