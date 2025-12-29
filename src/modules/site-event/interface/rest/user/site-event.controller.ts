@@ -162,11 +162,7 @@ export class SiteEventController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'banners', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'banners', maxCount: 10 }]))
   @HttpCode(HttpStatus.CREATED)
   async createSiteEvent(
     @CurrentUser() user: CurrentUserPayload,
@@ -223,11 +219,7 @@ export class SiteEventController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'banners', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'banners', maxCount: 10 }]))
   @HttpCode(HttpStatus.OK)
   async updateSiteEvent(
     @CurrentUser() user: CurrentUserPayload,
@@ -268,7 +260,8 @@ export class SiteEventController {
       // Handle link URLs (banners without file upload)
       if (hasLinkUrls && dto.linkUrls) {
         dto.linkUrls.forEach((linkUrl: string, index: number) => {
-          const existingIndex = hasFiles && files?.banners ? files.banners.length + index : index;
+          const existingIndex =
+            hasFiles && files?.banners ? files.banners.length + index : index;
           if (banners) {
             banners.push({
               linkUrl,
@@ -298,4 +291,3 @@ export class SiteEventController {
     );
   }
 }
-

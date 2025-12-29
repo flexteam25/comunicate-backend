@@ -1,10 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { SocketGateway } from './socket.gateway';
 
 @Injectable()
 export class SocketService {
-  private readonly logger = new Logger(SocketService.name);
-
   constructor(private readonly socketGateway: SocketGateway) {}
 
   public broadcastToChannel(channel: string, event: string, data: any): void {
@@ -32,7 +30,7 @@ export class SocketService {
     this.socketGateway.broadcastToAll(event, data);
   }
 
-  public async validateToken(token: string): Promise<any> {
+  public validateToken(_token: string): any {
     // TODO: Implement JWT token validation
     // For now, return mock user
     return {
@@ -42,7 +40,7 @@ export class SocketService {
     };
   }
 
-  public async removeClient(clientId: string): Promise<void> {
-    this.logger.log(`Removed client: ${clientId}`);
+  public removeClient(_clientId: string): void {
+    // Client removal handled by socket gateway
   }
 }

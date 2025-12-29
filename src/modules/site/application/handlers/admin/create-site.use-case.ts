@@ -20,6 +20,9 @@ import {
 import { User } from '../../../../user/domain/entities/user.entity';
 import { UserRole } from '../../../../user/domain/entities/user-role.entity';
 import { Role } from '../../../../user/domain/entities/role.entity';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 export interface CreateSiteCommand {
   name: string;
@@ -48,6 +51,8 @@ export class CreateSiteUseCase {
     private readonly siteManagerRepository: ISiteManagerRepository,
     private readonly transactionService: TransactionService,
     private readonly uploadService: UploadService,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   async execute(command: CreateSiteCommand): Promise<Site> {
@@ -233,6 +238,29 @@ export class CreateSiteUseCase {
 
       if (!siteWithRelations) {
         throw new Error('Site not found after creation');
+      }
+
+      // Publish site created event to Redis
+      try {
+        await this.redisService.publishEvent(RedisChannel.SITE_CREATED, {
+          siteId: siteWithRelations.id,
+          name: siteWithRelations.name,
+          categoryId: siteWithRelations.categoryId,
+          categoryName: siteWithRelations.category?.name,
+          tierId: siteWithRelations.tierId,
+          tierName: siteWithRelations.tier?.name,
+          createdAt: siteWithRelations.createdAt,
+        });
+      } catch (error) {
+        // Log error but don't fail the request
+        this.logger.error(
+          'Failed to publish site:created event',
+          {
+            error: error instanceof Error ? error.message : String(error),
+            siteId: siteWithRelations.id,
+          },
+          'site',
+        );
       }
 
       return siteWithRelations;

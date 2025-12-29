@@ -22,7 +22,9 @@ export class ListSiteEventsUseCase {
     private readonly siteEventRepository: ISiteEventRepository,
   ) {}
 
-  async execute(command: ListSiteEventsCommand): Promise<CursorPaginationResult<SiteEvent>> {
+  async execute(
+    command: ListSiteEventsCommand,
+  ): Promise<CursorPaginationResult<SiteEvent>> {
     return this.siteEventRepository.findAll(
       {
         siteName: command.siteName,
@@ -38,4 +40,3 @@ export class ListSiteEventsUseCase {
     );
   }
 }
-

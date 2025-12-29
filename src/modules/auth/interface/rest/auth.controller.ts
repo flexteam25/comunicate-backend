@@ -48,9 +48,7 @@ export class AuthController {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
 
-  private mapUserRoles(user: {
-    userRoles?: Array<{ role?: { name: string } }>;
-  }): string {
+  private mapUserRoles(user: { userRoles?: Array<{ role?: { name: string } }> }): string {
     const roles: string[] = [];
     if (user.userRoles) {
       for (const userRole of user.userRoles) {

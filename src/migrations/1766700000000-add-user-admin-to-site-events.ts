@@ -1,9 +1,4 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  TableColumn,
-  TableForeignKey,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, TableColumn, TableForeignKey } from 'typeorm';
 
 export class AddUserAdminToSiteEvents1766700000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -95,4 +90,3 @@ export class AddUserAdminToSiteEvents1766700000000 implements MigrationInterface
     await queryRunner.dropColumn('site_events', 'admin_id');
   }
 }
-

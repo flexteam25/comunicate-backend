@@ -8,6 +8,7 @@ import { ISiteRepository } from '../../../infrastructure/persistence/repositorie
 import { ISiteViewRepository } from '../../../infrastructure/persistence/repositories/site-view.repository';
 import { IUserHistorySiteRepository } from '../../../../user/infrastructure/persistence/repositories/user-history-site.repository';
 import { Site, SiteStatus } from '../../../domain/entities/site.entity';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 export interface GetSiteCommand {
   siteId: string;
@@ -24,6 +25,7 @@ export class GetSiteUseCase {
     private readonly siteViewRepository: ISiteViewRepository,
     @Inject('IUserHistorySiteRepository')
     private readonly userHistorySiteRepository: IUserHistorySiteRepository,
+    private readonly logger: LoggerService,
   ) {}
 
   async execute(command: GetSiteCommand): Promise<Site> {
@@ -53,7 +55,15 @@ export class GetSiteUseCase {
       })
       .catch((error) => {
         // Log error but don't fail the request
-        console.error('Failed to track site view:', error);
+        this.logger.error(
+          'Failed to track site view',
+          {
+            error: error instanceof Error ? error.message : String(error),
+            siteId: command.siteId,
+            userId: command.userId,
+          },
+          'site',
+        );
       });
 
     if (command.userId) {
@@ -61,7 +71,15 @@ export class GetSiteUseCase {
         .addHistory(command.userId, command.siteId)
         .catch((error) => {
           // Log error but don't fail the request
-          console.error('Failed to save user site history:', error);
+          this.logger.error(
+            'Failed to save user site history',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              userId: command.userId,
+              siteId: command.siteId,
+            },
+            'site',
+          );
         });
     }
 

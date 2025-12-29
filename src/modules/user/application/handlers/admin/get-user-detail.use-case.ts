@@ -29,4 +29,3 @@ export class GetUserDetailUseCase {
     return user;
   }
 }
-

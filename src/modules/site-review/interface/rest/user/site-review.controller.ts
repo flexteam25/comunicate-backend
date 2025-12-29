@@ -215,7 +215,10 @@ export class SiteReviewController {
       siteId,
     });
 
-    return ApiResponseUtil.success(statistics, 'Site review statistics retrieved successfully');
+    return ApiResponseUtil.success(
+      statistics,
+      'Site review statistics retrieved successfully',
+    );
   }
 
   @Get(':id')

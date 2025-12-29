@@ -29,7 +29,11 @@ export class ScamReportRepository implements IScamReportRepository {
 
       // Add relations
       if (relations?.includes('images')) {
-        queryBuilder.leftJoinAndSelect('report.images', 'images', 'images.deletedAt IS NULL');
+        queryBuilder.leftJoinAndSelect(
+          'report.images',
+          'images',
+          'images.deletedAt IS NULL',
+        );
       }
       if (relations?.includes('user')) {
         queryBuilder.leftJoinAndSelect('report.user', 'user');

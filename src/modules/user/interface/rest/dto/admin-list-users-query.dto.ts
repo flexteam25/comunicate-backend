@@ -27,4 +27,3 @@ export class AdminListUsersQueryDto {
   @Max(50)
   limit?: number;
 }
-

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { SiteEvent } from '../../../domain/entities/site-event.entity';
 import { SiteEventView } from '../../../domain/entities/site-event-view.entity';
@@ -57,4 +53,3 @@ export class GetSiteEventUseCase {
     return event;
   }
 }
-

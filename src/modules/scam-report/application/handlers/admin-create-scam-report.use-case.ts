@@ -1,9 +1,6 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import {
-  ScamReport,
-  ScamReportStatus,
-} from '../../domain/entities/scam-report.entity';
+import { ScamReport, ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { ScamReportImage } from '../../domain/entities/scam-report-image.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
 import { ISiteRepository } from '../../../site/infrastructure/persistence/repositories/site.repository';

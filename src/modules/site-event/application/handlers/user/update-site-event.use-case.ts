@@ -166,7 +166,8 @@ export class UpdateSiteEventUseCase {
 
           const updateData: Partial<SiteEvent> = {};
           if (command.title !== undefined) updateData.title = command.title;
-          if (command.description !== undefined) updateData.description = command.description;
+          if (command.description !== undefined)
+            updateData.description = command.description;
           if (command.startDate !== undefined) updateData.startDate = command.startDate;
           if (command.endDate !== undefined) updateData.endDate = command.endDate;
           updateData.isActive = false; // Reset to false - needs admin approval again
@@ -247,4 +248,3 @@ export class UpdateSiteEventUseCase {
     }
   }
 }
-

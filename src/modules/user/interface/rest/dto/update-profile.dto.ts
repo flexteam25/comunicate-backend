@@ -1,4 +1,12 @@
-import { IsDate, IsOptional, IsString, MaxLength, IsArray, IsUUID, ArrayMaxSize } from 'class-validator';
+import {
+  IsDate,
+  IsOptional,
+  IsString,
+  MaxLength,
+  IsArray,
+  IsUUID,
+  ArrayMaxSize,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateProfileDto {

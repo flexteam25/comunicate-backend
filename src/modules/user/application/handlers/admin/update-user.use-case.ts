@@ -14,6 +14,9 @@ import {
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { UserProfile } from '../../../domain/entities/user-profile.entity';
 import { UserToken } from '../../../../auth/domain/entities/user-token.entity';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 export interface UpdateUserCommand {
   userId: string;
@@ -28,6 +31,8 @@ export class UpdateUserUseCase {
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly transactionService: TransactionService,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   async execute(command: UpdateUserCommand): Promise<User> {
@@ -109,6 +114,33 @@ export class UpdateUserUseCase {
             },
           });
           await pointTransactionRepo.save(pointTransaction);
+
+          // Publish point updated event to Redis (after transaction commits)
+          // Note: This will be executed after transaction commits successfully
+          const eventData = {
+            userId: command.userId,
+            pointsDelta: pointsDelta,
+            previousPoints: currentPoints,
+            newPoints: newPoints,
+            transactionType: transactionType,
+            updatedAt: new Date(),
+          };
+
+          // Publish event after transaction (fire and forget)
+          setImmediate(() => {
+            this.redisService
+              .publishEvent(RedisChannel.POINT_UPDATED, eventData)
+              .catch((error) => {
+                this.logger.error(
+                  'Failed to publish point:updated event',
+                  {
+                    error: error instanceof Error ? error.message : String(error),
+                    userId: command.userId,
+                  },
+                  'user',
+                );
+              });
+          });
         }
 
         // Revoke all tokens if user is being deactivated

@@ -114,7 +114,9 @@ export class AdminSiteEventController {
   @Get()
   @RequirePermission('site.view')
   @HttpCode(HttpStatus.OK)
-  async listSiteEvents(@Query() query: ListSiteEventsQueryDto): Promise<ApiResponse<any>> {
+  async listSiteEvents(
+    @Query() query: ListSiteEventsQueryDto,
+  ): Promise<ApiResponse<any>> {
     const result = await this.listSiteEventsUseCase.execute({
       siteName: query.siteName,
       userName: query.userName,
@@ -149,11 +151,7 @@ export class AdminSiteEventController {
 
   @Post()
   @RequirePermission('site.create')
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'banners', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'banners', maxCount: 10 }]))
   @HttpCode(HttpStatus.CREATED)
   async createSiteEvent(
     @CurrentAdmin() admin: CurrentAdminPayload,
@@ -211,11 +209,7 @@ export class AdminSiteEventController {
 
   @Put(':id')
   @RequirePermission('site.update')
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'banners', maxCount: 10 },
-    ]),
-  )
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'banners', maxCount: 10 }]))
   @HttpCode(HttpStatus.OK)
   async updateSiteEvent(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -255,7 +249,8 @@ export class AdminSiteEventController {
       // Handle link URLs (banners without file upload)
       if (hasLinkUrls && dto.linkUrls) {
         dto.linkUrls.forEach((linkUrl: string, index: number) => {
-          const existingIndex = hasFiles && files?.banners ? files.banners.length + index : index;
+          const existingIndex =
+            hasFiles && files?.banners ? files.banners.length + index : index;
           if (banners) {
             banners.push({
               linkUrl,

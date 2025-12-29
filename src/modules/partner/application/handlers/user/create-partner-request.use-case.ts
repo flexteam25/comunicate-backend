@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IPartnerRequestRepository } from '../../../infrastructure/persistence/repositories/partner-request.repository';
 import {
@@ -70,17 +66,13 @@ export class CreatePartnerRequestUseCase {
         if (existingRequest) {
           // If request is PENDING, throw error
           if (existingRequest.status === PartnerRequestStatus.PENDING) {
-            throw new BadRequestException(
-              'You already have a pending partner request',
-            );
+            throw new BadRequestException('You already have a pending partner request');
           }
 
           // If request is APPROVED, user already has partner role (checked above)
           // This should not happen, but handle it anyway
           if (existingRequest.status === PartnerRequestStatus.APPROVED) {
-            throw new BadRequestException(
-              'You already have an approved partner request',
-            );
+            throw new BadRequestException('You already have an approved partner request');
           }
 
           // If request is REJECTED, update it to PENDING (reset for new request)

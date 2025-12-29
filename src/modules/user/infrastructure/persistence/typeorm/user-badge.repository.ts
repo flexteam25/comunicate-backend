@@ -21,7 +21,11 @@ export class UserBadgeRepository implements IUserBadgeRepository {
       .getMany();
   }
 
-  async assignBadge(userId: string, badgeId: string, active: boolean = false): Promise<UserBadge> {
+  async assignBadge(
+    userId: string,
+    badgeId: string,
+    active: boolean = false,
+  ): Promise<UserBadge> {
     // Check if already assigned
     const existing = await this.repository.findOne({
       where: { userId, badgeId },
@@ -56,7 +60,11 @@ export class UserBadgeRepository implements IUserBadgeRepository {
       .getOne();
   }
 
-  async updateActiveStatus(userId: string, badgeIds: string[], active: boolean): Promise<void> {
+  async updateActiveStatus(
+    userId: string,
+    badgeIds: string[],
+    active: boolean,
+  ): Promise<void> {
     if (badgeIds.length === 0) {
       return;
     }
@@ -69,7 +77,10 @@ export class UserBadgeRepository implements IUserBadgeRepository {
       .execute();
   }
 
-  async findByUserIdsWithActive(userId: string, badgeIds: string[]): Promise<UserBadge[]> {
+  async findByUserIdsWithActive(
+    userId: string,
+    badgeIds: string[],
+  ): Promise<UserBadge[]> {
     if (badgeIds.length === 0) {
       return [];
     }

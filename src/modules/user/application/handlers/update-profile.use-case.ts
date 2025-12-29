@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
 import { IUserBadgeRepository } from '../../infrastructure/persistence/repositories/user-badge.repository';

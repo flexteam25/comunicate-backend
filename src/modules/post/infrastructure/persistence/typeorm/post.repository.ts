@@ -79,7 +79,10 @@ export class PostRepository implements IPostRepository {
     // Map user reaction if userId is provided
     if (userId) {
       // PostgreSQL may return column names in lowercase when using getRawAndEntities
-      const userReactionType = (rawData?.userReactionType || rawData?.userreactiontype || rawData?.['userReactionType'] || rawData?.['userreactiontype']) as string | null;
+      const userReactionType = (rawData?.userReactionType ||
+        rawData?.userreactiontype ||
+        rawData?.['userReactionType'] ||
+        rawData?.['userreactiontype']) as string | null;
       (post as any).reacted = userReactionType || null;
     }
 
@@ -394,11 +397,10 @@ export class PostRepository implements IPostRepository {
             // Map user reaction if userId is provided
             if (filters?.userId) {
               // PostgreSQL may return column names in lowercase when using raw queries
-              const userReactionType =
-                (rawData.userReactionType ||
-                  rawData.userreactiontype ||
-                  rawData['userReactionType'] ||
-                  rawData['userreactiontype']) as string | null;
+              const userReactionType = (rawData.userReactionType ||
+                rawData.userreactiontype ||
+                rawData['userReactionType'] ||
+                rawData['userreactiontype']) as string | null;
               (post as any).reacted = userReactionType || null;
             }
           }
@@ -448,11 +450,10 @@ export class PostRepository implements IPostRepository {
       // Map user reaction if userId is provided
       if (filters?.userId) {
         // PostgreSQL may return column names in lowercase when using raw queries
-        const userReactionType =
-          (rawData?.userReactionType ||
-            rawData?.userreactiontype ||
-            rawData?.['userReactionType'] ||
-            rawData?.['userreactiontype']) as string | null;
+        const userReactionType = (rawData?.userReactionType ||
+          rawData?.userreactiontype ||
+          rawData?.['userReactionType'] ||
+          rawData?.['userreactiontype']) as string | null;
         (post as any).reacted = userReactionType || null;
       }
     });

@@ -43,4 +43,3 @@ export class UpdateSiteEventDto {
   @IsUUID('4', { each: true, message: 'Each delete banner ID must be a valid UUID' })
   deleteBanners?: string[];
 }
-

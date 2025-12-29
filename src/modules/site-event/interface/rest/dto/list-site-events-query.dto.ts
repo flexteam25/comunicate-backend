@@ -50,4 +50,3 @@ export class ListSiteEventsQueryDto {
   @Type(() => Number)
   limit?: number;
 }
-

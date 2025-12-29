@@ -1,6 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { User } from '../../../domain/entities/user.entity';
-import { IUserRepository, UserFilters } from '../../../infrastructure/persistence/repositories/user.repository';
+import {
+  IUserRepository,
+  UserFilters,
+} from '../../../infrastructure/persistence/repositories/user.repository';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 export interface ListUsersCommand {
@@ -32,4 +35,3 @@ export class ListUsersUseCase {
     );
   }
 }
-

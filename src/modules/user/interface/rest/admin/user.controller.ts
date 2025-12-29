@@ -46,9 +46,7 @@ export class AdminUserController {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
 
-  private mapUserRoles(user: {
-    userRoles?: Array<{ role?: { name: string } }>;
-  }): string {
+  private mapUserRoles(user: { userRoles?: Array<{ role?: { name: string } }> }): string {
     if (!user.userRoles || user.userRoles.length === 0) {
       return '';
     }
@@ -200,4 +198,3 @@ export class AdminUserController {
     );
   }
 }
-

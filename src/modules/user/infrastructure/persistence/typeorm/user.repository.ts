@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../../domain/entities/user.entity';
-import {
-  IUserRepository,
-  UserFilters,
-} from '../repositories/user.repository';
+import { IUserRepository, UserFilters } from '../repositories/user.repository';
 import {
   CursorPaginationResult,
   CursorPaginationUtil,

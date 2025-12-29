@@ -16,7 +16,13 @@ export class ListSiteEventsUseCase {
     private readonly siteEventRepository: ISiteEventRepository,
   ) {}
 
-  async execute(command: ListSiteEventsCommand): Promise<CursorPaginationResult<SiteEvent>> {
-    return this.siteEventRepository.findBySiteId(command.siteId, command.cursor, command.limit);
+  async execute(
+    command: ListSiteEventsCommand,
+  ): Promise<CursorPaginationResult<SiteEvent>> {
+    return this.siteEventRepository.findBySiteId(
+      command.siteId,
+      command.cursor,
+      command.limit,
+    );
   }
 }

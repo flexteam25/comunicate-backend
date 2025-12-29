@@ -13,6 +13,8 @@ export interface RedisConfig {
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: RedisClientType;
+  private subscriber: RedisClientType | null = null;
+  private subscriptions: Map<string, Set<(data: any) => void>> = new Map();
 
   constructor(
     private readonly configService: ConfigService,
@@ -31,14 +33,19 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       url: `redis://${config.password ? `:${config.password}@` : ''}${config.host}:${config.port}/${config.db}`,
     });
 
-    this.client.on('error', (err) =>
-      this.logger.error('Redis client error', { error: err.message }, 'redis'),
-    );
+    this.client.on('error', (err: Error) => {
+      this.logger.error('Redis client error', { error: err.message }, 'redis');
+    });
 
     await this.client.connect();
+    this.logger.info('Redis client connected successfully', {}, 'redis');
   }
 
   async onModuleDestroy() {
+    if (this.subscriber) {
+      await this.subscriber.quit();
+      this.subscriber = null;
+    }
     if (this.client) {
       await this.client.quit();
     }
@@ -142,33 +149,122 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.logger.error('Redis client not initialized for publish', { channel }, 'redis');
       return;
     }
-    await this.client.publish(channel, JSON.stringify(data));
+    try {
+      await this.client.publish(channel, JSON.stringify(data));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        'Error publishing event',
+        { channel, error: errorMessage },
+        'redis',
+      );
+    }
   }
 
+  /**
+   * Check if Redis client is ready
+   */
+  isClientReady(): boolean {
+    if (!this.client) {
+      return false;
+    }
+    // Check if client is connected and ready
+    const clientState = (this.client as { isReady?: boolean }).isReady;
+    return clientState === true;
+  }
+
+  /**
+   * Wait for Redis client to be ready (with timeout)
+   */
+  async waitForClientReady(timeout: number = 10000): Promise<boolean> {
+    const startTime = Date.now();
+    while (!this.isClientReady()) {
+      if (Date.now() - startTime > timeout) {
+        return false;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return true;
+  }
+
+  /**
+   * Subscribe to a Redis channel
+   * Multiple callbacks can be registered for the same channel
+   */
   async subscribeToChannel(
     channel: string,
     callback: (data: any) => void,
   ): Promise<void> {
-    if (!this.client) {
-      this.logger.error('Redis client not initialized', { channel }, 'redis');
+    // Wait for client to be ready
+    const isReady = await this.waitForClientReady();
+    if (!isReady || !this.client) {
+      this.logger.error('Redis client not ready after timeout', { channel }, 'redis');
       return;
     }
 
-    const subscriber = this.client.duplicate();
-    await subscriber.connect();
+    // Initialize subscriber if not exists
+    if (!this.subscriber) {
+      this.subscriber = this.client.duplicate();
+      await this.subscriber.connect();
+      this.logger.info('Redis subscriber client initialized successfully', {}, 'redis');
+    }
 
-    await subscriber.subscribe(channel, (message) => {
-      try {
-        const data = JSON.parse(message);
-        callback(data);
-      } catch (error) {
-        this.logger.error(
-          'Error parsing message',
-          { channel, error: (error as Error).message },
-          'redis',
-        );
+    // Store callback
+    if (!this.subscriptions.has(channel)) {
+      this.subscriptions.set(channel, new Set());
+
+      // Subscribe to channel if first callback
+      await this.subscriber.subscribe(channel, (message: string) => {
+        try {
+          const data = JSON.parse(message) as unknown;
+          const callbacks = this.subscriptions.get(channel);
+          if (callbacks) {
+            callbacks.forEach((cb) => cb(data));
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.logger.error(
+            'Error parsing message',
+            { channel, error: errorMessage },
+            'redis',
+          );
+        }
+      });
+
+      this.logger.info(`Subscribed to Redis channel: ${channel}`, { channel }, 'redis');
+    }
+
+    const callbacks = this.subscriptions.get(channel);
+    if (callbacks) {
+      callbacks.add(callback);
+    }
+  }
+
+  /**
+   * Unsubscribe from a Redis channel
+   */
+  async unsubscribeFromChannel(
+    channel: string,
+    callback?: (data: any) => void,
+  ): Promise<void> {
+    if (!this.subscriber || !this.subscriptions.has(channel)) {
+      return;
+    }
+
+    const callbacks = this.subscriptions.get(channel);
+    if (callbacks) {
+      if (callback) {
+        callbacks.delete(callback);
+      } else {
+        callbacks.clear();
       }
-    });
+
+      // Unsubscribe if no more callbacks
+      if (callbacks.size === 0) {
+        await this.subscriber.unsubscribe(channel);
+        this.subscriptions.delete(channel);
+      }
+    }
   }
 
   // Generic Key-Value Operations

@@ -136,9 +136,7 @@ export class AdminPartnerController {
     );
   }
 
-  private mapUserRoles(user: {
-    userRoles?: Array<{ role?: { name: string } }>;
-  }): string {
+  private mapUserRoles(user: { userRoles?: Array<{ role?: { name: string } }> }): string {
     const roles: string[] = [];
     if (user.userRoles) {
       for (const userRole of user.userRoles) {
