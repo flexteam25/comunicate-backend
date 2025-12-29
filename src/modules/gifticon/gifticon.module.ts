@@ -22,7 +22,7 @@ import { GifticonController } from './interface/rest/user/gifticon.controller';
 import { AdminGifticonController } from './interface/rest/admin/gifticon.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { UploadModule } from '../../shared/services/upload';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 
 @Module({
   imports: [
@@ -31,7 +31,7 @@ import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/us
     UserModule,
     PointModule,
     AdminGuardsModule,
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
     UploadModule.register({ storageType: 'local' }),
   ],
   controllers: [GifticonController, AdminGifticonController],

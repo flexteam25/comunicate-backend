@@ -20,7 +20,7 @@ import { AdminScamReportController } from './interface/rest/admin/scam-report.co
 import { SitePersistenceModule } from '../site/site-persistence.module';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { UploadModule } from '../../shared/services/upload';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/us
     SitePersistenceModule,
     AdminGuardsModule,
     UploadModule.register({ storageType: 'local' }),
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
   ],
   providers: [
     CreateScamReportUseCase,

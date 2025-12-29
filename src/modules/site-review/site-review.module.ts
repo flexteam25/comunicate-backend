@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SiteReviewPersistenceModule } from './site-review-persistence.module';
 import { SitePersistenceModule } from '../site/site-persistence.module';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { ServicesModule } from '../../shared/services/services.module';
 import { UploadModule } from '../../shared/services/upload/upload.module';
 import { CreateSiteReviewUseCase } from './application/handlers/create-site-review.use-case';
@@ -26,7 +26,7 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
   imports: [
     SiteReviewPersistenceModule,
     SitePersistenceModule,
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
     ServicesModule,
     AdminGuardsModule,
     UploadModule.register(),

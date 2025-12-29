@@ -244,6 +244,8 @@ export class UserController {
       phone: dto.phone,
       birthDate: dto.birthDate,
       gender: dto.gender,
+      activeBadges: dto.activeBadges,
+      inactiveBadges: dto.inactiveBadges,
     });
 
     // Reload user with relations for response
@@ -259,11 +261,11 @@ export class UserController {
       throw new NotFoundException('User not found');
     }
 
-    // Map badges (filter out soft-deleted badges)
+    // Map badges (only active badges, filter out soft-deleted badges)
     const badges: BadgeResponse[] = [];
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
-        if (userBadge?.badge && !userBadge.badge.deletedAt) {
+        if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
           const badge = userBadge.badge;
           badges.push({
             id: badge.id,
@@ -271,6 +273,7 @@ export class UserController {
             description: badge.description || undefined,
             iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
             earnedAt: userBadge.earnedAt,
+            active: userBadge.active,
           });
         }
       }
@@ -313,11 +316,11 @@ export class UserController {
       throw new NotFoundException('User not found');
     }
 
-    // Map badges (filter out soft-deleted badges)
+    // Map badges (only active badges, filter out soft-deleted badges)
     const badges: BadgeResponse[] = [];
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
-        if (userBadge?.badge && !userBadge.badge.deletedAt) {
+        if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
           const badge = userBadge.badge;
           badges.push({
             id: badge.id,
@@ -325,6 +328,7 @@ export class UserController {
             description: badge.description || undefined,
             iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
             earnedAt: userBadge.earnedAt,
+            active: userBadge.active,
           });
         }
       }
@@ -372,6 +376,7 @@ export class UserController {
           description: badge.description || undefined,
           iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
           earnedAt: userBadge.earnedAt,
+          active: userBadge.active,
         });
       }
     }

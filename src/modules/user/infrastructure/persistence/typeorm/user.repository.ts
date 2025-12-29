@@ -2,7 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../../domain/entities/user.entity';
-import { IUserRepository } from '../repositories/user.repository';
+import {
+  IUserRepository,
+  UserFilters,
+} from '../repositories/user.repository';
+import {
+  CursorPaginationResult,
+  CursorPaginationUtil,
+} from '../../../../../shared/utils/cursor-pagination.util';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -78,5 +85,81 @@ export class UserRepository implements IUserRepository {
 
   async save(user: User): Promise<User> {
     return this.repository.save(user);
+  }
+
+  async findAllWithCursor(
+    filters?: UserFilters,
+    cursor?: string,
+    limit = 20,
+  ): Promise<CursorPaginationResult<User>> {
+    const realLimit = limit > 50 ? 50 : limit;
+    const sortBy = 'createdAt';
+
+    const queryBuilder = this.repository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.userProfile', 'userProfile')
+      .leftJoinAndSelect('user.userRoles', 'userRoles')
+      .leftJoinAndSelect('userRoles.role', 'role')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
+      .where('user.deletedAt IS NULL')
+      .orderBy('user.createdAt', 'DESC')
+      .addOrderBy('user.id', 'DESC');
+
+    if (filters?.email) {
+      queryBuilder.andWhere('LOWER(user.email) LIKE LOWER(:email)', {
+        email: `%${filters.email}%`,
+      });
+    }
+
+    if (filters?.displayName) {
+      queryBuilder.andWhere('LOWER(user.displayName) LIKE LOWER(:displayName)', {
+        displayName: `%${filters.displayName}%`,
+      });
+    }
+
+    if (filters?.isActive !== undefined) {
+      queryBuilder.andWhere('user.isActive = :isActive', {
+        isActive: filters.isActive,
+      });
+    }
+
+    if (cursor) {
+      try {
+        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
+        const sortField = `user.${sortBy}`;
+        if (sortValue !== null && sortValue !== undefined) {
+          queryBuilder.andWhere(
+            `(${sortField} < :sortValue OR (${sortField} = :sortValue AND user.id < :cursorId))`,
+            { sortValue, cursorId: id },
+          );
+        } else {
+          queryBuilder.andWhere('user.id < :cursorId', {
+            cursorId: id,
+          });
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
+    queryBuilder.take(realLimit + 1);
+
+    const entities = await queryBuilder.getMany();
+    const hasMore = entities.length > realLimit;
+    const data = entities.slice(0, realLimit);
+
+    let nextCursor: string | null = null;
+    if (hasMore && data.length > 0) {
+      const lastItem = data[data.length - 1];
+      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
+      let sortValue: string | number | Date | null = null;
+      if (fieldValue !== null && fieldValue !== undefined) {
+        sortValue = fieldValue as string | number | Date;
+      }
+      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+    }
+
+    return { data, nextCursor, hasMore };
   }
 }

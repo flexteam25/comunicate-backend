@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { PostPersistenceModule } from './post-persistence.module';
 import { ServicesModule } from '../../shared/services/services.module';
 import { UploadModule } from '../../shared/services/upload';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 
 // Use Cases
@@ -36,7 +36,7 @@ import { PostController } from './interface/rest/user/post.controller';
     PostPersistenceModule,
     ServicesModule,
     UploadModule.register({ storageType: 'local' }),
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
     AdminGuardsModule,
   ],
   controllers: [AdminPostController, PostController],

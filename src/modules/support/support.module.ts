@@ -9,7 +9,7 @@ import { ReplyInquiryUseCase } from './application/handlers/admin/reply-inquiry.
 import { TransactionService } from '../../shared/services/transaction.service';
 import { UploadModule } from '../../shared/services/upload';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { UserSupportController } from './interface/rest/user/support.controller';
 import { AdminSupportController } from './interface/rest/admin/support.controller';
 import { UpdateUserInquiryUseCase } from './application/handlers/user/update-user-inquiry.use-case';
@@ -20,7 +20,7 @@ import { ListUserInquiriesUseCase } from './application/handlers/user/list-user-
     TypeOrmModule.forFeature([Inquiry]),
     UploadModule.register({ storageType: 'local' }),
     AdminGuardsModule,
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
   ],
 
   controllers: [UserSupportController, AdminSupportController],

@@ -1690,3 +1690,242 @@ Enhanced partner system with user-initiated partner requests, improved role resp
 - `POST /api/posts/:id/react` - Returns updated reaction status
 
 ---
+
+### 37. Point Transaction History System (Admin & User APIs)
+
+**Location:** `src/modules/point/`
+
+**Admin APIs (`/admin/points/transactions`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/admin/points/transactions` | List all point transactions with filters | ✅ (permission: `points.transaction.view`) |
+
+**User APIs (`/api/points/history`):**
+
+| Method | Endpoint | Description | Changes |
+|--------|----------|-------------|---------|
+| `GET` | `/api/points/history` | Get point transaction history | ✅ Added `startDate` and `endDate` filters |
+
+**Features:**
+- ✅ Admin API to view point transaction history with advanced filters
+- ✅ User API enhanced with date range filtering
+- ✅ Filter by transaction type: `all`, `earn`, `spend`, `refund`
+- ✅ Filter by date range: `startDate`, `endDate` (UTC date strings from FE)
+- ✅ Admin API: Search by user name (LIKE search, case-insensitive)
+- ✅ Cursor pagination for both APIs
+- ✅ Date filtering: Direct comparison with `created_at` (no date manipulation)
+- ✅ Admin API includes user information (id, email, displayName) in response
+
+**Admin API Query Parameters:**
+- `userName` - Search by user display name (optional, partial match, case-insensitive)
+- `type` - Transaction type: `all`, `earn`, `spend`, `refund` (optional, default: `all`)
+- `startDate` - Start date (UTC ISO 8601 date string, optional)
+- `endDate` - End date (UTC ISO 8601 date string, optional)
+- `cursor` - Cursor for pagination (optional)
+- `limit` - Number of records per page (optional, default: 20, max: 50)
+
+**User API Query Parameters:**
+- `type` - Transaction type: `all`, `earn`, `spend`, `refund` (optional, default: `all`)
+- `startDate` - Start date (UTC ISO 8601 date string, optional) - **NEW**
+- `endDate` - End date (UTC ISO 8601 date string, optional) - **NEW**
+- `cursor` - Cursor for pagination (optional)
+- `limit` - Number of records per page (optional, default: 20, max: 50)
+
+**Repository Updates:**
+- ✅ Enhanced `IPointTransactionRepository` interface:
+  - Added `startDate` and `endDate` to `findByUserIdWithCursor` filters
+  - Added new method `findAllWithCursor` for admin API with filters: `userName`, `type`, `startDate`, `endDate`
+- ✅ Updated `PointTransactionRepository` implementation:
+  - Date range filtering: `createdAt >= startDate` and `createdAt <= endDate` (direct comparison)
+  - User name search: LEFT JOIN with `user` table and LIKE search on `displayName`
+  - Efficient query building with proper index usage
+
+**DTOs:**
+- ✅ `AdminListPointTransactionsQueryDto` - New DTO for admin API query parameters
+- ✅ `GetPointHistoryQueryDto` - Updated with `startDate` and `endDate` fields
+
+**Use Cases:**
+- ✅ `ListPointTransactionsUseCase` - New use case for admin to list point transactions
+- ✅ `GetPointHistoryUseCase` - Updated to support date range filtering
+
+**Controllers:**
+- ✅ `AdminPointTransactionController` - New controller for admin point transaction APIs
+- ✅ `PointController.getPointHistory` - Updated to pass date filters to use case
+
+**Key Files:**
+- `src/modules/point/interface/rest/dto/admin-list-point-transactions-query.dto.ts` (new)
+- `src/modules/point/interface/rest/dto/get-point-history-query.dto.ts` (updated)
+- `src/modules/point/application/handlers/admin/list-point-transactions.use-case.ts` (new)
+- `src/modules/point/application/handlers/get-point-history.use-case.ts` (updated)
+- `src/modules/point/infrastructure/persistence/repositories/point-transaction.repository.ts` (updated)
+- `src/modules/point/infrastructure/persistence/typeorm/point-transaction.repository.ts` (updated)
+- `src/modules/point/interface/rest/admin/point-transaction.controller.ts` (new)
+- `src/modules/point/interface/rest/user/point.controller.ts` (updated)
+- `src/modules/point/point.module.ts` (updated)
+
+**API Examples:**
+```bash
+# Admin: List transactions with filters
+GET /admin/points/transactions?userName=john&type=earn&startDate=2025-12-24T00:00:00.000Z&endDate=2025-12-24T23:59:59.999Z&limit=20
+
+# User: Get history with date range
+GET /api/points/history?type=all&startDate=2025-12-24T00:00:00.000Z&endDate=2025-12-24T23:59:59.999Z&limit=20
+```
+
+---
+
+### 38. Admin User Management System
+
+**Location:** `src/modules/user/`
+
+**Admin APIs (`/admin/users`):**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/admin/users` | List all users with filters | ✅ (permission: `users.read`) |
+| `GET` | `/admin/users/:id` | Get user detail | ✅ (permission: `users.read`) |
+| `PUT` | `/admin/users/:id` | Update user (isActive, points) | ✅ (permission: `users.update`) |
+
+**Features:**
+- ✅ List users with cursor pagination
+- ✅ Filter by `email`, `displayName`, `isActive`
+- ✅ Get user detail with all direct user-related information (roles, points, profile, badges)
+- ✅ Update user `isActive` status
+- ✅ Update user `points` with delta value (positive to add, negative to subtract)
+- ✅ Point transaction logging when points are updated
+- ✅ Token revocation when user is deactivated (`isActive = false`)
+- ✅ Validation: Cannot subtract more points than user has (prevents negative balance)
+
+**Query Parameters (List Users):**
+- `email` - Search by email (optional, partial match)
+- `displayName` - Search by display name (optional, partial match)
+- `isActive` - Filter by active status (optional, boolean)
+- `cursor` - Cursor for pagination (optional)
+- `limit` - Number of records per page (optional, default: 20, max: 50)
+
+**Update User Request Body:**
+- `isActive` - User active status (optional, boolean)
+- `points` - Points delta value (optional, integer):
+  - **Positive**: Adds points to user's current balance
+  - **Negative**: Subtracts points from user's current balance (validates sufficient balance)
+  - Example: `points: 500` adds 500 points, `points: -300` subtracts 300 points
+
+**Point Update Logic:**
+- ✅ Delta-based: `points` field represents change amount, not absolute value
+- ✅ Positive delta: Adds to current balance (`newPoints = currentPoints + pointsDelta`)
+- ✅ Negative delta: Subtracts from current balance (validates: `currentPoints + pointsDelta >= 0`)
+- ✅ Error handling: Throws `BadRequestException` if subtraction would result in negative balance
+- ✅ Point transaction logging:
+  - `amount`: Delta value (positive for EARN, negative for SPEND) - **synchronized with system convention**
+  - `type`: `EARN` for positive delta, `SPEND` for negative delta
+  - `category`: `admin_adjustment`
+  - `description`: Shows `+X` or `-X` points
+
+**User Deactivation:**
+- ✅ When `isActive` changes from `true` to `false`, all user tokens are revoked
+- ✅ Prevents user access immediately after deactivation
+- ✅ Uses `EntityManager.update()` to revoke all tokens in transaction
+
+**Repository Updates:**
+- ✅ Enhanced `IUserRepository` interface:
+  - Added `UserFilters` interface for query parameters
+  - Added `findAllWithCursor` method for admin listing with filters
+- ✅ Updated `UserRepository` implementation:
+  - Supports filtering by `email`, `displayName`, `isActive`
+  - Includes relations: `userProfile`, `userRoles.role`, `userBadges.badge`
+  - Filters out soft-deleted badges in relations
+
+**DTOs:**
+- ✅ `AdminListUsersQueryDto` - DTO for admin list users query parameters
+- ✅ `AdminUpdateUserDto` - DTO for admin update user (isActive, points)
+
+**Use Cases:**
+- ✅ `ListUsersUseCase` - List users with filters
+- ✅ `GetUserDetailUseCase` - Get user detail with all relations
+- ✅ `UpdateUserUseCase` - Update user with point transaction logging and token revocation
+
+**Controllers:**
+- ✅ `AdminUserController` - New controller for admin user management APIs
+
+**Key Files:**
+- `src/modules/user/interface/rest/dto/admin-list-users-query.dto.ts` (new)
+- `src/modules/user/interface/rest/dto/admin-update-user.dto.ts` (new)
+- `src/modules/user/application/handlers/admin/list-users.use-case.ts` (new)
+- `src/modules/user/application/handlers/admin/get-user-detail.use-case.ts` (new)
+- `src/modules/user/application/handlers/admin/update-user.use-case.ts` (new)
+- `src/modules/user/infrastructure/persistence/repositories/user.repository.ts` (updated)
+- `src/modules/user/infrastructure/persistence/typeorm/user.repository.ts` (updated)
+- `src/modules/user/interface/rest/admin/user.controller.ts` (new)
+- `src/modules/user/user.module.ts` (updated)
+
+**API Examples:**
+```bash
+# List users with filters
+GET /admin/users?email=john&displayName=John&isActive=true&limit=20
+
+# Get user detail
+GET /admin/users/:userId
+
+# Update user (add 500 points)
+PUT /admin/users/:userId
+{
+  "points": 500
+}
+
+# Update user (subtract 300 points)
+PUT /admin/users/:userId
+{
+  "points": -300
+}
+
+# Deactivate user
+PUT /admin/users/:userId
+{
+  "isActive": false
+}
+```
+
+---
+
+### 39. Circular Dependency Resolution
+
+**Problem:**
+- Circular dependency between `AuthModule` and `UserModule`
+- Circular dependency between `PointModule` and `UserModule`
+
+**Solution:**
+- ✅ Created `AuthPersistenceModule` to separate `UserTokenRepository` from `AuthModule`
+- ✅ `AuthModule` imports `UserPersistenceModule` instead of `UserModule`
+- ✅ `UserModule` imports `AuthPersistenceModule` instead of `UserTokenRepositoryModule`
+- ✅ `PointModule` imports `UserPersistenceModule` instead of `UserModule`
+- ✅ `UserModule` removed `PointModule` import and added `PointTransaction` entity to `TypeOrmModule.forFeature`
+
+**Changes:**
+- ✅ Created `src/modules/auth/auth-persistence.module.ts` (new)
+  - Exports `IUserTokenRepository` and `UserTokenRepository`
+  - Imports `TypeOrmModule.forFeature([UserToken])`
+- ✅ Updated `AuthModule`:
+  - Replaced `UserModule` import with `UserPersistenceModule`
+  - Replaced `UserTokenRepositoryModule` import with `AuthPersistenceModule`
+- ✅ Updated `UserModule`:
+  - Replaced `UserTokenRepositoryModule` import with `AuthPersistenceModule`
+  - Removed `PointModule` import
+  - Added `PointTransaction` entity to `TypeOrmModule.forFeature`
+- ✅ Updated `PointModule`:
+  - Replaced `UserModule` import with `UserPersistenceModule`
+- ✅ Updated all other modules (12 modules) to use `AuthPersistenceModule` instead of `UserTokenRepositoryModule`
+
+**Key Files:**
+- `src/modules/auth/auth-persistence.module.ts` (new)
+- `src/modules/auth/auth.module.ts` (updated)
+- `src/modules/user/user.module.ts` (updated)
+- `src/modules/point/point.module.ts` (updated)
+- All modules importing `UserTokenRepositoryModule` (12 modules updated)
+
+**Result:**
+- ✅ No circular dependencies
+- ✅ Clean module separation
+- ✅ No `forwardRef()` needed
+
+---

@@ -59,7 +59,7 @@ export class AssignBadgeUseCase {
       throw new BadRequestException('Badge already assigned to this user');
     }
 
-    // Assign badge
-    return this.userBadgeRepository.assignBadge(command.userId, command.badgeId);
+    // Assign badge with active = true (default when admin assigns)
+    return this.userBadgeRepository.assignBadge(command.userId, command.badgeId, true);
   }
 }

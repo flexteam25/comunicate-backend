@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PointPersistenceModule } from './point-persistence.module';
 import { ServicesModule } from '../../shared/services/services.module';
-import { UserModule } from '../user/user.module';
+import { UserPersistenceModule } from '../user/user-persistence.module';
 import { SiteModule } from '../site/site.module';
 import { CreatePointTransactionUseCase } from './application/handlers/create-point-transaction.use-case';
 import { GetPointHistoryUseCase } from './application/handlers/get-point-history.use-case';
@@ -19,16 +19,16 @@ import { PointController } from './interface/rest/user/point.controller';
 import { AdminPointExchangeController } from './interface/rest/admin/point-exchange.controller';
 import { AdminPointTransactionController } from './interface/rest/admin/point-transaction.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 
 @Module({
   imports: [
     PointPersistenceModule,
     ServicesModule,
-    UserModule,
+    UserPersistenceModule,
     SiteModule,
     AdminGuardsModule,
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
   ],
   controllers: [
     PointController,

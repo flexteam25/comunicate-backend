@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PocaEventPersistenceModule } from './poca-event-persistence.module';
 import { ServicesModule } from '../../shared/services/services.module';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { ListPocaEventsUseCase } from './application/handlers/user/list-poca-events.use-case';
 import { GetPocaEventUseCase } from './application/handlers/user/get-poca-event.use-case';
 import { CreatePocaEventUseCase } from './application/handlers/admin/create-poca-event.use-case';
@@ -18,7 +18,7 @@ import { UploadModule } from '../../shared/services/upload';
   imports: [
     PocaEventPersistenceModule,
     ServicesModule,
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
     AdminGuardsModule,
     UploadModule.register({ storageType: 'local' }),
   ],

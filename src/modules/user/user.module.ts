@@ -16,14 +16,20 @@ import { ChangePasswordUseCase } from './application/handlers/change-password.us
 import { UpdateProfileUseCase } from './application/handlers/update-profile.use-case';
 import { AssignBadgeUseCase } from './application/handlers/admin/assign-badge.use-case';
 import { RemoveBadgeUseCase } from './application/handlers/admin/remove-badge.use-case';
+import { ListUsersUseCase } from './application/handlers/admin/list-users.use-case';
+import { GetUserDetailUseCase } from './application/handlers/admin/get-user-detail.use-case';
+import { UpdateUserUseCase } from './application/handlers/admin/update-user.use-case';
 import { UserController } from './interface/rest/user.controller';
+import { AdminUserController } from './interface/rest/admin/user.controller';
+import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
+import { PointTransaction } from '../point/domain/entities/point-transaction.entity';
 import { AddFavoriteSiteUseCase } from './application/handlers/add-favorite-site.use-case';
 import { RemoveFavoriteSiteUseCase } from './application/handlers/remove-favorite-site.use-case';
 import { ListFavoriteSitesUseCase } from './application/handlers/list-favorite-sites.use-case';
 import { GetActivityUseCase } from './application/handlers/get-activity.use-case';
 import { PasswordService } from '../../shared/services/password.service';
 import { UploadModule } from '../../shared/services/upload';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { SiteModule } from '../site/site.module';
 
 @Module({
@@ -36,12 +42,14 @@ import { SiteModule } from '../site/site.module';
       UserHistorySite,
       UserComment,
       Badge,
+      PointTransaction,
     ]),
     UploadModule.register({ storageType: 'local' }),
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
     SiteModule,
+    AdminGuardsModule,
   ],
-  controllers: [UserController],
+  controllers: [UserController, AdminUserController],
   providers: [
     {
       provide: 'IUserRepository',
@@ -76,6 +84,9 @@ import { SiteModule } from '../site/site.module';
     GetActivityUseCase,
     AssignBadgeUseCase,
     RemoveBadgeUseCase,
+    ListUsersUseCase,
+    GetUserDetailUseCase,
+    UpdateUserUseCase,
     PasswordService,
   ],
   exports: [

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { SiteManagerPersistenceModule } from './site-manager-persistence.module';
 import { SitePersistenceModule } from '../site/site-persistence.module';
 import { TierModule } from '../tier/tier.module';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { ServicesModule } from '../../shared/services/services.module';
 import { UploadModule } from '../../shared/services/upload';
 import { ApplySiteManagerUseCase } from './application/handlers/apply-site-manager.use-case';
@@ -25,7 +25,7 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
     SiteManagerPersistenceModule,
     SitePersistenceModule,
     TierModule,
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
     ServicesModule,
     UploadModule.register({ storageType: 'local' }),
     AdminGuardsModule,

@@ -21,7 +21,7 @@ export class UserBadgeRepository implements IUserBadgeRepository {
       .getMany();
   }
 
-  async assignBadge(userId: string, badgeId: string): Promise<UserBadge> {
+  async assignBadge(userId: string, badgeId: string, active: boolean = false): Promise<UserBadge> {
     // Check if already assigned
     const existing = await this.repository.findOne({
       where: { userId, badgeId },
@@ -31,7 +31,7 @@ export class UserBadgeRepository implements IUserBadgeRepository {
       return existing;
     }
 
-    const entity = this.repository.create({ userId, badgeId });
+    const entity = this.repository.create({ userId, badgeId, active });
     return this.repository.save(entity);
   }
 
@@ -54,5 +54,29 @@ export class UserBadgeRepository implements IUserBadgeRepository {
       .andWhere('userBadge.badgeId = :badgeId', { badgeId })
       .andWhere('badge.deletedAt IS NULL')
       .getOne();
+  }
+
+  async updateActiveStatus(userId: string, badgeIds: string[], active: boolean): Promise<void> {
+    if (badgeIds.length === 0) {
+      return;
+    }
+    await this.repository
+      .createQueryBuilder()
+      .update(UserBadge)
+      .set({ active })
+      .where('userId = :userId', { userId })
+      .andWhere('badgeId IN (:...badgeIds)', { badgeIds })
+      .execute();
+  }
+
+  async findByUserIdsWithActive(userId: string, badgeIds: string[]): Promise<UserBadge[]> {
+    if (badgeIds.length === 0) {
+      return [];
+    }
+    return this.repository
+      .createQueryBuilder('userBadge')
+      .where('userBadge.userId = :userId', { userId })
+      .andWhere('userBadge.badgeId IN (:...badgeIds)', { badgeIds })
+      .getMany();
   }
 }

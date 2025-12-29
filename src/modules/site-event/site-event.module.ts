@@ -21,7 +21,7 @@ import { GetSiteEventUseCase as AdminGetSiteEventUseCase } from './application/h
 // Controllers
 import { SiteEventController } from './interface/rest/user/site-event.controller';
 import { AdminSiteEventController } from './interface/rest/admin/site-event.controller';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 
 @Module({
   imports: [
@@ -31,7 +31,7 @@ import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/us
     SiteManagerPersistenceModule,
     ServicesModule,
     UploadModule.register({ storageType: 'local' }),
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
   ],
   providers: [
     // User use cases
@@ -49,4 +49,3 @@ import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/us
   exports: [SiteEventPersistenceModule],
 })
 export class SiteEventModule {}
-

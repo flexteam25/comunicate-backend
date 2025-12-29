@@ -20,6 +20,13 @@ export class UserBadge {
   })
   earnedAt: Date;
 
+  @Column({
+    name: 'active',
+    type: 'boolean',
+    default: false,
+  })
+  active: boolean;
+
   @ManyToOne(() => User, (user) => user.userBadges, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;

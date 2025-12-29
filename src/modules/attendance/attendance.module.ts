@@ -9,13 +9,13 @@ import { ListAttendancesUseCase } from './application/handlers/list-attendances.
 import { CalculateAttendanceStatisticsUseCase } from './application/handlers/calculate-attendance-statistics.use-case';
 import { AttendanceController } from './interface/rest/attendance.controller';
 import { UserModule } from '../user/user.module';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Attendance, AttendanceStatistic]),
     UserModule, // To access IUserRepository
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
   ],
   controllers: [AttendanceController],
   providers: [

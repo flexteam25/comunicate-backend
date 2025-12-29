@@ -5,7 +5,7 @@ import { User } from '../user/domain/entities/user.entity';
 import { Role } from '../user/domain/entities/role.entity';
 import { UserRole } from '../user/domain/entities/user-role.entity';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
-import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
+import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { GetMyPartnerRequestUseCase } from './application/handlers/user/get-my-partner-request.use-case';
 import { CreatePartnerRequestUseCase } from './application/handlers/user/create-partner-request.use-case';
 import { ListPartnerRequestsUseCase } from './application/handlers/admin/list-partner-requests.use-case';
@@ -20,7 +20,7 @@ import { AdminPartnerController } from './interface/rest/admin/partner.controlle
     PartnerPersistenceModule,
     TypeOrmModule.forFeature([User, Role, UserRole]),
     AdminGuardsModule,
-    UserTokenRepositoryModule,
+    AuthPersistenceModule,
   ],
   providers: [
     GetMyPartnerRequestUseCase,
