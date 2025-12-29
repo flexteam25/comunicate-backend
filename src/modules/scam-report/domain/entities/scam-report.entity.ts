@@ -19,8 +19,8 @@ export enum ScamReportStatus {
 @Index('IDX_scam_reports_status', ['status'])
 @Index('IDX_scam_reports_site_status', ['siteId', 'status'])
 export class ScamReport extends BaseEntity {
-  @Column({ name: 'user_id', type: 'uuid' })
-  userId: string;
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId?: string;
 
   @Column({ name: 'site_id', type: 'uuid', nullable: true })
   siteId?: string;
@@ -62,9 +62,9 @@ export class ScamReport extends BaseEntity {
   @Column({ name: 'reviewed_at', type: 'timestamptz', nullable: true })
   reviewedAt?: Date;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user?: User;
 
   @ManyToOne(() => Site, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'site_id' })

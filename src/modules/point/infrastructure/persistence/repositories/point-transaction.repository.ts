@@ -6,6 +6,18 @@ export interface IPointTransactionRepository {
     userId: string,
     filters?: {
       type?: 'earn' | 'spend' | 'refund';
+      startDate?: Date;
+      endDate?: Date;
+    },
+    cursor?: string,
+    limit?: number,
+  ): Promise<CursorPaginationResult<PointTransaction>>;
+  findAllWithCursor(
+    filters?: {
+      userName?: string;
+      type?: 'earn' | 'spend' | 'refund';
+      startDate?: Date;
+      endDate?: Date;
     },
     cursor?: string,
     limit?: number,

@@ -1,7 +1,19 @@
-import { IsOptional, IsIn, IsString, IsInt, Min, Max, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsIn,
+  IsString,
+  IsInt,
+  Min,
+  Max,
+  IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class GetPointHistoryQueryDto {
+export class AdminListPointTransactionsQueryDto {
+  @IsOptional()
+  @IsString()
+  userName?: string;
+
   @IsOptional()
   @IsIn(['all', 'earn', 'spend', 'refund'])
   type?: 'all' | 'earn' | 'spend' | 'refund';

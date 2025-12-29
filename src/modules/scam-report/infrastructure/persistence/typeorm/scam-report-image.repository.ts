@@ -13,7 +13,7 @@ export class ScamReportImageRepository implements IScamReportImageRepository {
 
   async findByReportId(reportId: string): Promise<ScamReportImage[]> {
     return this.repository.find({
-      where: { scamReportId: reportId },
+      where: { scamReportId: reportId, deletedAt: null },
       order: { order: 'ASC' },
     });
   }
@@ -34,5 +34,11 @@ export class ScamReportImageRepository implements IScamReportImageRepository {
 
   async deleteByReportId(reportId: string): Promise<void> {
     await this.repository.delete({ scamReportId: reportId });
+  }
+
+  async softDelete(ids: string[]): Promise<void> {
+    if (ids.length > 0) {
+      await this.repository.softDelete(ids);
+    }
   }
 }

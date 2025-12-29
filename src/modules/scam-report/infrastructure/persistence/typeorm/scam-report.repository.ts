@@ -29,7 +29,7 @@ export class ScamReportRepository implements IScamReportRepository {
 
       // Add relations
       if (relations?.includes('images')) {
-        queryBuilder.leftJoinAndSelect('report.images', 'images');
+        queryBuilder.leftJoinAndSelect('report.images', 'images', 'images.deletedAt IS NULL');
       }
       if (relations?.includes('user')) {
         queryBuilder.leftJoinAndSelect('report.user', 'user');
@@ -91,7 +91,7 @@ export class ScamReportRepository implements IScamReportRepository {
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.user', 'user')
       .leftJoinAndSelect('report.site', 'site')
-      .leftJoinAndSelect('report.images', 'images')
+      .leftJoinAndSelect('report.images', 'images', 'images.deletedAt IS NULL')
       .leftJoinAndSelect('report.admin', 'admin')
       .addSelect(
         (subQuery) =>
@@ -175,7 +175,7 @@ export class ScamReportRepository implements IScamReportRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.site', 'site')
-      .leftJoinAndSelect('report.images', 'images')
+      .leftJoinAndSelect('report.images', 'images', 'images.deletedAt IS NULL')
       .leftJoinAndSelect('report.admin', 'admin')
       .addSelect(
         (subQuery) =>
@@ -261,7 +261,7 @@ export class ScamReportRepository implements IScamReportRepository {
       .leftJoinAndSelect('report.user', 'user')
       .leftJoinAndSelect('report.site', 'site')
       .leftJoinAndSelect('report.admin', 'admin')
-      .leftJoinAndSelect('report.images', 'images')
+      .leftJoinAndSelect('report.images', 'images', 'images.deletedAt IS NULL')
       .addSelect(
         (subQuery) =>
           subQuery

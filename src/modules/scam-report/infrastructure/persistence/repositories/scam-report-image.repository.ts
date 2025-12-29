@@ -6,4 +6,5 @@ export interface IScamReportImageRepository {
   createMany(images: Partial<ScamReportImage>[]): Promise<ScamReportImage[]>;
   delete(id: string): Promise<void>;
   deleteByReportId(reportId: string): Promise<void>;
+  softDelete(ids: string[]): Promise<void>;
 }

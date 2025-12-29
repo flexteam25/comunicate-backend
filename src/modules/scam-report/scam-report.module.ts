@@ -12,6 +12,9 @@ import { AddCommentUseCase } from './application/handlers/add-comment.use-case';
 import { DeleteCommentUseCase } from './application/handlers/delete-comment.use-case';
 import { ListScamReportCommentsUseCase } from './application/handlers/list-scam-report-comments.use-case';
 import { ReactToScamReportUseCase } from './application/handlers/react-to-scam-report.use-case';
+import { AdminCreateScamReportUseCase } from './application/handlers/admin-create-scam-report.use-case';
+import { AdminUpdateScamReportUseCase } from './application/handlers/admin-update-scam-report.use-case';
+import { AdminDeleteScamReportUseCase } from './application/handlers/admin-delete-scam-report.use-case';
 import { ScamReportController } from './interface/rest/user/scam-report.controller';
 import { AdminScamReportController } from './interface/rest/admin/scam-report.controller';
 import { SitePersistenceModule } from '../site/site-persistence.module';
@@ -40,6 +43,9 @@ import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/us
     DeleteCommentUseCase,
     ListScamReportCommentsUseCase,
     ReactToScamReportUseCase,
+    AdminCreateScamReportUseCase,
+    AdminUpdateScamReportUseCase,
+    AdminDeleteScamReportUseCase,
   ],
   controllers: [ScamReportController, AdminScamReportController],
   exports: [ScamReportPersistenceModule, ListScamReportsUseCase],

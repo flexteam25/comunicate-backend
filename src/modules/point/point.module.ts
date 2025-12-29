@@ -14,8 +14,10 @@ import { MoveExchangeToProcessingUseCase } from './application/handlers/admin/mo
 import { ApproveExchangeUseCase } from './application/handlers/admin/approve-exchange.use-case';
 import { RejectExchangeUseCase } from './application/handlers/admin/reject-exchange.use-case';
 import { CancelExchangeUseCase } from './application/handlers/user/cancel-exchange.use-case';
+import { ListPointTransactionsUseCase } from './application/handlers/admin/list-point-transactions.use-case';
 import { PointController } from './interface/rest/user/point.controller';
 import { AdminPointExchangeController } from './interface/rest/admin/point-exchange.controller';
+import { AdminPointTransactionController } from './interface/rest/admin/point-transaction.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/user-token-repository.module';
 
@@ -28,7 +30,11 @@ import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/us
     AdminGuardsModule,
     UserTokenRepositoryModule,
   ],
-  controllers: [PointController, AdminPointExchangeController],
+  controllers: [
+    PointController,
+    AdminPointExchangeController,
+    AdminPointTransactionController,
+  ],
   providers: [
     CreatePointTransactionUseCase,
     GetPointHistoryUseCase,
@@ -41,6 +47,7 @@ import { UserTokenRepositoryModule } from '../auth/infrastructure/persistence/us
     MoveExchangeToProcessingUseCase,
     ApproveExchangeUseCase,
     RejectExchangeUseCase,
+    ListPointTransactionsUseCase,
   ],
   exports: [CreatePointTransactionUseCase, PointPersistenceModule],
 })

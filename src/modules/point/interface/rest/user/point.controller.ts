@@ -45,6 +45,8 @@ export class PointController {
     const result = await this.getPointHistoryUseCase.execute({
       userId: user.userId,
       type: query.type || 'all',
+      startDate: query.startDate ? new Date(query.startDate) : undefined,
+      endDate: query.endDate ? new Date(query.endDate) : undefined,
       cursor: query.cursor,
       limit: query.limit || 20,
     });

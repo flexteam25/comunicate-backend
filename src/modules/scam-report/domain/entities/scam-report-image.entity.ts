@@ -6,6 +6,7 @@ import {
   Index,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { ScamReport } from './scam-report.entity';
 
@@ -33,4 +34,7 @@ export class ScamReportImage {
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt?: Date;
 }

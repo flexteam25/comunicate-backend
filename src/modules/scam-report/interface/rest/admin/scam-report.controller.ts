@@ -1,14 +1,21 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
+  Delete,
   Param,
   Query,
+  Body,
   UseGuards,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/admin-permission.guard';
 import { RequirePermission } from '../../../../admin/infrastructure/decorators/require-permission.decorator';
@@ -20,11 +27,17 @@ import { ListScamReportsUseCase } from '../../../application/handlers/list-scam-
 import { GetScamReportUseCase } from '../../../application/handlers/get-scam-report.use-case';
 import { ApproveScamReportUseCase } from '../../../application/handlers/approve-scam-report.use-case';
 import { RejectScamReportUseCase } from '../../../application/handlers/reject-scam-report.use-case';
+import { AdminCreateScamReportUseCase } from '../../../application/handlers/admin-create-scam-report.use-case';
+import { AdminUpdateScamReportUseCase } from '../../../application/handlers/admin-update-scam-report.use-case';
+import { AdminDeleteScamReportUseCase } from '../../../application/handlers/admin-delete-scam-report.use-case';
 import { ScamReportResponseDto } from '../dto/scam-report-response.dto';
+import { AdminCreateScamReportDto } from '../dto/admin-create-scam-report.dto';
+import { AdminUpdateScamReportDto } from '../dto/admin-update-scam-report.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ScamReportStatus } from '../../../domain/entities/scam-report.entity';
 import { ConfigService } from '@nestjs/config';
+import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 
 @Controller('admin/scam-reports')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -36,6 +49,10 @@ export class AdminScamReportController {
     private readonly getScamReportUseCase: GetScamReportUseCase,
     private readonly approveScamReportUseCase: ApproveScamReportUseCase,
     private readonly rejectScamReportUseCase: RejectScamReportUseCase,
+    private readonly adminCreateScamReportUseCase: AdminCreateScamReportUseCase,
+    private readonly adminUpdateScamReportUseCase: AdminUpdateScamReportUseCase,
+    private readonly adminDeleteScamReportUseCase: AdminDeleteScamReportUseCase,
+    private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -160,6 +177,146 @@ export class AdminScamReportController {
     return ApiResponseUtil.success(
       this.mapScamReportToResponse(fullReport),
       'Scam report rejected successfully',
+    );
+  }
+
+  @Post()
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermission('scam-reports.moderate')
+  async createScamReport(
+    @CurrentAdmin() admin: CurrentAdminPayload,
+    @Body() dto: AdminCreateScamReportDto,
+    @UploadedFiles()
+    files?: {
+      images?: MulterFile[];
+    },
+  ): Promise<ApiResponse<ScamReportResponseDto>> {
+    const imageUrls: string[] = [];
+
+    // Upload images if provided
+    if (files?.images && files.images.length > 0) {
+      for (const file of files.images) {
+        // Validate file
+        if (file.size > 20 * 1024 * 1024) {
+          throw new BadRequestException('Image file size exceeds 20MB');
+        }
+        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
+        }
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'scam-reports',
+        });
+        imageUrls.push(uploadResult.relativePath);
+      }
+    }
+
+    const report = await this.adminCreateScamReportUseCase.execute({
+      adminId: admin.adminId,
+      siteId: dto.siteId,
+      siteUrl: dto.siteUrl,
+      siteName: dto.siteName,
+      siteAccountInfo: dto.siteAccountInfo,
+      registrationUrl: dto.registrationUrl,
+      contact: dto.contact,
+      title: dto.title,
+      description: dto.description,
+      amount: dto.amount,
+      status: dto.status,
+      images: imageUrls.length > 0 ? imageUrls : undefined,
+    });
+
+    // Reload with relations for response
+    const fullReport = await this.getScamReportUseCase.execute({
+      reportId: report.id,
+      isAdmin: true,
+    });
+
+    return ApiResponseUtil.success(
+      this.mapScamReportToResponse(fullReport),
+      'Scam report created successfully',
+    );
+  }
+
+  @Put(':id')
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('scam-reports.moderate')
+  async updateScamReport(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentAdmin() admin: CurrentAdminPayload,
+    @Body() dto: AdminUpdateScamReportDto,
+    @UploadedFiles()
+    files?: {
+      images?: MulterFile[];
+    },
+  ): Promise<ApiResponse<ScamReportResponseDto>> {
+    let imageUrls: string[] | undefined;
+
+    // Upload images if provided
+    if (files?.images && files.images.length > 0) {
+      imageUrls = [];
+      for (const file of files.images) {
+        // Validate file
+        if (file.size > 20 * 1024 * 1024) {
+          throw new BadRequestException('Image file size exceeds 20MB');
+        }
+        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
+          throw new BadRequestException(
+            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
+          );
+        }
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'scam-reports',
+        });
+        imageUrls.push(uploadResult.relativePath);
+      }
+    }
+
+    const report = await this.adminUpdateScamReportUseCase.execute({
+      reportId: id,
+      adminId: admin.adminId,
+      siteId: dto.siteId,
+      siteUrl: dto.siteUrl,
+      siteName: dto.siteName,
+      siteAccountInfo: dto.siteAccountInfo,
+      registrationUrl: dto.registrationUrl,
+      contact: dto.contact,
+      title: dto.title,
+      description: dto.description,
+      amount: dto.amount,
+      status: dto.status,
+      images: imageUrls,
+      deleteImages: dto.deleteImages,
+    });
+
+    // Reload with relations for response
+    const fullReport = await this.getScamReportUseCase.execute({
+      reportId: id,
+      isAdmin: true,
+    });
+
+    return ApiResponseUtil.success(
+      this.mapScamReportToResponse(fullReport),
+      'Scam report updated successfully',
+    );
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('scam-reports.moderate')
+  async deleteScamReport(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.adminDeleteScamReportUseCase.execute({
+      reportId: id,
+    });
+
+    return ApiResponseUtil.success(
+      { message: 'Scam report deleted successfully' },
+      'Scam report deleted successfully',
     );
   }
 }

@@ -26,6 +26,7 @@ export class GetScamReportUseCase {
       'reactions',
       'user',
       'site',
+      'admin',
     ]);
 
     if (!report) {

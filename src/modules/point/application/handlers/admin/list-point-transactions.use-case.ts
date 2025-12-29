@@ -1,13 +1,14 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { PointTransaction } from '../../domain/entities/point-transaction.entity';
-import { IPointTransactionRepository } from '../../infrastructure/persistence/repositories/point-transaction.repository';
-import { CursorPaginationResult } from '../../../../shared/utils/cursor-pagination.util';
+import { PointTransaction } from '../../../domain/entities/point-transaction.entity';
+import { IPointTransactionRepository } from '../../../infrastructure/persistence/repositories/point-transaction.repository';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 /**
- * Command to get point transaction history
+ * Command to list point transactions (admin)
  */
-export interface GetPointHistoryCommand {
-  userId: string;
+export interface ListPointTransactionsCommand {
+  /** Search by user display name */
+  userName?: string;
   /** Transaction type: all, earn, spend, refund */
   type?: 'all' | 'earn' | 'spend' | 'refund';
   /** Start date (UTC) */
@@ -21,29 +22,29 @@ export interface GetPointHistoryCommand {
 }
 
 /**
- * Use case to get user's point transaction history
- * Returns a flat list with cursor pagination (frontend groups by date if needed)
+ * Use case to list point transactions for admin
+ * Returns transactions with user information
  */
 @Injectable()
-export class GetPointHistoryUseCase {
+export class ListPointTransactionsUseCase {
   constructor(
     @Inject('IPointTransactionRepository')
     private readonly pointTransactionRepository: IPointTransactionRepository,
   ) {}
 
   /**
-   * Get point transaction history with type filter (if provided)
+   * List point transactions with filters
    */
   async execute(
-    command: GetPointHistoryCommand,
+    command: ListPointTransactionsCommand,
   ): Promise<CursorPaginationResult<PointTransaction>> {
     // Convert type from 'all' to undefined to get all transactions
     const transactionType =
       command.type && command.type !== 'all' ? command.type : undefined;
 
-    return this.pointTransactionRepository.findByUserIdWithCursor(
-      command.userId,
+    return this.pointTransactionRepository.findAllWithCursor(
       {
+        userName: command.userName,
         type: transactionType,
         startDate: command.startDate,
         endDate: command.endDate,
