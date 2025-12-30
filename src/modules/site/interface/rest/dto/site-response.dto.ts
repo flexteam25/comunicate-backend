@@ -44,6 +44,7 @@ export class SiteManagerResponse {
   id: string;
   email: string;
   displayName?: string;
+  avatarUrl?: string;
 }
 
 export class SiteResponse {

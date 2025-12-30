@@ -14,6 +14,8 @@ import {
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { UserProfile } from '../../../domain/entities/user-profile.entity';
 import { UserToken } from '../../../../auth/domain/entities/user-token.entity';
+import { UserRole } from '../../../domain/entities/user-role.entity';
+import { Role } from '../../../domain/entities/role.entity';
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
@@ -23,6 +25,7 @@ export interface UpdateUserCommand {
   adminId: string;
   isActive?: boolean;
   points?: number;
+  partner?: boolean;
 }
 
 @Injectable()
@@ -150,6 +153,62 @@ export class UpdateUserUseCase {
             { userId: command.userId, revokedAt: null },
             { revokedAt: new Date() },
           );
+        }
+
+        // Handle partner role update
+        // User can only have 1 role: either "user" or "partner"
+        if (command.partner !== undefined) {
+          const roleRepo = entityManager.getRepository(Role);
+          const userRoleRepo = entityManager.getRepository(UserRole);
+
+          // Find user role and partner role
+          const userRole = await roleRepo.findOne({
+            where: { name: 'user', deletedAt: null },
+          });
+
+          const partnerRole = await roleRepo.findOne({
+            where: { name: 'partner', deletedAt: null },
+          });
+
+          if (!userRole) {
+            throw new NotFoundException('User role not found');
+          }
+
+          if (!partnerRole) {
+            throw new NotFoundException('Partner role not found');
+          }
+
+          // Get all current user roles
+          const allUserRoles = await userRoleRepo.find({
+            where: { userId: command.userId },
+          });
+
+          // Determine target role
+          const targetRole = command.partner === true ? partnerRole : userRole;
+
+          if (allUserRoles.length === 0) {
+            // User has no roles, create target role
+            const newUserRole = userRoleRepo.create({
+              userId: command.userId,
+              roleId: targetRole.id,
+            });
+            await userRoleRepo.save(newUserRole);
+          } else if (allUserRoles.length === 1) {
+            // User has exactly 1 role, update it to target role
+            const existingUserRole = allUserRoles[0];
+            if (existingUserRole.roleId !== targetRole.id) {
+              existingUserRole.roleId = targetRole.id;
+              await userRoleRepo.save(existingUserRole);
+            }
+          } else {
+            // User has multiple roles, delete all and create target role
+            await userRoleRepo.delete({ userId: command.userId });
+            const newUserRole = userRoleRepo.create({
+              userId: command.userId,
+              roleId: targetRole.id,
+            });
+            await userRoleRepo.save(newUserRole);
+          }
         }
 
         return savedUser;

@@ -7,6 +7,7 @@ import {
   IsNumber,
   Min,
   Max,
+  IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SiteStatus } from '../../../domain/entities/site.entity';
@@ -69,4 +70,14 @@ export class UpdateSiteDto {
   @IsOptional()
   @IsString()
   deleteSiteImage?: string;
+
+  @IsOptional()
+  @IsArray({ message: 'Partner UIDs must be an array' })
+  @IsUUID('4', { each: true, message: 'Each partner UID must be a valid UUID' })
+  partnerUid?: string[];
+
+  @IsOptional()
+  @IsArray({ message: 'Remove partner UIDs must be an array' })
+  @IsUUID('4', { each: true, message: 'Each remove partner UID must be a valid UUID' })
+  removePartnerUid?: string[];
 }

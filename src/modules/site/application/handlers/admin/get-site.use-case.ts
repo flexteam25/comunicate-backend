@@ -20,6 +20,8 @@ export class GetSiteUseCase {
       'siteBadges',
       'siteBadges.badge',
       'siteDomains',
+      'siteManagers',
+      'siteManagers.user',
     ]);
 
     if (!site) {

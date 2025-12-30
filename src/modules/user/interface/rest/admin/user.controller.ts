@@ -152,6 +152,7 @@ export class AdminUserController {
       adminId: admin.adminId,
       isActive: dto.isActive,
       points: dto.points,
+      partner: dto.partner,
     });
 
     // Reload user with relations for response

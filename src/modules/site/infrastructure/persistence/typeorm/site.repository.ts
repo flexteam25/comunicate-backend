@@ -15,43 +15,44 @@ export class SiteRepository implements ISiteRepository {
     private readonly repository: Repository<Site>,
   ) {}
 
-  async findById(id: string, relations?: string[]): Promise<Site | null> {
-    // If relations include siteBadges.badge, use query builder to filter deleted badges
-    if (relations && relations.includes('siteBadges.badge')) {
-      const queryBuilder = this.repository
-        .createQueryBuilder('site')
-        .where('site.id = :id', { id })
-        .andWhere('site.deletedAt IS NULL');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async findById(id: string, _relations?: string[]): Promise<Site | null> {
+    // Always use query builder to ensure consistent relationship loading (like findAllWithCursor)
+    // Relations parameter is kept for backward compatibility but not used (all relations are always loaded)
+    const queryBuilder = this.repository
+      .createQueryBuilder('site')
+      .where('site.id = :id', { id })
+      .andWhere('site.deletedAt IS NULL');
 
-      // Add all relations
-      if (relations.includes('category')) {
-        queryBuilder.leftJoinAndSelect('site.category', 'category');
-      }
-      if (relations.includes('tier')) {
-        queryBuilder.leftJoinAndSelect('site.tier', 'tier');
-      }
-      if (relations.includes('siteBadges')) {
-        queryBuilder.leftJoinAndSelect('site.siteBadges', 'siteBadges');
-      }
-      if (relations.includes('siteBadges.badge')) {
-        queryBuilder.leftJoinAndSelect(
-          'siteBadges.badge',
-          'badge',
-          'badge.deletedAt IS NULL',
-        );
-      }
-      if (relations.includes('siteDomains')) {
-        queryBuilder.leftJoinAndSelect('site.siteDomains', 'siteDomains');
-      }
+    // Always load core relations (same as findAllWithCursor)
+    queryBuilder.leftJoinAndSelect('site.category', 'category');
+    queryBuilder.leftJoinAndSelect('site.tier', 'tier');
+    queryBuilder.leftJoinAndSelect('site.siteBadges', 'siteBadges');
+    queryBuilder.leftJoinAndSelect(
+      'siteBadges.badge',
+      'badge',
+      'badge.deletedAt IS NULL',
+    );
+    queryBuilder.leftJoinAndSelect('site.siteDomains', 'siteDomains');
+    queryBuilder.leftJoinAndSelect(
+      'site.siteManagers',
+      'siteManagers',
+      'siteManagers.isActive = :isActive',
+      { isActive: true },
+    );
+    queryBuilder.leftJoinAndSelect('siteManagers.user', 'managerUser');
 
-      return queryBuilder.getOne();
-    }
+    queryBuilder.loadRelationCountAndMap(
+      'site.issueCount',
+      'site.scamReports',
+      'scamReport',
+      (qb) =>
+        qb
+          .where('scamReport.deletedAt IS NULL')
+          .andWhere("scamReport.status = 'published'"),
+    );
 
-    // Otherwise use standard findOne
-    return this.repository.findOne({
-      where: { id, deletedAt: null },
-      ...(relations && relations.length > 0 ? { relations } : {}),
-    });
+    return queryBuilder.getOne();
   }
 
   async findByIdIncludingDeleted(id: string): Promise<Site | null> {
@@ -82,7 +83,12 @@ export class SiteRepository implements ISiteRepository {
       'badge.deletedAt IS NULL',
     );
     queryBuilder.leftJoinAndSelect('site.siteDomains', 'siteDomains');
-    queryBuilder.leftJoinAndSelect('site.siteManagers', 'siteManagers');
+    queryBuilder.leftJoinAndSelect(
+      'site.siteManagers',
+      'siteManagers',
+      'siteManagers.isActive = :isActive',
+      { isActive: true },
+    );
     queryBuilder.leftJoinAndSelect('siteManagers.user', 'managerUser');
 
     queryBuilder.loadRelationCountAndMap(

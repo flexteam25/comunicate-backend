@@ -9,8 +9,15 @@ import { ISiteCategoryRepository } from '../../../infrastructure/persistence/rep
 import { ITierRepository } from '../../../../tier/infrastructure/persistence/repositories/tier.repository';
 import { Site, SiteStatus } from '../../../domain/entities/site.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
-import { EntityManager } from 'typeorm';
+import { EntityManager, In } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import {
+  SiteManager,
+  SiteManagerRole,
+} from '../../../../site-manager/domain/entities/site-manager.entity';
+import { User } from '../../../../user/domain/entities/user.entity';
+import { UserRole } from '../../../../user/domain/entities/user-role.entity';
+import { Role } from '../../../../user/domain/entities/role.entity';
 
 export interface UpdateSiteCommand {
   siteId: string;
@@ -29,6 +36,8 @@ export interface UpdateSiteCommand {
   firstCharge?: number;
   recharge?: number;
   experience?: number;
+  partnerUid?: string[];
+  removePartnerUid?: string[];
 }
 
 @Injectable()
@@ -183,6 +192,139 @@ export class UpdateSiteUseCase {
             updateData.experience = command.experience;
 
           await siteRepo.update(command.siteId, updateData);
+
+          // Handle partnerUid updates
+          if (command.partnerUid && command.partnerUid.length > 0) {
+            const siteManagerRepo = manager.getRepository(SiteManager);
+            const userRepo = manager.getRepository(User);
+            const roleRepo = manager.getRepository(Role);
+            const userRoleRepo = manager.getRepository(UserRole);
+
+            // Find partner role
+            const partnerRole = await roleRepo.findOne({
+              where: { name: 'partner', deletedAt: null },
+            });
+
+            if (!partnerRole) {
+              throw new NotFoundException('Partner role not found');
+            }
+
+            // Batch validate all users exist
+            const partnerUsers = await userRepo.find({
+              where: { id: In(command.partnerUid), deletedAt: null },
+            });
+
+            const foundUserIds = new Set(partnerUsers.map((u) => u.id));
+            const missingUserIds = command.partnerUid.filter(
+              (id) => !foundUserIds.has(id),
+            );
+            if (missingUserIds.length > 0) {
+              throw new NotFoundException(
+                `Partner users not found: ${missingUserIds.join(', ')}`,
+              );
+            }
+
+            // Batch validate all users have partner role
+            const userRoles = await userRoleRepo.find({
+              where: {
+                userId: In(command.partnerUid),
+                roleId: partnerRole.id,
+              },
+            });
+
+            const usersWithPartnerRole = new Set(userRoles.map((ur) => ur.userId));
+            const usersWithoutPartnerRole = command.partnerUid.filter(
+              (id) => !usersWithPartnerRole.has(id),
+            );
+            if (usersWithoutPartnerRole.length > 0) {
+              throw new BadRequestException(`Users do not have partner role`);
+            }
+
+            // Batch query existing site managers
+            const existingManagers = await siteManagerRepo.find({
+              where: {
+                siteId: command.siteId,
+                userId: In(command.partnerUid),
+              },
+            });
+
+            const existingManagerMap = new Map(
+              existingManagers.map((m) => [m.userId, m]),
+            );
+
+            // Prepare managers to update and create
+            const managersToUpdate: SiteManager[] = [];
+            const managersToCreate: Partial<SiteManager>[] = [];
+
+            for (const partnerUid of command.partnerUid) {
+              const existingManager = existingManagerMap.get(partnerUid);
+
+              if (existingManager) {
+                // If exists and already active, skip
+                if (!existingManager.isActive) {
+                  // If exists but inactive, set to active
+                  existingManager.isActive = true;
+                  managersToUpdate.push(existingManager);
+                }
+              } else {
+                // Create new SiteManager with isActive = true
+                managersToCreate.push({
+                  siteId: command.siteId,
+                  userId: partnerUid,
+                  role: SiteManagerRole.MANAGER,
+                  isActive: true,
+                });
+              }
+            }
+
+            // Bulk update existing managers
+            if (managersToUpdate.length > 0) {
+              await siteManagerRepo.save(managersToUpdate);
+            }
+
+            // Bulk create new managers
+            if (managersToCreate.length > 0) {
+              const newManagers = siteManagerRepo.create(managersToCreate);
+              await siteManagerRepo.save(newManagers);
+            }
+          }
+
+          // Handle removePartnerUid (set isActive = false)
+          if (command.removePartnerUid && command.removePartnerUid.length > 0) {
+            const siteManagerRepo = manager.getRepository(SiteManager);
+
+            // Batch query existing site managers
+            const existingManagers = await siteManagerRepo.find({
+              where: {
+                siteId: command.siteId,
+                userId: In(command.removePartnerUid),
+              },
+            });
+
+            const existingManagerMap = new Map(
+              existingManagers.map((m) => [m.userId, m]),
+            );
+
+            // Validate all users are managers of this site
+            const missingManagerIds = command.removePartnerUid.filter(
+              (id) => !existingManagerMap.has(id),
+            );
+            if (missingManagerIds.length > 0) {
+              throw new BadRequestException(
+                `Users are not managers of this site: ${missingManagerIds.join(', ')}`,
+              );
+            }
+
+            // Bulk update: set isActive = false
+            const managersToDeactivate = existingManagers.map((m) => {
+              m.isActive = false;
+              return m;
+            });
+
+            if (managersToDeactivate.length > 0) {
+              await siteManagerRepo.save(managersToDeactivate);
+            }
+          }
 
           return command.siteId; // Return ID to reload with relationships outside transaction
         },

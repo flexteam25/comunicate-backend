@@ -27,6 +27,7 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
 import { UploadModule } from '../../shared/services/upload';
 import { SitePersistenceModule } from './site-persistence.module';
 import { UserHistorySitePersistenceModule } from '../user/user-history-site-persistence.module';
+import { UserPersistenceModule } from '../user/user-persistence.module';
 import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { OptionalJwtAuthGuard } from '../../shared/guards/optional-jwt-auth.guard';
 import { ScamReportModule } from '../scam-report/scam-report.module';
@@ -40,6 +41,7 @@ import { SiteManagerPersistenceModule } from '../site-manager/site-manager-persi
     TierModule,
     AdminGuardsModule,
     UserHistorySitePersistenceModule,
+    UserPersistenceModule,
     AuthPersistenceModule,
     UploadModule.register({ storageType: 'local' }),
     ScamReportModule,

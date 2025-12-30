@@ -24,11 +24,6 @@ export class AuthUserSeeder {
       const rolesData = [
         { name: 'user', description: 'Regular user role', type: RoleType.USER },
         {
-          name: 'site-owner',
-          description: 'Site owner role',
-          type: RoleType.USER,
-        },
-        {
           name: 'partner',
           description: 'Partner role',
           type: RoleType.USER,
@@ -66,14 +61,11 @@ export class AuthUserSeeder {
       const userRole = savedRoles.find((r: Role) => r.name === 'user') as
         | Role
         | undefined;
-      const siteOwnerRole = savedRoles.find((r: Role) => r.name === 'site-owner') as
-        | Role
-        | undefined;
       const adminRole = savedRoles.find((r: Role) => r.name === 'admin') as
         | Role
         | undefined;
 
-      if (!userRole || !siteOwnerRole || !adminRole) {
+      if (!userRole || !adminRole) {
         throw new Error('Failed to create required roles');
       }
 
@@ -356,28 +348,6 @@ export class AuthUserSeeder {
         regularUser = await queryRunner.manager.save(newRegularUser);
       }
 
-      // Find site owner user including soft-deleted ones
-      let siteOwnerUser = await queryRunner.manager
-        .createQueryBuilder(User, 'user')
-        .where('LOWER(user.email) = LOWER(:email)', { email: 'siteowner@example.com' })
-        .withDeleted()
-        .getOne();
-      if (siteOwnerUser) {
-        siteOwnerUser.passwordHash = passwordHash;
-        siteOwnerUser.displayName = 'Site Owner';
-        siteOwnerUser.isActive = true;
-        siteOwnerUser.deletedAt = null; // Restore if soft-deleted
-        await queryRunner.manager.save(siteOwnerUser);
-      } else {
-        const newSiteOwnerUser = queryRunner.manager.create(User, {
-          email: 'siteowner@example.com',
-          passwordHash,
-          displayName: 'Site Owner',
-          isActive: true,
-        });
-        siteOwnerUser = await queryRunner.manager.save(newSiteOwnerUser);
-      }
-
       // Upsert user roles
       if (regularUser && userRole) {
         let userUserRole = await queryRunner.manager.findOne(UserRole, {
@@ -389,41 +359,6 @@ export class AuthUserSeeder {
             roleId: userRole.id,
           });
           await queryRunner.manager.save(userUserRole);
-        }
-      }
-
-      if (siteOwnerUser && siteOwnerRole) {
-        let siteOwnerUserRole = await queryRunner.manager.findOne(UserRole, {
-          where: { userId: siteOwnerUser.id, roleId: siteOwnerRole.id },
-        });
-        if (!siteOwnerUserRole) {
-          siteOwnerUserRole = queryRunner.manager.create(UserRole, {
-            userId: siteOwnerUser.id,
-            roleId: siteOwnerRole.id,
-          });
-          await queryRunner.manager.save(siteOwnerUserRole);
-        }
-      }
-
-      // Upsert user permissions
-      if (siteOwnerUser) {
-        const siteOwnerPermissions = savedPermissions.filter(
-          (p: Permission) => p.name === 'sites.update' || p.name === 'sites.create',
-        );
-        for (const permission of siteOwnerPermissions) {
-          const existingPermission = await queryRunner.manager.findOne(UserPermission, {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            where: { userId: siteOwnerUser.id, permissionId: permission.id },
-          });
-
-          if (!existingPermission) {
-            const userPermission = queryRunner.manager.create(UserPermission, {
-              userId: siteOwnerUser.id,
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-              permissionId: permission.id,
-            });
-            await queryRunner.manager.save(userPermission);
-          }
         }
       }
 

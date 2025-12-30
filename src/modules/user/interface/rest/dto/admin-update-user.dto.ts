@@ -12,4 +12,9 @@ export class AdminUpdateUserDto {
   @Type(() => Number)
   @IsInt()
   points?: number;
+
+  @IsOptional()
+  @TransformToBoolean
+  @IsBoolean()
+  partner?: boolean;
 }

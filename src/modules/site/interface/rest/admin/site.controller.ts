@@ -37,6 +37,7 @@ import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ConfigService } from '@nestjs/config';
 import { Site } from '../../../domain/entities/site.entity';
 import { MulterFile } from '../../../../../shared/services/upload';
+import { SiteManager } from '../../../../site-manager/domain/entities/site-manager.entity';
 import { RestoreSiteUseCase } from '../../../application/handlers/admin/restore-site.use-case';
 import { AddSiteDomainUseCase } from '../../../application/handlers/admin/add-site-domain.use-case';
 import { UpdateSiteDomainUseCase } from '../../../application/handlers/admin/update-site-domain.use-case';
@@ -119,12 +120,13 @@ export class AdminSiteController {
         isActive: sd.isActive,
         isCurrent: sd.isCurrent,
       })),
-      managers: (site.siteManagers || [])
+      managers: ((site.siteManagers || []) as SiteManager[])
         .filter((sm) => sm.user)
         .map((sm) => ({
           id: sm.user.id,
           email: sm.user.email,
           displayName: sm.user.displayName || undefined,
+          avatarUrl: buildFullUrl(this.apiServiceUrl, sm.user.avatarUrl || null) || null,
         })),
       createdAt: site.createdAt,
       updatedAt: site.updatedAt,
@@ -246,6 +248,8 @@ export class AdminSiteController {
       deleteLogo: dto.deleteLogo === 'true',
       deleteMainImage: dto.deleteMainImage === 'true',
       deleteSiteImage: dto.deleteSiteImage === 'true',
+      partnerUid: dto.partnerUid,
+      removePartnerUid: dto.removePartnerUid,
     });
     return ApiResponseUtil.success(
       this.mapSiteToResponse(site),
