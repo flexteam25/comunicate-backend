@@ -82,6 +82,8 @@ export class SiteRepository implements ISiteRepository {
       'badge.deletedAt IS NULL',
     );
     queryBuilder.leftJoinAndSelect('site.siteDomains', 'siteDomains');
+    queryBuilder.leftJoinAndSelect('site.siteManagers', 'siteManagers');
+    queryBuilder.leftJoinAndSelect('siteManagers.user', 'managerUser');
 
     queryBuilder.loadRelationCountAndMap(
       'site.issueCount',

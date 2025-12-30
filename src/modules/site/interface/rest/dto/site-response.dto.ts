@@ -40,6 +40,12 @@ export class SiteDomainResponse {
   isCurrent: boolean;
 }
 
+export class SiteManagerResponse {
+  id: string;
+  email: string;
+  displayName?: string;
+}
+
 export class SiteResponse {
   id: string;
   name: string;
@@ -59,6 +65,7 @@ export class SiteResponse {
   issueCount: number;
   badges: BadgeResponse[];
   domains: SiteDomainResponse[];
+  managers?: SiteManagerResponse[];
   createdAt: Date;
   updatedAt: Date;
 }

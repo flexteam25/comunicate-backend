@@ -117,6 +117,9 @@ export class Site extends BaseEntity {
   @OneToMany(() => ScamReport, (scamReport) => scamReport.site)
   scamReports: ScamReport[];
 
+  @OneToMany('SiteManager', 'site')
+  siteManagers: any[];
+
   // Computed property loaded by loadRelationCountAndMap
   issueCount?: number;
 }

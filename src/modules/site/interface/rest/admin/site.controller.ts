@@ -119,6 +119,13 @@ export class AdminSiteController {
         isActive: sd.isActive,
         isCurrent: sd.isCurrent,
       })),
+      managers: (site.siteManagers || [])
+        .filter((sm) => sm.user)
+        .map((sm) => ({
+          id: sm.user.id,
+          email: sm.user.email,
+          displayName: sm.user.displayName || undefined,
+        })),
       createdAt: site.createdAt,
       updatedAt: site.updatedAt,
     };
