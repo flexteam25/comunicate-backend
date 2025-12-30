@@ -132,7 +132,7 @@ export class UpdateUserUseCase {
           // Publish event after transaction (fire and forget)
           setImmediate(() => {
             this.redisService
-              .publishEvent(RedisChannel.POINT_UPDATED, eventData)
+              .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
               .catch((error) => {
                 this.logger.error(
                   'Failed to publish point:updated event',
@@ -161,53 +161,86 @@ export class UpdateUserUseCase {
           const roleRepo = entityManager.getRepository(Role);
           const userRoleRepo = entityManager.getRepository(UserRole);
 
-          // Find user role and partner role
-          const userRole = await roleRepo.findOne({
-            where: { name: 'user', deletedAt: null },
+          // Find target role based on partner value
+          const targetRoleName = command.partner === true ? 'partner' : 'user';
+          const targetRole = await roleRepo.findOne({
+            where: { name: targetRoleName, deletedAt: null },
           });
 
-          const partnerRole = await roleRepo.findOne({
-            where: { name: 'partner', deletedAt: null },
-          });
-
-          if (!userRole) {
-            throw new NotFoundException('User role not found');
+          if (!targetRole) {
+            throw new NotFoundException(`${targetRoleName} role not found`);
           }
 
-          if (!partnerRole) {
-            throw new NotFoundException('Partner role not found');
-          }
-
-          // Get all current user roles
-          const allUserRoles = await userRoleRepo.find({
+          // Get current user roles to determine previous role
+          const currentUserRoles = await userRoleRepo.find({
             where: { userId: command.userId },
+            relations: ['role'],
           });
 
-          // Determine target role
-          const targetRole = command.partner === true ? partnerRole : userRole;
+          // Get previous role name (if exists)
+          const previousRole =
+            currentUserRoles.length > 0 && currentUserRoles[0].role
+              ? currentUserRoles[0].role.name
+              : null;
 
-          if (allUserRoles.length === 0) {
-            // User has no roles, create target role
+          // Check if role actually changed
+          const roleChanged = previousRole !== targetRoleName;
+
+          // Always ensure user has exactly 1 role (target role)
+          if (currentUserRoles.length === 0) {
+            // No role exists, create target role
             const newUserRole = userRoleRepo.create({
               userId: command.userId,
               roleId: targetRole.id,
             });
             await userRoleRepo.save(newUserRole);
-          } else if (allUserRoles.length === 1) {
-            // User has exactly 1 role, update it to target role
-            const existingUserRole = allUserRoles[0];
+          } else if (currentUserRoles.length === 1) {
+            // User has 1 role, update to target role
+            const existingUserRole = currentUserRoles[0];
             if (existingUserRole.roleId !== targetRole.id) {
-              existingUserRole.roleId = targetRole.id;
-              await userRoleRepo.save(existingUserRole);
+              await userRoleRepo
+                .createQueryBuilder()
+                .update(UserRole)
+                .set({ roleId: targetRole.id })
+                .where('id = :id', { id: existingUserRole.id })
+                .execute();
             }
           } else {
-            // User has multiple roles, delete all and create target role
+            // User has multiple roles (should not happen, but handle it)
+            // Delete all and create target role
             await userRoleRepo.delete({ userId: command.userId });
             const newUserRole = userRoleRepo.create({
               userId: command.userId,
               roleId: targetRole.id,
             });
             await userRoleRepo.save(newUserRole);
+          }
+
+          // Publish role updated event only if role actually changed
+          if (roleChanged) {
+            const eventData = {
+              userId: command.userId,
+              previousRole: previousRole,
+              newRole: targetRoleName,
+              isPartner: command.partner,
+              updatedAt: new Date(),
+            };
+
+            // Publish event after transaction (fire and forget)
+            setImmediate(() => {
+              this.redisService
+                .publishEvent(RedisChannel.ROLE_UPDATED as string, eventData)
+                .catch((error) => {
+                  this.logger.error(
+                    'Failed to publish role:updated event',
+                    {
+                      error: error instanceof Error ? error.message : String(error),
+                      userId: command.userId,
+                    },
+                    'user',
+                  );
+                });
+            });
           }
         }
 

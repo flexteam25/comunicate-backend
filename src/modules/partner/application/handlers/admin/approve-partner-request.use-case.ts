@@ -14,6 +14,9 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { User } from '../../../../user/domain/entities/user.entity';
 import { UserRole } from '../../../../user/domain/entities/user-role.entity';
 import { Role } from '../../../../user/domain/entities/role.entity';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 export interface ApprovePartnerRequestCommand {
   requestId: string;
@@ -26,6 +29,8 @@ export class ApprovePartnerRequestUseCase {
     @Inject('IPartnerRequestRepository')
     private readonly partnerRequestRepository: IPartnerRequestRepository,
     private readonly transactionService: TransactionService,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   async execute(command: ApprovePartnerRequestCommand): Promise<PartnerRequest> {
@@ -62,13 +67,24 @@ export class ApprovePartnerRequestUseCase {
           throw new NotFoundException('Partner role not found');
         }
 
-        // Check if user already has partner role
-        const existingUserRole = await userRoleRepo.findOne({
-          where: {
-            userId: request.userId,
-            roleId: partnerRole.id,
-          },
+        // Get all current user roles to determine previous role
+        const allUserRoles = await userRoleRepo.find({
+          where: { userId: request.userId },
+          relations: ['role'],
         });
+
+        // Get previous role name
+        const previousRole =
+          allUserRoles.length > 0 && allUserRoles[0].role
+            ? allUserRoles[0].role.name
+            : null;
+
+        // Check if user already has partner role
+        const existingUserRole = allUserRoles.find(
+          (ur) => ur.roleId === partnerRole.id,
+        );
+
+        const roleChanged = previousRole !== 'partner';
 
         if (!existingUserRole) {
           // Add partner role to user
@@ -93,6 +109,34 @@ export class ApprovePartnerRequestUseCase {
 
         if (!reloaded) {
           throw new Error('Failed to reload partner request after approval');
+        }
+
+        // Publish role updated event to Redis (after transaction commits)
+        if (roleChanged) {
+          const eventData = {
+            userId: request.userId,
+            previousRole: previousRole,
+            newRole: 'partner',
+            isPartner: true,
+            updatedAt: new Date(),
+          };
+
+          // Publish event after transaction (fire and forget)
+          setImmediate(() => {
+            this.redisService
+              .publishEvent(RedisChannel.ROLE_UPDATED as string, eventData)
+              .catch((error) => {
+                this.logger.error(
+                  'Failed to publish role:updated event',
+                  {
+                    error: error instanceof Error ? error.message : String(error),
+                    userId: request.userId,
+                    requestId: command.requestId,
+                  },
+                  'partner',
+                );
+              });
+          });
         }
 
         return reloaded;

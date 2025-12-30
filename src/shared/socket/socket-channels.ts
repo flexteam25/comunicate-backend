@@ -4,6 +4,8 @@
 export enum RedisChannel {
   SITE_CREATED = 'site:created',
   POINT_UPDATED = 'point:updated',
+  ROLE_UPDATED = 'role:updated',
+  INQUIRY_REPLIED = 'inquiry:replied',
 }
 
 /**
@@ -28,6 +30,8 @@ export enum SocketEvent {
   SITE_CREATED = 'site:created',
   // Private events (per user)
   POINT_UPDATED = 'point:updated',
+  ROLE_UPDATED = 'role:updated',
+  INQUIRY_REPLIED = 'inquiry:replied',
 }
 
 /**

@@ -17,6 +17,9 @@ import {
   PointTransaction,
   PointTransactionType,
 } from '../../../../point/domain/entities/point-transaction.entity';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 export interface RejectRedemptionCommand {
   redemptionId: string;
@@ -38,6 +41,8 @@ export class RejectRedemptionUseCase {
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly transactionService: TransactionService,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   async execute(command: RejectRedemptionCommand): Promise<GifticonRedemption> {
@@ -92,6 +97,36 @@ export class RejectRedemptionUseCase {
           description: `Gifticon Redemption Refund: ${redemption.gifticonSnapshot?.title || 'Unknown'} ${redemption.pointsUsed}원`,
         });
         await pointTransactionRepo.save(pointTransaction);
+
+        // Get previous points for event
+        const previousPoints = userProfile.points - redemption.pointsUsed;
+
+        // Publish point updated event to Redis (after transaction commits)
+        const eventData = {
+          userId: redemption.userId,
+          pointsDelta: redemption.pointsUsed,
+          previousPoints: previousPoints,
+          newPoints: newBalance,
+          transactionType: PointTransactionType.REFUND,
+          updatedAt: new Date(),
+        };
+
+        // Publish event after transaction (fire and forget)
+        setImmediate(() => {
+          this.redisService
+            .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
+            .catch((error) => {
+              this.logger.error(
+                'Failed to publish point:updated event',
+                {
+                  error: error instanceof Error ? error.message : String(error),
+                  userId: redemption.userId,
+                  redemptionId: command.redemptionId,
+                },
+                'gifticon',
+              );
+            });
+        });
 
         // Get updated redemption to return
         const updatedRedemption = await redemptionRepo.findOne({

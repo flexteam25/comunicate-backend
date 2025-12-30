@@ -93,6 +93,37 @@ export class SocketGateway
         },
       );
 
+      // Subscribe to role:updated (private event per user)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.ROLE_UPDATED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.ROLE_UPDATED, data);
+          } else {
+            this.logger.error('role:updated event missing userId', { data }, 'socket');
+          }
+        },
+      );
+
+      // Subscribe to inquiry:replied (event for both user and admin)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.INQUIRY_REPLIED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            // Send to user room (private event for the user)
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.INQUIRY_REPLIED, data);
+            // Also send to public room (for admins who are connected)
+            this.server.to(SocketRoom.PUBLIC).emit(SocketEvent.INQUIRY_REPLIED, data);
+          } else {
+            this.logger.error('inquiry:replied event missing userId', { data }, 'socket');
+          }
+        },
+      );
+
       this.logger.info('Redis subscriptions setup completed', {}, 'socket');
     } catch (error) {
       this.logger.error(

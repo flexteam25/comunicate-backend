@@ -1,43 +1,18 @@
-# Socket.IO Client Integration Guide
-
-## Installation
-
-```bash
-npm install socket.io-client
-```
+# Socket.IO Events Summary
 
 ## Quick Start
 
 ```javascript
 import { io } from 'socket.io-client';
 
-// 1. Connect
 const socket = io('http://your-api-domain.com');
 
-// 2. Listen for connection
 socket.on('connected', () => {
-  // 3. Authenticate with JWT token
   socket.emit('auth', { token: 'your-jwt-access-token' });
 });
 
-// 4. Listen for authentication
 socket.on('auth:success', (data) => {
-  console.log('Authenticated:', data);
-});
-
-socket.on('auth:error', (error) => {
-  console.error('Auth failed:', error);
-});
-
-// 5. Listen for events
-socket.on('site:created', (data) => {
-  // Public event: new site created
-  console.log('New site:', data);
-});
-
-socket.on('point:updated', (data) => {
-  // Private event: only sent to the specific user whose points were changed
-  console.log('Your points updated:', data);
+  console.log('Authenticated');
 });
 ```
 
@@ -45,22 +20,18 @@ socket.on('point:updated', (data) => {
 
 ### Connection
 - `connected` - Connection established
-- `error` - Connection error
 - `disconnect` - Disconnected
+- `error` - Connection error
 
 ### Authentication
-- `auth` - Send auth request (client → server)
-- `auth:success` - Auth successful (server → client)
-- `auth:error` - Auth failed (server → client)
+- `auth` - Send auth (client → server)
+- `auth:success` - Auth successful
+- `auth:error` - Auth failed
 
 ### Public Events
-- `site:created` - New site created (broadcast to all)
+- `site:created` - New site created
 
-### Private Events (requires authentication)
-- `point:updated` - User points updated (sent **only** to the specific user)
-
-## Notes
-
-- Authenticate after connection to receive private events
-- `point:updated` is sent only to the user whose points were changed
-- Re-authenticate when JWT token is refreshed
+### Private Events (requires auth)
+- `point:updated` - User points updated
+- `role:updated` - User role updated
+- `inquiry:replied` - Inquiry replied by admin

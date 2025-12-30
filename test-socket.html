@@ -163,7 +163,9 @@
             <strong>📡 Listening to events:</strong>
             <ul style="margin: 5px 0; padding-left: 20px;">
                 <li><strong>site:created</strong> (Public) - Fired when a new site is created by admin</li>
-                <li><strong>point:updated</strong> (Private) - Fired when admin updates user points (requires authentication)</li>
+                <li><strong>point:updated</strong> (Private) - Fired when user points are updated (admin adjust, exchange, redemption, etc.)</li>
+                <li><strong>role:updated</strong> (Private) - Fired when user role is changed (user ↔ partner)</li>
+                <li><strong>inquiry:replied</strong> (Private/Public) - Fired when admin replies to an inquiry (sent to user and all admins)</li>
             </ul>
         </div>
         <button onclick="clearLog()">Clear Log</button>
@@ -324,6 +326,24 @@
                 const deltaText = delta > 0 ? `+${delta}` : `${delta}`;
                 log(`💰 Point Updated Event (Private) - Delta: ${deltaText}, New Balance: ${newPoints}`, 'event', data);
                 showNotification(`Points updated: ${deltaText} (New balance: ${newPoints})`, 'info');
+            });
+
+            // Private events (per user) - Role Updated
+            socket.on('role:updated', (data) => {
+                const previousRole = data.previousRole || 'none';
+                const newRole = data.newRole || 'unknown';
+                const isPartner = data.isPartner ? 'Yes' : 'No';
+                log(`👤 Role Updated Event (Private) - Previous: ${previousRole}, New: ${newRole}, Is Partner: ${isPartner}`, 'event', data);
+                showNotification(`Role updated: ${previousRole} → ${newRole}`, 'info');
+            });
+
+            // Private/Public events - Inquiry Replied
+            socket.on('inquiry:replied', (data) => {
+                const inquiryTitle = data.title || 'Unknown';
+                const adminName = data.admin?.displayName || data.admin?.email || 'Admin';
+                const status = data.status || 'unknown';
+                log(`💬 Inquiry Replied Event - Title: "${inquiryTitle}", Admin: ${adminName}, Status: ${status}`, 'event', data);
+                showNotification(`Inquiry replied: "${inquiryTitle}" by ${adminName}`, 'info');
             });
 
             // Channel events

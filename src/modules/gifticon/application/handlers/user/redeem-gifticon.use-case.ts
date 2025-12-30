@@ -20,6 +20,9 @@ import {
   PointTransactionType,
 } from '../../../../point/domain/entities/point-transaction.entity';
 import { randomUUID } from 'crypto';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 /**
  * Command to redeem gifticon
@@ -49,6 +52,8 @@ export class RedeemGifticonUseCase {
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly transactionService: TransactionService,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -141,6 +146,36 @@ export class RedeemGifticonUseCase {
           description: `Gifticon: ${gifticon.title} ${gifticon.amount}원`,
         });
         await pointTransactionRepo.save(pointTransaction);
+
+        // Get previous points for event
+        const previousPoints = userProfile.points + gifticon.amount;
+
+        // Publish point updated event to Redis (after transaction commits)
+        const eventData = {
+          userId: command.userId,
+          pointsDelta: -gifticon.amount,
+          previousPoints: previousPoints,
+          newPoints: newBalance,
+          transactionType: PointTransactionType.SPEND,
+          updatedAt: new Date(),
+        };
+
+        // Publish event after transaction (fire and forget)
+        setImmediate(() => {
+          this.redisService
+            .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
+            .catch((error) => {
+              this.logger.error(
+                'Failed to publish point:updated event',
+                {
+                  error: error instanceof Error ? error.message : String(error),
+                  userId: command.userId,
+                  redemptionId: savedRedemption.id,
+                },
+                'gifticon',
+              );
+            });
+        });
 
         return savedRedemption;
       },

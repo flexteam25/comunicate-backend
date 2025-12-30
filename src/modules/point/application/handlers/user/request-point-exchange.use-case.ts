@@ -18,6 +18,9 @@ import {
   PointTransaction,
   PointTransactionType,
 } from '../../../domain/entities/point-transaction.entity';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 /**
  * Command to request point exchange to site currency
@@ -51,6 +54,8 @@ export class RequestPointExchangeUseCase {
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly transactionService: TransactionService,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -136,6 +141,36 @@ export class RequestPointExchangeUseCase {
           description: `Point Exchange: ${site.name} ${command.pointsAmount}원`,
         });
         await pointTransactionRepo.save(pointTransaction);
+
+        // Get previous points for event
+        const previousPoints = userProfile.points + command.pointsAmount;
+
+        // Publish point updated event to Redis (after transaction commits)
+        const eventData = {
+          userId: command.userId,
+          pointsDelta: -command.pointsAmount,
+          previousPoints: previousPoints,
+          newPoints: newBalance,
+          transactionType: PointTransactionType.SPEND,
+          updatedAt: new Date(),
+        };
+
+        // Publish event after transaction (fire and forget)
+        setImmediate(() => {
+          this.redisService
+            .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
+            .catch((error) => {
+              this.logger.error(
+                'Failed to publish point:updated event',
+                {
+                  error: error instanceof Error ? error.message : String(error),
+                  userId: command.userId,
+                  exchangeId: savedExchange.id,
+                },
+                'point',
+              );
+            });
+        });
 
         return savedExchange;
       },

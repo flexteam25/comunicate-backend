@@ -17,6 +17,9 @@ import {
   PointTransaction,
   PointTransactionType,
 } from '../../../domain/entities/point-transaction.entity';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 /**
  * Command for admin to reject point exchange request
@@ -43,6 +46,8 @@ export class RejectExchangeUseCase {
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly transactionService: TransactionService,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -110,6 +115,36 @@ export class RejectExchangeUseCase {
           description: `Point Exchange Refund: ${exchange.site?.name || 'Unknown'} ${exchange.pointsAmount}원`,
         });
         await pointTransactionRepo.save(pointTransaction);
+
+        // Get previous points for event
+        const previousPoints = userProfile.points - exchange.pointsAmount;
+
+        // Publish point updated event to Redis (after transaction commits)
+        const eventData = {
+          userId: exchange.userId,
+          pointsDelta: exchange.pointsAmount,
+          previousPoints: previousPoints,
+          newPoints: newBalance,
+          transactionType: PointTransactionType.REFUND,
+          updatedAt: new Date(),
+        };
+
+        // Publish event after transaction (fire and forget)
+        setImmediate(() => {
+          this.redisService
+            .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
+            .catch((error) => {
+              this.logger.error(
+                'Failed to publish point:updated event',
+                {
+                  error: error instanceof Error ? error.message : String(error),
+                  userId: exchange.userId,
+                  exchangeId: command.exchangeId,
+                },
+                'point',
+              );
+            });
+        });
 
         // Get updated exchange to return
         const updatedExchange = await exchangeRepo.findOne({
