@@ -1,12 +1,4 @@
-import {
-  IsDate,
-  IsOptional,
-  IsString,
-  MaxLength,
-  IsArray,
-  IsUUID,
-  ArrayMaxSize,
-} from 'class-validator';
+import { IsDate, IsOptional, IsString, MaxLength, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateProfileDto {
@@ -36,14 +28,6 @@ export class UpdateProfileDto {
   bio?: string;
 
   @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(50)
-  @IsUUID(undefined, { each: true })
-  activeBadges?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(50)
-  @IsUUID(undefined, { each: true })
-  inactiveBadges?: string[];
+  @IsUUID()
+  activeBadge?: string;
 }

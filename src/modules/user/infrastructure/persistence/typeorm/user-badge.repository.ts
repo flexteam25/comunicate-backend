@@ -11,16 +11,6 @@ export class UserBadgeRepository implements IUserBadgeRepository {
     private readonly repository: Repository<UserBadge>,
   ) {}
 
-  async findByUserId(userId: string): Promise<UserBadge[]> {
-    return this.repository
-      .createQueryBuilder('userBadge')
-      .leftJoinAndSelect('userBadge.badge', 'badge')
-      .where('userBadge.userId = :userId', { userId })
-      .andWhere('badge.deletedAt IS NULL')
-      .orderBy('userBadge.earnedAt', 'DESC')
-      .getMany();
-  }
-
   async assignBadge(
     userId: string,
     badgeId: string,
@@ -35,7 +25,12 @@ export class UserBadgeRepository implements IUserBadgeRepository {
       return existing;
     }
 
-    const entity = this.repository.create({ userId, badgeId, active });
+    const entity = this.repository.create({
+      userId,
+      badgeId,
+      active,
+      earnedAt: new Date(),
+    });
     return this.repository.save(entity);
   }
 
@@ -60,34 +55,22 @@ export class UserBadgeRepository implements IUserBadgeRepository {
       .getOne();
   }
 
-  async updateActiveStatus(
-    userId: string,
-    badgeIds: string[],
-    active: boolean,
-  ): Promise<void> {
-    if (badgeIds.length === 0) {
-      return;
-    }
+  async setActiveBadge(userId: string, badgeId: string): Promise<void> {
+    // First, set all badges of the user to inactive
     await this.repository
       .createQueryBuilder()
       .update(UserBadge)
-      .set({ active })
+      .set({ active: false })
       .where('userId = :userId', { userId })
-      .andWhere('badgeId IN (:...badgeIds)', { badgeIds })
       .execute();
-  }
 
-  async findByUserIdsWithActive(
-    userId: string,
-    badgeIds: string[],
-  ): Promise<UserBadge[]> {
-    if (badgeIds.length === 0) {
-      return [];
-    }
-    return this.repository
-      .createQueryBuilder('userBadge')
-      .where('userBadge.userId = :userId', { userId })
-      .andWhere('userBadge.badgeId IN (:...badgeIds)', { badgeIds })
-      .getMany();
+    // Then, set the specified badge to active
+    await this.repository
+      .createQueryBuilder()
+      .update(UserBadge)
+      .set({ active: true })
+      .where('userId = :userId', { userId })
+      .andWhere('badgeId = :badgeId', { badgeId })
+      .execute();
   }
 }

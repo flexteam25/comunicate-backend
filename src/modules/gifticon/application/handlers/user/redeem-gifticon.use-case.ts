@@ -5,7 +5,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { Gifticon, GifticonStatus } from '../../../domain/entities/gifticon.entity';
+import { GifticonStatus } from '../../../domain/entities/gifticon.entity';
 import { IGifticonRepository } from '../../../infrastructure/persistence/repositories/gifticon.repository';
 import { IGifticonRedemptionRepository } from '../../../infrastructure/persistence/repositories/gifticon-redemption.repository';
 import {
@@ -13,7 +13,6 @@ import {
   GifticonRedemptionStatus,
 } from '../../../domain/entities/gifticon-redemption.entity';
 import { IUserRepository } from '../../../../user/infrastructure/persistence/repositories/user.repository';
-import { User } from '../../../../user/domain/entities/user.entity';
 import { UserProfile } from '../../../../user/domain/entities/user-profile.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import {

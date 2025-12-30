@@ -80,15 +80,18 @@ export class SocketGateway
       });
 
       // Subscribe to point:updated (private event per user)
-      await this.redisService.subscribeToChannel(RedisChannel.POINT_UPDATED, (data: unknown) => {
-        const eventData = data as { userId?: string };
-        if (eventData.userId) {
-          const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
-          this.server.to(userRoom).emit(SocketEvent.POINT_UPDATED, data);
-        } else {
-          this.logger.error('point:updated event missing userId', { data }, 'socket');
-        }
-      });
+      await this.redisService.subscribeToChannel(
+        RedisChannel.POINT_UPDATED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.POINT_UPDATED, data);
+          } else {
+            this.logger.error('point:updated event missing userId', { data }, 'socket');
+          }
+        },
+      );
 
       this.logger.info('Redis subscriptions setup completed', {}, 'socket');
     } catch (error) {

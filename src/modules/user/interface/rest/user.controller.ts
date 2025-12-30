@@ -244,8 +244,7 @@ export class UserController {
       phone: dto.phone,
       birthDate: dto.birthDate,
       gender: dto.gender,
-      activeBadges: dto.activeBadges,
-      inactiveBadges: dto.inactiveBadges,
+      activeBadge: dto.activeBadge,
     });
 
     // Reload user with relations for response

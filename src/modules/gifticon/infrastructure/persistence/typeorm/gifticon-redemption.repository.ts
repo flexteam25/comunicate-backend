@@ -29,7 +29,6 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
   ): Promise<CursorPaginationResult<GifticonRedemption>> {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = 'createdAt';
-    const sortOrder: 'ASC' | 'DESC' = 'DESC';
 
     const queryBuilder = this.repository
       .createQueryBuilder('redemption')
@@ -88,7 +87,6 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
   ): Promise<CursorPaginationResult<GifticonRedemption>> {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = 'createdAt';
-    const sortOrder: 'ASC' | 'DESC' = 'DESC';
 
     const queryBuilder = this.repository
       .createQueryBuilder('redemption')

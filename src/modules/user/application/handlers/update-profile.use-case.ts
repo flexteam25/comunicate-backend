@@ -9,6 +9,7 @@ import { IUserRepository } from '../../infrastructure/persistence/repositories/u
 import { IUserBadgeRepository } from '../../infrastructure/persistence/repositories/user-badge.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { User } from '../../domain/entities/user.entity';
+import { UserProfile } from '../../domain/entities/user-profile.entity';
 
 export interface UpdateProfileCommand {
   userId: string;
@@ -18,8 +19,7 @@ export interface UpdateProfileCommand {
   phone?: string;
   birthDate?: Date;
   gender?: string;
-  activeBadges?: string[];
-  inactiveBadges?: string[];
+  activeBadge?: string;
 }
 
 @Injectable()
@@ -39,34 +39,15 @@ export class UpdateProfileUseCase {
       throw new UnauthorizedException('User not found');
     }
 
-    // Validate badge lists if provided
-    if (command.activeBadges && command.inactiveBadges) {
-      // Check if there are any duplicate UUIDs between the two lists
-      const activeSet = new Set(command.activeBadges);
-      const inactiveSet = new Set(command.inactiveBadges);
-      const duplicates = command.activeBadges.filter((id) => inactiveSet.has(id));
-      if (duplicates.length > 0) {
-        throw new BadRequestException(
-          'activeBadges and inactiveBadges cannot contain the same UUIDs',
-        );
-      }
-    }
-
-    // Validate that all badge IDs belong to the user (if badge lists provided)
-    if (command.activeBadges?.length || command.inactiveBadges?.length) {
-      const allBadgeIds = [
-        ...(command.activeBadges || []),
-        ...(command.inactiveBadges || []),
-      ];
-      const userBadges = await this.userBadgeRepository.findByUserIdsWithActive(
+    // Validate that the active badge belongs to the user (if provided)
+    if (command.activeBadge) {
+      const userBadge = await this.userBadgeRepository.findByUserAndBadge(
         command.userId,
-        allBadgeIds,
+        command.activeBadge,
       );
-      const userBadgeIds = new Set(userBadges.map((ub) => ub.badgeId));
-      const invalidBadgeIds = allBadgeIds.filter((id) => !userBadgeIds.has(id));
-      if (invalidBadgeIds.length > 0) {
+      if (!userBadge) {
         throw new BadRequestException(
-          `Invalid badge IDs: ${invalidBadgeIds.join(', ')}. These badges are not assigned to the user.`,
+          `Invalid badge ID: ${command.activeBadge}. This badge is not assigned to the user.`,
         );
       }
     }
@@ -74,6 +55,21 @@ export class UpdateProfileUseCase {
     // Execute update in transaction
     return this.transactionService.executeInTransaction(
       async (entityManager: EntityManager) => {
+        // Create user profile if it doesn't exist and we need to update profile fields
+        const needsProfileUpdate =
+          command.bio !== undefined ||
+          command.phone !== undefined ||
+          command.birthDate !== undefined ||
+          command.gender !== undefined;
+
+        if (needsProfileUpdate && !user.userProfile) {
+          const userProfile = new UserProfile();
+          userProfile.userId = user.id;
+          userProfile.points = 0;
+          await entityManager.save(UserProfile, userProfile);
+          user.userProfile = userProfile;
+        }
+
         // Update fields
         if (command.displayName !== undefined) {
           user.displayName = command.displayName || null;
@@ -84,38 +80,46 @@ export class UpdateProfileUseCase {
         }
 
         if (command.bio !== undefined) {
+          if (!user.userProfile) {
+            throw new Error('User profile should exist at this point');
+          }
           user.userProfile.bio = command.bio || null;
         }
 
         if (command.phone !== undefined) {
+          if (!user.userProfile) {
+            throw new Error('User profile should exist at this point');
+          }
           user.userProfile.phone = command.phone || null;
         }
 
         if (command.birthDate !== undefined) {
+          if (!user.userProfile) {
+            throw new Error('User profile should exist at this point');
+          }
           user.userProfile.birthDate = command.birthDate || null;
         }
 
         if (command.gender !== undefined) {
+          if (!user.userProfile) {
+            throw new Error('User profile should exist at this point');
+          }
           user.userProfile.gender = command.gender || null;
         }
 
         // Update user
         const savedUser = await entityManager.save(User, user);
 
-        // Update badge active status
-        if (command.activeBadges?.length) {
-          await this.userBadgeRepository.updateActiveStatus(
-            command.userId,
-            command.activeBadges,
-            true,
-          );
+        // Save user profile if it was updated
+        if (needsProfileUpdate && user.userProfile) {
+          await entityManager.save(UserProfile, user.userProfile);
         }
 
-        if (command.inactiveBadges?.length) {
-          await this.userBadgeRepository.updateActiveStatus(
+        // Update active badge: set all badges to inactive, then set the specified badge to active
+        if (command.activeBadge) {
+          await this.userBadgeRepository.setActiveBadge(
             command.userId,
-            command.inactiveBadges,
-            false,
+            command.activeBadge,
           );
         }
 

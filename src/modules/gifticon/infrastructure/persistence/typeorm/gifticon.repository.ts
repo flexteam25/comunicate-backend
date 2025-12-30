@@ -25,7 +25,7 @@ export class GifticonRepository implements IGifticonRepository {
 
   async findByIdOrSlugPublic(
     idOrSlug: string,
-    relations?: string[],
+    _relations?: string[],
   ): Promise<Gifticon | null> {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
       idOrSlug,
@@ -54,7 +54,6 @@ export class GifticonRepository implements IGifticonRepository {
   ): Promise<CursorPaginationResult<Gifticon>> {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = 'startsAt';
-    const sortOrder = 'DESC' as 'ASC' | 'DESC';
     const now = new Date();
 
     const queryBuilder = this.repository

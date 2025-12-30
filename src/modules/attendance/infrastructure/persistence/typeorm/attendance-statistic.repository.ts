@@ -124,7 +124,7 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
         } else {
           queryBuilder.andWhere('stat.id > :cursorId', { cursorId: id });
         }
-      } catch (error) {
+      } catch {
         // Invalid cursor, ignore
       }
     }

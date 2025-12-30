@@ -13,7 +13,8 @@ export class AddRejectedStatusToGifticonRedemptionEnum1766559441792 implements M
     `);
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async down(_queryRunner: QueryRunner): Promise<void> {
     // Note: PostgreSQL does not support removing enum values directly
   }
 }
