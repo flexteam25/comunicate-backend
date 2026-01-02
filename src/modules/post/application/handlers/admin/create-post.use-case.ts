@@ -94,7 +94,13 @@ export class CreatePostUseCase {
 
           const reloaded = await postRepo.findOne({
             where: { id: savedPost.id },
-            relations: ['user', 'admin', 'category'],
+            relations: [
+              'user',
+              'user.userBadges',
+              'user.userBadges.badge',
+              'admin',
+              'category',
+            ],
           });
 
           if (!reloaded) {

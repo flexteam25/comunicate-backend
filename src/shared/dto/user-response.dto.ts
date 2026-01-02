@@ -1,11 +1,9 @@
-import { RoleResponse } from './role-response.dto';
 import { BadgeResponse } from './badge-response.dto';
 
 export interface UserResponse {
   email: string;
   displayName?: string;
   avatarUrl?: string;
-  isActive: boolean;
   lastLoginAt?: Date;
   roles: string;
   badges: BadgeResponse[];

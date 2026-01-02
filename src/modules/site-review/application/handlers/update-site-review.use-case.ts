@@ -34,6 +34,8 @@ export class UpdateSiteReviewUseCase {
     const review = await this.siteReviewRepository.findById(command.reviewId, [
       'user',
       'images',
+      'user.userBadges',
+      'user.userBadges.badge',
     ]);
 
     if (!review) {

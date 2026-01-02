@@ -36,6 +36,11 @@ export class ScamReportResponseDto {
   contact: string;
   userId: string;
   userName?: string;
+  userAvatarUrl?: string;
+  userBadges?: {
+    name: string;
+    iconUrl: string;
+  }[];
   userEmail?: string;
   title: string;
   description: string;

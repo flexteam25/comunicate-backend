@@ -9,6 +9,7 @@ export interface AuthResponse {
     phone?: string;
     birthDate?: Date;
     gender?: string;
+    points?: number;
   };
   accessToken: string;
   refreshToken: string;

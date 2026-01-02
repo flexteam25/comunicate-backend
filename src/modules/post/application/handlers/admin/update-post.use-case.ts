@@ -126,7 +126,13 @@ export class UpdatePostUseCase {
 
           const updated = await postRepo.findOne({
             where: { id: command.postId },
-            relations: ['user', 'admin', 'category'],
+            relations: [
+              'user',
+              'user.userBadges',
+              'user.userBadges.badge',
+              'admin',
+              'category',
+            ],
           });
 
           if (!updated) {

@@ -78,6 +78,10 @@ export class SiteReviewController {
       userName: review.user?.displayName || null,
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
+      userBadges: review.user?.userBadges?.map((ub) => ({
+        name: ub.badge.name,
+        iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
+      })) || [],
       rating: review.rating ?? 0,
       odds: review.odds ?? 0,
       limit: review.limit ?? 0,
@@ -109,6 +113,10 @@ export class SiteReviewController {
       userName: comment.user?.displayName || null,
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null) || null,
+      userBadges: comment.user?.userBadges?.map((ub) => ({
+        name: ub.badge.name,
+        iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
+      })) || [],
       parentCommentId: comment.parentCommentId || null,
       hasChild: comment.hasChild || false,
       createdAt: comment.createdAt,

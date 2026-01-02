@@ -68,6 +68,10 @@ export class AdminPostController {
       id: post.id,
       userId: post.userId || null,
       userName: post.user?.displayName || null,
+      userBadges: post.user?.userBadges?.map((ub) => ({
+        name: ub.badge.name,
+        iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
+      })) || [],
       adminId: post.adminId || null,
       adminName: post.admin?.displayName || null,
       categoryId: post.categoryId,

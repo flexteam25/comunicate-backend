@@ -26,6 +26,8 @@ export class PostRepository implements IPostRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .leftJoinAndSelect('post.admin', 'admin')
       .leftJoinAndSelect('post.category', 'category')
       .addSelect(
@@ -121,6 +123,8 @@ export class PostRepository implements IPostRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .leftJoinAndSelect('post.admin', 'admin')
       .leftJoinAndSelect('post.category', 'category')
       .where('post.deletedAt IS NULL');
@@ -225,6 +229,8 @@ export class PostRepository implements IPostRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .leftJoinAndSelect('post.admin', 'admin')
       .leftJoinAndSelect('post.category', 'category')
       .leftJoin(
@@ -258,6 +264,8 @@ export class PostRepository implements IPostRepository {
       )
       .groupBy('post.id')
       .addGroupBy('user.id')
+      .addGroupBy('userBadges.id')
+      .addGroupBy('badge.id')
       .addGroupBy('admin.id')
       .addGroupBy('category.id')
       .where('post.deletedAt IS NULL')
@@ -370,6 +378,8 @@ export class PostRepository implements IPostRepository {
       const entities = await this.repository
         .createQueryBuilder('post')
         .leftJoinAndSelect('post.user', 'user')
+        .leftJoinAndSelect('user.userBadges', 'userBadges')
+        .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
         .leftJoinAndSelect('post.admin', 'admin')
         .leftJoinAndSelect('post.category', 'category')
         .where('post.id IN (:...ids)', { ids: entityIds })

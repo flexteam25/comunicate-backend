@@ -27,6 +27,8 @@ export class GetScamReportUseCase {
       'user',
       'site',
       'admin',
+      'user.userBadges',
+      'user.userBadges.badge',
     ]);
 
     if (!report) {

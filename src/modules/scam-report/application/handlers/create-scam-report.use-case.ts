@@ -77,7 +77,7 @@ export class CreateScamReportUseCase {
         // Reload with images
         const reloaded = await reportRepo.findOne({
           where: { id: savedReport.id },
-          relations: ['images', 'user', 'site'],
+          relations: ['images', 'user', 'user.userBadges.badge', 'site'],
         });
 
         if (!reloaded) {

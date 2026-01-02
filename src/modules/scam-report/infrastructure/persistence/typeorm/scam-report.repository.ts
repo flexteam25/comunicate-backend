@@ -44,6 +44,16 @@ export class ScamReportRepository implements IScamReportRepository {
       if (relations?.includes('admin')) {
         queryBuilder.leftJoinAndSelect('report.admin', 'admin');
       }
+      if (relations?.includes('user.userBadges')) {
+        queryBuilder.leftJoinAndSelect('user.userBadges', 'userBadges');
+      }
+      if (relations?.includes('user.userBadges.badge')) {
+        queryBuilder.leftJoinAndSelect(
+          'userBadges.badge',
+          'badge',
+          'badge.deletedAt IS NULL',
+        );
+      }
 
       // Add reaction counts
       queryBuilder.addSelect(
@@ -97,6 +107,8 @@ export class ScamReportRepository implements IScamReportRepository {
       .leftJoinAndSelect('report.site', 'site')
       .leftJoinAndSelect('report.images', 'images', 'images.deletedAt IS NULL')
       .leftJoinAndSelect('report.admin', 'admin')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .addSelect(
         (subQuery) =>
           subQuery
@@ -181,6 +193,9 @@ export class ScamReportRepository implements IScamReportRepository {
       .leftJoinAndSelect('report.site', 'site')
       .leftJoinAndSelect('report.images', 'images', 'images.deletedAt IS NULL')
       .leftJoinAndSelect('report.admin', 'admin')
+      .leftJoinAndSelect('report.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .addSelect(
         (subQuery) =>
           subQuery
@@ -266,6 +281,8 @@ export class ScamReportRepository implements IScamReportRepository {
       .leftJoinAndSelect('report.site', 'site')
       .leftJoinAndSelect('report.admin', 'admin')
       .leftJoinAndSelect('report.images', 'images', 'images.deletedAt IS NULL')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .addSelect(
         (subQuery) =>
           subQuery

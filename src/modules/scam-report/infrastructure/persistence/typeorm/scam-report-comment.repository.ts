@@ -33,6 +33,8 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
       .createQueryBuilder('comment')
       .leftJoinAndSelect('comment.user', 'user')
       .leftJoinAndSelect('comment.images', 'images')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .where('comment.scamReportId = :reportId', { reportId })
       .andWhere('comment.deletedAt IS NULL');
 

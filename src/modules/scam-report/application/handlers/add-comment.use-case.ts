@@ -94,7 +94,7 @@ export class AddCommentUseCase {
         // Reload with images
         return commentRepo.findOne({
           where: { id: savedComment.id },
-          relations: ['images', 'user'],
+          relations: ['images', 'user', 'user.userBadges.badge'],
         });
       },
     );

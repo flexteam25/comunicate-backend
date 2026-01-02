@@ -222,6 +222,11 @@ export class UserSiteController {
         userId: report.userId,
         userName: report.user?.displayName || null,
         userEmail: report.user?.email || null,
+        userAvatarUrl: buildFullUrl(this.apiServiceUrl, report.user?.avatarUrl || null),
+        userBadges: report.user?.userBadges?.map((ub) => ({
+          name: ub.badge.name,
+          iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
+        })) || [],
         title: report.title,
         description: report.description,
         amount: report.amount ? Number(report.amount) : null,

@@ -33,6 +33,8 @@ export class PostCommentRepository implements IPostCommentRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('comment')
       .leftJoinAndSelect('comment.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .leftJoinAndSelect('comment.images', 'image')
       .where('comment.postId = :postId', { postId })
       .andWhere('comment.deletedAt IS NULL');

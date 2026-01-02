@@ -41,6 +41,12 @@ export class SiteRepository implements ISiteRepository {
       { isActive: true },
     );
     queryBuilder.leftJoinAndSelect('siteManagers.user', 'managerUser');
+    queryBuilder.leftJoinAndSelect('managerUser.userBadges', 'managerUserBadges');
+    queryBuilder.leftJoinAndSelect(
+      'managerUserBadges.badge',
+      'userBadge',
+      'userBadge.deletedAt IS NULL',
+    );
 
     queryBuilder.loadRelationCountAndMap(
       'site.issueCount',
@@ -90,6 +96,12 @@ export class SiteRepository implements ISiteRepository {
       { isActive: true },
     );
     queryBuilder.leftJoinAndSelect('siteManagers.user', 'managerUser');
+    queryBuilder.leftJoinAndSelect('managerUser.userBadges', 'managerUserBadges');
+    queryBuilder.leftJoinAndSelect(
+      'managerUserBadges.badge',
+      'userBadge',
+      'userBadge.deletedAt IS NULL',
+    );
 
     queryBuilder.loadRelationCountAndMap(
       'site.issueCount',

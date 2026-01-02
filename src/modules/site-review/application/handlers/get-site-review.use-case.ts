@@ -18,6 +18,8 @@ export class GetSiteReviewUseCase {
       'user',
       'site',
       'images',
+      'user.userBadges',
+      'user.userBadges.badge',
     ]);
 
     if (!review) {

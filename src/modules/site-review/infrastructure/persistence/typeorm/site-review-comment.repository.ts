@@ -32,6 +32,8 @@ export class SiteReviewCommentRepository implements ISiteReviewCommentRepository
     const queryBuilder = this.repository
       .createQueryBuilder('comment')
       .leftJoinAndSelect('comment.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .where('comment.siteReviewId = :reviewId', { reviewId })
       .andWhere('comment.deletedAt IS NULL');
 

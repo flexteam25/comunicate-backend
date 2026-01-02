@@ -131,7 +131,6 @@ export class UserController {
         ? {
             id: site.category.id,
             name: site.category.name,
-            description: site.category.description || undefined,
           }
         : {
             id: '',
@@ -146,7 +145,6 @@ export class UserController {
         ? {
             id: site.tier.id,
             name: site.tier.name,
-            description: site.tier.description || undefined,
             order: site.tier.order,
             color: site.tier.color || undefined,
           }
@@ -165,7 +163,6 @@ export class UserController {
           return {
             id: sb.badge.id,
             name: sb.badge.name,
-            description: sb.badge.description || undefined,
             iconUrl:
               buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
           };
@@ -267,12 +264,9 @@ export class UserController {
         if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
           const badge = userBadge.badge;
           badges.push({
-            id: badge.id,
             name: badge.name,
-            description: badge.description || undefined,
             iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
             earnedAt: userBadge.earnedAt,
-            active: userBadge.active,
           });
         }
       }
@@ -282,7 +276,6 @@ export class UserController {
       email: dbUser.email,
       displayName: dbUser.displayName || undefined,
       avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser.avatarUrl),
-      isActive: dbUser.isActive,
       lastLoginAt: dbUser.lastLoginAt || undefined,
       roles: this.mapUserRoles(dbUser),
       badges: badges.length > 0 ? badges : [],
@@ -322,12 +315,9 @@ export class UserController {
         if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
           const badge = userBadge.badge;
           badges.push({
-            id: badge.id,
             name: badge.name,
-            description: badge.description || undefined,
             iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
             earnedAt: userBadge.earnedAt,
-            active: userBadge.active,
           });
         }
       }
@@ -342,7 +332,6 @@ export class UserController {
       birthDate: dbUser.userProfile?.birthDate || undefined,
       gender: dbUser.userProfile?.gender || undefined,
       points: dbUser.userProfile?.points ?? 0,
-      isActive: dbUser.isActive,
       lastLoginAt: dbUser.lastLoginAt || undefined,
       roles: this.mapUserRoles(dbUser),
       badges: badges.length > 0 ? badges : [],
@@ -370,12 +359,9 @@ export class UserController {
       if (userBadge?.badge && !userBadge.badge.deletedAt) {
         const badge = userBadge.badge;
         badges.push({
-          id: badge.id,
           name: badge.name,
-          description: badge.description || undefined,
           iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
           earnedAt: userBadge.earnedAt,
-          active: userBadge.active,
         });
       }
     }
@@ -399,7 +385,6 @@ export class UserController {
         ? {
             id: site.category.id,
             name: site.category.name,
-            description: site.category.description || undefined,
           }
         : {
             id: '',
@@ -414,7 +399,6 @@ export class UserController {
         ? {
             id: site.tier.id,
             name: site.tier.name,
-            description: site.tier.description || undefined,
             order: site.tier.order,
             color: site.tier.color || undefined,
           }
@@ -433,7 +417,6 @@ export class UserController {
           return {
             id: sb.badge.id,
             name: sb.badge.name,
-            description: sb.badge.description || undefined,
             iconUrl:
               buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
           };

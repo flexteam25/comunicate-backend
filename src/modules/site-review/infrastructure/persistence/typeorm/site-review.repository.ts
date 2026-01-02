@@ -37,6 +37,17 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       queryBuilder.leftJoinAndSelect('review.images', 'images');
     }
 
+    if (relations?.includes('user.userBadges')) {
+      queryBuilder.leftJoinAndSelect('user.userBadges', 'userBadges');
+    }
+    if (relations?.includes('user.userBadges.badge')) {
+      queryBuilder.leftJoinAndSelect(
+        'userBadges.badge',
+        'badge',
+        'badge.deletedAt IS NULL',
+      );
+    }
+
     queryBuilder.addSelect(
       (subQuery) =>
         subQuery
@@ -103,6 +114,8 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .leftJoinAndSelect('review.site', 'site')
       .leftJoinAndSelect('review.images', 'images')
       .addSelect(
@@ -235,6 +248,8 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .leftJoinAndSelect('review.site', 'site')
       .leftJoinAndSelect('review.images', 'images')
       .addSelect(
@@ -372,6 +387,9 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.site', 'site')
       .leftJoinAndSelect('review.images', 'images')
+      .leftJoinAndSelect('review.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .addSelect(
         (subQuery) =>
           subQuery

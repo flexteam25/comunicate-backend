@@ -127,6 +127,10 @@ export class AdminSiteController {
           email: sm.user.email,
           displayName: sm.user.displayName || undefined,
           avatarUrl: buildFullUrl(this.apiServiceUrl, sm.user.avatarUrl || null) || null,
+          userBadges: sm.user?.userBadges?.map((ub) => ({
+            name: ub.badge.name,
+            iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
+          })) || [],
         })),
       createdAt: site.createdAt,
       updatedAt: site.updatedAt,

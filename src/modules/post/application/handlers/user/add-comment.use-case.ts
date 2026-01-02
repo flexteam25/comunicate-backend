@@ -114,7 +114,7 @@ export class AddCommentUseCase {
           // Reload with images and user
           const reloaded = await commentRepo.findOne({
             where: { id: savedComment.id },
-            relations: ['images', 'user'],
+            relations: ['images', 'user', 'user.userBadges', 'user.userBadges.badge'],
           });
 
           if (!reloaded) {

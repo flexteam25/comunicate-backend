@@ -85,7 +85,7 @@ export class AddCommentUseCase {
 
         return commentRepo.findOne({
           where: { id: savedComment.id },
-          relations: ['user'],
+          relations: ['user', 'user.userBadges', 'user.userBadges.badge'],
         });
       },
     );

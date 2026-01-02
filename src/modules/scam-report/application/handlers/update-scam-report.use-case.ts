@@ -83,7 +83,7 @@ export class UpdateScamReportUseCase {
         // Reload with images
         return reportRepo.findOne({
           where: { id: command.reportId },
-          relations: ['images', 'user', 'site'],
+          relations: ['images', 'user', 'user.userBadges.badge', 'site'],
         });
       },
     );
