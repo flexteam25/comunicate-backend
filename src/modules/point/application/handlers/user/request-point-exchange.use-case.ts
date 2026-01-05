@@ -90,7 +90,7 @@ export class RequestPointExchangeUseCase {
     }
 
     // Execute all operations in transaction to ensure data consistency
-    return this.transactionService.executeInTransaction(
+    const savedExchange = await this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         // Reload user profile with pessimistic lock to prevent race condition
         const userProfileRepo = manager.getRepository(UserProfile);
@@ -126,7 +126,7 @@ export class RequestPointExchangeUseCase {
           siteUserId: command.siteUserId,
           status: PointExchangeStatus.PENDING,
         });
-        const savedExchange = await exchangeRepo.save(exchange);
+        const saved = await exchangeRepo.save(exchange);
 
         // Create point transaction for history
         const pointTransactionRepo = manager.getRepository(PointTransaction);
@@ -137,7 +137,7 @@ export class RequestPointExchangeUseCase {
           balanceAfter: newBalance,
           category: 'point_exchange',
           referenceType: 'point_exchange',
-          referenceId: savedExchange.id,
+          referenceId: saved.id,
           description: `Point Exchange: ${site.name} ${command.pointsAmount}원`,
         });
         await pointTransactionRepo.save(pointTransaction);
@@ -165,15 +165,85 @@ export class RequestPointExchangeUseCase {
                 {
                   error: error instanceof Error ? error.message : String(error),
                   userId: command.userId,
-                  exchangeId: savedExchange.id,
+                  exchangeId: saved.id,
                 },
                 'point',
               );
             });
         });
 
-        return savedExchange;
+        return saved;
       },
     );
+
+    // Reload with relationships for admin event
+    const exchangeWithRelations = await this.pointExchangeRepository.findById(
+      savedExchange.id,
+      ['user', 'site', 'admin'],
+    );
+
+    if (!exchangeWithRelations) {
+      return savedExchange;
+    }
+
+    // Map exchange to response format (same as admin API response)
+    const adminEventData = this.mapExchangeToResponse(exchangeWithRelations);
+
+    // Publish event to admin room (fire and forget)
+    setImmediate(() => {
+      this.redisService
+        .publishEvent(RedisChannel.EXCHANGE_REQUESTED as string, adminEventData)
+        .catch((error) => {
+          this.logger.error(
+            'Failed to publish exchange:requested event',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              exchangeId: savedExchange.id,
+              userId: command.userId,
+            },
+            'point',
+          );
+        });
+    });
+
+    return exchangeWithRelations;
+  }
+
+  private mapExchangeToResponse(exchange: any): any {
+    return {
+      id: exchange.id,
+      userId: exchange.userId,
+      user: exchange.user
+        ? {
+            id: exchange.user.id,
+            email: exchange.user.email,
+            displayName: exchange.user.displayName || null,
+          }
+        : null,
+      siteId: exchange.siteId,
+      site: exchange.site
+        ? {
+            id: exchange.site.id,
+            name: exchange.site.name,
+          }
+        : null,
+      pointsAmount: exchange.pointsAmount,
+      siteCurrencyAmount: Number(exchange.siteCurrencyAmount),
+      exchangeRate: exchange.exchangeRate ? Number(exchange.exchangeRate) : null,
+      siteUserId: exchange.siteUserId,
+      status: exchange.status,
+      adminId: exchange.adminId || null,
+      admin: exchange.admin
+        ? {
+            id: exchange.admin.id,
+            email: exchange.admin.email,
+            displayName: exchange.admin.displayName || null,
+          }
+        : null,
+      processedAt: exchange.processedAt || null,
+      rejectionReason: exchange.rejectionReason || null,
+      createdAt: exchange.createdAt,
+      updatedAt: exchange.updatedAt,
+    };
   }
 }

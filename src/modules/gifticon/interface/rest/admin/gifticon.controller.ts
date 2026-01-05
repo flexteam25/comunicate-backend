@@ -284,7 +284,34 @@ export class AdminGifticonController {
     return ApiResponseUtil.success(
       {
         id: redemption.id,
+        userId: redemption.userId,
+        user: redemption.user
+          ? {
+              id: redemption.user.id,
+              email: redemption.user.email,
+              displayName: redemption.user.displayName || null,
+            }
+          : null,
+        gifticonId: redemption.gifticonId,
+        gifticon: redemption.gifticon
+          ? this.mapGifticonToResponse(redemption.gifticon)
+          : redemption.gifticonSnapshot
+            ? {
+                title: redemption.gifticonSnapshot.title,
+                amount: redemption.gifticonSnapshot.amount,
+                imageUrl: redemption.gifticonSnapshot.imageUrl
+                  ? buildFullUrl(this.apiServiceUrl, redemption.gifticonSnapshot.imageUrl)
+                  : null,
+                summary: redemption.gifticonSnapshot.summary || null,
+                typeColor: redemption.gifticonSnapshot.typeColor || null,
+              }
+            : null,
+        pointsUsed: redemption.pointsUsed,
         status: redemption.status,
+        redemptionCode: redemption.redemptionCode || null,
+        cancelledAt: redemption.cancelledAt || null,
+        cancellationReason: redemption.cancellationReason || null,
+        createdAt: redemption.createdAt,
         updatedAt: redemption.updatedAt,
       },
       'Redemption approved successfully',
@@ -308,9 +335,34 @@ export class AdminGifticonController {
     return ApiResponseUtil.success(
       {
         id: redemption.id,
+        userId: redemption.userId,
+        user: redemption.user
+          ? {
+              id: redemption.user.id,
+              email: redemption.user.email,
+              displayName: redemption.user.displayName || null,
+            }
+          : null,
+        gifticonId: redemption.gifticonId,
+        gifticon: redemption.gifticon
+          ? this.mapGifticonToResponse(redemption.gifticon)
+          : redemption.gifticonSnapshot
+            ? {
+                title: redemption.gifticonSnapshot.title,
+                amount: redemption.gifticonSnapshot.amount,
+                imageUrl: redemption.gifticonSnapshot.imageUrl
+                  ? buildFullUrl(this.apiServiceUrl, redemption.gifticonSnapshot.imageUrl)
+                  : null,
+                summary: redemption.gifticonSnapshot.summary || null,
+                typeColor: redemption.gifticonSnapshot.typeColor || null,
+              }
+            : null,
+        pointsUsed: redemption.pointsUsed,
         status: redemption.status,
-        cancelledAt: redemption.cancelledAt,
-        cancellationReason: redemption.cancellationReason,
+        redemptionCode: redemption.redemptionCode || null,
+        cancelledAt: redemption.cancelledAt || null,
+        cancellationReason: redemption.cancellationReason || null,
+        createdAt: redemption.createdAt,
         updatedAt: redemption.updatedAt,
       },
       'Redemption rejected successfully',

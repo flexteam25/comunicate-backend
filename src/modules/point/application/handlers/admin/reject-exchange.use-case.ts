@@ -75,7 +75,7 @@ export class RejectExchangeUseCase {
     }
 
     // Execute refund and status update in transaction
-    return this.transactionService.executeInTransaction(
+    const updatedExchange = await this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         // Reload user profile with pessimistic lock to prevent race condition
         const userProfileRepo = manager.getRepository(UserProfile);
@@ -147,16 +147,86 @@ export class RejectExchangeUseCase {
         });
 
         // Get updated exchange to return
-        const updatedExchange = await exchangeRepo.findOne({
+        const updated = await exchangeRepo.findOne({
           where: { id: command.exchangeId },
         });
 
-        if (!updatedExchange) {
+        if (!updated) {
           throw new NotFoundException('Exchange not found after update');
         }
 
-        return updatedExchange;
+        return updated;
       },
     );
+
+    // Reload with relationships for event
+    const exchangeWithRelations = await this.pointExchangeRepository.findById(
+      updatedExchange.id,
+      ['user', 'site', 'admin'],
+    );
+
+    if (!exchangeWithRelations) {
+      return updatedExchange;
+    }
+
+    // Map exchange to response format (same as admin API response)
+    const eventData = this.mapExchangeToResponse(exchangeWithRelations);
+
+    // Publish event after transaction (fire and forget)
+    setImmediate(() => {
+      this.redisService
+        .publishEvent(RedisChannel.EXCHANGE_REJECTED as string, eventData)
+        .catch((error) => {
+          this.logger.error(
+            'Failed to publish exchange:rejected event',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              exchangeId: updatedExchange.id,
+              adminId: command.adminId,
+            },
+            'point',
+          );
+        });
+    });
+
+    return exchangeWithRelations;
+  }
+
+  private mapExchangeToResponse(exchange: any): any {
+    return {
+      id: exchange.id,
+      userId: exchange.userId,
+      user: exchange.user
+        ? {
+            id: exchange.user.id,
+            email: exchange.user.email,
+            displayName: exchange.user.displayName || null,
+          }
+        : null,
+      siteId: exchange.siteId,
+      site: exchange.site
+        ? {
+            id: exchange.site.id,
+            name: exchange.site.name,
+          }
+        : null,
+      pointsAmount: exchange.pointsAmount,
+      siteCurrencyAmount: Number(exchange.siteCurrencyAmount),
+      exchangeRate: exchange.exchangeRate ? Number(exchange.exchangeRate) : null,
+      siteUserId: exchange.siteUserId,
+      status: exchange.status,
+      adminId: exchange.adminId || null,
+      admin: exchange.admin
+        ? {
+            id: exchange.admin.id,
+            email: exchange.admin.email,
+            displayName: exchange.admin.displayName || null,
+          }
+        : null,
+      processedAt: exchange.processedAt || null,
+      rejectionReason: exchange.rejectionReason || null,
+      createdAt: exchange.createdAt,
+      updatedAt: exchange.updatedAt,
+    };
   }
 }

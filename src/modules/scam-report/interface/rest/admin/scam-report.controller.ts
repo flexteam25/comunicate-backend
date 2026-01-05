@@ -144,15 +144,9 @@ export class AdminScamReportController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ApiResponse<ScamReportResponseDto>> {
-    await this.approveScamReportUseCase.execute({
+    const fullReport = await this.approveScamReportUseCase.execute({
       reportId: id,
       adminId: admin.adminId,
-    });
-
-    // Reload with relations
-    const fullReport = await this.getScamReportUseCase.execute({
-      reportId: id,
-      isAdmin: true,
     });
 
     return ApiResponseUtil.success(
@@ -168,15 +162,9 @@ export class AdminScamReportController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ApiResponse<ScamReportResponseDto>> {
-    const report = await this.rejectScamReportUseCase.execute({
+    const fullReport = await this.rejectScamReportUseCase.execute({
       reportId: id,
       adminId: admin.adminId,
-    });
-
-    // Reload with relations
-    const fullReport = await this.getScamReportUseCase.execute({
-      reportId: id,
-      isAdmin: true,
     });
 
     return ApiResponseUtil.success(
@@ -280,7 +268,7 @@ export class AdminScamReportController {
       }
     }
 
-    const report = await this.adminUpdateScamReportUseCase.execute({
+    const fullReport = await this.adminUpdateScamReportUseCase.execute({
       reportId: id,
       adminId: admin.adminId,
       siteId: dto.siteId,
@@ -295,12 +283,6 @@ export class AdminScamReportController {
       status: dto.status,
       images: imageUrls,
       deleteImages: dto.deleteImages,
-    });
-
-    // Reload with relations for response
-    const fullReport = await this.getScamReportUseCase.execute({
-      reportId: id,
-      isAdmin: true,
     });
 
     return ApiResponseUtil.success(

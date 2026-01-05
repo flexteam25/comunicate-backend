@@ -23,6 +23,8 @@ import { Role } from '../../../../user/domain/entities/role.entity';
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import { ConfigService } from '@nestjs/config';
+import { buildFullUrl } from '../../../../../shared/utils/url.util';
 
 export interface CreateSiteCommand {
   name: string;
@@ -40,6 +42,8 @@ export interface CreateSiteCommand {
 }
 @Injectable()
 export class CreateSiteUseCase {
+  private readonly apiServiceUrl: string;
+
   constructor(
     @Inject('ISiteRepository')
     private readonly siteRepository: ISiteRepository,
@@ -53,7 +57,10 @@ export class CreateSiteUseCase {
     private readonly uploadService: UploadService,
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
 
   async execute(command: CreateSiteCommand): Promise<Site> {
     // Validate category exists
@@ -240,17 +247,12 @@ export class CreateSiteUseCase {
         throw new Error('Site not found after creation');
       }
 
+      // Map site to response format for event
+      const eventData = this.mapSiteToResponse(siteWithRelations);
+
       // Publish site created event to Redis
       try {
-        await this.redisService.publishEvent(RedisChannel.SITE_CREATED, {
-          siteId: siteWithRelations.id,
-          name: siteWithRelations.name,
-          categoryId: siteWithRelations.categoryId,
-          categoryName: siteWithRelations.category?.name,
-          tierId: siteWithRelations.tierId,
-          tierName: siteWithRelations.tier?.name,
-          createdAt: siteWithRelations.createdAt,
-        });
+        await this.redisService.publishEvent(RedisChannel.SITE_CREATED, eventData);
       } catch (error) {
         // Log error but don't fail the request
         this.logger.error(
@@ -280,5 +282,65 @@ export class CreateSiteUseCase {
       await Promise.allSettled(cleanupPromises);
       throw transactionError;
     }
+  }
+
+  private mapSiteToResponse(site: Site): any {
+    return {
+      id: site.id,
+      name: site.name,
+      category: site.category
+        ? {
+            id: site.category.id,
+            name: site.category.name,
+            description: site.category.description || null,
+          }
+        : {
+            id: '',
+            name: '',
+          },
+      logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || null,
+      mainImageUrl: buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || null,
+      siteImageUrl: buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || null,
+      tier: site.tier
+        ? {
+            id: site.tier.id,
+            name: site.tier.name,
+            description: site.tier.description || null,
+            order: site.tier.order,
+            color: site.tier.color || null,
+          }
+        : null,
+      permanentUrl: site.permanentUrl || null,
+      status: site.status,
+      description: site.description || null,
+      reviewCount: site.reviewCount,
+      averageRating: Number(site.averageRating),
+      firstCharge: site.firstCharge ? Number(site.firstCharge) : null,
+      recharge: site.recharge ? Number(site.recharge) : null,
+      experience: site.experience,
+      issueCount: site.issueCount || 0,
+      badges: (site.siteBadges || [])
+        .map((sb) => {
+          // Filter out if badge is null or deleted
+          if (!sb.badge || sb.badge.deletedAt) {
+            return null;
+          }
+          return {
+            id: sb.badge.id,
+            name: sb.badge.name,
+            description: sb.badge.description || null,
+            iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
+          };
+        })
+        .filter((badge): badge is NonNullable<typeof badge> => badge !== null),
+      domains: (site.siteDomains || []).map((sd) => ({
+        id: sd.id,
+        domain: sd.domain,
+        isActive: sd.isActive,
+        isCurrent: sd.isCurrent,
+      })),
+      createdAt: site.createdAt,
+      updatedAt: site.updatedAt,
+    };
   }
 }

@@ -5,6 +5,11 @@ import { ScamReportImage } from '../../domain/entities/scam-report-image.entity'
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
 import { ISiteRepository } from '../../../site/infrastructure/persistence/repositories/site.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
+import { RedisService } from '../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../shared/logger/logger.service';
+import { ConfigService } from '@nestjs/config';
+import { buildFullUrl } from '../../../../shared/utils/url.util';
 
 export interface CreateScamReportCommand {
   userId: string;
@@ -22,13 +27,20 @@ export interface CreateScamReportCommand {
 
 @Injectable()
 export class CreateScamReportUseCase {
+  private readonly apiServiceUrl: string;
+
   constructor(
     @Inject('IScamReportRepository')
     private readonly scamReportRepository: IScamReportRepository,
     @Inject('ISiteRepository')
     private readonly siteRepository: ISiteRepository,
     private readonly transactionService: TransactionService,
-  ) {}
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
+    private readonly configService: ConfigService,
+  ) {
+    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
 
   async execute(command: CreateScamReportCommand): Promise<ScamReport> {
     // Validate site exists if siteId provided
@@ -40,7 +52,7 @@ export class CreateScamReportUseCase {
     }
 
     // Create report and images within transaction
-    return this.transactionService.executeInTransaction(
+    const savedReport = await this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         const reportRepo = manager.getRepository(ScamReport);
         const imageRepo = manager.getRepository(ScamReportImage);
@@ -60,13 +72,13 @@ export class CreateScamReportUseCase {
           status: ScamReportStatus.PENDING,
         });
 
-        const savedReport = await reportRepo.save(report);
+        const saved = await reportRepo.save(report);
 
         // Create images if provided
         if (command.images && command.images.length > 0) {
           const imageEntities = command.images.map((imageUrl, index) =>
             imageRepo.create({
-              scamReportId: savedReport.id,
+              scamReportId: saved.id,
               imageUrl,
               order: index,
             }),
@@ -74,18 +86,87 @@ export class CreateScamReportUseCase {
           await imageRepo.save(imageEntities);
         }
 
-        // Reload with images
-        const reloaded = await reportRepo.findOne({
-          where: { id: savedReport.id },
-          relations: ['images', 'user', 'user.userBadges.badge', 'site'],
-        });
-
-        if (!reloaded) {
-          throw new Error('Failed to reload scam report after creation');
-        }
-
-        return reloaded;
+        return saved;
       },
     );
+
+    // Reload with all relations and reaction counts for event
+    const reportWithRelations = await this.scamReportRepository.findById(savedReport.id, [
+      'images',
+      'user',
+      'user.userBadges',
+      'user.userBadges.badge',
+      'site',
+      'admin',
+      'reactions', // This will trigger reaction count calculation
+    ]);
+
+    if (!reportWithRelations) {
+      return savedReport;
+    }
+
+    // Map report to response format (same as admin API response)
+    const eventData = this.mapScamReportToResponse(reportWithRelations);
+
+    // Publish event after transaction (fire and forget)
+    setImmediate(() => {
+      this.redisService
+        .publishEvent(RedisChannel.SCAM_REPORT_CREATED as string, eventData)
+        .catch((error) => {
+          this.logger.error(
+            'Failed to publish scam-report:created event',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              reportId: savedReport.id,
+              userId: command.userId,
+            },
+            'scam-report',
+          );
+        });
+    });
+
+    return reportWithRelations;
+  }
+
+  private mapScamReportToResponse(report: any): any {
+    // Use reaction counts from database (counted via subquery)
+    const reactions = {
+      like: (report as any).likeCount || 0,
+      dislike: (report as any).dislikeCount || 0,
+    };
+
+    return {
+      id: report.id,
+      siteId: report.siteId || null,
+      siteUrl: report.siteUrl,
+      siteName: report.siteName || report.site?.name || null,
+      siteAccountInfo: report.siteAccountInfo,
+      registrationUrl: report.registrationUrl,
+      contact: report.contact,
+      userId: report.userId,
+      userName: report.user?.displayName || null,
+      userEmail: report.user?.email || null,
+      userAvatarUrl: buildFullUrl(this.apiServiceUrl, report.user?.avatarUrl || null),
+      userBadges: report.user?.userBadges?.map((ub: any) => ({
+        name: ub.badge.name,
+        iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
+      })) || [],
+      title: report.title,
+      description: report.description,
+      amount: report.amount ? Number(report.amount) : null,
+      status: report.status,
+      images: (report.images || []).map((img: any) => ({
+        id: img.id,
+        imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl),
+        order: img.order,
+        createdAt: img.createdAt,
+      })),
+      reactions,
+      adminId: report.adminId || null,
+      adminName: report.admin?.displayName || null,
+      reviewedAt: report.reviewedAt || null,
+      createdAt: report.createdAt,
+      updatedAt: report.updatedAt,
+    };
   }
 }

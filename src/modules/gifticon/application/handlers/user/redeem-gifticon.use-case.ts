@@ -23,6 +23,8 @@ import { randomUUID } from 'crypto';
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import { ConfigService } from '@nestjs/config';
+import { buildFullUrl } from '../../../../../shared/utils/url.util';
 
 /**
  * Command to redeem gifticon
@@ -44,6 +46,8 @@ export interface RedeemGifticonCommand {
  */
 @Injectable()
 export class RedeemGifticonUseCase {
+  private readonly apiServiceUrl: string;
+
   constructor(
     @Inject('IGifticonRepository')
     private readonly gifticonRepository: IGifticonRepository,
@@ -54,7 +58,10 @@ export class RedeemGifticonUseCase {
     private readonly transactionService: TransactionService,
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
 
   /**
    * Execute gifticon redemption with points
@@ -93,7 +100,7 @@ export class RedeemGifticonUseCase {
     }
 
     // Execute all operations in transaction to ensure data consistency
-    return this.transactionService.executeInTransaction(
+    const savedRedemption = await this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
         // Reload user profile with pessimistic lock to prevent race condition
         const userProfileRepo = manager.getRepository(UserProfile);
@@ -131,7 +138,7 @@ export class RedeemGifticonUseCase {
             typeColor: gifticon.typeColor,
           },
         });
-        const savedRedemption = await redemptionRepo.save(redemption);
+        const saved = await redemptionRepo.save(redemption);
 
         // Create point transaction for history
         const pointTransactionRepo = manager.getRepository(PointTransaction);
@@ -142,7 +149,7 @@ export class RedeemGifticonUseCase {
           balanceAfter: newBalance,
           category: 'gifticon_redemption',
           referenceType: 'gifticon_redemption',
-          referenceId: savedRedemption.id,
+          referenceId: saved.id,
           description: `Gifticon: ${gifticon.title} ${gifticon.amount}원`,
         });
         await pointTransactionRepo.save(pointTransaction);
@@ -170,15 +177,100 @@ export class RedeemGifticonUseCase {
                 {
                   error: error instanceof Error ? error.message : String(error),
                   userId: command.userId,
-                  redemptionId: savedRedemption.id,
+                  redemptionId: saved.id,
                 },
                 'gifticon',
               );
             });
         });
 
-        return savedRedemption;
+        return saved;
       },
     );
+
+    // Reload with relationships for admin event
+    const redemptionWithRelations = await this.redemptionRepository.findById(
+      savedRedemption.id,
+      ['user', 'gifticon'],
+    );
+
+    if (!redemptionWithRelations) {
+      return savedRedemption;
+    }
+
+    // Map redemption to response format (same as admin API response)
+    const adminEventData = this.mapRedemptionToResponse(redemptionWithRelations);
+
+    // Publish event to admin room (fire and forget)
+    setImmediate(() => {
+      this.redisService
+        .publishEvent(RedisChannel.REDEMPTION_CREATED as string, adminEventData)
+        .catch((error) => {
+          this.logger.error(
+            'Failed to publish redemption:created event',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              redemptionId: savedRedemption.id,
+              userId: command.userId,
+            },
+            'gifticon',
+          );
+        });
+    });
+
+    return redemptionWithRelations;
+  }
+
+  private mapRedemptionToResponse(redemption: any): any {
+    return {
+      id: redemption.id,
+      userId: redemption.userId,
+      user: redemption.user
+        ? {
+            id: redemption.user.id,
+            email: redemption.user.email,
+            displayName: redemption.user.displayName || null,
+          }
+        : null,
+      gifticonId: redemption.gifticonId,
+      gifticon: redemption.gifticon
+        ? this.mapGifticonToResponse(redemption.gifticon)
+        : redemption.gifticonSnapshot
+          ? {
+              title: redemption.gifticonSnapshot.title,
+              amount: redemption.gifticonSnapshot.amount,
+              imageUrl: redemption.gifticonSnapshot.imageUrl
+                ? buildFullUrl(this.apiServiceUrl, redemption.gifticonSnapshot.imageUrl)
+                : null,
+              summary: redemption.gifticonSnapshot.summary || null,
+              typeColor: redemption.gifticonSnapshot.typeColor || null,
+            }
+          : null,
+      pointsUsed: redemption.pointsUsed,
+      status: redemption.status,
+      redemptionCode: redemption.redemptionCode || null,
+      cancelledAt: redemption.cancelledAt || null,
+      cancellationReason: redemption.cancellationReason || null,
+      createdAt: redemption.createdAt,
+      updatedAt: redemption.updatedAt,
+    };
+  }
+
+  private mapGifticonToResponse(gifticon: any): any {
+    return {
+      id: gifticon.id,
+      title: gifticon.title,
+      slug: gifticon.slug || null,
+      summary: gifticon.summary || null,
+      content: gifticon.content,
+      status: gifticon.status,
+      amount: gifticon.amount,
+      typeColor: gifticon.typeColor || null,
+      startsAt: gifticon.startsAt || null,
+      endsAt: gifticon.endsAt || null,
+      imageUrl: buildFullUrl(this.apiServiceUrl, gifticon.imageUrl || null) || null,
+      createdAt: gifticon.createdAt,
+      updatedAt: gifticon.updatedAt,
+    };
   }
 }

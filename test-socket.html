@@ -3,15 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Socket.IO Test Client</title>
+    <title>Socket.IO Test Client - Multi Connection</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
+            margin: 0;
             padding: 20px;
             background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
         }
         .container {
             background: white;
@@ -20,13 +27,50 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
-        h1, h2 {
-            color: #333;
+        .server-config {
+            max-width: 1200px;
+            margin: 0 auto 20px;
         }
+        .connections-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .connection-panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .connection-panel.public {
+            border-top: 4px solid #17a2b8;
+        }
+        .connection-panel.user {
+            border-top: 4px solid #28a745;
+        }
+        .connection-panel.admin {
+            border-top: 4px solid #dc3545;
+        }
+        .panel-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        .public .panel-header { color: #17a2b8; }
+        .user .panel-header { color: #28a745; }
+        .admin .panel-header { color: #dc3545; }
         .status {
             padding: 10px;
             border-radius: 4px;
             margin-bottom: 10px;
+            text-align: center;
+            font-weight: bold;
         }
         .status.connected {
             background-color: #d4edda;
@@ -42,18 +86,21 @@
         }
         input, button {
             padding: 8px 12px;
-            margin: 5px;
+            margin: 5px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
+            width: 100%;
         }
         input {
-            width: 300px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
         }
         button {
             background-color: #007bff;
             color: white;
             cursor: pointer;
             border: none;
+            font-weight: bold;
         }
         button:hover {
             background-color: #0056b3;
@@ -62,21 +109,31 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
+        .button-group {
+            display: flex;
+            gap: 5px;
+        }
+        .button-group button {
+            flex: 1;
+        }
         .log {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 4px;
             padding: 10px;
-            max-height: 400px;
+            height: 500px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
-            font-size: 12px;
+            font-size: 11px;
+            flex: 1;
+            min-height: 0;
         }
         .log-entry {
             margin: 5px 0;
             padding: 5px;
             border-left: 3px solid #007bff;
             padding-left: 10px;
+            word-wrap: break-word;
         }
         .log-entry.success {
             border-left-color: #28a745;
@@ -101,83 +158,138 @@
             margin-top: 5px;
             white-space: pre-wrap;
             word-break: break-all;
+            font-size: 10px;
         }
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 10px;
+            margin-bottom: 15px;
             border-radius: 4px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 1000;
-            max-width: 300px;
-            animation: slideIn 0.3s ease-out;
+            font-size: 12px;
         }
-        .notification.success {
-            background-color: #d4edda;
-            color: #155724;
-            border-left: 4px solid #28a745;
+        .info-box ul {
+            margin: 5px 0;
+            padding-left: 20px;
         }
-        .notification.info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border-left: 4px solid #17a2b8;
+        .info-box li {
+            margin: 3px 0;
         }
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
+        @media (max-width: 1200px) {
+            .connections-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <h1>Socket.IO Test Client</h1>
+    <h1>Socket.IO Test Client - Multi Connection</h1>
 
-    <div class="container">
-        <h2>Connection</h2>
-        <div id="status" class="status disconnected">Disconnected</div>
+    <div class="container server-config">
+        <h2>Server Configuration</h2>
         <div>
             <input type="text" id="serverUrl" placeholder="Server URL (e.g., http://localhost:3008)" value="http://localhost:3008">
-            <button onclick="connect()">Connect</button>
-            <button onclick="disconnect()" id="disconnectBtn" disabled>Disconnect</button>
+            <button onclick="connectAll()" style="margin-top: 10px;">Connect All</button>
+            <button onclick="disconnectAll()" style="margin-top: 5px;">Disconnect All</button>
         </div>
     </div>
 
-    <div class="container">
-        <h2>Authentication</h2>
-        <div id="authStatus" class="status disconnected">Not Authenticated</div>
-        <div>
-            <input type="text" id="token" placeholder="JWT Access Token">
-            <button onclick="authenticate()" id="authBtn" disabled>Authenticate</button>
+    <div class="connections-grid">
+        <!-- Public Connection -->
+        <div class="connection-panel public">
+            <div class="panel-header">🌐 Public Connection</div>
+            <div id="status-public" class="status disconnected">Disconnected</div>
+            <div class="info-box">
+                <strong>Events:</strong>
+                <ul>
+                    <li><strong>site:created</strong> - New site created</li>
+                </ul>
+            </div>
+            <div class="button-group">
+                <button onclick="connectPublic()">Connect</button>
+                <button onclick="disconnectPublic()" id="disconnectBtn-public" disabled>Disconnect</button>
+            </div>
+            <div style="margin: 10px 0;">
+                <button onclick="clearLog('log-public')">Clear Log</button>
+            </div>
+            <div id="log-public" class="log"></div>
         </div>
-    </div>
 
-    <div class="container">
-        <h2>Events Log</h2>
-        <div style="margin-bottom: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
-            <strong>📡 Listening to events:</strong>
-            <ul style="margin: 5px 0; padding-left: 20px;">
-                <li><strong>site:created</strong> (Public) - Fired when a new site is created by admin</li>
-                <li><strong>point:updated</strong> (Private) - Fired when user points are updated (admin adjust, exchange, redemption, etc.)</li>
-                <li><strong>role:updated</strong> (Private) - Fired when user role is changed (user ↔ partner)</li>
-                <li><strong>inquiry:replied</strong> (Private/Public) - Fired when admin replies to an inquiry (sent to user and all admins)</li>
-            </ul>
+        <!-- User Connection -->
+        <div class="connection-panel user">
+            <div class="panel-header">👤 User Connection</div>
+            <div id="status-user" class="status disconnected">Disconnected</div>
+            <div id="authStatus-user" class="status disconnected">Not Authenticated</div>
+            <div class="info-box">
+                <strong>Events:</strong>
+                <ul>
+                    <li><strong>point:updated</strong> - Points updated</li>
+                    <li><strong>role:updated</strong> - Role changed</li>
+                    <li><strong>inquiry:replied</strong> - Inquiry replied</li>
+                    <li><strong>scam-report:updated</strong> - Scam report updated</li>
+                    <li><strong>scam-report:approved</strong> - Scam report approved</li>
+                    <li><strong>scam-report:rejected</strong> - Scam report rejected</li>
+                    <li><strong>exchange:processing</strong> - Point exchange moved to processing</li>
+                    <li><strong>exchange:approved</strong> - Point exchange approved</li>
+                    <li><strong>exchange:rejected</strong> - Point exchange rejected</li>
+                    <li><strong>redemption:approved</strong> - Gifticon redemption approved</li>
+                    <li><strong>redemption:rejected</strong> - Gifticon redemption rejected</li>
+                </ul>
+            </div>
+            <input type="text" id="token-user" placeholder="User JWT Access Token">
+            <div class="button-group">
+                <button onclick="connectUser()">Connect</button>
+                <button onclick="disconnectUser()" id="disconnectBtn-user" disabled>Disconnect</button>
+            </div>
+            <button onclick="authenticateUser()" id="authBtn-user" disabled style="margin-top: 5px;">Authenticate</button>
+            <div style="margin: 10px 0;">
+                <button onclick="clearLog('log-user')">Clear Log</button>
+            </div>
+            <div id="log-user" class="log"></div>
         </div>
-        <button onclick="clearLog()">Clear Log</button>
-        <div id="log" class="log"></div>
+
+        <!-- Admin Connection -->
+        <div class="connection-panel admin">
+            <div class="panel-header">🔐 Admin Connection</div>
+            <div id="status-admin" class="status disconnected">Disconnected</div>
+            <div id="authStatus-admin" class="status disconnected">Not Authenticated</div>
+            <div class="info-box">
+                <strong>Events:</strong>
+                <ul>
+                    <li><strong>inquiry:created</strong> - New inquiry created</li>
+                    <li><strong>inquiry:replied</strong> - Inquiry replied</li>
+                    <li><strong>scam-report:created</strong> - New scam report created</li>
+                    <li><strong>scam-report:updated</strong> - Scam report updated</li>
+                    <li><strong>scam-report:approved</strong> - Scam report approved</li>
+                    <li><strong>scam-report:rejected</strong> - Scam report rejected</li>
+                    <li><strong>exchange:approved</strong> - Point exchange approved</li>
+                    <li><strong>exchange:rejected</strong> - Point exchange rejected</li>
+                    <li><strong>redemption:approved</strong> - Gifticon redemption approved</li>
+                    <li><strong>redemption:rejected</strong> - Gifticon redemption rejected</li>
+                </ul>
+            </div>
+            <input type="text" id="token-admin" placeholder="Admin JWT Access Token">
+            <div class="button-group">
+                <button onclick="connectAdmin()">Connect</button>
+                <button onclick="disconnectAdmin()" id="disconnectBtn-admin" disabled>Disconnect</button>
+            </div>
+            <button onclick="authenticateAdmin()" id="authBtn-admin" disabled style="margin-top: 5px;">Authenticate</button>
+            <div style="margin: 10px 0;">
+                <button onclick="clearLog('log-admin')">Clear Log</button>
+            </div>
+            <div id="log-admin" class="log"></div>
+        </div>
     </div>
 
     <script>
-        let socket = null;
-        let isAuthenticated = false;
+        let socketPublic = null;
+        let socketUser = null;
+        let socketAdmin = null;
+        let isUserAuthenticated = false;
+        let isAdminAuthenticated = false;
 
-        function log(message, type = 'info', data = null) {
-            const logDiv = document.getElementById('log');
+        function log(panelId, message, type = 'info', data = null) {
+            const logDiv = document.getElementById(panelId);
             const entry = document.createElement('div');
             entry.className = `log-entry ${type}`;
             
@@ -191,67 +303,34 @@
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        function clearLog() {
-            document.getElementById('log').innerHTML = '';
+        function clearLog(panelId) {
+            document.getElementById(panelId).innerHTML = '';
         }
 
-        function showNotification(message, type = 'info') {
-            // Remove existing notifications
-            const existing = document.querySelectorAll('.notification');
-            existing.forEach(n => n.remove());
-
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                notification.style.animation = 'slideIn 0.3s ease-out reverse';
-                setTimeout(() => notification.remove(), 300);
-            }, 5000);
-        }
-
-        function showNotification(message, type = 'info') {
-            // Remove existing notifications
-            const existing = document.querySelectorAll('.notification');
-            existing.forEach(n => n.remove());
-
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                notification.style.animation = 'slideIn 0.3s ease-out reverse';
-                setTimeout(() => notification.remove(), 300);
-            }, 5000);
-        }
-
-        function updateStatus(connected) {
-            const statusDiv = document.getElementById('status');
-            const disconnectBtn = document.getElementById('disconnectBtn');
-            const authBtn = document.getElementById('authBtn');
+        function updateStatus(panelType, connected) {
+            const statusDiv = document.getElementById(`status-${panelType}`);
+            const disconnectBtn = document.getElementById(`disconnectBtn-${panelType}`);
             
             if (connected) {
                 statusDiv.className = 'status connected';
                 statusDiv.textContent = 'Connected';
-                disconnectBtn.disabled = false;
-                authBtn.disabled = false;
+                if (disconnectBtn) disconnectBtn.disabled = false;
             } else {
                 statusDiv.className = 'status disconnected';
                 statusDiv.textContent = 'Disconnected';
-                disconnectBtn.disabled = true;
-                authBtn.disabled = true;
-                isAuthenticated = false;
-                updateAuthStatus(false);
+                if (disconnectBtn) disconnectBtn.disabled = true;
             }
         }
 
-        function updateAuthStatus(authenticated) {
-            const authStatusDiv = document.getElementById('authStatus');
-            isAuthenticated = authenticated;
+        function updateAuthStatus(panelType, authenticated) {
+            const authStatusDiv = document.getElementById(`authStatus-${panelType}`);
+            if (!authStatusDiv) return;
+            
+            if (panelType === 'user') {
+                isUserAuthenticated = authenticated;
+            } else if (panelType === 'admin') {
+                isAdminAuthenticated = authenticated;
+            }
             
             if (authenticated) {
                 authStatusDiv.className = 'status authenticated';
@@ -262,130 +341,402 @@
             }
         }
 
-        function connect() {
-            const serverUrl = document.getElementById('serverUrl').value;
-            
+        function getServerUrl() {
+            return document.getElementById('serverUrl').value || 'http://localhost:3008';
+        }
+
+        // Public Connection
+        function connectPublic() {
+            const serverUrl = getServerUrl();
             if (!serverUrl) {
                 alert('Please enter server URL');
                 return;
             }
 
-            log(`Connecting to ${serverUrl}...`, 'info');
+            log('log-public', `Connecting to ${serverUrl}...`, 'info');
             
-            socket = io(serverUrl, {
+            socketPublic = io(serverUrl, {
                 transports: ['websocket', 'polling'],
                 reconnection: true,
                 reconnectionDelay: 1000,
                 reconnectionAttempts: 5
             });
 
-            socket.on('connect', () => {
-                log('Connected to server', 'success', { socketId: socket.id });
-                updateStatus(true);
+            socketPublic.on('connect', () => {
+                log('log-public', 'Connected to server', 'success', { socketId: socketPublic.id });
+                updateStatus('public', true);
             });
 
-            socket.on('disconnect', (reason) => {
-                log('Disconnected from server', 'error', { reason });
-                updateStatus(false);
-                updateAuthStatus(false);
+            socketPublic.on('disconnect', (reason) => {
+                log('log-public', 'Disconnected from server', 'error', { reason });
+                updateStatus('public', false);
             });
 
-            socket.on('connect_error', (error) => {
-                log('Connection error', 'error', { error: error.message });
-                updateStatus(false);
+            socketPublic.on('connect_error', (error) => {
+                log('log-public', 'Connection error', 'error', { error: error.message });
+                updateStatus('public', false);
             });
 
-            socket.on('connected', (data) => {
-                log('Received connected event', 'event', data);
+            socketPublic.on('connected', (data) => {
+                log('log-public', 'Received connected event', 'event', data);
             });
 
-            socket.on('auth:success', (data) => {
-                log('Authentication successful', 'success', data);
-                updateAuthStatus(true);
-            });
-
-            socket.on('auth:error', (data) => {
-                log('Authentication failed', 'error', data);
-                updateAuthStatus(false);
-            });
-
-            socket.on('error', (data) => {
-                log('Error received', 'error', data);
-            });
-
-            // Public events - Site Created
-            socket.on('site:created', (data) => {
-                log('🔔 Site Created Event (Public)', 'event', data);
-                showNotification('New site created: ' + (data.name || data.siteId), 'success');
-            });
-
-            // Private events (per user) - Point Updated
-            socket.on('point:updated', (data) => {
-                const delta = data.pointsDelta || 0;
-                const newPoints = data.newPoints || 0;
-                const deltaText = delta > 0 ? `+${delta}` : `${delta}`;
-                log(`💰 Point Updated Event (Private) - Delta: ${deltaText}, New Balance: ${newPoints}`, 'event', data);
-                showNotification(`Points updated: ${deltaText} (New balance: ${newPoints})`, 'info');
-            });
-
-            // Private events (per user) - Role Updated
-            socket.on('role:updated', (data) => {
-                const previousRole = data.previousRole || 'none';
-                const newRole = data.newRole || 'unknown';
-                const isPartner = data.isPartner ? 'Yes' : 'No';
-                log(`👤 Role Updated Event (Private) - Previous: ${previousRole}, New: ${newRole}, Is Partner: ${isPartner}`, 'event', data);
-                showNotification(`Role updated: ${previousRole} → ${newRole}`, 'info');
-            });
-
-            // Private/Public events - Inquiry Replied
-            socket.on('inquiry:replied', (data) => {
-                const inquiryTitle = data.title || 'Unknown';
-                const adminName = data.admin?.displayName || data.admin?.email || 'Admin';
-                const status = data.status || 'unknown';
-                log(`💬 Inquiry Replied Event - Title: "${inquiryTitle}", Admin: ${adminName}, Status: ${status}`, 'event', data);
-                showNotification(`Inquiry replied: "${inquiryTitle}" by ${adminName}`, 'info');
-            });
-
-            // Channel events
-            socket.on('joined-channel', (data) => {
-                log('Joined channel', 'success', data);
-            });
-
-            socket.on('left-channel', (data) => {
-                log('Left channel', 'info', data);
+            socketPublic.on('site:created', (data) => {
+                log('log-public', '🔔 Site Created Event', 'event', data);
             });
         }
 
-        function disconnect() {
-            if (socket) {
-                socket.disconnect();
-                socket = null;
-                log('Disconnected manually', 'info');
-                updateStatus(false);
-                updateAuthStatus(false);
+        function disconnectPublic() {
+            if (socketPublic) {
+                socketPublic.disconnect();
+                socketPublic = null;
+                log('log-public', 'Disconnected manually', 'info');
+                updateStatus('public', false);
             }
         }
 
-        function authenticate() {
-            const token = document.getElementById('token').value;
+        // User Connection
+        function connectUser() {
+            const serverUrl = getServerUrl();
+            if (!serverUrl) {
+                alert('Please enter server URL');
+                return;
+            }
+
+            log('log-user', `Connecting to ${serverUrl}...`, 'info');
+            
+            socketUser = io(serverUrl, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 5
+            });
+
+            socketUser.on('connect', () => {
+                log('log-user', 'Connected to server', 'success', { socketId: socketUser.id });
+                updateStatus('user', true);
+                document.getElementById('authBtn-user').disabled = false;
+            });
+
+            socketUser.on('disconnect', (reason) => {
+                log('log-user', 'Disconnected from server', 'error', { reason });
+                updateStatus('user', false);
+                updateAuthStatus('user', false);
+                document.getElementById('authBtn-user').disabled = true;
+            });
+
+            socketUser.on('connect_error', (error) => {
+                log('log-user', 'Connection error', 'error', { error: error.message });
+                updateStatus('user', false);
+            });
+
+            socketUser.on('connected', (data) => {
+                log('log-user', 'Received connected event', 'event', data);
+            });
+
+            socketUser.on('auth:success', (data) => {
+                log('log-user', 'Authentication successful', 'success', data);
+                updateAuthStatus('user', true);
+            });
+
+            socketUser.on('auth:error', (data) => {
+                log('log-user', 'Authentication failed', 'error', data);
+                updateAuthStatus('user', false);
+            });
+
+            socketUser.on('point:updated', (data) => {
+                const delta = data.pointsDelta || 0;
+                const newPoints = data.newPoints || 0;
+                const deltaText = delta > 0 ? `+${delta}` : `${delta}`;
+                log('log-user', `💰 Point Updated - Delta: ${deltaText}, New Balance: ${newPoints}`, 'event', data);
+            });
+
+            socketUser.on('role:updated', (data) => {
+                const previousRole = data.previousRole || 'none';
+                const newRole = data.newRole || 'unknown';
+                log('log-user', `👤 Role Updated - Previous: ${previousRole}, New: ${newRole}`, 'event', data);
+            });
+
+            socketUser.on('inquiry:replied', (data) => {
+                const inquiryTitle = data.title || 'Unknown';
+                const adminName = data.admin?.displayName || data.admin?.email || 'Admin';
+                log('log-user', `💬 Inquiry Replied - Title: "${inquiryTitle}", Admin: ${adminName}`, 'event', data);
+            });
+
+            socketUser.on('scam-report:updated', (data) => {
+                const reportTitle = data.title || 'Unknown';
+                const status = data.status || 'Unknown';
+                log('log-user', `📝 Scam Report Updated - Title: "${reportTitle}", Status: ${status}`, 'event', data);
+            });
+
+            socketUser.on('scam-report:approved', (data) => {
+                const reportTitle = data.title || 'Unknown';
+                const adminName = data.adminName || 'Admin';
+                log('log-user', `✅ Scam Report Approved - Title: "${reportTitle}", Admin: ${adminName}`, 'event', data);
+            });
+
+            socketUser.on('scam-report:rejected', (data) => {
+                const reportTitle = data.title || 'Unknown';
+                const adminName = data.adminName || 'Admin';
+                log('log-user', `❌ Scam Report Rejected - Title: "${reportTitle}", Admin: ${adminName}`, 'event', data);
+            });
+
+            socketUser.on('exchange:processing', (data) => {
+                const siteName = data.site?.name || 'Unknown';
+                const pointsAmount = data.pointsAmount || 0;
+                log('log-user', `⚙️ Exchange Processing - Site: ${siteName}, Points: ${pointsAmount}`, 'event', data);
+            });
+
+            socketUser.on('exchange:approved', (data) => {
+                const siteName = data.site?.name || 'Unknown';
+                const pointsAmount = data.pointsAmount || 0;
+                log('log-user', `✅ Exchange Approved - Site: ${siteName}, Points: ${pointsAmount}`, 'event', data);
+            });
+
+            socketUser.on('exchange:rejected', (data) => {
+                const siteName = data.site?.name || 'Unknown';
+                const pointsAmount = data.pointsAmount || 0;
+                const reason = data.rejectionReason || 'No reason provided';
+                log('log-user', `❌ Exchange Rejected - Site: ${siteName}, Points: ${pointsAmount}, Reason: ${reason}`, 'event', data);
+            });
+
+            socketUser.on('redemption:approved', (data) => {
+                const gifticonTitle = data.gifticon?.title || 'Unknown';
+                const pointsUsed = data.pointsUsed || 0;
+                log('log-user', `✅ Redemption Approved - Gifticon: "${gifticonTitle}", Points: ${pointsUsed}`, 'event', data);
+            });
+
+            socketUser.on('redemption:rejected', (data) => {
+                const gifticonTitle = data.gifticon?.title || 'Unknown';
+                const pointsUsed = data.pointsUsed || 0;
+                const reason = data.cancellationReason || 'No reason provided';
+                log('log-user', `❌ Redemption Rejected - Gifticon: "${gifticonTitle}", Points: ${pointsUsed}, Reason: ${reason}`, 'event', data);
+            });
+        }
+
+        function disconnectUser() {
+            if (socketUser) {
+                socketUser.disconnect();
+                socketUser = null;
+                log('log-user', 'Disconnected manually', 'info');
+                updateStatus('user', false);
+                updateAuthStatus('user', false);
+                document.getElementById('authBtn-user').disabled = true;
+            }
+        }
+
+        function authenticateUser() {
+            const token = document.getElementById('token-user').value;
             
             if (!token) {
                 alert('Please enter JWT token');
                 return;
             }
 
-            if (!socket || !socket.connected) {
+            if (!socketUser || !socketUser.connected) {
                 alert('Please connect first');
                 return;
             }
 
-            log('Sending authentication request...', 'info');
-            socket.emit('auth', { token });
+            log('log-user', 'Sending authentication request...', 'info');
+            socketUser.emit('auth', { token });
         }
 
-        // Auto-connect on page load (optional)
-        // connect();
+        // Admin Connection
+        function connectAdmin() {
+            const serverUrl = getServerUrl();
+            if (!serverUrl) {
+                alert('Please enter server URL');
+                return;
+            }
+
+            log('log-admin', `Connecting to ${serverUrl}...`, 'info');
+            
+            socketAdmin = io(serverUrl, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 5
+            });
+
+            socketAdmin.on('connect', () => {
+                log('log-admin', 'Connected to server', 'success', { socketId: socketAdmin.id });
+                updateStatus('admin', true);
+                document.getElementById('authBtn-admin').disabled = false;
+            });
+
+            socketAdmin.on('disconnect', (reason) => {
+                log('log-admin', 'Disconnected from server', 'error', { reason });
+                updateStatus('admin', false);
+                updateAuthStatus('admin', false);
+                document.getElementById('authBtn-admin').disabled = true;
+            });
+
+            socketAdmin.on('connect_error', (error) => {
+                log('log-admin', 'Connection error', 'error', { error: error.message });
+                updateStatus('admin', false);
+            });
+
+            socketAdmin.on('connected', (data) => {
+                log('log-admin', 'Received connected event', 'event', data);
+            });
+
+            socketAdmin.on('admin:auth:success', (data) => {
+                log('log-admin', 'Admin authentication successful', 'success', data);
+                updateAuthStatus('admin', true);
+            });
+
+            socketAdmin.on('admin:auth:error', (data) => {
+                log('log-admin', 'Admin authentication failed', 'error', data);
+                updateAuthStatus('admin', false);
+            });
+
+            socketAdmin.on('inquiry:created', (data) => {
+                const inquiryTitle = data.title || 'Unknown';
+                const userEmail = data.user?.email || 'Unknown';
+                const category = data.category || 'unknown';
+                log('log-admin', `📝 Inquiry Created - Title: "${inquiryTitle}", User: ${userEmail}, Category: ${category}`, 'event', data);
+            });
+
+            socketAdmin.on('inquiry:replied', (data) => {
+                const inquiryTitle = data.title || 'Unknown';
+                const userId = data.userId || 'Unknown';
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `💬 Inquiry Replied - Title: "${inquiryTitle}", User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('scam-report:created', (data) => {
+                const reportTitle = data.title || 'Unknown';
+                const userName = data.userName || 'Unknown';
+                const siteName = data.siteName || 'Unknown';
+                log('log-admin', `🚨 Scam Report Created - Title: "${reportTitle}", User: ${userName}, Site: ${siteName}`, 'event', data);
+            });
+
+            socketAdmin.on('scam-report:updated', (data) => {
+                const reportTitle = data.title || 'Unknown';
+                const userName = data.userName || 'Unknown';
+                const siteName = data.siteName || 'Unknown';
+                log('log-admin', `📝 Scam Report Updated - Title: "${reportTitle}", User: ${userName}, Site: ${siteName}`, 'event', data);
+            });
+
+            socketAdmin.on('scam-report:approved', (data) => {
+                const reportTitle = data.title || 'Unknown';
+                const userName = data.userName || 'Unknown';
+                const siteName = data.siteName || 'Unknown';
+                log('log-admin', `✅ Scam Report Approved - Title: "${reportTitle}", User: ${userName}, Site: ${siteName}`, 'event', data);
+            });
+
+            socketAdmin.on('scam-report:rejected', (data) => {
+                const reportTitle = data.title || 'Unknown';
+                const userName = data.userName || 'Unknown';
+                const siteName = data.siteName || 'Unknown';
+                log('log-admin', `❌ Scam Report Rejected - Title: "${reportTitle}", User: ${userName}, Site: ${siteName}`, 'event', data);
+            });
+
+            socketAdmin.on('exchange:processing', (data) => {
+                const siteName = data.site?.name || 'Unknown';
+                const pointsAmount = data.pointsAmount || 0;
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `⚙️ Exchange Processing - Site: ${siteName}, Points: ${pointsAmount}, User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('exchange:approved', (data) => {
+                const siteName = data.site?.name || 'Unknown';
+                const pointsAmount = data.pointsAmount || 0;
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `✅ Exchange Approved - Site: ${siteName}, Points: ${pointsAmount}, User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('exchange:rejected', (data) => {
+                const siteName = data.site?.name || 'Unknown';
+                const pointsAmount = data.pointsAmount || 0;
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `❌ Exchange Rejected - Site: ${siteName}, Points: ${pointsAmount}, User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('redemption:approved', (data) => {
+                const gifticonTitle = data.gifticon?.title || 'Unknown';
+                const pointsUsed = data.pointsUsed || 0;
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `✅ Redemption Approved - Gifticon: "${gifticonTitle}", Points: ${pointsUsed}, User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('redemption:rejected', (data) => {
+                const gifticonTitle = data.gifticon?.title || 'Unknown';
+                const pointsUsed = data.pointsUsed || 0;
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `❌ Redemption Rejected - Gifticon: "${gifticonTitle}", Points: ${pointsUsed}, User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('exchange:requested', (data) => {
+                const siteName = data.site?.name || 'Unknown';
+                const pointsAmount = data.pointsAmount || 0;
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `📝 Exchange Requested - Site: ${siteName}, Points: ${pointsAmount}, User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('exchange:cancelled', (data) => {
+                const siteName = data.site?.name || 'Unknown';
+                const pointsAmount = data.pointsAmount || 0;
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `🚫 Exchange Cancelled - Site: ${siteName}, Points: ${pointsAmount}, User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('redemption:created', (data) => {
+                const gifticonTitle = data.gifticon?.title || 'Unknown';
+                const pointsUsed = data.pointsUsed || 0;
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `🎁 Redemption Created - Gifticon: "${gifticonTitle}", Points: ${pointsUsed}, User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('redemption:cancelled', (data) => {
+                const gifticonTitle = data.gifticon?.title || 'Unknown';
+                const pointsUsed = data.pointsUsed || 0;
+                const userEmail = data.user?.email || 'Unknown';
+                log('log-admin', `🚫 Redemption Cancelled - Gifticon: "${gifticonTitle}", Points: ${pointsUsed}, User: ${userEmail}`, 'event', data);
+            });
+        }
+
+        function disconnectAdmin() {
+            if (socketAdmin) {
+                socketAdmin.disconnect();
+                socketAdmin = null;
+                log('log-admin', 'Disconnected manually', 'info');
+                updateStatus('admin', false);
+                updateAuthStatus('admin', false);
+                document.getElementById('authBtn-admin').disabled = true;
+            }
+        }
+
+        function authenticateAdmin() {
+            const token = document.getElementById('token-admin').value;
+            
+            if (!token) {
+                alert('Please enter JWT token');
+                return;
+            }
+
+            if (!socketAdmin || !socketAdmin.connected) {
+                alert('Please connect first');
+                return;
+            }
+
+            log('log-admin', 'Sending admin authentication request...', 'info');
+            socketAdmin.emit('admin:auth', { token });
+        }
+
+        // Helper functions
+        function connectAll() {
+            connectPublic();
+            connectUser();
+            connectAdmin();
+        }
+
+        function disconnectAll() {
+            disconnectPublic();
+            disconnectUser();
+            disconnectAdmin();
+        }
     </script>
 </body>
 </html>
-

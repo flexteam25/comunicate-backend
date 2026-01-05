@@ -14,12 +14,16 @@ import { JwtService } from '../services/jwt.service';
 import { RedisService } from '../redis/redis.service';
 import { RedisChannel, SocketEvent, SocketRoom } from './socket-channels';
 import { IUserTokenRepository } from '../../modules/auth/infrastructure/persistence/repositories/user-token.repository';
+import { IAdminTokenRepository } from '../../modules/admin/infrastructure/persistence/repositories/admin-token.repository';
+import { IAdminRepository } from '../../modules/admin/infrastructure/persistence/repositories/admin.repository';
 import { LoggerService } from '../logger/logger.service';
 
 interface AuthenticatedSocket extends Socket {
   data: {
     userId?: string;
     email?: string;
+    adminId?: string;
+    isAdmin?: boolean;
   };
 }
 
@@ -41,6 +45,10 @@ export class SocketGateway
     private readonly redisService: RedisService,
     @Inject('IUserTokenRepository')
     private readonly userTokenRepository: IUserTokenRepository,
+    @Inject('IAdminTokenRepository')
+    private readonly adminTokenRepository: IAdminTokenRepository,
+    @Inject('IAdminRepository')
+    private readonly adminRepository: IAdminRepository,
     private readonly logger: LoggerService,
   ) {}
 
@@ -107,20 +115,197 @@ export class SocketGateway
         },
       );
 
+      // Subscribe to inquiry:created (event for all admins)
+      await this.redisService.subscribeToChannel(RedisChannel.INQUIRY_CREATED, (data) => {
+        this.server.to(SocketRoom.ADMIN).emit(SocketEvent.INQUIRY_CREATED, data);
+      });
+
       // Subscribe to inquiry:replied (event for both user and admin)
       await this.redisService.subscribeToChannel(
         RedisChannel.INQUIRY_REPLIED,
         (data: unknown) => {
-          const eventData = data as { userId?: string };
+          const eventData = data as {
+            userId?: string;
+            id?: string;
+            title?: string;
+            category?: string;
+            message?: string;
+            images?: string[];
+            status?: string;
+            adminReply?: string;
+            repliedAt?: Date;
+            createdAt?: Date;
+            updatedAt?: Date;
+            adminId?: string;
+            admin?: any;
+            user?: any;
+          };
           if (eventData.userId) {
-            // Send to user room (private event for the user)
+            // Transform to user format (same as GET api/support/inquiries)
+            const userFormat = {
+              id: eventData.id,
+              title: eventData.title,
+              category: eventData.category,
+              message: eventData.message,
+              images: eventData.images,
+              status: eventData.status,
+              adminReply: eventData.adminReply,
+              repliedAt: eventData.repliedAt || undefined,
+              createdAt: eventData.createdAt,
+              updatedAt: eventData.updatedAt,
+            };
+            // Send to user room (private event for the inquiry owner) with user format
             const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
-            this.server.to(userRoom).emit(SocketEvent.INQUIRY_REPLIED, data);
-            // Also send to public room (for admins who are connected)
-            this.server.to(SocketRoom.PUBLIC).emit(SocketEvent.INQUIRY_REPLIED, data);
+            this.server.to(userRoom).emit(SocketEvent.INQUIRY_REPLIED, userFormat);
+            // Send to admin room (for all connected admins) with admin format
+            this.server.to(SocketRoom.ADMIN).emit(SocketEvent.INQUIRY_REPLIED, data);
           } else {
             this.logger.error('inquiry:replied event missing userId', { data }, 'socket');
           }
+        },
+      );
+
+      // Subscribe to scam-report:created (event for all admins)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SCAM_REPORT_CREATED,
+        (data) => {
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SCAM_REPORT_CREATED, data);
+        },
+      );
+
+      // Subscribe to scam-report:updated (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SCAM_REPORT_UPDATED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.SCAM_REPORT_UPDATED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SCAM_REPORT_UPDATED, data);
+        },
+      );
+
+      // Subscribe to scam-report:approved (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SCAM_REPORT_APPROVED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.SCAM_REPORT_APPROVED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SCAM_REPORT_APPROVED, data);
+        },
+      );
+
+      // Subscribe to scam-report:rejected (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SCAM_REPORT_REJECTED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.SCAM_REPORT_REJECTED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SCAM_REPORT_REJECTED, data);
+        },
+      );
+
+      // Subscribe to exchange:approved (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.EXCHANGE_APPROVED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.EXCHANGE_APPROVED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.EXCHANGE_APPROVED, data);
+        },
+      );
+
+      // Subscribe to exchange:rejected (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.EXCHANGE_REJECTED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.EXCHANGE_REJECTED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.EXCHANGE_REJECTED, data);
+        },
+      );
+
+      // Subscribe to exchange:processing (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.EXCHANGE_PROCESSING,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.EXCHANGE_PROCESSING, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.EXCHANGE_PROCESSING, data);
+        },
+      );
+
+      // Subscribe to redemption:approved (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.REDEMPTION_APPROVED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.REDEMPTION_APPROVED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.REDEMPTION_APPROVED, data);
+        },
+      );
+
+      // Subscribe to redemption:rejected (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.REDEMPTION_REJECTED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.REDEMPTION_REJECTED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.REDEMPTION_REJECTED, data);
+        },
+      );
+
+      // Subscribe to exchange:requested (event for all admins)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.EXCHANGE_REQUESTED,
+        (data) => {
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.EXCHANGE_REQUESTED, data);
+        },
+      );
+
+      // Subscribe to exchange:cancelled (event for all admins)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.EXCHANGE_CANCELLED,
+        (data) => {
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.EXCHANGE_CANCELLED, data);
+        },
+      );
+
+      // Subscribe to redemption:created (event for all admins)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.REDEMPTION_CREATED,
+        (data) => {
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.REDEMPTION_CREATED, data);
+        },
+      );
+
+      // Subscribe to redemption:cancelled (event for all admins)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.REDEMPTION_CANCELLED,
+        (data) => {
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.REDEMPTION_CANCELLED, data);
         },
       );
 
@@ -152,6 +337,10 @@ export class SocketGateway
     // Clean up user room if authenticated
     if (client.data.userId) {
       await client.leave(`${SocketRoom.USER}.${client.data.userId}`);
+    }
+    // Clean up admin room if authenticated as admin
+    if (client.data.isAdmin) {
+      await client.leave(SocketRoom.ADMIN);
     }
   }
 
@@ -247,6 +436,70 @@ export class SocketGateway
       channel,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  @SubscribeMessage(SocketEvent.ADMIN_AUTH)
+  async handleAdminAuth(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { token: string },
+  ) {
+    const { token } = data;
+
+    if (!token) {
+      client.emit(SocketEvent.ADMIN_AUTH_ERROR, {
+        message: 'Token is required',
+      });
+      return;
+    }
+
+    try {
+      // Verify JWT token
+      const payload = this.jwtService.verifyAccessToken(token);
+
+      // Check if token is revoked (check admin token repository)
+      const tokenRecord = await this.adminTokenRepository.findByTokenId(payload.jti);
+      if (!tokenRecord || !tokenRecord.isValid()) {
+        client.emit(SocketEvent.ADMIN_AUTH_ERROR, {
+          message: 'Token has been revoked or expired',
+        });
+        return;
+      }
+
+      // Verify admin exists and is active
+      const admin = await this.adminRepository.findById(payload.sub);
+      if (!admin || !admin.isActive) {
+        client.emit(SocketEvent.ADMIN_AUTH_ERROR, {
+          message: 'Admin not found or inactive',
+        });
+        return;
+      }
+
+      // Store admin info in socket
+      client.data.adminId = payload.sub;
+      client.data.email = payload.email;
+      client.data.isAdmin = true;
+
+      // Join admin room for admin events
+      await client.join(SocketRoom.ADMIN);
+
+      client.emit(SocketEvent.ADMIN_AUTH_SUCCESS, {
+        adminId: payload.sub,
+        email: payload.email,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.error(
+        'Admin authentication error',
+        {
+          error: error instanceof Error ? error.message : String(error),
+          clientId: client.id,
+        },
+        'socket',
+      );
+      client.emit(SocketEvent.ADMIN_AUTH_ERROR, {
+        message: 'Invalid or expired token',
+      });
+    }
   }
 
   // Public methods for broadcasting

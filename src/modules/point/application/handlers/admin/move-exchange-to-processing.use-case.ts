@@ -9,6 +9,9 @@ import {
   PointExchangeStatus,
 } from '../../../domain/entities/point-exchange.entity';
 import { IPointExchangeRepository } from '../../../infrastructure/persistence/repositories/point-exchange.repository';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 export interface MoveExchangeToProcessingCommand {
   exchangeId: string;
@@ -20,6 +23,8 @@ export class MoveExchangeToProcessingUseCase {
   constructor(
     @Inject('IPointExchangeRepository')
     private readonly pointExchangeRepository: IPointExchangeRepository,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   async execute(command: MoveExchangeToProcessingCommand): Promise<PointExchange> {
@@ -49,6 +54,64 @@ export class MoveExchangeToProcessingUseCase {
       throw new NotFoundException('Exchange not found after update');
     }
 
+    // Map exchange to response format (same as admin API response)
+    const eventData = this.mapExchangeToResponse(updatedExchange);
+
+    // Publish event after transaction (fire and forget)
+    setImmediate(() => {
+      this.redisService
+        .publishEvent(RedisChannel.EXCHANGE_PROCESSING as string, eventData)
+        .catch((error) => {
+          this.logger.error(
+            'Failed to publish exchange:processing event',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              exchangeId: updatedExchange.id,
+              adminId: command.adminId,
+            },
+            'point',
+          );
+        });
+    });
+
     return updatedExchange;
+  }
+
+  private mapExchangeToResponse(exchange: any): any {
+    return {
+      id: exchange.id,
+      userId: exchange.userId,
+      user: exchange.user
+        ? {
+            id: exchange.user.id,
+            email: exchange.user.email,
+            displayName: exchange.user.displayName || null,
+          }
+        : null,
+      siteId: exchange.siteId,
+      site: exchange.site
+        ? {
+            id: exchange.site.id,
+            name: exchange.site.name,
+          }
+        : null,
+      pointsAmount: exchange.pointsAmount,
+      siteCurrencyAmount: Number(exchange.siteCurrencyAmount),
+      exchangeRate: exchange.exchangeRate ? Number(exchange.exchangeRate) : null,
+      siteUserId: exchange.siteUserId,
+      status: exchange.status,
+      adminId: exchange.adminId || null,
+      admin: exchange.admin
+        ? {
+            id: exchange.admin.id,
+            email: exchange.admin.email,
+            displayName: exchange.admin.displayName || null,
+          }
+        : null,
+      processedAt: exchange.processedAt || null,
+      rejectionReason: exchange.rejectionReason || null,
+      createdAt: exchange.createdAt,
+      updatedAt: exchange.updatedAt,
+    };
   }
 }
