@@ -34,6 +34,19 @@ export class OtpRequestRepository implements IOtpRequestRepository {
     });
   }
 
+  /**
+   * Find active OTP request by token (excludes deleted records and expired tokens)
+   */
+  async findByToken(token: string): Promise<OtpRequest | null> {
+    const now = new Date();
+    return this.repository
+      .createQueryBuilder('otp')
+      .where('otp.token = :token', { token })
+      .andWhere('otp.deletedAt IS NULL')
+      .andWhere('(otp.tokenExpiresAt IS NULL OR otp.tokenExpiresAt > :now)', { now })
+      .getOne();
+  }
+
   async create(otpRequest: OtpRequest): Promise<OtpRequest> {
     const entity = this.repository.create(otpRequest);
     return this.repository.save(entity);

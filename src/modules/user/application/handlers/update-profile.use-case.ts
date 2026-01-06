@@ -20,7 +20,7 @@ export interface UpdateProfileCommand {
   avatarUrl?: string;
   bio?: string;
   phone?: string;
-  otp?: string;
+  token?: string;
   birthDate?: Date;
   gender?: string;
   activeBadge?: string;
@@ -58,26 +58,30 @@ export class UpdateProfileUseCase {
     const currentPhone = user.userProfile?.phone || null;
     const phoneChanged = normalizedPhone !== null && normalizedPhone !== currentPhone;
 
-    // If phone is being changed, require OTP and verify outside transaction
+    // If phone is being changed, require token and verify outside transaction
     let verifiedOtpRequest: any = null;
     if (phoneChanged) {
-      if (!command.otp) {
-        throw new BadRequestException('OTP is required when updating phone number');
+      if (!command.token) {
+        throw new BadRequestException('Token is required when updating phone number');
       }
 
-      // Verify OTP outside transaction (read-only check)
-      const otpRequest = await this.otpRequestRepository.findByPhone(normalizedPhone);
+      // Verify token outside transaction (read-only check)
+      const otpRequest = await this.otpRequestRepository.findByToken(command.token);
 
       if (!otpRequest) {
-        throw new BadRequestException('OTP not found. Please request OTP first');
+        throw new BadRequestException(
+          'Invalid or expired token. Please verify OTP first',
+        );
       }
 
-      if (otpRequest.isExpired()) {
-        throw new BadRequestException('OTP has expired. Please request a new OTP');
+      // Check if token is expired
+      if (otpRequest.tokenExpiresAt && otpRequest.tokenExpiresAt < new Date()) {
+        throw new BadRequestException('Token has expired. Please verify OTP again');
       }
 
-      if (otpRequest.otp !== command.otp) {
-        throw new BadRequestException('Invalid OTP code');
+      // Verify that the token's phone matches the requested phone
+      if (otpRequest.phone !== normalizedPhone) {
+        throw new BadRequestException('Token does not match the provided phone number');
       }
 
       // Check if phone is already verified by another user

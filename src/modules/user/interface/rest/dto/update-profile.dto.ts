@@ -14,8 +14,8 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(10)
-  otp?: string;
+  @MaxLength(64)
+  token?: string;
 
   @IsOptional()
   @IsDate()

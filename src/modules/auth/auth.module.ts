@@ -7,6 +7,7 @@ import { RefreshTokenUseCase } from './application/handlers/refresh-token.use-ca
 import { LogoutUseCase } from './application/handlers/logout.use-case';
 import { RequestOtpUseCase } from './application/handlers/request-otp.use-case';
 import { RequestOtpPhoneUseCase } from './application/handlers/request-otp-phone.use-case';
+import { VerifyOtpUseCase } from './application/handlers/verify-otp.use-case';
 import { ResetPasswordUseCase } from './application/handlers/reset-password.use-case';
 import { AuthController } from './interface/rest/auth.controller';
 import { UserPersistenceModule } from '../user/user-persistence.module';
@@ -33,6 +34,7 @@ import { TwilioModule } from '../../shared/services/twilio/twilio.module';
     LogoutUseCase,
     RequestOtpUseCase,
     RequestOtpPhoneUseCase,
+    VerifyOtpUseCase,
     ResetPasswordUseCase,
     PasswordService,
     JwtService,

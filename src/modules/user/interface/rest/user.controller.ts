@@ -249,9 +249,9 @@ export class UserController {
     const phoneChanged =
       normalizedNewPhone !== null && normalizedNewPhone !== normalizedCurrentPhone;
 
-    // If phone is being changed, require OTP
-    if (phoneChanged && !dto.otp) {
-      throw new BadRequestException('OTP is required when updating phone number');
+    // If phone is being changed, require token
+    if (phoneChanged && !dto.token) {
+      throw new BadRequestException('Token is required when updating phone number');
     }
 
     // Update profile with displayName and/or avatarUrl
@@ -261,7 +261,7 @@ export class UserController {
       avatarUrl,
       bio: dto.bio,
       phone: dto.phone,
-      otp: dto.otp,
+      token: dto.token,
       birthDate: dto.birthDate,
       gender: dto.gender,
       activeBadge: dto.activeBadge,

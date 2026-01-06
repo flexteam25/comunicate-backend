@@ -12,6 +12,11 @@ export interface IOtpRequestRepository {
    */
   findByPhoneAndUserId(phone: string, userId: string): Promise<OtpRequest | null>;
 
+  /**
+   * Find active OTP request by token (excludes deleted records and expired tokens)
+   */
+  findByToken(token: string): Promise<OtpRequest | null>;
+
   create(otpRequest: OtpRequest): Promise<OtpRequest>;
   update(otpRequest: OtpRequest): Promise<OtpRequest>;
   save(otpRequest: OtpRequest): Promise<OtpRequest>;

@@ -50,6 +50,12 @@ export class OtpRequest {
   @Column({ name: 'deleted_at', type: 'timestamptz', nullable: true })
   deletedAt?: Date;
 
+  @Column({ type: 'varchar', length: 64, nullable: true, unique: true })
+  token?: string;
+
+  @Column({ name: 'token_expires_at', type: 'timestamptz', nullable: true })
+  tokenExpiresAt?: Date;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

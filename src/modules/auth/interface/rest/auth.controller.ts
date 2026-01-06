@@ -14,8 +14,10 @@ import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.us
 import { LogoutUseCase } from '../../application/handlers/logout.use-case';
 import { RequestOtpUseCase } from '../../application/handlers/request-otp.use-case';
 import { RequestOtpPhoneUseCase } from '../../application/handlers/request-otp-phone.use-case';
+import { VerifyOtpUseCase } from '../../application/handlers/verify-otp.use-case';
 import { ResetPasswordUseCase } from '../../application/handlers/reset-password.use-case';
 import { RegisterDto } from './dto/register.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RequestOtpDto } from './dto/request-otp.dto';
@@ -43,6 +45,7 @@ export class AuthController {
     private readonly logoutUseCase: LogoutUseCase,
     private readonly requestOtpUseCase: RequestOtpUseCase,
     private readonly requestOtpPhoneUseCase: RequestOtpPhoneUseCase,
+    private readonly verifyOtpUseCase: VerifyOtpUseCase,
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
@@ -81,8 +84,7 @@ export class AuthController {
       password: dto.password,
       displayName: dto.displayName,
       bio: dto.bio,
-      phone: dto.phone,
-      otp: dto.otp,
+      token: dto.token,
       birthDate: dto.birthDate,
       gender: dto.gender,
       partner: dto.partner,
@@ -166,6 +168,17 @@ export class AuthController {
     };
 
     return ApiResponseUtil.success(authResponse, 'Login successful');
+  }
+
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  async verifyOtp(@Body() dto: VerifyOtpDto): Promise<ApiResponse<{ token: string }>> {
+    const result = await this.verifyOtpUseCase.execute({
+      phone: dto.phone,
+      otp: dto.otp,
+    });
+
+    return ApiResponseUtil.success(result, 'OTP verified successfully');
   }
 
   @Post('refresh')

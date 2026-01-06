@@ -15,7 +15,6 @@ import {
   PartnerRequest,
   PartnerRequestStatus,
 } from '../../../partner/domain/entities/partner-request.entity';
-import { normalizePhone } from '../../../../shared/utils/phone.util';
 import { OtpRequest } from '../../domain/entities/otp-request.entity';
 
 export interface RegisterCommand {
@@ -23,8 +22,7 @@ export interface RegisterCommand {
   password: string;
   displayName?: string;
   bio?: string;
-  phone: string;
-  otp: string;
+  token: string;
   birthDate?: Date;
   gender?: string;
   partner?: boolean;
@@ -42,16 +40,11 @@ export class RegisterUseCase {
   ) {}
 
   async execute(command: RegisterCommand): Promise<User> {
-    // Verify OTP outside transaction first (read-only check)
-    const normalizedPhone = normalizePhone(command.phone);
-    if (!normalizedPhone) {
-      throw new BadRequestException('Invalid phone number format');
-    }
-
-    const otpRequest = await this.otpRequestRepository.findByPhone(normalizedPhone);
+    // Verify token outside transaction first (read-only check)
+    const otpRequest = await this.otpRequestRepository.findByToken(command.token);
 
     if (!otpRequest) {
-      throw new BadRequestException('OTP not found. Please request OTP first');
+      throw new BadRequestException('Invalid or expired token. Please verify OTP first');
     }
 
     if (otpRequest.isVerified()) {
@@ -60,13 +53,12 @@ export class RegisterUseCase {
       );
     }
 
-    if (otpRequest.isExpired()) {
-      throw new BadRequestException('OTP has expired. Please request a new OTP');
+    // Check if token is expired
+    if (otpRequest.tokenExpiresAt && otpRequest.tokenExpiresAt < new Date()) {
+      throw new BadRequestException('Token has expired. Please verify OTP again');
     }
 
-    if (otpRequest.otp !== command.otp) {
-      throw new BadRequestException('Invalid OTP code');
-    }
+    const normalizedPhone = otpRequest.phone;
 
     return this.transactionService.executeInTransaction(
       async (entityManager: EntityManager) => {
@@ -114,6 +106,8 @@ export class RegisterUseCase {
 
         otpRequestInTransaction.verifiedAt = new Date();
         otpRequestInTransaction.userId = savedUser.id;
+        otpRequestInTransaction.token = null; // Invalidate token (one-time use)
+        otpRequestInTransaction.tokenExpiresAt = null;
         await otpRequestRepo.save(otpRequestInTransaction);
 
         // Create partner request if partner flag is true

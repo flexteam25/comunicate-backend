@@ -30,14 +30,9 @@ export class RegisterDto {
   bio?: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Phone is required' })
-  @MaxLength(20)
-  phone: string;
-
-  @IsString()
-  @IsNotEmpty({ message: 'OTP is required' })
-  @MaxLength(10)
-  otp: string;
+  @IsNotEmpty({ message: 'Token is required' })
+  @MaxLength(64)
+  token: string;
 
   @IsOptional()
   @IsDate()
