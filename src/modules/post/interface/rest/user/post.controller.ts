@@ -37,6 +37,7 @@ import { AddCommentDto } from '../dto/add-comment.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
+import { getClientIp } from '../../../../../shared/utils/request.util';
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { MulterFile } from '../../../../../shared/services/upload';
 import { CreatePostUseCase } from '../../../application/handlers/user/create-post.use-case';
@@ -66,16 +67,6 @@ export class PostController {
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
-  }
-
-  private getClientIp(req: Request): string {
-    return (
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      'unknown'
-    );
   }
 
   private mapPostToResponse(post: any): any {
@@ -189,10 +180,10 @@ export class PostController {
   @HttpCode(HttpStatus.OK)
   async getPost(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: Request,
     @CurrentUser() user?: CurrentUserPayload,
-    @Req() req?: Request,
   ): Promise<ApiResponse<any>> {
-    const ipAddress = req ? this.getClientIp(req) : 'unknown';
+    const ipAddress = getClientIp(req);
 
     const post = await this.getPostUseCase.execute({
       postId: id,

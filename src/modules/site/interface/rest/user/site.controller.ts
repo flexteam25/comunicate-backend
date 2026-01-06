@@ -22,6 +22,7 @@ import {
 } from '../../../../../shared/decorators/current-user.decorator';
 import { OptionalJwtAuthGuard } from '../../../../../shared/guards/optional-jwt-auth.guard';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
+import { getClientIp } from '../../../../../shared/utils/request.util';
 import { ConfigService } from '@nestjs/config';
 import { Site } from '../../../domain/entities/site.entity';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
@@ -177,7 +178,7 @@ export class UserSiteController {
     @Req() req: Request,
     @CurrentUser() user?: CurrentUserPayload,
   ): Promise<ApiResponse<SiteResponse>> {
-    const ipAddress = req.ip || req.connection?.remoteAddress || '0.0.0.0';
+    const ipAddress = getClientIp(req);
     const userId = user?.userId;
 
     const site = await this.getSiteUseCase.execute({

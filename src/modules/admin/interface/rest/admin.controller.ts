@@ -17,6 +17,7 @@ import {
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
+import { getClientIp } from '../../../../shared/utils/request.util';
 import { LoginUseCase } from '../../application/handlers/login.use-case';
 import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.use-case';
 import { LogoutUseCase } from '../../application/handlers/logout.use-case';
@@ -110,12 +111,7 @@ export class AdminController {
     @Body() dto: AdminLoginDto,
     @Req() req: Request,
   ): Promise<ApiResponse<AdminAuthResponse>> {
-    const ipAddress =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      undefined;
+    const ipAddress = getClientIp(req);
 
     const result = await this.loginUseCase.execute({
       email: dto.email,

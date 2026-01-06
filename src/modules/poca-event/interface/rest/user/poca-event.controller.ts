@@ -12,6 +12,7 @@ import {
 } from '../../../../../shared/decorators/current-user.decorator';
 import { OptionalJwtAuthGuard } from '../../../../../shared/guards/optional-jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
+import { getClientIp } from '../../../../../shared/utils/request.util';
 
 @Controller('api/poca-events')
 @UseGuards(OptionalJwtAuthGuard)
@@ -24,16 +25,6 @@ export class PocaEventController {
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
-  }
-
-  private getClientIp(req: Request): string {
-    return (
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      'unknown'
-    );
   }
 
   private mapPocaEventToResponse(event: any): any {
@@ -88,7 +79,7 @@ export class PocaEventController {
     @CurrentUser() user?: CurrentUserPayload,
     @Req() req?: Request,
   ): Promise<ApiResponse<any>> {
-    const ipAddress = req ? this.getClientIp(req) : 'unknown';
+    const ipAddress = req ? getClientIp(req) : 'unknown';
     const userAgent = req?.headers['user-agent'] || undefined;
 
     const event = await this.getPocaEventUseCase.execute({

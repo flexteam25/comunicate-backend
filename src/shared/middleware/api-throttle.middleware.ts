@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware, HttpException, HttpStatus } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { LoggerService } from '../logger/logger.service';
+import { getClientIp } from '../utils/request.util';
 
 /**
  * API Throttle Middleware
@@ -28,7 +29,7 @@ export class ApiThrottleMiddleware implements NestMiddleware {
     parseInt(process.env.API_THROTTLE_POST_WINDOW || '60', 10) * 1000; // milliseconds
 
   use(req: Request, res: Response, next: NextFunction) {
-    const ip = this.getClientIp(req);
+    const ip = getClientIp(req);
     const method = req.method.toUpperCase();
 
     // Skip throttle for certain paths (e.g., health checks, metrics)
@@ -110,19 +111,6 @@ export class ApiThrottleMiddleware implements NestMiddleware {
 
     res.setHeader('X-RateLimit-Reset', new Date(entry.resetTime).toISOString());
     next();
-  }
-
-  /**
-   * Get client IP address
-   */
-  private getClientIp(req: Request): string {
-    return (
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      'unknown'
-    );
   }
 
   /**

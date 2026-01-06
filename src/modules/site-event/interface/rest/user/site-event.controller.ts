@@ -23,6 +23,7 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../../../../../shared/decorators/current-user.decorator';
+import { getClientIp } from '../../../../../shared/utils/request.util';
 import { CreateSiteEventUseCase } from '../../../application/handlers/user/create-site-event.use-case';
 import { UpdateSiteEventUseCase } from '../../../application/handlers/user/update-site-event.use-case';
 import { ListSiteEventsUseCase } from '../../../application/handlers/user/list-site-events.use-case';
@@ -144,12 +145,7 @@ export class SiteEventController {
     @CurrentUser() user: CurrentUserPayload | undefined,
     @Req() req: Request,
   ): Promise<ApiResponse<any>> {
-    const ipAddress =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      undefined;
+    const ipAddress = getClientIp(req);
 
     const event = await this.getSiteEventUseCase.execute({
       eventId: id,
