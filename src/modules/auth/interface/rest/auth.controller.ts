@@ -239,7 +239,7 @@ export class AuthController {
   async requestOtpPhone(
     @Body() dto: RequestOtpPhoneDto,
     @Req() req: Request,
-  ): Promise<ApiResponse<{ message: string; otp?: string }>> {
+  ): Promise<ApiResponse<{ message: string; otp?: string; expiresAt?: string }>> {
     const ipAddress =
       (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
       (req.headers['x-real-ip'] as string) ||
@@ -252,8 +252,9 @@ export class AuthController {
       ipAddress,
     });
 
-    const responseData: { message: string; otp?: string } = {
+    const responseData: { message: string; otp?: string; expiresAt?: string } = {
       message: result.message,
+      expiresAt: result.expiresAt,
     };
 
     // Include OTP in response if test mode

@@ -13,6 +13,11 @@ export class UpdateProfileDto {
   phone?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  otp?: string;
+
+  @IsOptional()
   @IsDate()
   @Type(() => Date)
   birthDate?: Date;

@@ -476,7 +476,19 @@ AWS_SES_HOST=email-smtp.us-east-1.amazonaws.com  # Optional, defaults to us-east
 - **Yandex**: Uses `smtp.yandex.com` on port 465
 - **SendinBlue/Brevo**: Uses `smtp-relay.brevo.com`
 - **Mailgun**: Uses `smtp.mailgun.org`
-- **SendGrid**: Uses `smtp.sendgrid.net`
+- **SendGrid**: 
+  - Uses `smtp.sendgrid.net` by default
+  - Username must be `apikey` (automatically set when EMAIL_PROVIDER=sendgrid)
+  - Password is your SendGrid API Key
+  - Example config:
+    ```env
+    EMAIL_PROVIDER=sendgrid
+    SMTP_HOST=smtp.sendgrid.net
+    SMTP_PORT=587
+    SMTP_USER=apikey  # Can be omitted, will be set automatically
+    SMTP_PASSWORD=SG.your-sendgrid-api-key-here
+    SMTP_FROM=noreply@yourdomain.com
+    ```
 - **Amazon SES**: Configure region-specific host
 - **SMTP2Go**: Uses `mail.smtp2go.com`
 - **Postmark**: Uses `smtp.postmarkapp.com`

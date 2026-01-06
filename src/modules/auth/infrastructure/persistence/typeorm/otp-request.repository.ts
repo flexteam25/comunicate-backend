@@ -11,9 +11,26 @@ export class OtpRequestRepository implements IOtpRequestRepository {
     private readonly repository: Repository<OtpRequest>,
   ) {}
 
+  /**
+   * Find active OTP request by phone (excludes deleted records)
+   * If a record has deletedAt, it will not be found, allowing creation of a new record
+   * This preserves deleted records as history
+   */
   async findByPhone(phone: string): Promise<OtpRequest | null> {
+    return this.repository
+      .createQueryBuilder('otp')
+      .where('otp.phone = :phone', { phone })
+      .andWhere('otp.deletedAt IS NULL')
+      .getOne();
+  }
+
+  /**
+   * Find OTP request by phone and userId (includes deleted records for history lookup)
+   * Used when checking if a phone was previously used by a specific user
+   */
+  async findByPhoneAndUserId(phone: string, userId: string): Promise<OtpRequest | null> {
     return this.repository.findOne({
-      where: { phone },
+      where: { phone, userId },
     });
   }
 

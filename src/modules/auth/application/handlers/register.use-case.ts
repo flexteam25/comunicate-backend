@@ -15,6 +15,8 @@ import {
   PartnerRequest,
   PartnerRequestStatus,
 } from '../../../partner/domain/entities/partner-request.entity';
+import { normalizePhone } from '../../../../shared/utils/phone.util';
+import { OtpRequest } from '../../domain/entities/otp-request.entity';
 
 export interface RegisterCommand {
   email: string;
@@ -40,35 +42,34 @@ export class RegisterUseCase {
   ) {}
 
   async execute(command: RegisterCommand): Promise<User> {
+    // Verify OTP outside transaction first (read-only check)
+    const normalizedPhone = normalizePhone(command.phone);
+    if (!normalizedPhone) {
+      throw new BadRequestException('Invalid phone number format');
+    }
+
+    const otpRequest = await this.otpRequestRepository.findByPhone(normalizedPhone);
+
+    if (!otpRequest) {
+      throw new BadRequestException('OTP not found. Please request OTP first');
+    }
+
+    if (otpRequest.isVerified()) {
+      throw new BadRequestException(
+        'This phone number has already been used for registration',
+      );
+    }
+
+    if (otpRequest.isExpired()) {
+      throw new BadRequestException('OTP has expired. Please request a new OTP');
+    }
+
+    if (otpRequest.otp !== command.otp) {
+      throw new BadRequestException('Invalid OTP code');
+    }
+
     return this.transactionService.executeInTransaction(
       async (entityManager: EntityManager) => {
-        // Normalize phone number
-        const normalizedPhone = this.normalizePhone(command.phone);
-        if (!normalizedPhone) {
-          throw new BadRequestException('Invalid phone number format');
-        }
-
-        // Verify OTP
-        const otpRequest = await this.otpRequestRepository.findByPhone(normalizedPhone);
-
-        if (!otpRequest) {
-          throw new BadRequestException('OTP not found. Please request OTP first');
-        }
-
-        if (otpRequest.isVerified()) {
-          throw new BadRequestException(
-            'This phone number has already been used for registration',
-          );
-        }
-
-        if (otpRequest.isExpired()) {
-          throw new BadRequestException('OTP has expired. Please request a new OTP');
-        }
-
-        if (otpRequest.otp !== command.otp) {
-          throw new BadRequestException('Invalid OTP code');
-        }
-
         // Check if user already exists
         const existingUser = await entityManager.findOne(User, {
           where: { email: command.email, deletedAt: null },
@@ -98,9 +99,22 @@ export class RegisterUseCase {
 
         const savedUser = await entityManager.save(User, user);
 
-        // Mark OTP as verified
-        otpRequest.verifiedAt = new Date();
-        await this.otpRequestRepository.update(otpRequest);
+        // Mark OTP as verified and set user_id
+        // Use entityManager repository to ensure same transaction context
+        const otpRequestRepo = entityManager.getRepository(OtpRequest);
+
+        // Reload OTP request within transaction to ensure we have the latest version
+        const otpRequestInTransaction = await otpRequestRepo.findOne({
+          where: { id: otpRequest.id },
+        });
+
+        if (!otpRequestInTransaction) {
+          throw new BadRequestException('OTP request not found');
+        }
+
+        otpRequestInTransaction.verifiedAt = new Date();
+        otpRequestInTransaction.userId = savedUser.id;
+        await otpRequestRepo.save(otpRequestInTransaction);
 
         // Create partner request if partner flag is true
         if (command.partner === true) {
@@ -115,38 +129,5 @@ export class RegisterUseCase {
         return savedUser;
       },
     );
-  }
-
-  /**
-   * Normalize phone number to E.164 format (+XX...)
-   * Supports formats: +84..., 84..., 0...
-   */
-  private normalizePhone(phone: string): string | null {
-    if (!phone) {
-      return null;
-    }
-
-    // Remove all non-digit characters except +
-    let cleaned = phone.replace(/[^\d+]/g, '');
-
-    // If starts with +, keep it
-    if (cleaned.startsWith('+')) {
-      return cleaned;
-    }
-
-    // If starts with 0, replace with country code (default: +84 for Vietnam)
-    if (cleaned.startsWith('0')) {
-      cleaned = cleaned.substring(1);
-      return `+84${cleaned}`;
-    }
-
-    // If starts with country code without +, add +
-    if (cleaned.startsWith('84')) {
-      return `+${cleaned}`;
-    }
-
-    // If starts with country code (other), add +
-    // Default: assume it's a valid country code
-    return `+${cleaned}`;
   }
 }

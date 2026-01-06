@@ -10,6 +10,7 @@ import { IOtpRequestRepository } from '../../infrastructure/persistence/reposito
 import { OtpRequest } from '../../domain/entities/otp-request.entity';
 import { TwilioService } from '../../../../shared/services/twilio/twilio.service';
 import { LoggerService } from '../../../../shared/logger/logger.service';
+import { normalizePhone } from '../../../../shared/utils/phone.util';
 
 export interface RequestOtpPhoneCommand {
   phone: string;
@@ -43,29 +44,28 @@ export class RequestOtpPhoneUseCase {
       this.configService.get<string>('OTP_MAX_REQUESTS_PER_WINDOW') || '3',
       10,
     );
-    this.otpLength = parseInt(
-      this.configService.get<string>('OTP_LENGTH') || '6',
-      10,
-    );
+    this.otpLength = parseInt(this.configService.get<string>('OTP_LENGTH') || '6', 10);
     this.isTestMode =
       this.configService.get<string>('TEST_OTP')?.toLowerCase() === 'true';
   }
 
   async execute(
     command: RequestOtpPhoneCommand,
-  ): Promise<{ message: string; otp?: string }> {
+  ): Promise<{ message: string; otp?: string; expiresAt?: string }> {
     // Normalize phone number to E.164 format
-    const normalizedPhone = this.normalizePhone(command.phone);
+    const normalizedPhone = normalizePhone(command.phone);
     if (!normalizedPhone) {
       throw new BadRequestException('Invalid phone number format');
     }
 
     // Check if phone already verified (cannot be used for registration)
-    const existingOtpRequest = await this.otpRequestRepository.findByPhone(
-      normalizedPhone,
-    );
+    // findByPhone only returns active records (deletedAt: null)
+    // If a record has deletedAt, it won't be found, allowing creation of a new record
+    // This preserves deleted records as history
+    const existingOtpRequest =
+      await this.otpRequestRepository.findByPhone(normalizedPhone);
 
-    if (existingOtpRequest?.isVerified()) {
+    if (existingOtpRequest && existingOtpRequest?.isVerified()) {
       throw new BadRequestException(
         'This phone number has already been used for registration',
       );
@@ -138,6 +138,7 @@ export class RequestOtpPhoneUseCase {
       return {
         message: 'OTP has been generated (test mode)',
         otp: otp,
+        expiresAt: expiresAt.toISOString(),
       };
     }
 
@@ -154,40 +155,8 @@ export class RequestOtpPhoneUseCase {
 
     return {
       message: 'OTP has been sent to your phone number',
+      expiresAt: expiresAt.toISOString(),
     };
-  }
-
-  /**
-   * Normalize phone number to E.164 format (+XX...)
-   * Supports formats: +84..., 84..., 0...
-   */
-  private normalizePhone(phone: string): string | null {
-    if (!phone) {
-      return null;
-    }
-
-    // Remove all non-digit characters except +
-    let cleaned = phone.replace(/[^\d+]/g, '');
-
-    // If starts with +, keep it
-    if (cleaned.startsWith('+')) {
-      return cleaned;
-    }
-
-    // If starts with 0, replace with country code (default: +84 for Vietnam)
-    if (cleaned.startsWith('0')) {
-      cleaned = cleaned.substring(1);
-      return `+84${cleaned}`;
-    }
-
-    // If starts with country code without +, add +
-    if (cleaned.startsWith('84')) {
-      return `+${cleaned}`;
-    }
-
-    // If starts with country code (other), add +
-    // Default: assume it's a valid country code
-    return `+${cleaned}`;
   }
 
   /**

@@ -5,16 +5,21 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { User } from '../../../user/domain/entities/user.entity';
 
 @Entity('otp_requests')
 @Index('IDX_otp_requests_phone', ['phone'])
 @Index('IDX_otp_requests_expires_at', ['expiresAt'])
+@Index('IDX_otp_requests_user_id', ['userId'])
+@Index('IDX_otp_requests_deleted_at', ['deletedAt'])
 export class OtpRequest {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 20, unique: true })
+  @Column({ type: 'varchar', length: 20 })
   phone: string;
 
   @Column({ type: 'varchar', length: 10 })
@@ -34,6 +39,16 @@ export class OtpRequest {
 
   @Column({ name: 'verified_at', type: 'timestamptz', nullable: true })
   verifiedAt?: Date;
+
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId?: string;
+
+  @ManyToOne(() => User, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'user_id' })
+  user?: User;
+
+  @Column({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  deletedAt?: Date;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

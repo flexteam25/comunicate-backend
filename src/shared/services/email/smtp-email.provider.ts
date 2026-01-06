@@ -25,18 +25,35 @@ export class SmtpEmailProvider implements EmailProvider {
     const host = this.configService.get<string>('SMTP_HOST');
     const port = this.configService.get<number>('SMTP_PORT', 587);
     const secure = this.configService.get<boolean>('SMTP_SECURE', false);
-    const auth = {
-      user: this.configService.get<string>('SMTP_USER'),
-      pass: this.configService.get<string>('SMTP_PASSWORD'),
-    };
+    const provider = this.configService.get<string>('EMAIL_PROVIDER', 'smtp');
+
+    // SendGrid requires username to be "apikey" and password to be the API key
+    let auth: { user: string; pass: string } | undefined;
+    if (provider.toLowerCase() === 'sendgrid') {
+      const apiKey = this.configService.get<string>('SMTP_PASSWORD');
+      if (apiKey) {
+        auth = {
+          user: 'apikey',
+          pass: apiKey,
+        };
+      }
+    } else {
+      const smtpUser = this.configService.get<string>('SMTP_USER');
+      const smtpPass = this.configService.get<string>('SMTP_PASSWORD');
+      if (smtpUser && smtpPass) {
+        auth = {
+          user: smtpUser,
+          pass: smtpPass,
+        };
+      }
+    }
 
     // Provider-specific configuration
-    const provider = this.configService.get<string>('EMAIL_PROVIDER', 'smtp');
     const providerConfig = this.getProviderConfig(provider, host, port, secure);
 
     this.transporter = nodemailer.createTransport({
       ...providerConfig,
-      auth: auth.user && auth.pass ? auth : undefined,
+      auth: auth,
     });
   }
 

@@ -11,6 +11,7 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   NotFoundException,
+  BadRequestException,
   Get,
   Inject,
   Post,
@@ -34,6 +35,7 @@ import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-respons
 import { UploadService, MulterFile } from '../../../../shared/services/upload';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
+import { normalizePhone } from '../../../../shared/utils/phone.util';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
 import { BadgeResponse } from '../../../../shared/dto/badge-response.dto';
 import { AddFavoriteSiteUseCase } from '../../application/handlers/add-favorite-site.use-case';
@@ -232,6 +234,26 @@ export class UserController {
       avatarUrl = uploadResult.relativePath;
     }
 
+    // Check if phone is being changed
+    const currentUser = await this.userRepository.findById(user.userId, ['userProfile']);
+    if (!currentUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const currentPhone = currentUser.userProfile?.phone || null;
+    const newPhone = dto.phone || null;
+
+    // Normalize phone numbers for comparison
+    const normalizedCurrentPhone = normalizePhone(currentPhone);
+    const normalizedNewPhone = normalizePhone(newPhone);
+    const phoneChanged =
+      normalizedNewPhone !== null && normalizedNewPhone !== normalizedCurrentPhone;
+
+    // If phone is being changed, require OTP
+    if (phoneChanged && !dto.otp) {
+      throw new BadRequestException('OTP is required when updating phone number');
+    }
+
     // Update profile with displayName and/or avatarUrl
     await this.updateProfileUseCase.execute({
       userId: user.userId,
@@ -239,6 +261,7 @@ export class UserController {
       avatarUrl,
       bio: dto.bio,
       phone: dto.phone,
+      otp: dto.otp,
       birthDate: dto.birthDate,
       gender: dto.gender,
       activeBadge: dto.activeBadge,
