@@ -6,6 +6,7 @@ import { LoginUseCase } from './application/handlers/login.use-case';
 import { RefreshTokenUseCase } from './application/handlers/refresh-token.use-case';
 import { LogoutUseCase } from './application/handlers/logout.use-case';
 import { RequestOtpUseCase } from './application/handlers/request-otp.use-case';
+import { RequestOtpPhoneUseCase } from './application/handlers/request-otp-phone.use-case';
 import { ResetPasswordUseCase } from './application/handlers/reset-password.use-case';
 import { AuthController } from './interface/rest/auth.controller';
 import { UserPersistenceModule } from '../user/user-persistence.module';
@@ -13,6 +14,7 @@ import { PasswordService } from '../../shared/services/password.service';
 import { JwtService } from '../../shared/services/jwt.service';
 import { QueueClientModule } from '../../shared/queue/queue-client.module';
 import { PartnerPersistenceModule } from '../partner/partner-persistence.module';
+import { TwilioModule } from '../../shared/services/twilio/twilio.module';
 
 @Module({
   imports: [
@@ -21,6 +23,7 @@ import { PartnerPersistenceModule } from '../partner/partner-persistence.module'
     UserPersistenceModule,
     QueueClientModule,
     PartnerPersistenceModule,
+    TwilioModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -29,6 +32,7 @@ import { PartnerPersistenceModule } from '../partner/partner-persistence.module'
     RefreshTokenUseCase,
     LogoutUseCase,
     RequestOtpUseCase,
+    RequestOtpPhoneUseCase,
     ResetPasswordUseCase,
     PasswordService,
     JwtService,

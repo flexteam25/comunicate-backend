@@ -13,11 +13,13 @@ import { LoginUseCase } from '../../application/handlers/login.use-case';
 import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.use-case';
 import { LogoutUseCase } from '../../application/handlers/logout.use-case';
 import { RequestOtpUseCase } from '../../application/handlers/request-otp.use-case';
+import { RequestOtpPhoneUseCase } from '../../application/handlers/request-otp-phone.use-case';
 import { ResetPasswordUseCase } from '../../application/handlers/reset-password.use-case';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RequestOtpDto } from './dto/request-otp.dto';
+import { RequestOtpPhoneDto } from './dto/request-otp-phone.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponse } from '../../../../shared/dto/auth-response.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
@@ -40,6 +42,7 @@ export class AuthController {
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly logoutUseCase: LogoutUseCase,
     private readonly requestOtpUseCase: RequestOtpUseCase,
+    private readonly requestOtpPhoneUseCase: RequestOtpPhoneUseCase,
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
@@ -79,6 +82,7 @@ export class AuthController {
       displayName: dto.displayName,
       bio: dto.bio,
       phone: dto.phone,
+      otp: dto.otp,
       birthDate: dto.birthDate,
       gender: dto.gender,
       partner: dto.partner,
@@ -228,6 +232,36 @@ export class AuthController {
       },
       result?.message || 'OTP sent successfully',
     );
+  }
+
+  @Post('request-otp-phone')
+  @HttpCode(HttpStatus.OK)
+  async requestOtpPhone(
+    @Body() dto: RequestOtpPhoneDto,
+    @Req() req: Request,
+  ): Promise<ApiResponse<{ message: string; otp?: string }>> {
+    const ipAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      (req.headers['x-real-ip'] as string) ||
+      req.ip ||
+      req.socket.remoteAddress ||
+      undefined;
+
+    const result = await this.requestOtpPhoneUseCase.execute({
+      phone: dto.phone,
+      ipAddress,
+    });
+
+    const responseData: { message: string; otp?: string } = {
+      message: result.message,
+    };
+
+    // Include OTP in response if test mode
+    if (result.otp) {
+      responseData.otp = result.otp;
+    }
+
+    return ApiResponseUtil.success(responseData, result.message);
   }
 
   @Post('reset-password')

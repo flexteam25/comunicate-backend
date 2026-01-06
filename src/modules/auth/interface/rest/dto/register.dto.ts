@@ -3,6 +3,7 @@ import {
   IsString,
   MinLength,
   IsOptional,
+  IsNotEmpty,
   MaxLength,
   IsDate,
   IsBoolean,
@@ -28,10 +29,15 @@ export class RegisterDto {
   @MaxLength(500)
   bio?: string;
 
-  @IsOptional()
   @IsString()
+  @IsNotEmpty({ message: 'Phone is required' })
   @MaxLength(20)
-  phone?: string;
+  phone: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'OTP is required' })
+  @MaxLength(10)
+  otp: string;
 
   @IsOptional()
   @IsDate()

@@ -18,6 +18,7 @@ import { SupportModule } from './modules/support/support.module';
 import { User } from './modules/user/domain/entities/user.entity';
 import { UserOldPassword } from './modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from './modules/auth/domain/entities/user-token.entity';
+import { OtpRequest } from './modules/auth/domain/entities/otp-request.entity';
 import { Role } from './modules/user/domain/entities/role.entity';
 import { Permission } from './modules/user/domain/entities/permission.entity';
 import { Badge } from './modules/badge/domain/entities/badge.entity';
@@ -97,6 +98,7 @@ import { SiteEventView } from './modules/site-event/domain/entities/site-event-v
         User,
         UserOldPassword,
         UserToken,
+        OtpRequest,
         Role,
         Permission,
         Badge,
