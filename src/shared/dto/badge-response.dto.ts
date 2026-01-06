@@ -4,4 +4,5 @@ export interface BadgeResponse {
   earnedAt?: Date;
   active?: boolean;
   obtain?: string;
+  description?: string;
 }

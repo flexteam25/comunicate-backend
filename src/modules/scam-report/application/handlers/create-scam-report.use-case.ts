@@ -19,10 +19,10 @@ export interface CreateScamReportCommand {
   siteAccountInfo: string;
   registrationUrl: string;
   contact: string;
-  title: string;
   description: string;
   amount?: number;
   images?: string[];
+  ipAddress?: string;
 }
 
 @Injectable()
@@ -66,10 +66,10 @@ export class CreateScamReportUseCase {
           siteAccountInfo: command.siteAccountInfo,
           registrationUrl: command.registrationUrl,
           contact: command.contact,
-          title: command.title,
           description: command.description,
           amount: command.amount,
           status: ScamReportStatus.PENDING,
+          ipAddress: command.ipAddress || null,
         });
 
         const saved = await reportRepo.save(report);
@@ -151,7 +151,6 @@ export class CreateScamReportUseCase {
         name: ub.badge.name,
         iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
       })) || [],
-      title: report.title,
       description: report.description,
       amount: report.amount ? Number(report.amount) : null,
       status: report.status,

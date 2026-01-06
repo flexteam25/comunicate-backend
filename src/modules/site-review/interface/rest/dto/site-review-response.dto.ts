@@ -4,10 +4,11 @@ export class SiteReviewCommentResponseDto {
   userId: string;
   userName?: string;
   userAvatarUrl?: string;
-  userBadges?: {
+  userBadge?: {
     name: string;
     iconUrl: string;
-  }[];
+    earnedAt?: Date;
+  } | null;
   parentCommentId?: string;
   hasChild: boolean;
   createdAt: Date;
@@ -28,10 +29,11 @@ export class SiteReviewResponseDto {
   userId: string;
   userName: string;
   userAvatarUrl?: string;
-  userBadges?: {
+  userBadge?: {
     name: string;
     iconUrl: string;
-  }[];
+    earnedAt?: Date;
+  } | null;
   rating: number;
   odds: number;
   limit: number;

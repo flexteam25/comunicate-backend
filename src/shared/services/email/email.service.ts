@@ -43,6 +43,7 @@ export class EmailService {
             to: options.to,
             subject: options.subject,
             messageId: result.messageId,
+            provider: this.emailProvider.getProviderName(),
           },
           'email',
         );
@@ -53,6 +54,8 @@ export class EmailService {
             to: options.to,
             subject: options.subject,
             error: result.error,
+            messageId: result.messageId,
+            provider: this.emailProvider.getProviderName(),
           },
           'email',
         );

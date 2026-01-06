@@ -35,7 +35,10 @@ import { AdminCreateScamReportDto } from '../dto/admin-create-scam-report.dto';
 import { AdminUpdateScamReportDto } from '../dto/admin-update-scam-report.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
-import { ScamReportStatus } from '../../../domain/entities/scam-report.entity';
+import {
+  ScamReport,
+  ScamReportStatus,
+} from '../../../domain/entities/scam-report.entity';
 import { ConfigService } from '@nestjs/config';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 
@@ -58,7 +61,34 @@ export class AdminScamReportController {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
 
-  private mapScamReportToResponse(report: any): ScamReportResponseDto {
+  private mapScamReportToResponse(
+    report: ScamReport & {
+      likeCount?: number;
+      dislikeCount?: number;
+      images?: {
+        id: string;
+        imageUrl: string;
+        order: number;
+        createdAt: Date;
+      }[];
+      user?: {
+        displayName?: string | null;
+        email?: string | null;
+        avatarUrl?: string | null;
+        userBadges?: {
+          badge: { name: string; iconUrl?: string | null; deletedAt?: Date | null };
+          active: boolean;
+          earnedAt?: Date;
+        }[];
+      } | null;
+      site?: {
+        name?: string | null;
+      } | null;
+      admin?: {
+        displayName?: string | null;
+      } | null;
+    },
+  ): ScamReportResponseDto {
     // Use reaction counts from database (counted via subquery)
     const reactions = {
       like: report.likeCount || 0,
@@ -77,15 +107,21 @@ export class AdminScamReportController {
       userName: report.user?.displayName || null,
       userEmail: report.user?.email || null,
       userAvatarUrl: buildFullUrl(this.apiServiceUrl, report.user?.avatarUrl || null),
-      userBadges: report.user?.userBadges?.map((ub) => ({
-        name: ub.badge.name,
-        iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
-      })) || [],
-      title: report.title,
+      userBadge: (() => {
+        const activeBadge = report.user?.userBadges?.find(
+          (ub) => ub?.badge && !ub.badge.deletedAt && ub.active,
+        );
+        if (!activeBadge) return null;
+        return {
+          name: activeBadge.badge.name,
+          iconUrl: buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null),
+          earnedAt: activeBadge.earnedAt,
+        };
+      })(),
       description: report.description,
       amount: report.amount ? Number(report.amount) : null,
       status: report.status,
-      images: (report.images || []).map((img: any) => ({
+      images: (report.images || []).map((img) => ({
         id: img.id,
         imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl),
         order: img.order,
@@ -214,7 +250,6 @@ export class AdminScamReportController {
       siteAccountInfo: dto.siteAccountInfo,
       registrationUrl: dto.registrationUrl,
       contact: dto.contact,
-      title: dto.title,
       description: dto.description,
       amount: dto.amount,
       status: dto.status,
@@ -277,7 +312,6 @@ export class AdminScamReportController {
       siteAccountInfo: dto.siteAccountInfo,
       registrationUrl: dto.registrationUrl,
       contact: dto.contact,
-      title: dto.title,
       description: dto.description,
       amount: dto.amount,
       status: dto.status,

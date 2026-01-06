@@ -1,4 +1,5 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { QueueService } from '../../../../shared/queue/queue.service';
@@ -10,12 +11,18 @@ export interface RequestOtpCommand {
 
 @Injectable()
 export class RequestOtpUseCase {
+  private readonly isTestMail: boolean;
+
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly redisService: RedisService,
     private readonly queueService: QueueService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.isTestMail =
+      this.configService.get<string>('TEST_MAIL')?.toLowerCase() === 'true';
+  }
 
   async execute(command: RequestOtpCommand): Promise<{ message: string; otp?: string }> {
     // Find user by email
@@ -44,11 +51,19 @@ export class RequestOtpUseCase {
     // Store as plain string, not JSON
     await this.redisService.setString(redisKey, otp, 180);
 
+    // In test mail mode, do NOT send email, just return OTP
+    if (this.isTestMail) {
+      return {
+        message: 'OTP has been generated (test mail mode)',
+        otp,
+      };
+    }
+
     // Queue OTP email job (non-blocking)
-    // await this.queueOtpEmail(user, otp);
+    await this.queueOtpEmail(user, otp);
 
     // Return success message (don't reveal if user exists)
-    return { message: 'If the email exists, an OTP has been sent', otp };
+    return { message: 'If the email exists, an OTP has been sent' };
   }
 
   /**

@@ -14,7 +14,6 @@ export interface AdminCreateScamReportCommand {
   siteAccountInfo: string;
   registrationUrl: string;
   contact: string;
-  title: string;
   description: string;
   amount?: number;
   status?: ScamReportStatus;
@@ -55,7 +54,6 @@ export class AdminCreateScamReportUseCase {
           siteAccountInfo: command.siteAccountInfo,
           registrationUrl: command.registrationUrl,
           contact: command.contact,
-          title: command.title,
           description: command.description,
           amount: command.amount,
           status: command.status || ScamReportStatus.PENDING,

@@ -90,6 +90,10 @@ export class PointExchange {
   @Column({ name: 'rejection_reason', type: 'text', nullable: true })
   rejectionReason?: string;
 
+  /** IP address when user requested the exchange */
+  @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
+  ipAddress?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

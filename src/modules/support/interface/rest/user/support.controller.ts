@@ -13,6 +13,7 @@ import {
   UploadedFiles,
   BadRequestException,
   ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CreateInquiryUseCase } from '../../../application/handlers/user/create-inquiry.use-case';
@@ -31,6 +32,8 @@ import { UploadService, MulterFile } from '../../../../../shared/services/upload
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { InquiryCategory } from '../../../domain/entities/inquiry.entity';
+import { Request } from 'express';
+import { getClientIp } from '../../../../../shared/utils/request.util';
 
 @Controller('api/support')
 export class UserSupportController {
@@ -103,6 +106,7 @@ export class UserSupportController {
     files?: {
       images?: MulterFile[];
     },
+    @Req() req?: Request,
   ): Promise<ApiResponse<any>> {
     const imageUrls: string[] = [];
 
@@ -125,12 +129,15 @@ export class UserSupportController {
       }
     }
 
+    const ipAddress = req ? getClientIp(req) : undefined;
+
     const inquiry = await this.createInquiryUseCase.execute({
       userId: user.userId,
       title: dto.title,
       category: dto.category,
       message: dto.message,
       images: imageUrls.length > 0 ? imageUrls : undefined,
+      ipAddress,
     });
 
     return ApiResponseUtil.success(

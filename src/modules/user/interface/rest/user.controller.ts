@@ -19,6 +19,7 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChangePasswordUseCase } from '../../application/handlers/change-password.use-case';
@@ -46,6 +47,8 @@ import { ListFavoriteSitesUseCase } from '../../application/handlers/list-favori
 import { GetActivityUseCase } from '../../application/handlers/get-activity.use-case';
 import { SiteResponse } from '../../../site/interface/rest/dto/site-response.dto';
 import { Site } from '../../../site/domain/entities/site.entity';
+import { Request } from 'express';
+import { getClientIp } from '../../../../shared/utils/request.util';
 
 @Controller('api')
 @UseGuards(JwtAuthGuard)
@@ -228,6 +231,7 @@ export class UserController {
       }),
     )
     file?: MulterFile,
+    @Req() req?: Request,
   ): Promise<ApiResponse<UserResponse>> {
     let avatarUrl: string | undefined;
 
@@ -258,7 +262,10 @@ export class UserController {
       throw new BadRequestException('Token is required when updating phone number');
     }
 
-    // Update profile with displayName and/or avatarUrl
+    // Determine client IP (for auditing)
+    const ipAddress = req ? getClientIp(req) : undefined;
+
+    // Update profile with displayName, avatarUrl and audit IP
     await this.updateProfileUseCase.execute({
       userId: user.userId,
       displayName: dto.displayName,
@@ -269,6 +276,7 @@ export class UserController {
       birthDate: dto.birthDate,
       gender: dto.gender,
       activeBadge: dto.activeBadge,
+      ipAddress,
     });
 
     // Reload user with relations for response
@@ -284,17 +292,18 @@ export class UserController {
       throw new NotFoundException('User not found');
     }
 
-    // Map badges (only active badges, filter out soft-deleted badges)
-    const badges: BadgeResponse[] = [];
+    // Map single active badge (filter out soft-deleted badges)
+    let badgeSummary: { name: string; iconUrl?: string; earnedAt?: Date } | null = null;
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
         if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
           const badge = userBadge.badge;
-          badges.push({
+          badgeSummary = {
             name: badge.name,
             iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
             earnedAt: userBadge.earnedAt,
-          });
+          };
+          break;
         }
       }
     }
@@ -305,7 +314,7 @@ export class UserController {
       avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser.avatarUrl),
       lastLoginAt: dbUser.lastLoginAt || undefined,
       roles: this.mapUserRoles(dbUser),
-      badges: badges.length > 0 ? badges : [],
+      badge: badgeSummary,
       createdAt: dbUser.createdAt,
       updatedAt: dbUser.updatedAt,
       bio: dbUser.userProfile?.bio || undefined,
@@ -323,6 +332,7 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async getMe(
     @CurrentUser() user: CurrentUserPayload,
+    @Req() req?: Request,
   ): Promise<ApiResponse<UserResponse>> {
     const dbUser = await this.userRepository.findById(user.userId, [
       'userRoles',
@@ -335,17 +345,25 @@ export class UserController {
       throw new NotFoundException('User not found');
     }
 
-    // Map badges (only active badges, filter out soft-deleted badges)
-    const badges: BadgeResponse[] = [];
+    // Update last request IP for auditing
+    if (req && dbUser.userProfile) {
+      const ipAddress = getClientIp(req);
+      dbUser.userProfile.lastRequestIp = ipAddress;
+      await this.userRepository.save(dbUser);
+    }
+
+    // Map single active badge (filter out soft-deleted badges)
+    let badgeSummary: { name: string; iconUrl?: string; earnedAt?: Date } | null = null;
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
         if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
           const badge = userBadge.badge;
-          badges.push({
+          badgeSummary = {
             name: badge.name,
-            iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+            iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || null,
             earnedAt: userBadge.earnedAt,
-          });
+          };
+          break;
         }
       }
     }
@@ -361,7 +379,7 @@ export class UserController {
       points: dbUser.userProfile?.points ?? 0,
       lastLoginAt: dbUser.lastLoginAt || undefined,
       roles: this.mapUserRoles(dbUser),
-      badges: badges.length > 0 ? badges : [],
+      badge: badgeSummary,
       createdAt: dbUser.createdAt,
       updatedAt: dbUser.updatedAt,
     };
@@ -397,14 +415,13 @@ export class UserController {
 
     // Map all badges and mark which ones user has earned
     const badges: BadgeResponse[] = allUserBadges.map((badge) => {
-      const earnedBadge = earnedBadgesMap.get(badge.id);
       return {
         name: badge.name,
         iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
-        earnedAt: earnedBadge?.earnedAt,
-        active: earnedBadge?.active || false,
+        active: earnedBadgesMap.has(badge.id) || false,
         obtain: badge.obtain || null,
-        earned: earnedBadgesMap.has(badge.id) || false,
+        description: badge.description || null,
+        id: badge.id,
       };
     });
 

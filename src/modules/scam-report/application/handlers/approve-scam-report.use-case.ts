@@ -109,7 +109,6 @@ export class ApproveScamReportUseCase {
         name: ub.badge.name,
         iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
       })) || [],
-      title: report.title,
       description: report.description,
       amount: report.amount ? Number(report.amount) : null,
       status: report.status,

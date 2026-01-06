@@ -44,7 +44,7 @@ export class RequestOtpUseCase {
     await this.redisService.setString(redisKey, otp, 180);
 
     // Queue OTP email job (non-blocking)
-    // await this.queueOtpEmail(admin, otp);
+    await this.queueOtpEmail(admin, otp);
 
     // Return success message (don't reveal if admin exists)
     return { message: 'If the email exists, an OTP has been sent', otp };

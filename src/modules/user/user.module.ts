@@ -20,6 +20,7 @@ import { ListUsersUseCase } from './application/handlers/admin/list-users.use-ca
 import { GetUserDetailUseCase } from './application/handlers/admin/get-user-detail.use-case';
 import { UpdateUserUseCase } from './application/handlers/admin/update-user.use-case';
 import { CreateUserUseCase } from './application/handlers/admin/create-user.use-case';
+import { DeleteUserUseCase } from './application/handlers/admin/delete-user.use-case';
 import { UserController } from './interface/rest/user.controller';
 import { AdminUserController } from './interface/rest/admin/user.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
@@ -91,6 +92,7 @@ import { BadgeModule } from '../badge/badge.module';
     GetUserDetailUseCase,
     UpdateUserUseCase,
     CreateUserUseCase,
+    DeleteUserUseCase,
     PasswordService,
   ],
   exports: [

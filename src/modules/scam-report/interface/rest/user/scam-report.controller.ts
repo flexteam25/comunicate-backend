@@ -14,6 +14,7 @@ import {
   UploadedFiles,
   BadRequestException,
   ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
@@ -44,6 +45,8 @@ import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-resp
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ScamReportStatus } from '../../../domain/entities/scam-report.entity';
 import { ListScamReportsQueryDto } from '../dto/list-scam-reports-query.dto';
+import { Request } from 'express';
+import { getClientIp } from '../../../../../shared/utils/request.util';
 import { ListMyScamReportsUseCase } from '../../../application/handlers/list-my-scam-reports.use-case';
 
 @Controller('api/scam-reports')
@@ -85,12 +88,18 @@ export class ScamReportController {
       userId: report.userId,
       userName: report.user?.displayName || null,
       userAvatarUrl: buildFullUrl(this.apiServiceUrl, report.user?.avatarUrl || null),
-      userBadges: report.user?.userBadges?.map((ub) => ({
-        name: ub.badge.name,
-        iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
-      })) || [],
+      userBadge: (() => {
+        const activeBadge = report.user?.userBadges?.find(
+          (ub: any) => ub?.badge && !ub.badge.deletedAt && ub.active,
+        );
+        if (!activeBadge) return null;
+        return {
+          name: activeBadge.badge.name,
+          iconUrl: buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null),
+          earnedAt: activeBadge.earnedAt,
+        };
+      })(),
       userEmail: report.user?.email || null,
-      title: report.title,
       description: report.description,
       amount: report.amount ? Number(report.amount) : null,
       status: report.status,
@@ -120,6 +129,7 @@ export class ScamReportController {
     files?: {
       images?: MulterFile[];
     },
+    @Req() req?: Request,
   ): Promise<ApiResponse<ScamReportResponseDto>> {
     const imageUrls: string[] = [];
 
@@ -142,6 +152,8 @@ export class ScamReportController {
       }
     }
 
+    const ipAddress = req ? getClientIp(req) : undefined;
+
     const report = await this.createScamReportUseCase.execute({
       userId: user.userId,
       siteId: dto.siteId,
@@ -150,10 +162,10 @@ export class ScamReportController {
       siteAccountInfo: dto.siteAccountInfo,
       registrationUrl: dto.registrationUrl,
       contact: dto.contact,
-      title: dto.title,
       description: dto.description,
       amount: dto.amount,
       images: imageUrls.length > 0 ? imageUrls : undefined,
+      ipAddress,
     });
 
     return ApiResponseUtil.success(
@@ -255,7 +267,6 @@ export class ScamReportController {
     const report = await this.updateScamReportUseCase.execute({
       reportId: id,
       userId: user.userId,
-      title: dto.title,
       description: dto.description,
       amount: dto.amount,
       images: imageUrls,

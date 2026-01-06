@@ -32,6 +32,8 @@ import { buildFullUrl } from '../../../../../shared/utils/url.util';
 export interface RedeemGifticonCommand {
   userId: string;
   gifticonId: string;
+  /** Client IP address when user redeemed the gifticon */
+  ipAddress?: string;
 }
 
 /**
@@ -129,6 +131,7 @@ export class RedeemGifticonUseCase {
           pointsUsed: gifticon.amount,
           status: GifticonRedemptionStatus.PENDING,
           redemptionCode: randomUUID(), // Generate UUID format
+          ipAddress: command.ipAddress || null,
           // Save snapshot to ensure data integrity if gifticon is edited
           gifticonSnapshot: {
             title: gifticon.title,

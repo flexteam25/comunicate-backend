@@ -31,6 +31,15 @@ export class UserProfile {
   @Column({ name: 'points', type: 'integer', default: 0 })
   points: number;
 
+  @Column({ name: 'register_ip', type: 'varchar', length: 45, nullable: true })
+  registerIp?: string;
+
+  @Column({ name: 'last_login_ip', type: 'varchar', length: 45, nullable: true })
+  lastLoginIp?: string;
+
+  @Column({ name: 'last_request_ip', type: 'varchar', length: 45, nullable: true })
+  lastRequestIp?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

@@ -26,6 +26,7 @@ export interface RegisterCommand {
   birthDate?: Date;
   gender?: string;
   partner?: boolean;
+  ipAddress?: string;
 }
 
 @Injectable()
@@ -85,6 +86,7 @@ export class RegisterUseCase {
         profile.birthDate = command.birthDate || null;
         profile.gender = command.gender || null;
         profile.points = 0;
+        profile.registerIp = command.ipAddress || null;
 
         profile.user = user;
         user.userProfile = profile;

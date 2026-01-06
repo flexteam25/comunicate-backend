@@ -53,4 +53,7 @@ export class Inquiry extends BaseEntity {
 
   @Column({ name: 'replied_at', type: 'timestamptz', nullable: true })
   repliedAt?: Date;
+
+  @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
+  ipAddress?: string;
 }

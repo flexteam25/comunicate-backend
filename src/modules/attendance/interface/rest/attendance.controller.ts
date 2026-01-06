@@ -1,11 +1,11 @@
 import {
-  Controller,
-  Post,
-  Get,
   Body,
-  Query,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Post,
+  Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -16,6 +16,7 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../../../../shared/decorators/current-user.decorator';
+import { OptionalJwtAuthGuard } from '../../../../shared/guards/optional-jwt-auth.guard';
 import { CreateAttendanceUseCase } from '../../application/handlers/create-attendance.use-case';
 import { ListAttendancesUseCase } from '../../application/handlers/list-attendances.use-case';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
@@ -68,15 +69,18 @@ export class AttendanceController {
   }
 
   @Get('attendances')
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async listAttendances(
     @Query() query: ListAttendancesQueryDto,
+    @CurrentUser() user?: CurrentUserPayload,
   ): Promise<ApiResponse<ListAttendancesResponse>> {
     const result = await this.listAttendancesUseCase.execute({
       filter: query.filter || AttendanceFilter.TODAY,
       cursor: query.cursor,
       limit: query.limit,
+      currentUserId: user?.userId,
     });
 
     const mappedData: AttendanceResponse[] = result.data.map((item) => ({
@@ -93,6 +97,7 @@ export class AttendanceController {
     }));
 
     const response: ListAttendancesResponse = {
+      attended: result.attended,
       ...(result.totalCount !== undefined ? { totalCount: result.totalCount } : {}),
       data: mappedData,
       nextCursor: result.nextCursor,

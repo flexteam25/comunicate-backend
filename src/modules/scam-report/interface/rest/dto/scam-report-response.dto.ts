@@ -37,12 +37,12 @@ export class ScamReportResponseDto {
   userId: string;
   userName?: string;
   userAvatarUrl?: string;
-  userBadges?: {
+  userBadge?: {
     name: string;
     iconUrl: string;
-  }[];
+    earnedAt?: Date;
+  } | null;
   userEmail?: string;
-  title: string;
   description: string;
   amount?: number;
   status: ScamReportStatus;

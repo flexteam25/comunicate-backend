@@ -191,13 +191,7 @@ export class AdminController {
       email: dto.email,
     });
 
-    return ApiResponseUtil.success(
-      {
-        code: result?.otp || null,
-        note: 'For testing purpose, the OTP is sent to the email',
-      },
-      result.message,
-    );
+    return ApiResponseUtil.success(null, result?.message || 'OTP sent successfully');
   }
 
   @Post('reset-password')

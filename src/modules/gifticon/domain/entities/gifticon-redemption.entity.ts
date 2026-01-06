@@ -95,6 +95,10 @@ export class GifticonRedemption {
   @Column({ name: 'cancellation_reason', type: 'text', nullable: true })
   cancellationReason?: string;
 
+  /** IP address when user redeemed the gifticon */
+  @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
+  ipAddress?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

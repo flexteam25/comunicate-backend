@@ -1,4 +1,8 @@
-import { BadgeResponse } from './badge-response.dto';
+export interface UserBadgeSummary {
+  name: string;
+  iconUrl?: string;
+  earnedAt?: Date;
+}
 
 export interface UserResponse {
   email: string;
@@ -6,7 +10,7 @@ export interface UserResponse {
   avatarUrl?: string;
   lastLoginAt?: Date;
   roles: string;
-  badges: BadgeResponse[];
+  badge?: UserBadgeSummary | null;
   createdAt: Date;
   updatedAt: Date;
   bio?: string;

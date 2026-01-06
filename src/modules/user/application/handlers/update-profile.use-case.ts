@@ -24,6 +24,7 @@ export interface UpdateProfileCommand {
   birthDate?: Date;
   gender?: string;
   activeBadge?: string;
+  ipAddress?: string;
 }
 
 @Injectable()
@@ -193,6 +194,17 @@ export class UpdateProfileUseCase {
             throw new Error('User profile should exist at this point');
           }
           user.userProfile.gender = command.gender || null;
+        }
+
+        // Update last request IP in user profile (for auditing)
+        if (command.ipAddress) {
+          if (!user.userProfile) {
+            const userProfile = new UserProfile();
+            userProfile.userId = user.id;
+            userProfile.points = 0;
+            user.userProfile = await entityManager.save(UserProfile, userProfile);
+          }
+          user.userProfile.lastRequestIp = command.ipAddress;
         }
 
         // Update user

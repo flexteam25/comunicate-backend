@@ -11,6 +11,7 @@ import { AttendanceStatisticsSchedulerService } from '../../modules/attendance/i
 import { User } from '../../modules/user/domain/entities/user.entity';
 import { UserOldPassword } from '../../modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from '../../modules/auth/domain/entities/user-token.entity';
+import { OtpRequest } from '../../modules/auth/domain/entities/otp-request.entity';
 import { Role } from '../../modules/user/domain/entities/role.entity';
 import { Permission } from '../../modules/user/domain/entities/permission.entity';
 import { Badge } from '../../modules/badge/domain/entities/badge.entity';
@@ -40,6 +41,7 @@ import { ScamReportImage } from '../../modules/scam-report/domain/entities/scam-
 import { ScamReportComment } from '../../modules/scam-report/domain/entities/scam-report-comment.entity';
 import { ScamReportCommentImage } from '../../modules/scam-report/domain/entities/scam-report-comment-image.entity';
 import { ScamReportReaction } from '../../modules/scam-report/domain/entities/scam-report-reaction.entity';
+import { SiteReviewImage } from '../../modules/site-review/domain/entities/site-review-image.entity';
 import { SiteReview } from '../../modules/site-review/domain/entities/site-review.entity';
 import { SiteReviewReaction } from '../../modules/site-review/domain/entities/site-review-reaction.entity';
 import { SiteReviewComment } from '../../modules/site-review/domain/entities/site-review-comment.entity';
@@ -55,6 +57,13 @@ import { PostComment } from '../../modules/post/domain/entities/post-comment.ent
 import { PostCommentImage } from '../../modules/post/domain/entities/post-comment-image.entity';
 import { PostReaction } from '../../modules/post/domain/entities/post-reaction.entity';
 import { PostView } from '../../modules/post/domain/entities/post-view.entity';
+import { PointTransaction } from '../../modules/point/domain/entities/point-transaction.entity';
+import { PointExchange } from '../../modules/point/domain/entities/point-exchange.entity';
+import { GifticonRedemption } from '../../modules/gifticon/domain/entities/gifticon-redemption.entity';
+import { PartnerRequest } from '../../modules/partner/domain/entities/partner-request.entity';
+import { SiteEvent } from '../../modules/site-event/domain/entities/site-event.entity';
+import { SiteEventBanner } from '../../modules/site-event/domain/entities/site-event-banner.entity';
+import { SiteEventView } from '../../modules/site-event/domain/entities/site-event-view.entity';
 
 @Module({
   imports: [
@@ -100,6 +109,7 @@ import { PostView } from '../../modules/post/domain/entities/post-view.entity';
         User,
         UserOldPassword,
         UserToken,
+        OtpRequest,
         Role,
         Permission,
         Badge,
@@ -129,6 +139,7 @@ import { PostView } from '../../modules/post/domain/entities/post-view.entity';
         ScamReportComment,
         ScamReportCommentImage,
         ScamReportReaction,
+        SiteReviewImage,
         SiteReview,
         SiteReviewReaction,
         SiteReviewComment,
@@ -144,6 +155,13 @@ import { PostView } from '../../modules/post/domain/entities/post-view.entity';
         PostCommentImage,
         PostReaction,
         PostView,
+        PointTransaction,
+        PointExchange,
+        GifticonRedemption,
+        PartnerRequest,
+        SiteEvent,
+        SiteEventBanner,
+        SiteEventView,
       ],
       synchronize: false,
       logging: false,

@@ -78,10 +78,17 @@ export class SiteReviewController {
       userName: review.user?.displayName || null,
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
-      userBadges: review.user?.userBadges?.map((ub) => ({
-        name: ub.badge.name,
-        iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
-      })) || [],
+      userBadge: (() => {
+        const activeBadge = review.user?.userBadges?.find(
+          (ub: any) => ub?.badge && !ub.badge.deletedAt && ub.active,
+        );
+        if (!activeBadge) return null;
+        return {
+          name: activeBadge.badge.name,
+          iconUrl: buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null),
+          earnedAt: activeBadge.earnedAt,
+        };
+      })(),
       rating: review.rating ?? 0,
       odds: review.odds ?? 0,
       limit: review.limit ?? 0,
@@ -113,10 +120,17 @@ export class SiteReviewController {
       userName: comment.user?.displayName || null,
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null) || null,
-      userBadges: comment.user?.userBadges?.map((ub) => ({
-        name: ub.badge.name,
-        iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
-      })) || [],
+      userBadge: (() => {
+        const activeBadge = comment.user?.userBadges?.find(
+          (ub: any) => ub?.badge && !ub.badge.deletedAt && ub.active,
+        );
+        if (!activeBadge) return null;
+        return {
+          name: activeBadge.badge.name,
+          iconUrl: buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null),
+          earnedAt: activeBadge.earnedAt,
+        };
+      })(),
       parentCommentId: comment.parentCommentId || null,
       hasChild: comment.hasChild || false,
       createdAt: comment.createdAt,

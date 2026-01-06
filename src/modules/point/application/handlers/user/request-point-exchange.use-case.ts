@@ -32,6 +32,8 @@ export interface RequestPointExchangeCommand {
   pointsAmount: number;
   /** User ID on partner site */
   siteUserId: string;
+  /** Client IP address when user requested the exchange */
+  ipAddress?: string;
 }
 
 /**
@@ -125,6 +127,7 @@ export class RequestPointExchangeUseCase {
           exchangeRate,
           siteUserId: command.siteUserId,
           status: PointExchangeStatus.PENDING,
+          ipAddress: command.ipAddress || null,
         });
         const saved = await exchangeRepo.save(exchange);
 

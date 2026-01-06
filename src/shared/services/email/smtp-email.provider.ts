@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { EmailProvider, EmailOptions, EmailResult } from './email-provider.interface';
 
 /**
@@ -13,7 +14,7 @@ import { EmailProvider, EmailOptions, EmailResult } from './email-provider.inter
  */
 @Injectable()
 export class SmtpEmailProvider implements EmailProvider {
-  private transporter: Transporter;
+  private transporter: Transporter<SMTPTransport.SentMessageInfo>;
   private readonly providerName: string;
 
   constructor(private readonly configService: ConfigService) {
@@ -65,8 +66,8 @@ export class SmtpEmailProvider implements EmailProvider {
     host?: string,
     port?: number,
     secure?: boolean,
-  ): any {
-    const defaultConfig = {
+  ): SMTPTransport.Options {
+    const defaultConfig: SMTPTransport.Options = {
       host: host || 'localhost',
       port: port || 587,
       secure: secure || false,

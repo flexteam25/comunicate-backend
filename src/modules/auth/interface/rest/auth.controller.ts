@@ -34,6 +34,7 @@ import {
 } from '../../../../shared/decorators/current-user.decorator';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { Request } from 'express';
+import { getClientIp } from '../../../../shared/utils/request.util';
 @Controller('api/auth')
 export class AuthController {
   private readonly apiServiceUrl: string;
@@ -72,12 +73,7 @@ export class AuthController {
     @Body() dto: RegisterDto,
     @Req() req: Request,
   ): Promise<ApiResponse<AuthResponse>> {
-    const ipAddress =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      undefined;
+    const ipAddress = getClientIp(req);
 
     await this.registerUseCase.execute({
       email: dto.email,
@@ -88,6 +84,7 @@ export class AuthController {
       birthDate: dto.birthDate,
       gender: dto.gender,
       partner: dto.partner,
+      ipAddress,
     });
 
     // Auto login after registration
@@ -129,12 +126,7 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Req() req: Request,
   ): Promise<ApiResponse<AuthResponse>> {
-    const ipAddress =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      undefined;
+    const ipAddress = getClientIp(req);
 
     const result = await this.loginUseCase.execute({
       email: dto.email,
@@ -238,13 +230,20 @@ export class AuthController {
       email: dto.email,
     });
 
-    return ApiResponseUtil.success(
-      {
-        code: result?.otp || null,
-        note: 'For testing purpose, the OTP is sent to the email',
-      },
-      result?.message || 'OTP sent successfully',
-    );
+    const isTestMail =
+      this.configService.get<string>('TEST_MAIL')?.toLowerCase() === 'true';
+
+    if (isTestMail) {
+      return ApiResponseUtil.success(
+        {
+          code: result.otp || null,
+          note: 'Testing: OTP is returned in response instead of sending email',
+        },
+        result?.message || 'OTP generated successfully',
+      );
+    }
+
+    return ApiResponseUtil.success(null, result?.message || 'OTP sent successfully');
   }
 
   @Post('request-otp-phone')
@@ -253,12 +252,7 @@ export class AuthController {
     @Body() dto: RequestOtpPhoneDto,
     @Req() req: Request,
   ): Promise<ApiResponse<{ message: string; otp?: string; expiresAt?: string }>> {
-    const ipAddress =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      undefined;
+    const ipAddress = getClientIp(req);
 
     const result = await this.requestOtpPhoneUseCase.execute({
       phone: dto.phone,

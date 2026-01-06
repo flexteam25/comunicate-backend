@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 import {
@@ -23,6 +24,8 @@ import { CancelRedemptionUseCase } from '../../../application/handlers/user/canc
 import { ListGifticonsQueryDto } from '../dto/list-gifticons-query.dto';
 import { GetMyRedemptionsQueryDto } from '../dto/get-my-redemptions-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { Request } from 'express';
+import { getClientIp } from '../../../../../shared/utils/request.util';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 
@@ -162,10 +165,14 @@ export class GifticonController {
   async redeemGifticon(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: CurrentUserPayload,
+    @Req() req?: Request,
   ): Promise<ApiResponse<any>> {
+    const ipAddress = req ? getClientIp(req) : undefined;
+
     const redemption = await this.redeemGifticonUseCase.execute({
       userId: user.userId,
       gifticonId: id,
+      ipAddress,
     });
 
     return ApiResponseUtil.success(

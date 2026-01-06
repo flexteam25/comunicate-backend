@@ -40,9 +40,6 @@ export class ScamReport extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   contact: string;
 
-  @Column({ type: 'varchar', length: 255 })
-  title: string;
-
   @Column({ type: 'text' })
   description: string;
 
@@ -61,6 +58,9 @@ export class ScamReport extends BaseEntity {
 
   @Column({ name: 'reviewed_at', type: 'timestamptz', nullable: true })
   reviewedAt?: Date;
+
+  @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
+  ipAddress?: string;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })

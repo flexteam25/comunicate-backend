@@ -20,7 +20,6 @@ import { buildFullUrl } from '../../../../shared/utils/url.util';
 export interface UpdateScamReportCommand {
   reportId: string;
   userId: string;
-  title?: string;
   description?: string;
   amount?: number;
   images?: string[];
@@ -65,7 +64,6 @@ export class UpdateScamReportUseCase {
 
         // Update report fields
         const updateData: Partial<ScamReport> = {};
-        if (command.title !== undefined) updateData.title = command.title;
         if (command.description !== undefined)
           updateData.description = command.description;
         if (command.amount !== undefined) updateData.amount = command.amount;
@@ -163,7 +161,6 @@ export class UpdateScamReportUseCase {
         name: ub.badge.name,
         iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
       })) || [],
-      title: report.title,
       description: report.description,
       amount: report.amount ? Number(report.amount) : null,
       status: report.status,

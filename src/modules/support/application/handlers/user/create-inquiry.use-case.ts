@@ -19,6 +19,7 @@ export interface CreateInquiryCommand {
   category: InquiryCategory;
   message: string;
   images?: string[];
+  ipAddress?: string;
 }
 
 @Injectable()
@@ -48,6 +49,7 @@ export class CreateInquiryUseCase {
           message: command.message,
           images: command.images || [],
           status: InquiryStatus.PENDING,
+          ipAddress: command.ipAddress || null,
         });
 
         return inquiryRepo.save(inquiry);

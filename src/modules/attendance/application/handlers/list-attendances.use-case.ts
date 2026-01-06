@@ -9,6 +9,10 @@ export interface ListAttendancesCommand {
   filter: AttendanceFilter;
   cursor?: string;
   limit?: number;
+  /**
+   * Optional current userId (for attended flag)
+   */
+  currentUserId?: string;
 }
 
 export interface AttendanceListItem {
@@ -23,6 +27,13 @@ export interface AttendanceListItem {
 }
 
 export interface ListAttendancesResult {
+  /**
+   * Current user's attendance status for today (when currentUserId is provided):
+   * - true: current user has attended today
+   * - false: current user has NOT attended today
+   * - null: no current user / not applicable
+   */
+  attended: boolean | null;
   totalCount?: number; // Only when filter = 'today'
   data: AttendanceListItem[];
   nextCursor: string | null;
@@ -89,8 +100,19 @@ export class ListAttendancesUseCase {
         };
       });
 
+      // Determine current user's attendance status for today (independent of pagination)
+      let attended: boolean | null = null;
+      if (command.currentUserId) {
+        const existing = await this.attendanceRepository.findByUserAndDate(
+          command.currentUserId,
+          today,
+        );
+        attended = !!existing;
+      }
+
       return {
         totalCount,
+        attended,
         data,
         nextCursor: result.nextCursor,
         hasMore: result.hasMore,
@@ -124,6 +146,7 @@ export class ListAttendancesUseCase {
         data,
         nextCursor: result.nextCursor,
         hasMore: result.hasMore,
+        attended: null,
       };
     }
   }

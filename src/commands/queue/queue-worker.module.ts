@@ -35,6 +35,7 @@ import { ScamReportImage } from '../../modules/scam-report/domain/entities/scam-
 import { ScamReportComment } from '../../modules/scam-report/domain/entities/scam-report-comment.entity';
 import { ScamReportCommentImage } from '../../modules/scam-report/domain/entities/scam-report-comment-image.entity';
 import { ScamReportReaction } from '../../modules/scam-report/domain/entities/scam-report-reaction.entity';
+import { SiteReviewImage } from '../../modules/site-review/domain/entities/site-review-image.entity';
 import { SiteReview } from '../../modules/site-review/domain/entities/site-review.entity';
 import { SiteReviewReaction } from '../../modules/site-review/domain/entities/site-review-reaction.entity';
 import { SiteReviewComment } from '../../modules/site-review/domain/entities/site-review-comment.entity';
@@ -97,6 +98,7 @@ import { PostView } from '../../modules/post/domain/entities/post-view.entity';
         ScamReportComment,
         ScamReportCommentImage,
         ScamReportReaction,
+        SiteReviewImage,
         SiteReview,
         SiteReviewReaction,
         SiteReviewComment,

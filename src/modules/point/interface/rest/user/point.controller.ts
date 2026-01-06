@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 import {
@@ -24,6 +25,8 @@ import { GetPointHistoryQueryDto } from '../dto/get-point-history-query.dto';
 import { RequestPointExchangeDto } from '../dto/request-point-exchange.dto';
 import { GetMyExchangesQueryDto } from '../dto/get-my-exchanges-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { Request } from 'express';
+import { getClientIp } from '../../../../../shared/utils/request.util';
 
 @Controller('api/points')
 @UseGuards(JwtAuthGuard)
@@ -74,12 +77,16 @@ export class PointController {
   async requestPointExchange(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: RequestPointExchangeDto,
+    @Req() req?: Request,
   ): Promise<ApiResponse<any>> {
+    const ipAddress = req ? getClientIp(req) : undefined;
+
     const exchange = await this.requestPointExchangeUseCase.execute({
       userId: user.userId,
       siteId: dto.siteId,
       pointsAmount: dto.pointsAmount,
       siteUserId: dto.siteUserId,
+      ipAddress,
     });
 
     return ApiResponseUtil.success(

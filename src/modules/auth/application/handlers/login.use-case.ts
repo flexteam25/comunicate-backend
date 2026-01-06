@@ -7,6 +7,7 @@ import { JwtService, TokenPair } from '../../../../shared/services/jwt.service';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { UserToken } from '../../domain/entities/user-token.entity';
 import { User } from '../../../user/domain/entities/user.entity';
+import { UserProfile } from '../../../user/domain/entities/user-profile.entity';
 export interface LoginCommand {
   email: string;
   password: string;
@@ -77,9 +78,21 @@ export class LoginUseCase {
 
         await entityManager.save(UserToken, userToken);
 
-        // Update last login
+        // Update last login timestamp
         user.lastLoginAt = new Date();
         await entityManager.save(User, user);
+
+        // Update last login IP in user profile (if exists)
+        if (command.ipAddress) {
+          const userProfileRepo = entityManager.getRepository(UserProfile);
+          const profile = await userProfileRepo.findOne({
+            where: { userId: user.id },
+          });
+          if (profile) {
+            profile.lastLoginIp = command.ipAddress;
+            await userProfileRepo.save(profile);
+          }
+        }
 
         return {
           user,

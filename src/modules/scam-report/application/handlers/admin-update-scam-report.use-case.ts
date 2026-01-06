@@ -25,7 +25,6 @@ export interface AdminUpdateScamReportCommand {
   siteAccountInfo?: string;
   registrationUrl?: string;
   contact?: string;
-  title?: string;
   description?: string;
   amount?: number;
   status?: ScamReportStatus;
@@ -80,7 +79,6 @@ export class AdminUpdateScamReportUseCase {
         if (command.registrationUrl !== undefined)
           updateData.registrationUrl = command.registrationUrl;
         if (command.contact !== undefined) updateData.contact = command.contact;
-        if (command.title !== undefined) updateData.title = command.title;
         if (command.description !== undefined)
           updateData.description = command.description;
         if (command.amount !== undefined) updateData.amount = command.amount;
@@ -191,7 +189,6 @@ export class AdminUpdateScamReportUseCase {
         name: ub.badge.name,
         iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
       })) || [],
-      title: report.title,
       description: report.description,
       amount: report.amount ? Number(report.amount) : null,
       status: report.status,
