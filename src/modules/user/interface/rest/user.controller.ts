@@ -403,7 +403,8 @@ export class UserController {
         iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
         earnedAt: earnedBadge?.earnedAt,
         active: earnedBadge?.active || false,
-        obtain: badge.obtain || undefined,
+        obtain: badge.obtain || null,
+        earned: earnedBadgesMap.has(badge.id) || false,
       };
     });
 
