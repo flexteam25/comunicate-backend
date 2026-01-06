@@ -18,4 +18,8 @@ export class UpdateBadgeDto {
   @TransformToBoolean
   @IsBoolean()
   isActive?: boolean;
+
+  @IsString()
+  @IsOptional()
+  obtain?: string;
 }

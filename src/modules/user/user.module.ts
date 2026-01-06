@@ -32,6 +32,7 @@ import { PasswordService } from '../../shared/services/password.service';
 import { UploadModule } from '../../shared/services/upload';
 import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { SiteModule } from '../site/site.module';
+import { BadgeModule } from '../badge/badge.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { SiteModule } from '../site/site.module';
     UploadModule.register({ storageType: 'local' }),
     AuthPersistenceModule,
     SiteModule,
+    BadgeModule,
     AdminGuardsModule,
   ],
   controllers: [UserController, AdminUserController],

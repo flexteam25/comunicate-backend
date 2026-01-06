@@ -37,7 +37,9 @@ import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
 import { normalizePhone } from '../../../../shared/utils/phone.util';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
+import { IBadgeRepository } from '../../../badge/infrastructure/persistence/repositories/badge.repository';
 import { BadgeResponse } from '../../../../shared/dto/badge-response.dto';
+import { BadgeType } from '../../../badge/domain/entities/badge.entity';
 import { AddFavoriteSiteUseCase } from '../../application/handlers/add-favorite-site.use-case';
 import { RemoveFavoriteSiteUseCase } from '../../application/handlers/remove-favorite-site.use-case';
 import { ListFavoriteSitesUseCase } from '../../application/handlers/list-favorite-sites.use-case';
@@ -57,6 +59,8 @@ export class UserController {
     private readonly configService: ConfigService,
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
+    @Inject('IBadgeRepository')
+    private readonly badgeRepository: IBadgeRepository,
     private readonly addFavoriteSiteUseCase: AddFavoriteSiteUseCase,
     private readonly removeFavoriteSiteUseCase: RemoveFavoriteSiteUseCase,
     private readonly listFavoriteSitesUseCase: ListFavoriteSitesUseCase,
@@ -370,24 +374,38 @@ export class UserController {
   async getMyBadges(
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<ApiResponse<BadgeResponse[]>> {
+    // Query all active user badges (not deleted, isActive = true, badgeType = 'user')
+    const allUserBadges = await this.badgeRepository.findAll(1, BadgeType.USER);
+
+    // Query user's earned badges
     const dbUser = await this.userRepository.findByIdWithBadges(user.userId);
     if (!dbUser) {
       throw new NotFoundException('User not found');
     }
 
+    // Create a map of user's earned badges by badgeId
+    const earnedBadgesMap = new Map<string, { earnedAt: Date; active: boolean }>();
     const userBadges = dbUser.userBadges || [];
-    const badges: BadgeResponse[] = [];
-
     for (const userBadge of userBadges) {
       if (userBadge?.badge && !userBadge.badge.deletedAt) {
-        const badge = userBadge.badge;
-        badges.push({
-          name: badge.name,
-          iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+        earnedBadgesMap.set(userBadge.badgeId, {
           earnedAt: userBadge.earnedAt,
+          active: userBadge.active,
         });
       }
     }
+
+    // Map all badges and mark which ones user has earned
+    const badges: BadgeResponse[] = allUserBadges.map((badge) => {
+      const earnedBadge = earnedBadgesMap.get(badge.id);
+      return {
+        name: badge.name,
+        iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+        earnedAt: earnedBadge?.earnedAt,
+        active: earnedBadge?.active || false,
+        obtain: badge.obtain || undefined,
+      };
+    });
 
     return ApiResponseUtil.success(badges);
   }

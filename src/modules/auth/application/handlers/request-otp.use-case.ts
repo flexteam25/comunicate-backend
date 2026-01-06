@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { QueueService } from '../../../../shared/queue/queue.service';
@@ -21,12 +21,11 @@ export class RequestOtpUseCase {
     // Find user by email
     const user = await this.userRepository.findByEmail(command.email);
     if (!user) {
-      // Don't reveal if user exists or not for security
-      return { message: 'If the email exists, an OTP has been sent' };
+      throw new NotFoundException('Account not found');
     }
 
     if (!user.isActive) {
-      return { message: 'If the email exists, an OTP has been sent' };
+      throw new NotFoundException('Account not found');
     }
 
     const redisKey = `otp:forgot-password:${user.id}`;

@@ -29,6 +29,7 @@ export class AdminBadgeResponse {
   iconUrl?: string;
   badgeType: BadgeType;
   isActive: boolean;
+  obtain?: string;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;

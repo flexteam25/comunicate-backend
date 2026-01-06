@@ -10,6 +10,7 @@ export interface CreateBadgeCommand {
   iconUrl?: string;
   badgeType: BadgeType;
   isActive?: boolean;
+  obtain?: string;
 }
 
 @Injectable()
@@ -41,6 +42,7 @@ export class CreateBadgeUseCase {
           iconUrl: command.iconUrl,
           badgeType: command.badgeType,
           isActive: command.isActive ?? true,
+          obtain: command.obtain,
         });
         return badgeRepo.save(badge);
       },

@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { IAdminRepository } from '../../infrastructure/persistence/repositories/admin.repository';
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { QueueService } from '../../../../shared/queue/queue.service';
@@ -21,12 +21,11 @@ export class RequestOtpUseCase {
     // Find admin by email
     const admin = await this.adminRepository.findByEmail(command.email);
     if (!admin) {
-      // Don't reveal if admin exists or not for security
-      return { message: 'If the email exists, an OTP has been sent' };
+      throw new NotFoundException('Account not found');
     }
 
     if (!admin.isActive) {
-      return { message: 'If the email exists, an OTP has been sent' };
+      throw new NotFoundException('Account not found');
     }
 
     const redisKey = `otp:forgot-password:admin:${admin.id}`;

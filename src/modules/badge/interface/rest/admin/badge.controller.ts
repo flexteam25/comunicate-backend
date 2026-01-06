@@ -62,6 +62,7 @@ export class AdminBadgeController {
       iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
       badgeType: badge.badgeType,
       isActive: badge.isActive,
+      obtain: badge.obtain || undefined,
       createdAt: badge.createdAt,
       updatedAt: badge.updatedAt,
       deletedAt: badge.deletedAt || undefined,
@@ -100,6 +101,7 @@ export class AdminBadgeController {
       iconUrl: iconUrl || dto.iconUrl,
       badgeType: dto.badgeType,
       isActive: dto.isActive ?? true,
+      obtain: dto.obtain,
     });
 
     return ApiResponseUtil.success(
@@ -161,6 +163,7 @@ export class AdminBadgeController {
       description: dto.description,
       iconUrl: iconUrl || dto.iconUrl,
       isActive: dto.isActive,
+      obtain: dto.obtain,
     });
 
     return ApiResponseUtil.success(

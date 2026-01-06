@@ -15,6 +15,7 @@ export interface UpdateBadgeCommand {
   description?: string;
   iconUrl?: string;
   isActive?: boolean;
+  obtain?: string;
 }
 
 @Injectable()
@@ -56,6 +57,7 @@ export class UpdateBadgeUseCase {
           updateData.description = command.description || null;
         if (command.iconUrl !== undefined) updateData.iconUrl = command.iconUrl || null;
         if (command.isActive !== undefined) updateData.isActive = command.isActive;
+        if (command.obtain !== undefined) updateData.obtain = command.obtain || null;
 
         await badgeRepo.update(command.badgeId, updateData);
         const updated = await badgeRepo.findOne({
