@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsOptional, IsBoolean } from 'class-validator';
+import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export class RemoveBadgeDto {
   @IsUUID()
@@ -8,4 +9,9 @@ export class RemoveBadgeDto {
   @IsUUID()
   @IsNotEmpty()
   badgeId: string;
+
+  @IsOptional()
+  @TransformToBoolean
+  @IsBoolean()
+  handlePoint?: boolean;
 }

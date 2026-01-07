@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
 import { TransformToBoolean } from '../../../../../../shared/utils/transform-boolean.util';
 
 export class UpdateBadgeDto {
@@ -22,4 +23,11 @@ export class UpdateBadgeDto {
   @IsString()
   @IsOptional()
   obtain?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(50000)
+  point?: number;
 }

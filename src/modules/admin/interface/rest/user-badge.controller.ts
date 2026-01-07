@@ -32,6 +32,7 @@ export class AdminUserBadgeController {
     const userBadge = await this.assignBadgeUseCase.execute({
       userId: dto.userId,
       badgeId: dto.badgeId,
+      handlePoint: dto.handlePoint ?? false,
     });
     return ApiResponseUtil.success(userBadge, 'Badge assigned successfully');
   }
@@ -45,6 +46,7 @@ export class AdminUserBadgeController {
     await this.removeBadgeUseCase.execute({
       userId: dto.userId,
       badgeId: dto.badgeId,
+      handlePoint: dto.handlePoint ?? false,
     });
     return ApiResponseUtil.success({ success: true }, 'Badge removed successfully');
   }

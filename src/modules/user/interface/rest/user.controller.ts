@@ -40,7 +40,7 @@ import { normalizePhone } from '../../../../shared/utils/phone.util';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
 import { IBadgeRepository } from '../../../badge/infrastructure/persistence/repositories/badge.repository';
 import { BadgeResponse } from '../../../../shared/dto/badge-response.dto';
-import { BadgeType } from '../../../badge/domain/entities/badge.entity';
+import { Badge, BadgeType } from '../../../badge/domain/entities/badge.entity';
 import { AddFavoriteSiteUseCase } from '../../application/handlers/add-favorite-site.use-case';
 import { RemoveFavoriteSiteUseCase } from '../../application/handlers/remove-favorite-site.use-case';
 import { ListFavoriteSitesUseCase } from '../../application/handlers/list-favorite-sites.use-case';
@@ -419,16 +419,15 @@ export class UserController {
     }
 
     // Map all badges and mark which ones user has earned
-    const badges: BadgeResponse[] = allUserBadges.map((badge) => {
-      return {
-        name: badge.name,
-        iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
-        active: earnedBadgesMap.has(badge.id) || false,
-        obtain: badge.obtain || null,
-        description: badge.description || null,
-        id: badge.id,
-      };
-    });
+    const badges: BadgeResponse[] = allUserBadges.map((badge: Badge) => ({
+      name: badge.name,
+      iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+      active: earnedBadgesMap.has(badge.id) || false,
+      obtain: badge.obtain || null,
+      description: badge.description || null,
+      point: typeof badge.point === 'number' ? badge.point : 0,
+      id: badge.id,
+    }));
 
     return ApiResponseUtil.success(badges);
   }

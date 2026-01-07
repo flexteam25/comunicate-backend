@@ -5,4 +5,5 @@ export interface BadgeResponse {
   active?: boolean;
   obtain?: string;
   description?: string;
+  point?: number | null;
 }

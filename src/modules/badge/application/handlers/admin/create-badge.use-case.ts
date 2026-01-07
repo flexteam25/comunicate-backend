@@ -11,6 +11,7 @@ export interface CreateBadgeCommand {
   badgeType: BadgeType;
   isActive?: boolean;
   obtain?: string;
+  point?: number;
 }
 
 @Injectable()
@@ -36,6 +37,10 @@ export class CreateBadgeUseCase {
           throw new BadRequestException('Badge with this name already exists');
         }
 
+        if (command.badgeType === BadgeType.USER && command.point === undefined) {
+          throw new BadRequestException('Point is required for user badges');
+        }
+
         const badge = badgeRepo.create({
           name: command.name,
           description: command.description,
@@ -43,6 +48,7 @@ export class CreateBadgeUseCase {
           badgeType: command.badgeType,
           isActive: command.isActive ?? true,
           obtain: command.obtain,
+          point: command.badgeType === BadgeType.USER ? command.point ?? 0 : 0,
         });
         return badgeRepo.save(badge);
       },

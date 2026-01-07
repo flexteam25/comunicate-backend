@@ -30,6 +30,7 @@ export class AdminBadgeResponse {
   badgeType: BadgeType;
   isActive: boolean;
   obtain?: string;
+  point: number;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;

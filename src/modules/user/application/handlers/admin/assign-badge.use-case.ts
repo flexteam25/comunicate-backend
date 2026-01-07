@@ -7,6 +7,10 @@ import {
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
 import { IUserBadgeRepository } from '../../../infrastructure/persistence/repositories/user-badge.repository';
 import { Badge, BadgeType } from '../../../../badge/domain/entities/badge.entity';
+import {
+  PointTransaction,
+  PointTransactionType,
+} from '../../../../point/domain/entities/point-transaction.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserBadge } from '../../../domain/entities/user-badge.entity';
@@ -14,6 +18,7 @@ import { UserBadge } from '../../../domain/entities/user-badge.entity';
 export interface AssignBadgeCommand {
   userId: string;
   badgeId: string;
+  handlePoint?: boolean;
 }
 
 @Injectable()
@@ -25,11 +30,13 @@ export class AssignBadgeUseCase {
     private readonly userBadgeRepository: IUserBadgeRepository,
     @InjectRepository(Badge)
     private readonly badgeRepository: Repository<Badge>,
+    @InjectRepository(PointTransaction)
+    private readonly pointTransactionRepository: Repository<PointTransaction>,
   ) {}
 
   async execute(command: AssignBadgeCommand): Promise<UserBadge> {
-    // Check if user exists
-    const user = await this.userRepository.findById(command.userId);
+    // Check if user exists (with profile for points)
+    const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -60,6 +67,36 @@ export class AssignBadgeUseCase {
     }
 
     // Assign badge with active = false (user will decide which badge to activate)
-    return this.userBadgeRepository.assignBadge(command.userId, command.badgeId, false);
+    const userBadge = await this.userBadgeRepository.assignBadge(
+      command.userId,
+      command.badgeId,
+      false,
+    );
+
+    // Handle point reward if requested and badge has point
+    if (command.handlePoint && typeof badge.point === 'number' && badge.point > 0) {
+      const currentPoints = user.userProfile?.points ?? 0;
+      const newPoints = currentPoints + badge.point;
+
+      if (user.userProfile) {
+        user.userProfile.points = newPoints;
+      }
+
+      await this.userRepository.save(user);
+
+      const transaction = this.pointTransactionRepository.create({
+        userId: command.userId,
+        type: PointTransactionType.EARN,
+        amount: badge.point,
+        balanceAfter: newPoints,
+        category: 'badge_reward',
+        referenceType: 'badge',
+        referenceId: badge.id,
+        description: `Badge reward: ${badge.name}`,
+      });
+      await this.pointTransactionRepository.save(transaction);
+    }
+
+    return userBadge;
   }
 }

@@ -35,6 +35,7 @@ import { UploadService, MulterFile } from '../../../../../shared/services/upload
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { AdminBadgeResponse } from 'src/modules/site/interface/rest/dto/site-response.dto';
+import { BadgeType } from '../../../domain/entities/badge.entity';
 
 @Controller('admin/badges')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -63,6 +64,7 @@ export class AdminBadgeController {
       badgeType: badge.badgeType,
       isActive: badge.isActive,
       obtain: badge.obtain || undefined,
+      point: badge.badgeType === BadgeType.USER ? (badge.point ?? 0) : undefined,
       createdAt: badge.createdAt,
       updatedAt: badge.updatedAt,
       deletedAt: badge.deletedAt || undefined,
@@ -102,6 +104,7 @@ export class AdminBadgeController {
       badgeType: dto.badgeType,
       isActive: dto.isActive ?? true,
       obtain: dto.obtain,
+      point: dto.point,
     });
 
     return ApiResponseUtil.success(
@@ -164,6 +167,7 @@ export class AdminBadgeController {
       iconUrl: iconUrl || dto.iconUrl,
       isActive: dto.isActive,
       obtain: dto.obtain,
+      point: dto.point,
     });
 
     return ApiResponseUtil.success(
