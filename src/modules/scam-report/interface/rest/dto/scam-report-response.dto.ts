@@ -20,6 +20,11 @@ export class ScamReportCommentResponseDto {
   userId: string;
   userName?: string;
   userEmail?: string;
+  userBadge?: {
+    name: string;
+    iconUrl: string;
+    earnedAt?: Date;
+  } | null;
   parentCommentId?: string;
   hasChild: boolean;
   createdAt: Date;

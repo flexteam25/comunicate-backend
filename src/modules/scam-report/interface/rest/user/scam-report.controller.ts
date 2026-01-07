@@ -327,10 +327,18 @@ export class ScamReportController {
         userName: comment.user?.displayName || null,
         userEmail: comment.user?.email || null,
         userAvatarUrl: buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null),
-        userBadges: comment.user?.userBadges?.map((ub) => ({
-          name: ub.badge.name,
-          iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
-        })) || [],
+        userBadge: (() => {
+          const activeBadge = comment.user?.userBadges?.find(
+            (ub) => ub?.badge && !ub.badge.deletedAt && ub.active,
+          );
+          if (!activeBadge) return null;
+          return {
+            name: activeBadge.badge.name,
+            iconUrl:
+              buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+            earnedAt: activeBadge.earnedAt,
+          };
+        })(),
         parentCommentId: comment.parentCommentId || null,
         hasChild: comment.hasChild || false,
         createdAt: comment.createdAt,
@@ -396,10 +404,18 @@ export class ScamReportController {
         userName: comment.user?.displayName || null,
         userEmail: comment.user?.email || null,
         userAvatarUrl: buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null),
-        userBadges: comment.user?.userBadges?.map((ub) => ({
-          name: ub.badge.name,
-          iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
-        })) || [],
+        userBadge: (() => {
+          const activeBadge = comment.user?.userBadges?.find(
+            (ub) => ub?.badge && !ub.badge.deletedAt && ub.active,
+          );
+          if (!activeBadge) return null;
+          return {
+            name: activeBadge.badge.name,
+            iconUrl:
+              buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+            earnedAt: activeBadge.earnedAt,
+          };
+        })(),
         parentCommentId: comment.parentCommentId || null,
         hasChild: comment.hasChild || false,
         createdAt: comment.createdAt,

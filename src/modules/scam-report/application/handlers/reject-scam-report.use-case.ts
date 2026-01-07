@@ -105,10 +105,18 @@ export class RejectScamReportUseCase {
       userName: report.user?.displayName || null,
       userEmail: report.user?.email || null,
       userAvatarUrl: buildFullUrl(this.apiServiceUrl, report.user?.avatarUrl || null),
-      userBadges: report.user?.userBadges?.map((ub: any) => ({
-        name: ub.badge.name,
-        iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null),
-      })) || [],
+      userBadge: (() => {
+        const activeBadge = report.user?.userBadges?.find(
+          (ub: any) => ub?.badge && !ub.badge.deletedAt && ub.active,
+        );
+        if (!activeBadge) return null;
+        return {
+          name: activeBadge.badge.name,
+          iconUrl:
+            buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+          earnedAt: activeBadge.earnedAt,
+        };
+      })(),
       description: report.description,
       amount: report.amount ? Number(report.amount) : null,
       status: report.status,
