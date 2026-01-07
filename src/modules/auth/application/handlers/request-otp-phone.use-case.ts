@@ -150,7 +150,10 @@ export class RequestOtpPhoneUseCase {
         { phone: normalizedPhone },
         'request-otp-phone',
       );
-      // Still return success to not reveal if phone exists
+      throw new HttpException(
+        'Failed to send OTP SMS. Please try again later.',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
 
     return {
