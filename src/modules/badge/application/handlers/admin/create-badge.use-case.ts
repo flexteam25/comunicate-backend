@@ -12,6 +12,7 @@ export interface CreateBadgeCommand {
   isActive?: boolean;
   obtain?: string;
   point?: number;
+  color?: string;
 }
 
 @Injectable()
@@ -49,6 +50,7 @@ export class CreateBadgeUseCase {
           isActive: command.isActive ?? true,
           obtain: command.obtain,
           point: command.badgeType === BadgeType.USER ? command.point ?? 0 : 0,
+          color: command.color,
         });
         return badgeRepo.save(badge);
       },

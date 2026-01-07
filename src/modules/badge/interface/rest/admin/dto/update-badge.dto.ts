@@ -30,4 +30,8 @@ export class UpdateBadgeDto {
   @Min(0)
   @Max(50000)
   point?: number;
+
+  @IsString()
+  @IsOptional()
+  color?: string;
 }

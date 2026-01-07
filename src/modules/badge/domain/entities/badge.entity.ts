@@ -35,6 +35,9 @@ export class Badge extends BaseEntity {
   @Column({ type: 'integer', nullable: false, default: 0 })
   point: number;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  color?: string;
+
   @OneToMany(() => UserBadge, (userBadge) => userBadge.badge)
   userBadges: UserBadge[];
 }

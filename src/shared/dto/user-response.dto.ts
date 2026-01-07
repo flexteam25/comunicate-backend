@@ -1,6 +1,7 @@
 export interface UserBadgeSummary {
   name: string;
   iconUrl?: string;
+  color?: string;
   earnedAt?: Date;
 }
 

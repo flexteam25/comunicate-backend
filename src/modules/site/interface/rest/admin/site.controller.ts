@@ -111,6 +111,7 @@ export class AdminSiteController {
             name: sb.badge.name,
             description: sb.badge.description || null,
             iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
+            color: sb.badge.color || null,
           };
         })
         .filter((badge): badge is NonNullable<typeof badge> => badge !== null),
@@ -137,6 +138,7 @@ export class AdminSiteController {
               name: activeBadge.badge.name,
               iconUrl:
                 buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+              color: activeBadge.badge.color || null,
               earnedAt: activeBadge.earnedAt,
             };
           })(),

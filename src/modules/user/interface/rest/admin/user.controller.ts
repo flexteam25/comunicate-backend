@@ -120,6 +120,7 @@ export class AdminUserController {
             name: ub.badge.name,
             description: ub.badge.description || null,
             iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null) || null,
+            color: ub.badge.color || null,
             earnedAt: ub.earnedAt,
             active: ub.active,
           })),
@@ -240,6 +241,7 @@ export class AdminUserController {
               iconUrl:
                 buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) ||
                 null,
+              color: activeBadge.badge.color || null,
             };
           })(),
           createdAt: user.createdAt,
@@ -286,6 +288,7 @@ export class AdminUserController {
           earnedAt: activeBadge.earnedAt,
           iconUrl:
             buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+          color: activeBadge.badge.color || null,
         };
       })(),
       createdAt: user.createdAt,
@@ -347,6 +350,7 @@ export class AdminUserController {
           earnedAt: activeBadge.earnedAt,
           iconUrl:
             buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+          color: activeBadge.badge.color || null,
         };
       })(),
         createdAt: dbUser.createdAt,

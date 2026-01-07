@@ -59,15 +59,16 @@ export class AdminBadgeController {
     return {
       id: badge.id,
       name: badge.name,
-      description: badge.description || undefined,
-      iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+      description: badge.description || null,
+      iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || null,
       badgeType: badge.badgeType,
       isActive: badge.isActive,
-      obtain: badge.obtain || undefined,
-      point: badge.badgeType === BadgeType.USER ? (badge.point ?? 0) : undefined,
+      obtain: badge.obtain || null,
+      point: badge.badgeType === BadgeType.USER ? (badge.point ?? 0) : null,
+      color: badge.color || null,
       createdAt: badge.createdAt,
       updatedAt: badge.updatedAt,
-      deletedAt: badge.deletedAt || undefined,
+      deletedAt: badge.deletedAt || null,
     };
   }
 
@@ -105,6 +106,7 @@ export class AdminBadgeController {
       isActive: dto.isActive ?? true,
       obtain: dto.obtain,
       point: dto.point,
+      color: dto.color,
     });
 
     return ApiResponseUtil.success(
@@ -168,6 +170,7 @@ export class AdminBadgeController {
       isActive: dto.isActive,
       obtain: dto.obtain,
       point: dto.point,
+      color: dto.color,
     });
 
     return ApiResponseUtil.success(

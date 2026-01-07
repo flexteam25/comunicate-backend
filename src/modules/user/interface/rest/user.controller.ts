@@ -174,6 +174,7 @@ export class UserController {
             name: sb.badge.name,
             iconUrl:
               buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
+            color: sb.badge.color || null,
           };
         })
         .filter((badge): badge is NonNullable<typeof badge> => badge !== null),
@@ -298,7 +299,7 @@ export class UserController {
     }
 
     // Map single active badge (filter out soft-deleted badges)
-    let badgeSummary: { name: string; iconUrl?: string; earnedAt?: Date } | null = null;
+    let badgeSummary: { name: string; iconUrl?: string; color?: string; earnedAt?: Date } | null = null;
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
         if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
@@ -306,6 +307,7 @@ export class UserController {
           badgeSummary = {
             name: badge.name,
             iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+            color: badge.color || null,
             earnedAt: userBadge.earnedAt,
           };
           break;
@@ -358,7 +360,7 @@ export class UserController {
     }
 
     // Map single active badge (filter out soft-deleted badges)
-    let badgeSummary: { name: string; iconUrl?: string; earnedAt?: Date } | null = null;
+    let badgeSummary: { name: string; iconUrl?: string; color?: string; earnedAt?: Date } | null = null;
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
         if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
@@ -366,6 +368,7 @@ export class UserController {
           badgeSummary = {
             name: badge.name,
             iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || null,
+            color: badge.color || null,
             earnedAt: userBadge.earnedAt,
           };
           break;
@@ -421,7 +424,8 @@ export class UserController {
     // Map all badges and mark which ones user has earned
     const badges: BadgeResponse[] = allUserBadges.map((badge: Badge) => ({
       name: badge.name,
-      iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || undefined,
+      iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || null,
+      color: badge.color || null,
       active: earnedBadgesMap.has(badge.id) || false,
       obtain: badge.obtain || null,
       description: badge.description || null,
@@ -482,6 +486,7 @@ export class UserController {
             name: sb.badge.name,
             iconUrl:
               buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
+            color: sb.badge.color || null,
           };
         })
         .filter((badge): badge is NonNullable<typeof badge> => badge !== null),
@@ -493,8 +498,8 @@ export class UserController {
       })),
       createdAt: site.createdAt,
       updatedAt: site.updatedAt,
-      firstCharge: site.firstCharge ? Number(site.firstCharge) : undefined,
-      recharge: site.recharge ? Number(site.recharge) : undefined,
+      firstCharge: site.firstCharge ? Number(site.firstCharge) : null,
+      recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
       issueCount: site.issueCount || 0,
     });

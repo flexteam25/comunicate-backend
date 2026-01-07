@@ -115,6 +115,7 @@ export class AdminScamReportController {
         return {
           name: activeBadge.badge.name,
           iconUrl: buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null),
+          color: activeBadge.badge.color || null,
           earnedAt: activeBadge.earnedAt,
         };
       })(),
