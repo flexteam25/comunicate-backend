@@ -25,6 +25,7 @@ export interface UpdateProfileCommand {
   gender?: string;
   activeBadge?: string;
   ipAddress?: string;
+  clearActiveBadge?: boolean;
 }
 
 @Injectable()
@@ -95,8 +96,8 @@ export class UpdateProfileUseCase {
       verifiedOtpRequest = otpRequest;
     }
 
-    // Validate that the active badge belongs to the user (if provided)
-    if (command.activeBadge) {
+    // Validate that the active badge belongs to the user (if provided and not clearing)
+    if (command.activeBadge && !command.clearActiveBadge) {
       const userBadge = await this.userBadgeRepository.findByUserAndBadge(
         command.userId,
         command.activeBadge,
@@ -215,8 +216,12 @@ export class UpdateProfileUseCase {
           await entityManager.save(UserProfile, user.userProfile);
         }
 
-        // Update active badge: set all badges to inactive, then set the specified badge to active
-        if (command.activeBadge) {
+        // Update active badge:
+        // - If clearActiveBadge is true: set all badges to inactive
+        // - Else if activeBadge provided: set that badge as the only active one
+        if (command.clearActiveBadge === true) {
+          await this.userBadgeRepository.setAllInactive(command.userId);
+        } else if (typeof command.activeBadge === 'string' && command.activeBadge) {
           await this.userBadgeRepository.setActiveBadge(
             command.userId,
             command.activeBadge,

@@ -2,6 +2,7 @@ import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { IAttendanceRepository } from '../../infrastructure/persistence/repositories/attendance.repository';
 import { IAttendanceStatisticRepository } from '../../infrastructure/persistence/repositories/attendance-statistic.repository';
 import { AttendanceStatistic } from '../../domain/entities/attendance-statistic.entity';
+import { getTodayInKST } from '../../../../shared/utils/attendance-date.util';
 
 export type AttendanceFilter = 'today' | 'streak' | 'total';
 
@@ -56,8 +57,8 @@ export class ListAttendancesUseCase {
       );
     }
 
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    // Get today's date in KST (+9 timezone)
+    const today = getTodayInKST();
     const realLimit =
       command.limit && command.limit > 0 ? (command.limit > 50 ? 50 : command.limit) : 20;
 

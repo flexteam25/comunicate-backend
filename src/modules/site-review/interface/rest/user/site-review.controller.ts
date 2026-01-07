@@ -80,7 +80,8 @@ export class SiteReviewController {
         buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
       userBadge: (() => {
         const activeBadge = review.user?.userBadges?.find(
-          (ub: any) => ub?.badge && !ub.badge.deletedAt && ub.active,
+          (ub: any) =>
+            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {
@@ -122,7 +123,8 @@ export class SiteReviewController {
         buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null) || null,
       userBadge: (() => {
         const activeBadge = comment.user?.userBadges?.find(
-          (ub: any) => ub?.badge && !ub.badge.deletedAt && ub.active,
+          (ub: any) =>
+            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {

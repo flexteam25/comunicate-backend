@@ -2,6 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { IAttendanceRepository } from '../../infrastructure/persistence/repositories/attendance.repository';
 import { IAttendanceStatisticRepository } from '../../infrastructure/persistence/repositories/attendance-statistic.repository';
 import { AttendanceStatistic } from '../../domain/entities/attendance-statistic.entity';
+import {
+  getTodayInKST,
+  getYesterdayInKST,
+} from '../../../../shared/utils/attendance-date.util';
 
 @Injectable()
 export class CalculateAttendanceStatisticsUseCase {
@@ -13,11 +17,9 @@ export class CalculateAttendanceStatisticsUseCase {
   ) {}
 
   async execute(): Promise<void> {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-
-    const yesterday = new Date(today);
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    // Get today's and yesterday's dates in KST (+9 timezone)
+    const today = getTodayInKST();
+    const yesterday = getYesterdayInKST();
 
     // Get all attendances for today
     const attendances = await this.attendanceRepository.findAllByDate(today);

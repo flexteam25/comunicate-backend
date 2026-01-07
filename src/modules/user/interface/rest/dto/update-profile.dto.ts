@@ -1,4 +1,4 @@
-import { IsDate, IsOptional, IsString, MaxLength, IsUUID } from 'class-validator';
+import { IsDate, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateProfileDto {
@@ -36,6 +36,6 @@ export class UpdateProfileDto {
   bio?: string;
 
   @IsOptional()
-  @IsUUID()
-  activeBadge?: string;
+  @IsString()
+  activeBadge?: string | null;
 }

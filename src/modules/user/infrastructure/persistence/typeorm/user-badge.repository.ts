@@ -73,4 +73,13 @@ export class UserBadgeRepository implements IUserBadgeRepository {
       .andWhere('badgeId = :badgeId', { badgeId })
       .execute();
   }
+
+  async setAllInactive(userId: string): Promise<void> {
+    await this.repository
+      .createQueryBuilder()
+      .update(UserBadge)
+      .set({ active: false })
+      .where('userId = :userId', { userId })
+      .execute();
+  }
 }

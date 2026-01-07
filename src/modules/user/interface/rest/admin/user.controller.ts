@@ -230,7 +230,8 @@ export class AdminUserController {
           refundAmount: stats.refundAmount,
           badge: (() => {
             const activeBadge = (user.userBadges || []).find(
-              (ub) => ub?.badge && !ub.badge.deletedAt && ub.active,
+              (ub) =>
+                ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
             );
             if (!activeBadge) return null;
             return {
@@ -276,7 +277,8 @@ export class AdminUserController {
       lastRequestIp: user.userProfile?.lastRequestIp || null,
       badge: (() => {
         const activeBadge = (user.userBadges || []).find(
-          (ub) => ub?.badge && !ub.badge.deletedAt && ub.active,
+          (ub) =>
+            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {
@@ -334,18 +336,19 @@ export class AdminUserController {
         phone: dbUser.userProfile?.phone || null,
         birthDate: dbUser.userProfile?.birthDate || null,
         gender: dbUser.userProfile?.gender || null,
-        badge: (() => {
-          const activeBadge = (dbUser.userBadges || []).find(
-            (ub) => ub?.badge && !ub.badge.deletedAt && ub.active,
-          );
-          if (!activeBadge) return null;
-          return {
-            name: activeBadge.badge.name,
-            earnedAt: activeBadge.earnedAt,
-            iconUrl:
-              buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
-          };
-        })(),
+      badge: (() => {
+        const activeBadge = (dbUser.userBadges || []).find(
+          (ub) =>
+            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
+        );
+        if (!activeBadge) return null;
+        return {
+          name: activeBadge.badge.name,
+          earnedAt: activeBadge.earnedAt,
+          iconUrl:
+            buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+        };
+      })(),
         createdAt: dbUser.createdAt,
         updatedAt: dbUser.updatedAt,
       },

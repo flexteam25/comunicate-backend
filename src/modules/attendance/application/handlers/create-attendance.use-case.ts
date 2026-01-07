@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { IAttendanceRepository } from '../../infrastructure/persistence/repositories/attendance.repository';
 import { Attendance } from '../../domain/entities/attendance.entity';
+import { getTodayInKST } from '../../../../shared/utils/attendance-date.util';
 
 export interface CreateAttendanceCommand {
   userId: string;
@@ -25,11 +26,10 @@ export class CreateAttendanceUseCase {
       throw new BadRequestException('Message cannot exceed 20 characters');
     }
 
-    // Get current date (date only, no time)
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    // Get today's date in KST (+9 timezone)
+    const today = getTodayInKST();
 
-    // Check if user already checked in today
+    // Check if user already checked in today (based on KST date)
     const existing = await this.attendanceRepository.findByUserAndDate(
       command.userId,
       today,

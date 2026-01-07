@@ -78,7 +78,8 @@ export class PostController {
         buildFullUrl(this.apiServiceUrl, post.user?.avatarUrl || null) || null,
       userBadge: (() => {
         const activeBadge = post.user?.userBadges?.find(
-          (ub: any) => ub?.badge && !ub.badge.deletedAt && ub.active,
+          (ub: any) =>
+            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {
@@ -119,7 +120,8 @@ export class PostController {
         buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null) || null,
       userBadge: (() => {
         const activeBadge = comment.user?.userBadges?.find(
-          (ub: any) => ub?.badge && !ub.badge.deletedAt && ub.active,
+          (ub: any) =>
+            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {

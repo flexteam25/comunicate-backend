@@ -6,4 +6,5 @@ export interface IUserBadgeRepository {
   hasBadge(userId: string, badgeId: string): Promise<boolean>;
   findByUserAndBadge(userId: string, badgeId: string): Promise<UserBadge | null>;
   setActiveBadge(userId: string, badgeId: string): Promise<void>;
+  setAllInactive(userId: string): Promise<void>;
 }

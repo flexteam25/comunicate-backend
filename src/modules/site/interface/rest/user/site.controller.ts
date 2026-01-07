@@ -226,7 +226,8 @@ export class UserSiteController {
         userAvatarUrl: buildFullUrl(this.apiServiceUrl, report.user?.avatarUrl || null),
         userBadge: (() => {
           const activeBadge = report.user?.userBadges?.find(
-            (ub) => ub?.badge && !ub.badge.deletedAt && ub.active,
+            (ub) =>
+              ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
           );
           if (!activeBadge) return null;
           return {

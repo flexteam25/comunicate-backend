@@ -265,7 +265,11 @@ export class UserController {
     // Determine client IP (for auditing)
     const ipAddress = req ? getClientIp(req) : undefined;
 
-    // Update profile with displayName, avatarUrl and audit IP
+    // Determine if activeBadge field was explicitly sent (for clearing badge)
+    const hasActiveBadgeField = 'activeBadge' in dto;
+    const clearActiveBadge = hasActiveBadgeField && !dto.activeBadge;
+
+    // Update profile with displayName, avatarUrl, badge, and audit IP
     await this.updateProfileUseCase.execute({
       userId: user.userId,
       displayName: dto.displayName,
@@ -277,6 +281,7 @@ export class UserController {
       gender: dto.gender,
       activeBadge: dto.activeBadge,
       ipAddress,
+      clearActiveBadge,
     });
 
     // Reload user with relations for response

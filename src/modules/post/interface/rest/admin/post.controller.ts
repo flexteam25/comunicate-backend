@@ -70,7 +70,8 @@ export class AdminPostController {
       userName: post.user?.displayName || null,
       userBadge: (() => {
         const activeBadge = post.user?.userBadges?.find(
-          (ub: any) => ub?.badge && !ub.badge.deletedAt && ub.active,
+          (ub: any) =>
+            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {
