@@ -7,7 +7,7 @@
  * Get today's date in Korea Standard Time (KST, UTC+9)
  * Converts current UTC datetime to KST (+9) and returns the date part
  * @returns Date object representing today at 00:00:00 UTC, but the date value is the KST date
- * 
+ *
  * Example:
  * - UTC: 2024-01-01 15:00:00 UTC (3 PM UTC)
  * - KST: 2024-01-02 00:00:00 KST (midnight next day in KST)
@@ -15,20 +15,20 @@
  */
 export function getTodayInKST(): Date {
   const now = new Date();
-  
+
   // Get UTC components
   const utcYear = now.getUTCFullYear();
   const utcMonth = now.getUTCMonth();
   const utcDate = now.getUTCDate();
   const utcHours = now.getUTCHours();
-  
+
   // Calculate KST date
   // KST is UTC+9, so we need to add 9 hours to UTC time
   // If UTC hour + 9 >= 24, it's the next day in KST
   let kstYear = utcYear;
   let kstMonth = utcMonth;
   let kstDate = utcDate;
-  
+
   const kstHours = utcHours + 9;
   if (kstHours >= 24) {
     // Next day in KST
@@ -37,7 +37,7 @@ export function getTodayInKST(): Date {
     kstMonth = nextDay.getUTCMonth();
     kstDate = nextDay.getUTCDate();
   }
-  
+
   // Return date at 00:00:00 UTC representing the KST date
   return new Date(Date.UTC(kstYear, kstMonth, kstDate, 0, 0, 0, 0));
 }
@@ -52,11 +52,11 @@ export function getDateInKST(date: Date): Date {
   const utcMonth = date.getUTCMonth();
   const utcDate = date.getUTCDate();
   const utcHours = date.getUTCHours();
-  
+
   let kstYear = utcYear;
   let kstMonth = utcMonth;
   let kstDate = utcDate;
-  
+
   const kstHours = utcHours + 9;
   if (kstHours >= 24) {
     const nextDay = new Date(Date.UTC(utcYear, utcMonth, utcDate + 1));
@@ -64,7 +64,7 @@ export function getDateInKST(date: Date): Date {
     kstMonth = nextDay.getUTCMonth();
     kstDate = nextDay.getUTCDate();
   }
-  
+
   return new Date(Date.UTC(kstYear, kstMonth, kstDate, 0, 0, 0, 0));
 }
 

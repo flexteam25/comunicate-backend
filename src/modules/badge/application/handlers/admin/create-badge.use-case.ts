@@ -51,7 +51,7 @@ export class CreateBadgeUseCase {
           badgeType: command.badgeType,
           isActive: command.isActive ?? true,
           obtain: command.obtain,
-          point: command.badgeType === BadgeType.USER ? command.point ?? 0 : 0,
+          point: command.badgeType === BadgeType.USER ? (command.point ?? 0) : 0,
           color: command.color,
         });
         return badgeRepo.save(badge);

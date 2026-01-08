@@ -5,9 +5,7 @@ import { PostCommentReaction } from '../../../domain/entities/post-comment-react
 import { IPostCommentReactionRepository } from '../repositories/post-comment-reaction.repository';
 
 @Injectable()
-export class PostCommentReactionRepository
-  implements IPostCommentReactionRepository
-{
+export class PostCommentReactionRepository implements IPostCommentReactionRepository {
   constructor(
     @InjectRepository(PostCommentReaction)
     private readonly repository: Repository<PostCommentReaction>,
@@ -22,9 +20,7 @@ export class PostCommentReactionRepository
     });
   }
 
-  async create(
-    reaction: Partial<PostCommentReaction>,
-  ): Promise<PostCommentReaction> {
+  async create(reaction: Partial<PostCommentReaction>): Promise<PostCommentReaction> {
     const entity = this.repository.create(reaction);
     return this.repository.save(entity);
   }

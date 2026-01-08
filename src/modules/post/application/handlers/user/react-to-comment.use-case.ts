@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { PostCommentReaction } from '../../../domain/entities/post-comment-reaction.entity';
 import { ReactionType } from '../../../domain/entities/post-reaction.entity';
 import { IPostCommentRepository } from '../../../infrastructure/persistence/repositories/post-comment.repository';

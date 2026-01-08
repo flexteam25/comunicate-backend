@@ -6,4 +6,5 @@ export class SiteReviewStatisticsResponseDto {
   averageEvent: number;
   averageSpeed: number;
   reviewCount: number;
+  topReviews: string[];
 }

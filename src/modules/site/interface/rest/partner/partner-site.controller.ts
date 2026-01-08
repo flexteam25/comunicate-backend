@@ -143,17 +143,14 @@ export class PartnerSiteController {
           avatarUrl: buildFullUrl(this.apiServiceUrl, sm.user.avatarUrl || null) || null,
           badge: (() => {
             const activeBadge = sm.user?.userBadges?.find(
-              (ub) =>
-                ub?.badge &&
-                ub.badge.isActive &&
-                !ub.badge.deletedAt &&
-                ub.active,
+              (ub) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
             );
             if (!activeBadge) return null;
             return {
               name: activeBadge.badge.name,
               iconUrl:
-                buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+                buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) ||
+                null,
               earnedAt: activeBadge.earnedAt,
             };
           })(),

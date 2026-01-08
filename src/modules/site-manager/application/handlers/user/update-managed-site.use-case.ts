@@ -68,7 +68,10 @@ export class UpdateManagedSiteUseCase {
 
     // Partner can only update site if it's already VERIFIED
     // (Partner cannot update UNVERIFIED sites - they need admin approval first)
-    if (existingSite.status !== SiteStatus.VERIFIED && existingSite.status !== SiteStatus.MONITORED) {
+    if (
+      existingSite.status !== SiteStatus.VERIFIED &&
+      existingSite.status !== SiteStatus.MONITORED
+    ) {
       throw new ForbiddenException(
         'Site must be verified before it can be updated by partner',
       );

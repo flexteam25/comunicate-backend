@@ -47,7 +47,11 @@ export class RemoveBadgeUseCase {
     }
 
     // Optionally handle point deduction
-    if (command.handlePoint && userBadge.badge && typeof userBadge.badge.point === 'number') {
+    if (
+      command.handlePoint &&
+      userBadge.badge &&
+      typeof userBadge.badge.point === 'number'
+    ) {
       const badgePoint = userBadge.badge.point;
       if (badgePoint > 0) {
         const userWithProfile = await this.userRepository.findById(command.userId, [

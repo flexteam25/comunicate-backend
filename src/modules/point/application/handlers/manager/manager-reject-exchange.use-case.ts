@@ -48,7 +48,9 @@ export class ManagerRejectExchangeUseCase {
   ) {}
 
   async execute(command: ManagerRejectExchangeCommand): Promise<PointExchange> {
-    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, ['site']);
+    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, [
+      'site',
+    ]);
 
     if (!exchange) {
       throw new NotFoundException('Exchange not found');
@@ -73,7 +75,9 @@ export class ManagerRejectExchangeUseCase {
     );
 
     if (!manager) {
-      throw new ForbiddenException('You do not have permission to reject exchanges for this site');
+      throw new ForbiddenException(
+        'You do not have permission to reject exchanges for this site',
+      );
     }
 
     // Only allow reject if status = pending or processing
@@ -250,4 +254,3 @@ export class ManagerRejectExchangeUseCase {
     };
   }
 }
-

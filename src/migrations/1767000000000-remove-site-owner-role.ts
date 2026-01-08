@@ -13,10 +13,9 @@ export class RemoveSiteOwnerRole1767000000000 implements MigrationInterface {
       const siteOwnerRoleId = siteOwnerRole[0].id;
 
       // Delete all UserRole records with site-owner role
-      await queryRunner.query(
-        `DELETE FROM user_roles WHERE role_id = $1`,
-        [siteOwnerRoleId],
-      );
+      await queryRunner.query(`DELETE FROM user_roles WHERE role_id = $1`, [
+        siteOwnerRoleId,
+      ]);
 
       // Soft delete the site-owner role
       await queryRunner.query(
@@ -37,4 +36,3 @@ export class RemoveSiteOwnerRole1767000000000 implements MigrationInterface {
     // Note: UserRole records cannot be restored as we don't track which users had site-owner role
   }
 }
-

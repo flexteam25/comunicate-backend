@@ -58,10 +58,10 @@ export class ReplyInquiryUseCase {
     );
 
     // Reload inquiry with relationships for event
-    const inquiryWithRelations = await this.inquiryRepository.findById(
-      savedInquiry.id,
-      ['user', 'admin'],
-    );
+    const inquiryWithRelations = await this.inquiryRepository.findById(savedInquiry.id, [
+      'user',
+      'admin',
+    ]);
 
     if (!inquiryWithRelations) {
       return savedInquiry;
@@ -82,7 +82,9 @@ export class ReplyInquiryUseCase {
       category: inquiryWithRelations.category,
       message: inquiryWithRelations.message,
       images:
-        inquiryWithRelations.images?.map((img) => buildFullUrl(this.apiServiceUrl, img)) || [],
+        inquiryWithRelations.images?.map((img) =>
+          buildFullUrl(this.apiServiceUrl, img),
+        ) || [],
       status: inquiryWithRelations.status,
       adminId: inquiryWithRelations.adminId,
       admin: inquiryWithRelations.admin

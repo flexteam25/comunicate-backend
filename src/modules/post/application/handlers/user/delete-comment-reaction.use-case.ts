@@ -1,10 +1,13 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   Inject,
 } from '@nestjs/common';
+import { IPostCommentRepository } from '../../../infrastructure/persistence/repositories/post-comment.repository';
 import { IPostCommentReactionRepository } from '../../../infrastructure/persistence/repositories/post-comment-reaction.repository';
+import { TransactionService } from '../../../../../shared/services/transaction.service';
+import { EntityManager } from 'typeorm';
+import { PostCommentReaction } from '../../../domain/entities/post-comment-reaction.entity';
 
 export interface DeleteCommentReactionCommand {
   commentId: string;
@@ -14,25 +17,32 @@ export interface DeleteCommentReactionCommand {
 @Injectable()
 export class DeleteCommentReactionUseCase {
   constructor(
+    @Inject('IPostCommentRepository')
+    private readonly commentRepository: IPostCommentRepository,
     @Inject('IPostCommentReactionRepository')
     private readonly reactionRepository: IPostCommentReactionRepository,
+    private readonly transactionService: TransactionService,
   ) {}
 
   async execute(command: DeleteCommentReactionCommand): Promise<void> {
-    const reaction =
-      await this.reactionRepository.findByCommentIdAndUserId(
-        command.commentId,
-        command.userId,
-      );
-
-    if (!reaction) {
-      throw new NotFoundException('Reaction not found');
+    const comment = await this.commentRepository.findById(command.commentId);
+    if (!comment || comment.deletedAt) {
+      throw new NotFoundException('Comment not found');
     }
 
-    if (reaction.userId !== command.userId) {
-      throw new ForbiddenException('You can only delete your own reactions');
-    }
+    await this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const existing = await this.reactionRepository.findByCommentIdAndUserId(
+          command.commentId,
+          command.userId,
+        );
 
-    await this.reactionRepository.delete(reaction.id);
+        if (!existing) {
+          throw new NotFoundException('Reaction not found');
+        }
+
+        await manager.getRepository(PostCommentReaction).delete(existing.id);
+      },
+    );
   }
 }

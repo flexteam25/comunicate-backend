@@ -35,10 +35,10 @@ export class ManagerMoveExchangeToProcessingUseCase {
     private readonly logger: LoggerService,
   ) {}
 
-  async execute(
-    command: ManagerMoveExchangeToProcessingCommand,
-  ): Promise<PointExchange> {
-    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, ['site']);
+  async execute(command: ManagerMoveExchangeToProcessingCommand): Promise<PointExchange> {
+    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, [
+      'site',
+    ]);
 
     if (!exchange) {
       throw new NotFoundException('Exchange not found');
@@ -157,4 +157,3 @@ export class ManagerMoveExchangeToProcessingUseCase {
     };
   }
 }
-

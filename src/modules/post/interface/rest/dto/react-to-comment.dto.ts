@@ -6,4 +6,3 @@ export class ReactToCommentDto {
   @IsEnum(ReactionType)
   reactionType: ReactionType;
 }
-

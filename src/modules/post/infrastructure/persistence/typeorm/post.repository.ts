@@ -52,10 +52,7 @@ export class PostRepository implements IPostRepository {
         `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id)`,
         'commentCount',
       )
-      .addSelect(
-        `(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`,
-        'viewCount',
-      )
+      .addSelect(`(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`, 'viewCount')
       .where('post.deletedAt IS NULL')
       .andWhere('post.id = :id', { id });
 
@@ -154,10 +151,7 @@ export class PostRepository implements IPostRepository {
         `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id)`,
         'commentCount',
       )
-      .addSelect(
-        `(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`,
-        'viewCount',
-      )
+      .addSelect(`(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`, 'viewCount')
       .where('post.deletedAt IS NULL');
 
     if (filters?.isPublished !== undefined) {
@@ -302,10 +296,7 @@ export class PostRepository implements IPostRepository {
         `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id)`,
         'commentCount',
       )
-      .addSelect(
-        `(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`,
-        'viewCount',
-      )
+      .addSelect(`(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`, 'viewCount')
       .groupBy('post.id')
       .addGroupBy('user.id')
       .addGroupBy('userBadges.id')
@@ -496,13 +487,13 @@ export class PostRepository implements IPostRepository {
     const hasMore = result.entities.length > realLimit;
     const data = result.entities.slice(0, realLimit);
 
-      // Map likeCount, dislikeCount, commentCount, viewCount, and reacted from raw data to entities
-      data.forEach((post, index) => {
-        const rawData = result.raw[index];
-        (post as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-        (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
-        (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
-        (post as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
+    // Map likeCount, dislikeCount, commentCount, viewCount, and reacted from raw data to entities
+    data.forEach((post, index) => {
+      const rawData = result.raw[index];
+      (post as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
+      (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+      (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
+      (post as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
       // Map user reaction if userId is provided
       if (filters?.userId) {
         // PostgreSQL may return column names in lowercase when using raw queries

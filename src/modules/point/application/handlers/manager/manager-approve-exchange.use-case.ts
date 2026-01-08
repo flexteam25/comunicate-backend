@@ -36,7 +36,9 @@ export class ManagerApproveExchangeUseCase {
   ) {}
 
   async execute(command: ManagerApproveExchangeCommand): Promise<PointExchange> {
-    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, ['site']);
+    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, [
+      'site',
+    ]);
 
     if (!exchange) {
       throw new NotFoundException('Exchange not found');
@@ -61,7 +63,9 @@ export class ManagerApproveExchangeUseCase {
     );
 
     if (!manager) {
-      throw new ForbiddenException('You do not have permission to approve exchanges for this site');
+      throw new ForbiddenException(
+        'You do not have permission to approve exchanges for this site',
+      );
     }
 
     // Only allow approve if status = pending or processing
@@ -159,4 +163,3 @@ export class ManagerApproveExchangeUseCase {
     };
   }
 }
-

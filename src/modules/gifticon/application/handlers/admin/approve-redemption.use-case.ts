@@ -44,9 +44,12 @@ export class ApproveRedemptionUseCase {
       throw new BadRequestException('Only pending redemptions can be approved');
     }
 
-    const updatedRedemption = await this.redemptionRepository.update(command.redemptionId, {
-      status: GifticonRedemptionStatus.COMPLETED,
-    });
+    const updatedRedemption = await this.redemptionRepository.update(
+      command.redemptionId,
+      {
+        status: GifticonRedemptionStatus.COMPLETED,
+      },
+    );
 
     // Reload with relationships for event
     const redemptionWithRelations = await this.redemptionRepository.findById(

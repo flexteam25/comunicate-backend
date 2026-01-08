@@ -91,8 +91,7 @@ export class ScamReportController {
       userAvatarUrl: buildFullUrl(this.apiServiceUrl, report.user?.avatarUrl || null),
       userBadge: (() => {
         const activeBadge = report.user?.userBadges?.find(
-          (ub: any) =>
-            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
+          (ub: any) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {
@@ -333,8 +332,7 @@ export class ScamReportController {
         userAvatarUrl: buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null),
         userBadge: (() => {
           const activeBadge = comment.user?.userBadges?.find(
-            (ub) =>
-              ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
+            (ub) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
           );
           if (!activeBadge) return null;
           return {
@@ -412,8 +410,7 @@ export class ScamReportController {
         userAvatarUrl: buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null),
         userBadge: (() => {
           const activeBadge = comment.user?.userBadges?.find(
-            (ub) =>
-              ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
+            (ub) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
           );
           if (!activeBadge) return null;
           return {

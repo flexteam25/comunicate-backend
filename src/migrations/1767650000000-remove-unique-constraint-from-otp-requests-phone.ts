@@ -1,14 +1,12 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class RemoveUniqueConstraintFromOtpRequestsPhone1767650000000
-  implements MigrationInterface
-{
+export class RemoveUniqueConstraintFromOtpRequestsPhone1767650000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Drop unique constraint on phone column
     // TypeORM creates unique constraints when isUnique: true is set on column
     // PostgreSQL creates it as a unique index, so we need to drop it by name pattern
     // Common patterns: UQ_<table>_<column>, <table>_<column>_key, or <table>_<column>_unique
-    
+
     // Try to find and drop the unique constraint/index
     const table = await queryRunner.getTable('otp_requests');
     if (table) {
@@ -23,7 +21,8 @@ export class RemoveUniqueConstraintFromOtpRequestsPhone1767650000000
 
       // Find unique index (PostgreSQL creates unique constraints as unique indexes)
       const uniqueIndex = table.indices.find(
-        (idx) => idx.isUnique && idx.columnNames.length === 1 && idx.columnNames[0] === 'phone',
+        (idx) =>
+          idx.isUnique && idx.columnNames.length === 1 && idx.columnNames[0] === 'phone',
       );
 
       if (uniqueIndex) {

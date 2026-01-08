@@ -23,6 +23,7 @@ export class GetSiteReviewStatisticsUseCase {
     averageEvent: number;
     averageSpeed: number;
     reviewCount: number;
+    topReviews: string[];
   }> {
     // Validate site exists (support both UUID and slug)
     const site = await this.siteRepository.findByIdOrSlug(command.siteId);
@@ -33,9 +34,13 @@ export class GetSiteReviewStatisticsUseCase {
     // Get statistics using actual site UUID
     const statistics = await this.siteReviewRepository.getStatistics(site.id);
 
+    // Get top 5 five-star reviews
+    const topReviews = await this.siteReviewRepository.findTop5StarReviews(site.id);
+
     return {
       siteId: site.id, // Return actual UUID, not the identifier passed in
       ...statistics,
+      topReviews,
     };
   }
 }

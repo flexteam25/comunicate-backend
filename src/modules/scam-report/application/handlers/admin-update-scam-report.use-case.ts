@@ -129,15 +129,18 @@ export class AdminUpdateScamReportUseCase {
     }
 
     // Reload with all relations and reaction counts for event
-    const reportWithRelations = await this.scamReportRepository.findById(updatedReport.id, [
-      'images',
-      'user',
-      'user.userBadges',
-      'user.userBadges.badge',
-      'site',
-      'admin',
-      'reactions', // This will trigger reaction count calculation
-    ]);
+    const reportWithRelations = await this.scamReportRepository.findById(
+      updatedReport.id,
+      [
+        'images',
+        'user',
+        'user.userBadges',
+        'user.userBadges.badge',
+        'site',
+        'admin',
+        'reactions', // This will trigger reaction count calculation
+      ],
+    );
 
     if (!reportWithRelations) {
       return updatedReport;
@@ -169,8 +172,8 @@ export class AdminUpdateScamReportUseCase {
   private mapScamReportToResponse(report: any): any {
     // Use reaction counts from database (counted via subquery)
     const reactions = {
-      like: (report as any).likeCount || 0,
-      dislike: (report as any).dislikeCount || 0,
+      like: report.likeCount || 0,
+      dislike: report.dislikeCount || 0,
     };
 
     return {
@@ -188,8 +191,7 @@ export class AdminUpdateScamReportUseCase {
       userAvatarUrl: buildFullUrl(this.apiServiceUrl, report.user?.avatarUrl || null),
       userBadge: (() => {
         const activeBadge = report.user?.userBadges?.find(
-          (ub: any) =>
-            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
+          (ub: any) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {

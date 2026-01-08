@@ -1,5 +1,4 @@
 import { PostCommentReaction } from '../../../domain/entities/post-comment-reaction.entity';
-import { ReactionType } from '../../../domain/entities/post-reaction.entity';
 
 export interface IPostCommentReactionRepository {
   findByCommentIdAndUserId(

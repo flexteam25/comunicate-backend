@@ -55,11 +55,7 @@ export class TwilioService {
    */
   async sendSms(to: string, message: string): Promise<boolean> {
     if (!this.isEnabled) {
-      this.logger.warn(
-        'Twilio not configured, SMS not sent',
-        { to, message },
-        'twilio',
-      );
+      this.logger.warn('Twilio not configured, SMS not sent', { to, message }, 'twilio');
       return false;
     }
 
@@ -92,16 +88,16 @@ export class TwilioService {
       if (error && typeof error === 'object' && 'code' in error) {
         errorDetails = {
           ...errorDetails,
-          twilioCode: (error as any).code,
-          twilioStatus: (error as any).status,
-          twilioMessage: (error as any).message,
-          twilioMoreInfo: (error as any).moreInfo,
+          twilioCode: error.code,
+          twilioStatus: error.status,
+          twilioMessage: error.message,
+          twilioMoreInfo: error.moreInfo,
         };
 
         // Check if it's a trial account restriction
         if (
-          (error as any).code === 21211 ||
-          (error as any).message?.includes('cannot be sent with the current combination')
+          error.code === 21211 ||
+          error.message?.includes('cannot be sent with the current combination')
         ) {
           errorDetails.trialAccountRestriction = true;
           errorDetails.suggestion =

@@ -1,9 +1,4 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  TableColumn,
-  TableIndex,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, TableColumn, TableIndex } from 'typeorm';
 
 export class AddTokenToOtpRequests1767660000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

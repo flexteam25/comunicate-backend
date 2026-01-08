@@ -81,8 +81,7 @@ export class SiteReviewController {
         buildFullUrl(this.apiServiceUrl, review.user?.avatarUrl || null) || null,
       userBadge: (() => {
         const activeBadge = review.user?.userBadges?.find(
-          (ub: any) =>
-            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
+          (ub: any) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {
@@ -126,8 +125,7 @@ export class SiteReviewController {
         buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null) || null,
       userBadge: (() => {
         const activeBadge = comment.user?.userBadges?.find(
-          (ub: any) =>
-            ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
+          (ub: any) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
         );
         if (!activeBadge) return null;
         return {
@@ -245,7 +243,16 @@ export class SiteReviewController {
     });
 
     return ApiResponseUtil.success(
-      statistics,
+      {
+        siteId: statistics.siteId,
+        averageRating: statistics.averageRating,
+        averageOdds: statistics.averageOdds,
+        averageLimit: statistics.averageLimit,
+        averageEvent: statistics.averageEvent,
+        averageSpeed: statistics.averageSpeed,
+        reviewCount: statistics.reviewCount,
+        topReviews: statistics.topReviews,
+      },
       'Site review statistics retrieved successfully',
     );
   }

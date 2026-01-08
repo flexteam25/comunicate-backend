@@ -132,14 +132,14 @@ export class AdminSiteController {
           avatarUrl: buildFullUrl(this.apiServiceUrl, sm.user.avatarUrl || null) || null,
           badge: (() => {
             const activeBadge = sm.user?.userBadges?.find(
-              (ub) =>
-                ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
+              (ub) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
             );
             if (!activeBadge) return null;
             return {
               name: activeBadge.badge.name,
               iconUrl:
-                buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+                buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) ||
+                null,
               color: activeBadge.badge.color || null,
               earnedAt: activeBadge.earnedAt,
             };
@@ -222,9 +222,7 @@ export class AdminSiteController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.view')
-  async getSite(
-    @Param('id') id: string,
-  ): Promise<ApiResponse<SiteResponse>> {
+  async getSite(@Param('id') id: string): Promise<ApiResponse<SiteResponse>> {
     const site = await this.getSiteUseCase.execute({ siteId: id });
     return ApiResponseUtil.success(this.mapSiteToResponse(site));
   }

@@ -1,4 +1,9 @@
-import { Injectable, Inject, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { IPointExchangeRepository } from '../../../infrastructure/persistence/repositories/point-exchange.repository';
 import { ISiteManagerRepository } from '../../../../site-manager/infrastructure/persistence/repositories/site-manager.repository';
 import { ISiteRepository } from '../../../../site/infrastructure/persistence/repositories/site.repository';
@@ -44,7 +49,9 @@ export class ListSiteExchangesUseCase {
     );
 
     if (!manager) {
-      throw new ForbiddenException('You do not have permission to view exchanges for this site');
+      throw new ForbiddenException(
+        'You do not have permission to view exchanges for this site',
+      );
     }
 
     // List exchanges for this site with filters
@@ -61,4 +68,3 @@ export class ListSiteExchangesUseCase {
     );
   }
 }
-

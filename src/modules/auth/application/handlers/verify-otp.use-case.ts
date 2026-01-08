@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { IOtpRequestRepository } from '../../infrastructure/persistence/repositories/otp-request.repository';
 import { OtpRequest } from '../../domain/entities/otp-request.entity';
 import { normalizePhone } from '../../../../shared/utils/phone.util';

@@ -80,9 +80,7 @@ export class ApprovePartnerRequestUseCase {
             : null;
 
         // Check if user already has partner role
-        const existingUserRole = allUserRoles.find(
-          (ur) => ur.roleId === partnerRole.id,
-        );
+        const existingUserRole = allUserRoles.find((ur) => ur.roleId === partnerRole.id);
 
         const roleChanged = previousRole !== 'partner';
 

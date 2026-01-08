@@ -556,4 +556,22 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       reviewCount: parseInt(result?.count || '0', 10),
     };
   }
+
+  async findTop5StarReviews(siteId: string): Promise<string[]> {
+    const reviews = await this.repository.find({
+      where: {
+        siteId,
+        rating: 5,
+        isPublished: true,
+        deletedAt: null,
+      },
+      select: ['content'],
+      order: {
+        createdAt: 'DESC',
+      },
+      take: 5,
+    });
+
+    return reviews.map((review) => review.content);
+  }
 }

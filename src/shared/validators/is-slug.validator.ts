@@ -32,7 +32,7 @@ export class IsSlugConstraint implements ValidatorConstraintInterface {
  * @param validationOptions Optional validation options
  */
 export function IsSlug(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,
@@ -42,4 +42,3 @@ export function IsSlug(validationOptions?: ValidationOptions) {
     });
   };
 }
-

@@ -6,9 +6,7 @@ import {
   TableIndex,
 } from 'typeorm';
 
-export class AddUserIdAndDeletedAtToOtpRequests1767640000000
-  implements MigrationInterface
-{
+export class AddUserIdAndDeletedAtToOtpRequests1767640000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add user_id column
     await queryRunner.addColumn(

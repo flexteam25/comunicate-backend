@@ -146,10 +146,8 @@ export class UserController {
             name: '',
           },
       logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || null,
-      mainImageUrl:
-        buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || null,
-      siteImageUrl:
-        buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || null,
+      mainImageUrl: buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || null,
+      siteImageUrl: buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || null,
       tier: site.tier
         ? {
             id: site.tier.id,
@@ -300,7 +298,13 @@ export class UserController {
     }
 
     // Map single active badge (filter out soft-deleted badges)
-    let badgeSummary: { name: string; iconUrl?: string; iconName?: string; color?: string; earnedAt?: Date } | null = null;
+    let badgeSummary: {
+      name: string;
+      iconUrl?: string;
+      iconName?: string;
+      color?: string;
+      earnedAt?: Date;
+    } | null = null;
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
         if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
@@ -362,7 +366,13 @@ export class UserController {
     }
 
     // Map single active badge (filter out soft-deleted badges)
-    let badgeSummary: { name: string; iconUrl?: string; iconName?: string; color?: string; earnedAt?: Date } | null = null;
+    let badgeSummary: {
+      name: string;
+      iconUrl?: string;
+      iconName?: string;
+      color?: string;
+      earnedAt?: Date;
+    } | null = null;
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
         if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {

@@ -38,4 +38,3 @@ export class ListSiteExchangesQueryDto {
   @Max(50)
   limit?: number;
 }
-
