@@ -13,5 +13,9 @@ export interface IPostCommentRepository {
   create(comment: Partial<PostComment>): Promise<PostComment>;
   update(id: string, data: Partial<PostComment>): Promise<PostComment>;
   delete(id: string): Promise<void>;
+  deleteAllChildrenRecursive(
+    parentCommentId: string,
+    manager?: any,
+  ): Promise<void>;
   reparentChildrenToRoot(parentCommentId: string): Promise<void>;
 }

@@ -142,6 +142,38 @@ export class PostCommentRepository implements IPostCommentRepository {
     await this.repository.softDelete(id);
   }
 
+  async deleteAllChildrenRecursive(
+    parentCommentId: string,
+    manager?: any,
+  ): Promise<void> {
+    // Use recursive CTE to find all descendant comments
+    // Then soft delete them all
+    const queryManager = manager || this.repository.manager;
+    await queryManager.query(
+      `
+      WITH RECURSIVE comment_tree AS (
+        -- Base case: direct children
+        SELECT id, parent_comment_id
+        FROM post_comments
+        WHERE parent_comment_id = $1
+          AND deleted_at IS NULL
+        
+        UNION ALL
+        
+        -- Recursive case: children of children
+        SELECT c.id, c.parent_comment_id
+        FROM post_comments c
+        INNER JOIN comment_tree ct ON c.parent_comment_id = ct.id
+        WHERE c.deleted_at IS NULL
+      )
+      UPDATE post_comments
+      SET deleted_at = CURRENT_TIMESTAMP
+      WHERE id IN (SELECT id FROM comment_tree)
+    `,
+      [parentCommentId],
+    );
+  }
+
   async reparentChildrenToRoot(parentCommentId: string): Promise<void> {
     await this.repository.update(
       { parentCommentId },

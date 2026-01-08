@@ -49,7 +49,7 @@ export class PostRepository implements IPostRepository {
         'dislikeCount',
       )
       .addSelect(
-        `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id)`,
+        `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id AND deleted_at IS NULL)`,
         'commentCount',
       )
       .addSelect(`(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`, 'viewCount')
@@ -148,7 +148,7 @@ export class PostRepository implements IPostRepository {
         'dislikeCount',
       )
       .addSelect(
-        `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id)`,
+        `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id AND deleted_at IS NULL)`,
         'commentCount',
       )
       .addSelect(`(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`, 'viewCount')
@@ -218,13 +218,24 @@ export class PostRepository implements IPostRepository {
     const hasMore = result.entities.length > realLimit;
     const data = result.entities.slice(0, realLimit);
 
+    // Create a map of post.id -> raw data to handle cases where subqueries might create multiple rows
+    const rawDataMap = new Map<string, any>();
+    result.raw.forEach((raw) => {
+      const postId = raw.post_id || raw.postId || raw.post_id;
+      if (postId && !rawDataMap.has(postId)) {
+        rawDataMap.set(postId, raw);
+      }
+    });
+
     // Map likeCount, dislikeCount, commentCount, viewCount from raw data to entities
-    data.forEach((post, index) => {
-      const rawData = result.raw[index];
-      (post as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-      (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
-      (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
-      (post as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
+    data.forEach((post) => {
+      const rawData = rawDataMap.get(post.id);
+      if (rawData) {
+        (post as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
+        (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+        (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
+        (post as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
+      }
     });
 
     let nextCursor: string | null = null;
@@ -293,7 +304,7 @@ export class PostRepository implements IPostRepository {
       .addSelect('COUNT(DISTINCT likeReaction.id)', 'likeCount')
       .addSelect('COUNT(DISTINCT dislikeReaction.id)', 'dislikeCount')
       .addSelect(
-        `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id)`,
+        `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id AND deleted_at IS NULL)`,
         'commentCount',
       )
       .addSelect(`(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`, 'viewCount')
@@ -333,7 +344,7 @@ export class PostRepository implements IPostRepository {
         sortFieldForWhere = 'COUNT(DISTINCT dislikeReaction.id)';
       } else if (sortBy === 'commentCount') {
         // commentCount still uses subquery
-        sortFieldForWhere = `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id)`;
+        sortFieldForWhere = `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id AND deleted_at IS NULL)`;
       } else {
         sortFieldForWhere = `post.${sortBy}`;
       }
@@ -487,34 +498,44 @@ export class PostRepository implements IPostRepository {
     const hasMore = result.entities.length > realLimit;
     const data = result.entities.slice(0, realLimit);
 
+    // Create a map of post.id -> raw data to handle cases where GROUP BY creates multiple rows per post
+    const rawDataMap = new Map<string, any>();
+    result.raw.forEach((raw) => {
+      const postId = raw.post_id || raw.postId || raw.post_id;
+      if (postId && !rawDataMap.has(postId)) {
+        rawDataMap.set(postId, raw);
+      }
+    });
+
     // Map likeCount, dislikeCount, commentCount, viewCount, and reacted from raw data to entities
-    data.forEach((post, index) => {
-      const rawData = result.raw[index];
-      (post as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-      (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
-      (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
-      (post as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
-      // Map user reaction if userId is provided
-      if (filters?.userId) {
-        // PostgreSQL may return column names in lowercase when using raw queries
-        const userReactionType = (rawData?.userReactionType ||
-          rawData?.userreactiontype ||
-          rawData?.['userReactionType'] ||
-          rawData?.['userreactiontype']) as string | null;
-        (post as any).reacted = userReactionType || null;
+    data.forEach((post) => {
+      const rawData = rawDataMap.get(post.id);
+      if (rawData) {
+        (post as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
+        (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+        (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
+        (post as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
+        // Map user reaction if userId is provided
+        if (filters?.userId) {
+          // PostgreSQL may return column names in lowercase when using raw queries
+          const userReactionType = (rawData?.userReactionType ||
+            rawData?.userreactiontype ||
+            rawData?.['userReactionType'] ||
+            rawData?.['userreactiontype']) as string | null;
+          (post as any).reacted = userReactionType || null;
+        }
       }
     });
 
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      // For computed fields, get value from raw data
+      // For computed fields, get value from raw data map
       let fieldValue: unknown;
       if (isComputedField) {
-        const rawIndex = result.entities.indexOf(lastItem);
-        const rawRow = result.raw[rawIndex];
-        if (rawRow && typeof rawRow === 'object') {
-          fieldValue = (rawRow as Record<string, unknown>)[sortBy];
+        const rawData = rawDataMap.get(lastItem.id);
+        if (rawData && typeof rawData === 'object') {
+          fieldValue = (rawData as Record<string, unknown>)[sortBy];
         }
       } else {
         fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
