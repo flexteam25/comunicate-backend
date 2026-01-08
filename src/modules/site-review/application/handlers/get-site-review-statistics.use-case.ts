@@ -24,17 +24,17 @@ export class GetSiteReviewStatisticsUseCase {
     averageSpeed: number;
     reviewCount: number;
   }> {
-    // Validate site exists
-    const site = await this.siteRepository.findById(command.siteId);
+    // Validate site exists (support both UUID and slug)
+    const site = await this.siteRepository.findByIdOrSlug(command.siteId);
     if (!site) {
       throw new NotFoundException('Site not found');
     }
 
-    // Get statistics
-    const statistics = await this.siteReviewRepository.getStatistics(command.siteId);
+    // Get statistics using actual site UUID
+    const statistics = await this.siteReviewRepository.getStatistics(site.id);
 
     return {
-      siteId: command.siteId,
+      siteId: site.id, // Return actual UUID, not the identifier passed in
       ...statistics,
     };
   }

@@ -235,7 +235,7 @@ export class SiteReviewController {
   @Get('statistics/:siteId')
   @HttpCode(HttpStatus.OK)
   async getSiteReviewStatistics(
-    @Param('siteId', new ParseUUIDPipe()) siteId: string,
+    @Param('siteId') siteId: string,
   ): Promise<ApiResponse<SiteReviewStatisticsResponseDto>> {
     const statistics = await this.getSiteReviewStatisticsUseCase.execute({
       siteId,
