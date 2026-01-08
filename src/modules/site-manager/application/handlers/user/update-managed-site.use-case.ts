@@ -5,7 +5,7 @@ import {
   BadRequestException,
   Inject,
 } from '@nestjs/common';
-import { Site } from '../../../../site/domain/entities/site.entity';
+import { Site, SiteStatus } from '../../../../site/domain/entities/site.entity';
 import { ISiteRepository } from '../../../../site/infrastructure/persistence/repositories/site.repository';
 import { ISiteManagerRepository } from '../../../infrastructure/persistence/repositories/site-manager.repository';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
@@ -18,6 +18,7 @@ export interface UpdateManagedSiteCommand {
   userId: string;
   siteId: string;
   name?: string;
+  slug?: string;
   categoryId?: string;
   tierId?: string;
   permanentUrl?: string;
@@ -63,6 +64,14 @@ export class UpdateManagedSiteUseCase {
     const existingSite = await this.siteRepository.findById(command.siteId);
     if (!existingSite) {
       throw new NotFoundException('Site not found');
+    }
+
+    // Partner can only update site if it's already VERIFIED
+    // (Partner cannot update UNVERIFIED sites - they need admin approval first)
+    if (existingSite.status !== SiteStatus.VERIFIED && existingSite.status !== SiteStatus.MONITORED) {
+      throw new ForbiddenException(
+        'Site must be verified before it can be updated by partner',
+      );
     }
 
     // Validate file sizes (20MB max)
@@ -175,9 +184,35 @@ export class UpdateManagedSiteUseCase {
             }
           }
 
+          // Check duplicate slug if slug is being updated (only if slug has value and is different)
+          if (
+            command.slug !== undefined &&
+            command.slug !== null &&
+            command.slug !== '' &&
+            command.slug !== existingSite.slug
+          ) {
+            const duplicateSlug = await siteRepo
+              .createQueryBuilder('s')
+              .where('s.slug = :slug', { slug: command.slug })
+              .andWhere('s.id != :siteId', { siteId: command.siteId })
+              .andWhere('s.deletedAt IS NULL')
+              .getOne();
+            if (duplicateSlug) {
+              throw new BadRequestException('Site with this slug already exists');
+            }
+          }
+
           // Build update data (only allowed fields - no status, manager cannot change status)
           const updateData: Partial<Site> = {};
           if (command.name !== undefined) updateData.name = command.name;
+          // Only update slug if it has a value (not null, not empty string)
+          if (
+            command.slug !== undefined &&
+            command.slug !== null &&
+            command.slug !== ''
+          ) {
+            updateData.slug = command.slug;
+          }
           if (command.categoryId !== undefined)
             updateData.categoryId = command.categoryId;
           if (logoUrl !== undefined) updateData.logoUrl = logoUrl;

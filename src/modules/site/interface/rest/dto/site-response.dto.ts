@@ -54,6 +54,7 @@ export class SiteManagerResponse {
 export class SiteResponse {
   id: string;
   name: string;
+  slug: string;
   category: SiteCategoryResponse;
   logoUrl?: string;
   mainImageUrl?: string;

@@ -87,6 +87,21 @@ export class SocketGateway
         this.server.to(SocketRoom.PUBLIC).emit(SocketEvent.SITE_CREATED, data);
       });
 
+      // Subscribe to site:verified (send to partner user and all admins)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SITE_VERIFIED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            // Send to specific partner user
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.SITE_VERIFIED, data);
+          }
+          // Always send to admin room
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SITE_VERIFIED, data);
+        },
+      );
+
       // Subscribe to point:updated (private event per user)
       await this.redisService.subscribeToChannel(
         RedisChannel.POINT_UPDATED,

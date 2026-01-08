@@ -61,6 +61,60 @@ export class SiteRepository implements ISiteRepository {
     return queryBuilder.getOne();
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async findByIdOrSlug(identifier: string, _relations?: string[]): Promise<Site | null> {
+    // Check if identifier is a UUID format (36 chars with dashes)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      identifier,
+    );
+
+    const queryBuilder = this.repository
+      .createQueryBuilder('site')
+      .andWhere('site.deletedAt IS NULL');
+
+    if (isUUID) {
+      queryBuilder.where('site.id = :identifier', { identifier });
+    } else {
+      queryBuilder.where('site.slug = :identifier', { identifier });
+    }
+
+    // Always load core relations (same as findAllWithCursor)
+    queryBuilder.leftJoinAndSelect('site.category', 'category');
+    queryBuilder.leftJoinAndSelect('site.tier', 'tier');
+    queryBuilder.leftJoinAndSelect('site.siteBadges', 'siteBadges');
+    queryBuilder.leftJoinAndSelect(
+      'siteBadges.badge',
+      'badge',
+      'badge.deletedAt IS NULL',
+    );
+    queryBuilder.leftJoinAndSelect('site.siteDomains', 'siteDomains');
+    queryBuilder.leftJoinAndSelect(
+      'site.siteManagers',
+      'siteManagers',
+      'siteManagers.isActive = :isActive',
+      { isActive: true },
+    );
+    queryBuilder.leftJoinAndSelect('siteManagers.user', 'managerUser');
+    queryBuilder.leftJoinAndSelect('managerUser.userBadges', 'managerUserBadges');
+    queryBuilder.leftJoinAndSelect(
+      'managerUserBadges.badge',
+      'userBadge',
+      'userBadge.deletedAt IS NULL',
+    );
+
+    queryBuilder.loadRelationCountAndMap(
+      'site.issueCount',
+      'site.scamReports',
+      'scamReport',
+      (qb) =>
+        qb
+          .where('scamReport.deletedAt IS NULL')
+          .andWhere("scamReport.status = 'published'"),
+    );
+
+    return queryBuilder.getOne();
+  }
+
   async findByIdIncludingDeleted(id: string): Promise<Site | null> {
     return this.repository.findOne({
       where: { id },

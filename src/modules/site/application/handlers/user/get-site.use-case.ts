@@ -29,7 +29,7 @@ export class GetSiteUseCase {
   ) {}
 
   async execute(command: GetSiteCommand): Promise<Site> {
-    const site = await this.siteRepository.findById(command.siteId, [
+    const site = await this.siteRepository.findByIdOrSlug(command.siteId, [
       'category',
       'tier',
       'siteBadges',
@@ -67,8 +67,9 @@ export class GetSiteUseCase {
       });
 
     if (command.userId) {
+      // Use site.id (actual UUID) for tracking, not the identifier
       this.userHistorySiteRepository
-        .addHistory(command.userId, command.siteId)
+        .addHistory(command.userId, site.id)
         .catch((error) => {
           // Log error but don't fail the request
           this.logger.error(
@@ -76,7 +77,7 @@ export class GetSiteUseCase {
             {
               error: error instanceof Error ? error.message : String(error),
               userId: command.userId,
-              siteId: command.siteId,
+              siteId: site.id,
             },
             'site',
           );

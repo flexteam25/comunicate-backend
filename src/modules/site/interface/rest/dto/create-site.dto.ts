@@ -6,13 +6,21 @@ import {
   IsNumber,
   Min,
   Max,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
 
 export class CreateSiteDto {
   @IsString()
   @MaxLength(255)
   name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  @IsSlug()
+  slug: string;
 
   @IsUUID()
   categoryId: string;

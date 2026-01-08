@@ -18,10 +18,17 @@ import {
 import { User } from '../../../../user/domain/entities/user.entity';
 import { UserRole } from '../../../../user/domain/entities/user-role.entity';
 import { Role } from '../../../../user/domain/entities/role.entity';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
+import { ConfigService } from '@nestjs/config';
+import { buildFullUrl } from '../../../../../shared/utils/url.util';
+import { ISiteManagerRepository } from '../../../../site-manager/infrastructure/persistence/repositories/site-manager.repository';
 
 export interface UpdateSiteCommand {
   siteId: string;
   name?: string;
+  slug?: string;
   categoryId?: string;
   logo?: MulterFile;
   mainImage?: MulterFile;
@@ -42,6 +49,8 @@ export interface UpdateSiteCommand {
 
 @Injectable()
 export class UpdateSiteUseCase {
+  private readonly apiServiceUrl: string;
+
   constructor(
     @Inject('ISiteRepository')
     private readonly siteRepository: ISiteRepository,
@@ -49,9 +58,16 @@ export class UpdateSiteUseCase {
     private readonly siteCategoryRepository: ISiteCategoryRepository,
     @Inject('ITierRepository')
     private readonly tierRepository: ITierRepository,
+    @Inject('ISiteManagerRepository')
+    private readonly siteManagerRepository: ISiteManagerRepository,
     private readonly transactionService: TransactionService,
     private readonly uploadService: UploadService,
-  ) {}
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
+    private readonly configService: ConfigService,
+  ) {
+    this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
 
   async execute(command: UpdateSiteCommand): Promise<Site> {
     // Get existing site first to check for old files and validate
@@ -170,9 +186,35 @@ export class UpdateSiteUseCase {
             }
           }
 
+          // Check duplicate slug if slug is being updated (only if slug has value and is different)
+          if (
+            command.slug !== undefined &&
+            command.slug !== null &&
+            command.slug !== '' &&
+            command.slug !== existingSite.slug
+          ) {
+            const duplicateSlug = await siteRepo
+              .createQueryBuilder('s')
+              .where('s.slug = :slug', { slug: command.slug })
+              .andWhere('s.id != :siteId', { siteId: command.siteId })
+              .andWhere('s.deletedAt IS NULL')
+              .getOne();
+            if (duplicateSlug) {
+              throw new BadRequestException('Site with this slug already exists');
+            }
+          }
+
           // Build update data
           const updateData: Partial<Site> = {};
           if (command.name !== undefined) updateData.name = command.name;
+          // Only update slug if it has a value (not null, not empty string)
+          if (
+            command.slug !== undefined &&
+            command.slug !== null &&
+            command.slug !== ''
+          ) {
+            updateData.slug = command.slug;
+          }
           if (command.categoryId !== undefined)
             updateData.categoryId = command.categoryId;
           if (logoUrl !== undefined) updateData.logoUrl = logoUrl;
@@ -337,10 +379,63 @@ export class UpdateSiteUseCase {
         'siteBadges',
         'siteBadges.badge',
         'siteDomains',
+        'siteManagers',
+        'siteManagers.user',
       ]);
 
       if (!siteWithRelations) {
         throw new NotFoundException('Site not found after update');
+      }
+
+      // Check if status changed to VERIFIED and publish event
+      const statusChangedToVerified =
+        existingSite.status !== SiteStatus.VERIFIED &&
+        siteWithRelations.status === SiteStatus.VERIFIED;
+
+      if (statusChangedToVerified) {
+        // Map site to response format for event
+        const eventData = this.mapSiteToResponse(siteWithRelations);
+
+        // Get all managers (partners) of this site
+        const managers = await this.siteManagerRepository.findBySiteId(siteId);
+        const partnerUserIds = managers.filter((m) => m.isActive).map((m) => m.userId);
+
+        // Publish event after transaction (fire and forget)
+        setImmediate(() => {
+          // Send to all partner managers
+          partnerUserIds.forEach((userId) => {
+            this.redisService
+              .publishEvent(RedisChannel.SITE_VERIFIED, {
+                ...eventData,
+                userId, // Include userId so socket gateway can route to user.{userId}
+              })
+              .catch((error) => {
+                this.logger.error(
+                  'Failed to publish site:verified event to partner',
+                  {
+                    error: error instanceof Error ? error.message : String(error),
+                    siteId,
+                    userId,
+                  },
+                  'site',
+                );
+              });
+          });
+
+          // Send to all admins (without userId)
+          this.redisService
+            .publishEvent(RedisChannel.SITE_VERIFIED, eventData)
+            .catch((error) => {
+              this.logger.error(
+                'Failed to publish site:verified event to admins',
+                {
+                  error: error instanceof Error ? error.message : String(error),
+                  siteId,
+                },
+                'site',
+              );
+            });
+        });
       }
 
       // Delete old files after successful update (best effort, asynchronously)
@@ -384,5 +479,66 @@ export class UpdateSiteUseCase {
       await Promise.allSettled(cleanupPromises);
       throw transactionError;
     }
+  }
+
+  private mapSiteToResponse(site: Site): any {
+    return {
+      id: site.id,
+      name: site.name,
+      slug: site.slug,
+      category: site.category
+        ? {
+            id: site.category.id,
+            name: site.category.name,
+            description: site.category.description || null,
+          }
+        : {
+            id: '',
+            name: '',
+          },
+      logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || null,
+      mainImageUrl: buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || null,
+      siteImageUrl: buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || null,
+      tier: site.tier
+        ? {
+            id: site.tier.id,
+            name: site.tier.name,
+            description: site.tier.description || null,
+            order: site.tier.order,
+            color: site.tier.color || null,
+          }
+        : null,
+      permanentUrl: site.permanentUrl || null,
+      status: site.status,
+      description: site.description || null,
+      reviewCount: site.reviewCount,
+      averageRating: Number(site.averageRating),
+      firstCharge: site.firstCharge ? Number(site.firstCharge) : null,
+      recharge: site.recharge ? Number(site.recharge) : null,
+      experience: site.experience,
+      issueCount: site.issueCount || 0,
+      badges: (site.siteBadges || [])
+        .map((sb) => {
+          // Filter out if badge is null or deleted
+          if (!sb.badge || sb.badge.deletedAt) {
+            return null;
+          }
+          return {
+            id: sb.badge.id,
+            name: sb.badge.name,
+            description: sb.badge.description || null,
+            iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
+          };
+        })
+        .filter((badge): badge is NonNullable<typeof badge> => badge !== null),
+      domains: (site.siteDomains || []).map((sd) => ({
+        id: sd.id,
+        domain: sd.domain,
+        isActive: sd.isActive,
+        isCurrent: sd.isCurrent,
+      })),
+      createdAt: site.createdAt,
+      updatedAt: site.updatedAt,
+    };
   }
 }

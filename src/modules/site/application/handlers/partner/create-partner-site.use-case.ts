@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
   Inject,
 } from '@nestjs/common';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
@@ -26,7 +27,8 @@ import { LoggerService } from '../../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 
-export interface CreateSiteCommand {
+export interface CreatePartnerSiteCommand {
+  userId: string;
   name: string;
   slug: string;
   categoryId: string;
@@ -39,10 +41,10 @@ export interface CreateSiteCommand {
   firstCharge?: number;
   recharge?: number;
   experience?: number;
-  partnerUid?: string;
 }
+
 @Injectable()
-export class CreateSiteUseCase {
+export class CreatePartnerSiteUseCase {
   private readonly apiServiceUrl: string;
 
   constructor(
@@ -63,7 +65,7 @@ export class CreateSiteUseCase {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
 
-  async execute(command: CreateSiteCommand): Promise<Site> {
+  async execute(command: CreatePartnerSiteCommand): Promise<Site> {
     // Validate category exists
     const category = await this.siteCategoryRepository.findById(command.categoryId);
     if (!category) {
@@ -76,11 +78,6 @@ export class CreateSiteUseCase {
       if (!tier) {
         throw new BadRequestException('Tier not found');
       }
-    }
-
-    // Validate partner user if provided
-    if (command.partnerUid) {
-      // Validation will be done in transaction
     }
 
     // Validate file sizes (20MB max)
@@ -158,6 +155,34 @@ export class CreateSiteUseCase {
           const userRoleRepo = manager.getRepository(UserRole);
           const siteManagerRepo = manager.getRepository(SiteManager);
 
+          // Validate user exists and has partner role
+          const partnerUser = await userRepo.findOne({
+            where: { id: command.userId, deletedAt: null },
+            relations: ['userRoles', 'userRoles.role'],
+          });
+
+          if (!partnerUser) {
+            throw new NotFoundException('User not found');
+          }
+
+          // Find partner role
+          const partnerRole = await roleRepo.findOne({
+            where: { name: 'partner', deletedAt: null },
+          });
+
+          if (!partnerRole) {
+            throw new NotFoundException('Partner role not found');
+          }
+
+          // Check if user has partner role
+          const hasPartnerRole = partnerUser.userRoles?.some(
+            (ur) => ur.role?.name === 'partner',
+          );
+
+          if (!hasPartnerRole) {
+            throw new ForbiddenException('User does not have partner role');
+          }
+
           // Check duplicate name (case-insensitive), excluding soft-deleted
           const duplicate = await siteRepo
             .createQueryBuilder('s')
@@ -178,38 +203,6 @@ export class CreateSiteUseCase {
             throw new BadRequestException('Site with this slug already exists');
           }
 
-          // Validate partner user if provided
-          if (command.partnerUid) {
-            const partnerUser = await userRepo.findOne({
-              where: { id: command.partnerUid, deletedAt: null },
-            });
-
-            if (!partnerUser) {
-              throw new NotFoundException('Partner user not found');
-            }
-
-            // Find partner role
-            const partnerRole = await roleRepo.findOne({
-              where: { name: 'partner', deletedAt: null },
-            });
-
-            if (!partnerRole) {
-              throw new NotFoundException('Partner role not found');
-            }
-
-            // Check if user has partner role
-            const userRole = await userRoleRepo.findOne({
-              where: {
-                userId: command.partnerUid,
-                roleId: partnerRole.id,
-              },
-            });
-
-            if (!userRole) {
-              throw new BadRequestException('User does not have partner role');
-            }
-          }
-
           const site = siteRepo.create({
             id: siteId,
             name: command.name,
@@ -224,23 +217,21 @@ export class CreateSiteUseCase {
             firstCharge: command.firstCharge,
             recharge: command.recharge,
             experience: command.experience || 0,
-            status: SiteStatus.UNVERIFIED,
+            status: SiteStatus.UNVERIFIED, // Partner sites start as UNVERIFIED
             reviewCount: 0,
             averageRating: 0,
           });
 
           const savedSite = await siteRepo.save(site);
 
-          // Create site_manager record if partnerUid is provided
-          if (command.partnerUid) {
-            const siteManager = siteManagerRepo.create({
-              siteId: savedSite.id,
-              userId: command.partnerUid,
-              role: SiteManagerRole.MANAGER,
-              isActive: true,
-            });
-            await siteManagerRepo.save(siteManager);
-          }
+          // Create site_manager record - partner automatically becomes manager
+          const siteManager = siteManagerRepo.create({
+            siteId: savedSite.id,
+            userId: command.userId,
+            role: SiteManagerRole.MANAGER,
+            isActive: true,
+          });
+          await siteManagerRepo.save(siteManager);
 
           return savedSite;
         },
@@ -343,7 +334,6 @@ export class CreateSiteUseCase {
             name: sb.badge.name,
             description: sb.badge.description || null,
             iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
-            color: sb.badge.color || null,
           };
         })
         .filter((badge): badge is NonNullable<typeof badge> => badge !== null),

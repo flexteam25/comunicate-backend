@@ -17,6 +17,9 @@ export class Site extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
+  @Column({ type: 'varchar', length: 50, unique: true })
+  slug: string;
+
   @Column({ name: 'category_id', type: 'uuid' })
   categoryId: string;
 

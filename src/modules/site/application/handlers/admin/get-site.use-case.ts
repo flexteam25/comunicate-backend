@@ -14,7 +14,7 @@ export class GetSiteUseCase {
   ) {}
 
   async execute(command: GetSiteCommand): Promise<Site> {
-    const site = await this.siteRepository.findById(command.siteId, [
+    const site = await this.siteRepository.findByIdOrSlug(command.siteId, [
       'category',
       'tier',
       'siteBadges',

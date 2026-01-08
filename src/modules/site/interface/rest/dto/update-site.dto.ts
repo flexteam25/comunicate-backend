@@ -11,12 +11,19 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SiteStatus } from '../../../domain/entities/site.entity';
+import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
 
 export class UpdateSiteDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  @IsSlug()
+  slug?: string;
 
   @IsOptional()
   @IsUUID()

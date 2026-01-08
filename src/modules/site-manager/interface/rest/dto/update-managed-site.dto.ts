@@ -9,12 +9,19 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
 
 export class UpdateManagedSiteDto {
   @IsOptional()
   @IsString()
   @MaxLength(255, { message: 'Name must not exceed 255 characters' })
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  @IsSlug()
+  slug?: string;
 
   @IsOptional()
   @IsUUID()

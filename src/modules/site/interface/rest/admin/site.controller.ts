@@ -69,6 +69,7 @@ export class AdminSiteController {
     return {
       id: site.id,
       name: site.name,
+      slug: site.slug,
       category: site.category
         ? {
             id: site.category.id,
@@ -169,6 +170,7 @@ export class AdminSiteController {
   ): Promise<ApiResponse<SiteResponse>> {
     const site = await this.createSiteUseCase.execute({
       name: dto.name,
+      slug: dto.slug,
       categoryId: dto.categoryId,
       tierId: dto.tierId,
       permanentUrl: dto.permanentUrl,
@@ -220,7 +222,7 @@ export class AdminSiteController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.view')
   async getSite(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
   ): Promise<ApiResponse<SiteResponse>> {
     const site = await this.getSiteUseCase.execute({ siteId: id });
     return ApiResponseUtil.success(this.mapSiteToResponse(site));
@@ -249,6 +251,7 @@ export class AdminSiteController {
     const site = await this.updateSiteUseCase.execute({
       siteId: id,
       name: dto.name,
+      slug: dto.slug,
       categoryId: dto.categoryId,
       tierId: dto.tierId,
       permanentUrl: dto.permanentUrl,

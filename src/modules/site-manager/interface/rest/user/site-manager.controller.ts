@@ -71,6 +71,7 @@ export class SiteManagerController {
     return {
       id: site.id,
       name: site.name,
+      slug: site.slug,
       category: site.category
         ? {
             id: site.category.id,
@@ -189,6 +190,7 @@ export class SiteManagerController {
       userId: user.userId,
       siteId,
       name: dto.name,
+      slug: dto.slug,
       categoryId: dto.categoryId,
       tierId: dto.tierId,
       permanentUrl: dto.permanentUrl,

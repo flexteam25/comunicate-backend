@@ -12,6 +12,7 @@ export interface SiteFilters {
 
 export interface ISiteRepository {
   findById(id: string, relations?: string[]): Promise<Site | null>;
+  findByIdOrSlug(identifier: string, relations?: string[]): Promise<Site | null>;
   findByIdIncludingDeleted(id: string): Promise<Site | null>;
   findAllWithCursor(
     filters?: SiteFilters,

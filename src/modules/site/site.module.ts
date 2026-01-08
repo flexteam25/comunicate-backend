@@ -21,6 +21,7 @@ import { RestoreSiteUseCase } from './application/handlers/admin/restore-site.us
 import { AddSiteDomainUseCase } from './application/handlers/admin/add-site-domain.use-case';
 import { UpdateSiteDomainUseCase } from './application/handlers/admin/update-site-domain.use-case';
 import { DeleteSiteDomainUseCase } from './application/handlers/admin/delete-site-domain.use-case';
+import { CreatePartnerSiteUseCase } from './application/handlers/partner/create-partner-site.use-case';
 import { Module } from '@nestjs/common';
 import { TierModule } from '../tier/tier.module';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
@@ -32,6 +33,10 @@ import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { OptionalJwtAuthGuard } from '../../shared/guards/optional-jwt-auth.guard';
 import { ScamReportModule } from '../scam-report/scam-report.module';
 import { SiteManagerPersistenceModule } from '../site-manager/site-manager-persistence.module';
+import { PartnerSiteController } from './interface/rest/partner/partner-site.controller';
+import { RedisModule } from '../../shared/redis/redis.module';
+import { LoggerModule } from '../../shared/logger/logger.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -45,6 +50,9 @@ import { SiteManagerPersistenceModule } from '../site-manager/site-manager-persi
     AuthPersistenceModule,
     UploadModule.register({ storageType: 'local' }),
     ScamReportModule,
+    RedisModule,
+    LoggerModule,
+    ConfigModule,
   ],
   providers: [
     CreateSiteUseCase,
@@ -66,9 +74,15 @@ import { SiteManagerPersistenceModule } from '../site-manager/site-manager-persi
     UserListCategoriesUseCase,
     RestoreCategoryUseCase,
     RestoreSiteUseCase,
+    CreatePartnerSiteUseCase,
     OptionalJwtAuthGuard,
   ],
-  controllers: [AdminSiteController, AdminCategoryController, UserSiteController],
+  controllers: [
+    AdminSiteController,
+    AdminCategoryController,
+    UserSiteController,
+    PartnerSiteController,
+  ],
   exports: [SitePersistenceModule],
 })
 export class SiteModule {}

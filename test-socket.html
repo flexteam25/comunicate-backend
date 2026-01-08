@@ -234,6 +234,7 @@
                     <li><strong>exchange:rejected</strong> - Point exchange rejected</li>
                     <li><strong>redemption:approved</strong> - Gifticon redemption approved</li>
                     <li><strong>redemption:rejected</strong> - Gifticon redemption rejected</li>
+                    <li><strong>site:verified</strong> - Site verified by admin (for partners)</li>
                 </ul>
             </div>
             <input type="text" id="token-user" placeholder="User JWT Access Token">
@@ -266,6 +267,7 @@
                     <li><strong>exchange:rejected</strong> - Point exchange rejected</li>
                     <li><strong>redemption:approved</strong> - Gifticon redemption approved</li>
                     <li><strong>redemption:rejected</strong> - Gifticon redemption rejected</li>
+                    <li><strong>site:verified</strong> - Site verified by admin</li>
                 </ul>
             </div>
             <input type="text" id="token-admin" placeholder="Admin JWT Access Token">
@@ -512,6 +514,13 @@
                 const reason = data.cancellationReason || 'No reason provided';
                 log('log-user', `❌ Redemption Rejected - Gifticon: "${gifticonTitle}", Points: ${pointsUsed}, Reason: ${reason}`, 'event', data);
             });
+
+            socketUser.on('site:verified', (data) => {
+                const siteName = data.name || 'Unknown';
+                const siteSlug = data.slug || 'Unknown';
+                const siteId = data.id || 'Unknown';
+                log('log-user', `✅ Site Verified - Name: "${siteName}", Slug: ${siteSlug}, ID: ${siteId}`, 'event', data);
+            });
         }
 
         function disconnectUser() {
@@ -694,6 +703,14 @@
                 const pointsUsed = data.pointsUsed || 0;
                 const userEmail = data.user?.email || 'Unknown';
                 log('log-admin', `🚫 Redemption Cancelled - Gifticon: "${gifticonTitle}", Points: ${pointsUsed}, User: ${userEmail}`, 'event', data);
+            });
+
+            socketAdmin.on('site:verified', (data) => {
+                const siteName = data.name || 'Unknown';
+                const siteSlug = data.slug || 'Unknown';
+                const siteId = data.id || 'Unknown';
+                const managers = data.managers || [];
+                log('log-admin', `✅ Site Verified - Name: "${siteName}", Slug: ${siteSlug}, ID: ${siteId}, Managers: ${managers.length}`, 'event', data);
             });
         }
 

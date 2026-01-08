@@ -101,6 +101,7 @@ export class UserSiteController {
       })),
       createdAt: site.createdAt,
       updatedAt: site.updatedAt,
+      slug: site.slug,
     };
   }
 
@@ -169,26 +170,6 @@ export class UserSiteController {
   async listCategories(): Promise<ApiResponse<SiteCategory[]>> {
     const categories = await this.listCategoriesUseCase.execute();
     return ApiResponseUtil.success(categories);
-  }
-
-  @Get(':id')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(OptionalJwtAuthGuard)
-  async getSite(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: Request,
-    @CurrentUser() user?: CurrentUserPayload,
-  ): Promise<ApiResponse<SiteResponse>> {
-    const ipAddress = getClientIp(req);
-    const userId = user?.userId;
-
-    const site = await this.getSiteUseCase.execute({
-      siteId: id,
-      userId,
-      ipAddress,
-    });
-
-    return ApiResponseUtil.success(this.mapSiteToResponse(site));
   }
 
   @Get(':id/scam-reports')
@@ -262,5 +243,25 @@ export class UserSiteController {
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
     });
+  }
+
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OptionalJwtAuthGuard)
+  async getSite(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @CurrentUser() user?: CurrentUserPayload,
+  ): Promise<ApiResponse<SiteResponse>> {
+    const ipAddress = getClientIp(req);
+    const userId = user?.userId;
+
+    const site = await this.getSiteUseCase.execute({
+      siteId: id,
+      userId,
+      ipAddress,
+    });
+
+    return ApiResponseUtil.success(this.mapSiteToResponse(site));
   }
 }
