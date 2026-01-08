@@ -76,7 +76,7 @@ export class UpdatePostUseCase {
 
     // Update post within transaction
     try {
-      return await this.transactionService.executeInTransaction(
+      await this.transactionService.executeInTransaction(
         async (manager: EntityManager) => {
           const postRepo = manager.getRepository(Post);
 
@@ -123,25 +123,15 @@ export class UpdatePostUseCase {
           if (command.isPinned !== undefined) updateData.isPinned = command.isPinned;
 
           await postRepo.update(command.postId, updateData);
-
-          const updated = await postRepo.findOne({
-            where: { id: command.postId },
-            relations: [
-              'user',
-              'user.userBadges',
-              'user.userBadges.badge',
-              'admin',
-              'category',
-            ],
-          });
-
-          if (!updated) {
-            throw new NotFoundException('Post not found after update');
-          }
-
-          return updated;
         },
       );
+
+      // Reload with aggregates after transaction commits
+      const reloaded = await this.postRepository.findByIdWithAggregates(command.postId);
+      if (!reloaded) {
+        throw new NotFoundException('Post not found after update');
+      }
+      return reloaded;
     } catch (error) {
       // Cleanup: Delete newly uploaded thumbnail if transaction fails
       if (thumbnailUrl && command.thumbnail) {

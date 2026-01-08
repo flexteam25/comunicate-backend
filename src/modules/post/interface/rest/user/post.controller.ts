@@ -104,6 +104,7 @@ export class PostController {
       likeCount: post.likeCount || 0,
       dislikeCount: post.dislikeCount || 0,
       commentCount: post.commentCount || 0,
+      viewCount: post.viewCount || 0,
       reacted: post.reacted || null, // 'like', 'dislike', or null
       isPinned: post.isPinned || false,
       publishedAt: post.publishedAt || null,

@@ -74,7 +74,7 @@ export class CreatePostUseCase {
 
     // Transaction: Create post in database
     try {
-      return await this.transactionService.executeInTransaction(
+      await this.transactionService.executeInTransaction(
         async (manager: EntityManager) => {
           const postRepo = manager.getRepository(Post);
 
@@ -90,26 +90,16 @@ export class CreatePostUseCase {
             publishedAt: command.isPublished ? new Date() : null,
           });
 
-          const savedPost = await postRepo.save(post);
-
-          const reloaded = await postRepo.findOne({
-            where: { id: savedPost.id },
-            relations: [
-              'user',
-              'user.userBadges',
-              'user.userBadges.badge',
-              'admin',
-              'category',
-            ],
-          });
-
-          if (!reloaded) {
-            throw new Error('Failed to reload post after creation');
-          }
-
-          return reloaded;
+          await postRepo.save(post);
         },
       );
+
+      // Reload with aggregates after transaction commits
+      const reloaded = await this.postRepository.findByIdWithAggregates(postId);
+      if (!reloaded) {
+        throw new Error('Failed to reload post after creation');
+      }
+      return reloaded;
     } catch (error) {
       // Cleanup: Delete uploaded thumbnail if database transaction fails
       if (thumbnailUrl) {

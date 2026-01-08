@@ -92,6 +92,7 @@ export class AdminPostController {
         ? buildFullUrl(this.apiServiceUrl, post.thumbnailUrl)
         : null,
       likeCount: post.likeCount || 0,
+      viewCount: post.viewCount || 0,
       isPinned: post.isPinned || false,
       isPublished: post.isPublished || false,
       publishedAt: post.publishedAt || null,
