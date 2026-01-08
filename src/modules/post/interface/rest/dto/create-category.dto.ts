@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength, IsBoolean } from 'class-validator';
 
 export class CreateCategoryDto {
   @IsString({ message: 'Name must be a string' })
@@ -9,4 +9,8 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'showMain must be a boolean' })
+  showMain?: boolean;
 }

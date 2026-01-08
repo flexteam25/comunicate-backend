@@ -45,20 +45,15 @@ export class DeleteCommentUseCase {
     const parentCommentId = comment.parentCommentId;
 
     // Delete parent and all children recursively within a transaction
-    await this.transactionService.executeInTransaction(
-      async (manager: EntityManager) => {
-        const commentRepo = manager.getRepository(PostComment);
+    await this.transactionService.executeInTransaction(async (manager: EntityManager) => {
+      const commentRepo = manager.getRepository(PostComment);
 
-        // Soft delete all children recursively first
-        await this.commentRepository.deleteAllChildrenRecursive(
-          command.commentId,
-          manager,
-        );
+      // Soft delete all children recursively first
+      await this.commentRepository.deleteAllChildrenRecursive(command.commentId, manager);
 
-        // Soft delete parent comment
-        await commentRepo.softDelete(command.commentId);
-      },
-    );
+      // Soft delete parent comment
+      await commentRepo.softDelete(command.commentId);
+    });
 
     // Update has_child for parent comment asynchronously
     if (parentCommentId) {

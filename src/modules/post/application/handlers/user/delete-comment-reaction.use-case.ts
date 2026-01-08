@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { IPostCommentRepository } from '../../../infrastructure/persistence/repositories/post-comment.repository';
 import { IPostCommentReactionRepository } from '../../../infrastructure/persistence/repositories/post-comment-reaction.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
@@ -30,19 +26,17 @@ export class DeleteCommentReactionUseCase {
       throw new NotFoundException('Comment not found');
     }
 
-    await this.transactionService.executeInTransaction(
-      async (manager: EntityManager) => {
-        const existing = await this.reactionRepository.findByCommentIdAndUserId(
-          command.commentId,
-          command.userId,
-        );
+    await this.transactionService.executeInTransaction(async (manager: EntityManager) => {
+      const existing = await this.reactionRepository.findByCommentIdAndUserId(
+        command.commentId,
+        command.userId,
+      );
 
-        if (!existing) {
-          throw new NotFoundException('Reaction not found');
-        }
+      if (!existing) {
+        throw new NotFoundException('Reaction not found');
+      }
 
-        await manager.getRepository(PostCommentReaction).delete(existing.id);
-      },
-    );
+      await manager.getRepository(PostCommentReaction).delete(existing.id);
+    });
   }
 }

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsBoolean } from 'class-validator';
 
 export class UpdateCategoryDto {
   @IsOptional()
@@ -9,4 +9,8 @@ export class UpdateCategoryDto {
   @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'showMain must be a boolean' })
+  showMain?: boolean;
 }

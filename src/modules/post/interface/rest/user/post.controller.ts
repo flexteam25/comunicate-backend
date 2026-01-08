@@ -185,6 +185,7 @@ export class PostController {
         id: cat.id,
         name: cat.name,
         description: cat.description || null,
+        showMain: cat.showMain ?? false,
       })),
     );
   }

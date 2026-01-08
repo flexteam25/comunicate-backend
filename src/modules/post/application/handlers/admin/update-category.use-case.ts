@@ -11,6 +11,7 @@ export interface UpdateCategoryCommand {
   categoryId: string;
   name?: string;
   description?: string;
+  showMain?: boolean;
 }
 
 @Injectable()
@@ -38,6 +39,7 @@ export class UpdateCategoryUseCase {
     if (command.name !== undefined) updateData.name = command.name;
     if (command.description !== undefined)
       updateData.description = command.description || null;
+    if (command.showMain !== undefined) updateData.showMain = command.showMain;
 
     return this.categoryRepository.update(command.categoryId, updateData);
   }

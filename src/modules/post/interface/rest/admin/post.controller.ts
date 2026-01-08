@@ -105,6 +105,7 @@ export class AdminPostController {
       id: category.id,
       name: category.name,
       description: category.description || null,
+      showMain: category.showMain ?? false,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };

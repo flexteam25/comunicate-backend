@@ -11,6 +11,9 @@ export class PostCategory extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
+  @Column({ name: 'show_main', type: 'boolean', default: false })
+  showMain: boolean;
+
   @OneToMany(() => Post, (post) => post.category)
   posts: Post[];
 }
