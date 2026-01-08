@@ -70,6 +70,7 @@ import { PostCategory } from './modules/post/domain/entities/post-category.entit
 import { PostComment } from './modules/post/domain/entities/post-comment.entity';
 import { PostCommentImage } from './modules/post/domain/entities/post-comment-image.entity';
 import { PostReaction } from './modules/post/domain/entities/post-reaction.entity';
+import { PostCommentReaction } from './modules/post/domain/entities/post-comment-reaction.entity';
 import { PostView } from './modules/post/domain/entities/post-view.entity';
 import { PointTransaction } from './modules/point/domain/entities/point-transaction.entity';
 import { PointExchange } from './modules/point/domain/entities/point-exchange.entity';
@@ -143,6 +144,7 @@ import { SiteEventView } from './modules/site-event/domain/entities/site-event-v
         PostComment,
         PostCommentImage,
         PostReaction,
+        PostCommentReaction,
         PostView,
         PointTransaction,
         PointExchange,

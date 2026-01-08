@@ -8,6 +8,7 @@ export interface IPostCommentRepository {
     parentCommentId?: string | null,
     cursor?: string,
     limit?: number,
+    userId?: string,
   ): Promise<CursorPaginationResult<PostComment>>;
   create(comment: Partial<PostComment>): Promise<PostComment>;
   update(id: string, data: Partial<PostComment>): Promise<PostComment>;

@@ -27,6 +27,7 @@ export class PostCommentRepository implements IPostCommentRepository {
     parentCommentId?: string | null,
     cursor?: string,
     limit = 20,
+    userId?: string,
   ): Promise<CursorPaginationResult<PostComment>> {
     const realLimit = limit > 50 ? 50 : limit;
 
@@ -36,6 +37,24 @@ export class PostCommentRepository implements IPostCommentRepository {
       .leftJoinAndSelect('user.userBadges', 'userBadges')
       .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
       .leftJoinAndSelect('comment.images', 'image')
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(reaction.id)', 'likeCount')
+            .from('post_comment_reactions', 'reaction')
+            .where('reaction.comment_id = comment.id')
+            .andWhere("reaction.reaction_type = 'like'"),
+        'likeCount',
+      )
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(reaction.id)', 'dislikeCount')
+            .from('post_comment_reactions', 'reaction')
+            .where('reaction.comment_id = comment.id')
+            .andWhere("reaction.reaction_type = 'dislike'"),
+        'dislikeCount',
+      )
       .where('comment.postId = :postId', { postId })
       .andWhere('comment.deletedAt IS NULL');
 
@@ -51,6 +70,18 @@ export class PostCommentRepository implements IPostCommentRepository {
         .andWhere('parent.deleted_at IS NULL');
     }
 
+    // Join user's reaction if userId is provided
+    if (userId) {
+      queryBuilder
+        .leftJoin(
+          'post_comment_reactions',
+          'userReaction',
+          'userReaction.comment_id = comment.id AND userReaction.user_id = :userId',
+          { userId },
+        )
+        .addSelect('userReaction.reaction_type', 'userReactionType');
+    }
+
     if (cursor) {
       try {
         const { id } = CursorPaginationUtil.decodeCursor(cursor);
@@ -61,13 +92,28 @@ export class PostCommentRepository implements IPostCommentRepository {
     }
 
     queryBuilder
-      .orderBy('comment.createdAt', 'ASC')
-      .addOrderBy('comment.id', 'ASC')
+      .orderBy('comment.createdAt', 'DESC')
+      .addOrderBy('comment.id', 'DESC')
       .take(realLimit + 1);
 
-    const entities = await queryBuilder.getMany();
-    const hasMore = entities.length > realLimit;
-    const data = entities.slice(0, realLimit);
+    const result = await queryBuilder.getRawAndEntities();
+    const hasMore = result.entities.length > realLimit;
+    const data = result.entities.slice(0, realLimit);
+
+    // Map likeCount, dislikeCount, and reacted from raw data to entities
+    data.forEach((comment, index) => {
+      const rawData = result.raw[index];
+      (comment as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
+      (comment as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+      // Map user reaction if userId is provided
+      if (userId) {
+        const userReactionType = (rawData?.userReactionType ||
+          rawData?.userreactiontype ||
+          rawData?.['userReactionType'] ||
+          rawData?.['userreactiontype']) as string | null;
+        (comment as any).reacted = userReactionType || null;
+      }
+    });
 
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {

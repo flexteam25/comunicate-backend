@@ -45,4 +45,9 @@ export class PostComment extends BaseEntity {
 
   @OneToMany(() => PostCommentImage, (image) => image.comment, { cascade: true })
   images: PostCommentImage[];
+
+  // Computed properties
+  likeCount?: number;
+  dislikeCount?: number;
+  reacted?: string | null; // 'like', 'dislike', or null
 }

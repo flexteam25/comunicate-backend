@@ -30,9 +30,12 @@ import { AddCommentUseCase } from '../../../application/handlers/user/add-commen
 import { ListCommentsUseCase } from '../../../application/handlers/user/list-comments.use-case';
 import { DeleteReactionUseCase } from '../../../application/handlers/user/delete-reaction.use-case';
 import { DeleteCommentUseCase } from '../../../application/handlers/user/delete-comment.use-case';
+import { ReactToCommentUseCase } from '../../../application/handlers/user/react-to-comment.use-case';
+import { DeleteCommentReactionUseCase } from '../../../application/handlers/user/delete-comment-reaction.use-case';
 import { ListPostsQueryDto } from '../dto/list-posts-query.dto';
 import { ListCommentsQueryDto } from '../dto/list-comments-query.dto';
 import { ReactToPostDto } from '../dto/react-to-post.dto';
+import { ReactToCommentDto } from '../dto/react-to-comment.dto';
 import { AddCommentDto } from '../dto/add-comment.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { ConfigService } from '@nestjs/config';
@@ -64,6 +67,8 @@ export class PostController {
     private readonly listCommentsUseCase: ListCommentsUseCase,
     private readonly deleteReactionUseCase: DeleteReactionUseCase,
     private readonly deleteCommentUseCase: DeleteCommentUseCase,
+    private readonly reactToCommentUseCase: ReactToCommentUseCase,
+    private readonly deleteCommentReactionUseCase: DeleteCommentReactionUseCase,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -137,6 +142,9 @@ export class PostController {
       })(),
       parentCommentId: comment.parentCommentId || null,
       hasChild: comment.hasChild || false,
+      likeCount: comment.likeCount || 0,
+      dislikeCount: comment.dislikeCount || 0,
+      reacted: comment.reacted || null, // 'like', 'dislike', or null
       images: (comment.images || []).map((img: any) => ({
         id: img.id,
         imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl) || null,
@@ -259,12 +267,14 @@ export class PostController {
   async listComments(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Query() query: ListCommentsQueryDto,
+    @CurrentUser() user?: CurrentUserPayload,
   ): Promise<ApiResponse<any>> {
     const result = await this.listCommentsUseCase.execute({
       postId: id,
       parentCommentId: query.parentCommentId,
       cursor: query.cursor,
       limit: query.limit,
+      userId: user?.userId,
     });
 
     return ApiResponseUtil.success({
@@ -283,6 +293,45 @@ export class PostController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteReactionUseCase.execute({
       postId: id,
+      userId: user.userId,
+    });
+    return ApiResponseUtil.success({ message: 'Reaction deleted successfully' });
+  }
+
+  @Post(':postId/comments/:commentId/reactions')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async reactToComment(
+    @Param('postId', new ParseUUIDPipe()) postId: string,
+    @Param('commentId', new ParseUUIDPipe()) commentId: string,
+    @Body() dto: ReactToCommentDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<ApiResponse<any>> {
+    const reaction = await this.reactToCommentUseCase.execute({
+      commentId,
+      userId: user.userId,
+      reactionType: dto.reactionType,
+    });
+
+    return ApiResponseUtil.success(
+      {
+        id: reaction.id,
+        reactionType: reaction.reactionType,
+      },
+      'Reaction added successfully',
+    );
+  }
+
+  @Delete(':postId/comments/:commentId/reactions')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async deleteCommentReaction(
+    @Param('postId', new ParseUUIDPipe()) postId: string,
+    @Param('commentId', new ParseUUIDPipe()) commentId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.deleteCommentReactionUseCase.execute({
+      commentId,
       userId: user.userId,
     });
     return ApiResponseUtil.success({ message: 'Reaction deleted successfully' });

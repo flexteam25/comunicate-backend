@@ -8,6 +8,7 @@ export interface ListCommentsCommand {
   parentCommentId?: string | null;
   cursor?: string;
   limit?: number;
+  userId?: string;
 }
 
 @Injectable()
@@ -25,6 +26,7 @@ export class ListCommentsUseCase {
       command.parentCommentId,
       command.cursor,
       command.limit,
+      command.userId,
     );
   }
 }

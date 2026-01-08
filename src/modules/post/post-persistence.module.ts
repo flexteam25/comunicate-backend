@@ -5,11 +5,13 @@ import { PostCategory } from './domain/entities/post-category.entity';
 import { PostComment } from './domain/entities/post-comment.entity';
 import { PostCommentImage } from './domain/entities/post-comment-image.entity';
 import { PostReaction } from './domain/entities/post-reaction.entity';
+import { PostCommentReaction } from './domain/entities/post-comment-reaction.entity';
 import { PostView } from './domain/entities/post-view.entity';
 import { PostRepository } from './infrastructure/persistence/typeorm/post.repository';
 import { PostCategoryRepository } from './infrastructure/persistence/typeorm/post-category.repository';
 import { PostCommentRepository } from './infrastructure/persistence/typeorm/post-comment.repository';
 import { PostReactionRepository } from './infrastructure/persistence/typeorm/post-reaction.repository';
+import { PostCommentReactionRepository } from './infrastructure/persistence/typeorm/post-comment-reaction.repository';
 import { PostViewRepository } from './infrastructure/persistence/typeorm/post-view.repository';
 
 @Module({
@@ -20,6 +22,7 @@ import { PostViewRepository } from './infrastructure/persistence/typeorm/post-vi
       PostComment,
       PostCommentImage,
       PostReaction,
+      PostCommentReaction,
       PostView,
     ]),
   ],
@@ -29,6 +32,7 @@ import { PostViewRepository } from './infrastructure/persistence/typeorm/post-vi
     'IPostCategoryRepository',
     'IPostCommentRepository',
     'IPostReactionRepository',
+    'IPostCommentReactionRepository',
     'IPostViewRepository',
     PostRepository,
     PostCategoryRepository,
@@ -54,6 +58,10 @@ import { PostViewRepository } from './infrastructure/persistence/typeorm/post-vi
       useClass: PostReactionRepository,
     },
     {
+      provide: 'IPostCommentReactionRepository',
+      useClass: PostCommentReactionRepository,
+    },
+    {
       provide: 'IPostViewRepository',
       useClass: PostViewRepository,
     },
@@ -61,6 +69,7 @@ import { PostViewRepository } from './infrastructure/persistence/typeorm/post-vi
     PostCategoryRepository,
     PostCommentRepository,
     PostReactionRepository,
+    PostCommentReactionRepository,
     PostViewRepository,
   ],
 })
