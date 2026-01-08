@@ -1941,3 +1941,321 @@ PUT /admin/users/:userId
 - ✅ No `forwardRef()` needed
 
 ---
+
+### 40. Site Slug Implementation
+
+**Changes:**
+
+**1. Database Schema:**
+- ✅ Added `slug` column (varchar 50, unique, NOT NULL) to `sites` table
+- ✅ Migration: `1767800000000-add-slug-to-sites.ts`
+  - Generates unique slugs from existing site names for old records
+  - Creates unique index `UQ_sites_slug` on `slug` column
+  - Handles both active and deleted sites (deleted sites get `deleted-` prefix)
+
+**2. Entity & DTOs:**
+- ✅ Added `slug: string` field to `Site` entity
+- ✅ Added `slug` to `CreateSiteDto` (required, max 50 chars, lowercase alphanumeric + hyphens only)
+- ✅ Added `slug` to `UpdateSiteDto` (optional, only updates if value provided)
+- ✅ Added `slug` to `UpdateManagedSiteDto` (optional, only updates if value provided)
+- ✅ Created custom validator `@IsSlug()` for slug format validation
+
+**3. Slug Format:**
+- ✅ Only lowercase letters, numbers, and hyphens allowed
+- ✅ Examples: `my-site-123`, `winwin`, `lula-88`
+- ✅ Max length: 50 characters
+- ✅ Unique constraint enforced at database level
+
+**4. API Changes:**
+- ✅ `POST /api/partner/sites`: Requires `slug` field
+- ✅ `POST /admin/sites`: Requires `slug` field
+- ✅ `PUT /admin/sites/:id`: Optional `slug` field (only updates if provided)
+- ✅ `PUT /api/site-management/:siteId/sites/:id`: Optional `slug` field (only updates if provided)
+- ✅ All site-related API responses now include `slug` field
+
+**5. Site Lookup by Slug:**
+- ✅ `GET /api/sites/:id`: Supports both UUID and slug
+- ✅ `GET /admin/sites/:id`: Supports both UUID and slug
+- ✅ `GET /api/site-reviews/statistics/:siteId`: Supports both UUID and slug
+- ✅ `GET /api/site-reviews?siteId=...`: Supports both UUID and slug
+- ✅ `GET /api/sites/:id/scam-reports`: Supports both UUID and slug
+- ✅ `GET /api/site-management/:siteId/exchanges`: Supports both UUID and slug
+- ✅ All `siteId` query parameters in site-related APIs support both UUID and slug
+- ✅ Created `isUuid()` utility function to detect UUID vs slug format
+- ✅ Updated repositories to dynamically query by `site_id` (UUID) or `site.slug` based on input format
+
+**6. Real-time Events:**
+- ✅ `site:created` event includes `slug` in response
+- ✅ `site:verified` event includes `slug` in response
+- ✅ All site-related Socket.IO events include `slug` field
+
+**Key Files:**
+- `src/migrations/1767800000000-add-slug-to-sites.ts` (new)
+- `src/modules/site/domain/entities/site.entity.ts` (updated)
+- `src/modules/site/infrastructure/persistence/typeorm/site.repository.ts` (added `findByIdOrSlug` method)
+- `src/shared/validators/is-slug.validator.ts` (new)
+- `src/shared/utils/uuid.util.ts` (new, `isUuid()` function)
+- All site controllers and use cases (updated to support slug)
+
+---
+
+### 41. Manager Point Exchange Management
+
+**Changes:**
+
+**1. Database Schema:**
+- ✅ Added `manager_id` column (uuid, nullable) to `point_exchanges` table
+- ✅ Migration: `1767900000000-add-manager-id-to-point-exchanges.ts`
+  - Foreign key constraint to `users` table (`ON DELETE SET NULL`)
+  - Index on `manager_id` for efficient queries
+
+**2. Entity Updates:**
+- ✅ Added `managerId?: string` and `manager?: User` relationship to `PointExchange` entity
+
+**3. Manager APIs:**
+- ✅ `GET /api/site-management/:siteId/exchanges`: List exchanges for sites managed by the current user
+  - Supports `siteId` as UUID or slug
+  - Filters: `status`, `userName`, `startDate`, `endDate`
+  - Pagination: `cursor`, `limit` (max 50)
+  - Only returns exchanges for sites where user is an active manager
+- ✅ `POST /api/site-management/:siteId/exchanges/:id/approve`: Manager approves exchange
+  - Sets `status = COMPLETED`, `managerId = currentUserId`
+  - Creates point transaction (deducts points from user)
+  - Publishes `exchange:approved` event to user and admins
+- ✅ `POST /api/site-management/:siteId/exchanges/:id/reject`: Manager rejects exchange
+  - Sets `status = REJECTED`, `managerId = currentUserId`
+  - Refunds points to user (creates refund transaction)
+  - Publishes `point:updated` and `exchange:rejected` events
+- ✅ `POST /api/site-management/:siteId/exchanges/:id/processing`: Manager moves to processing
+  - Sets `status = PROCESSING`, `managerId = currentUserId`
+  - Publishes `exchange:processing` event to user and admins
+
+**4. Admin API Updates:**
+- ✅ Admin exchange actions now preserve `managerId` if set by a manager
+- ✅ If admin approves/rejects after manager moved to processing, both `adminId` and `managerId` are recorded
+
+**5. Repository Updates:**
+- ✅ `PointExchangeRepository.findAllWithCursor`:
+  - Added `userName` filter (searches `user.displayName` or `user.email`)
+  - Added `startDate` and `endDate` filters (filters by `exchange.createdAt`)
+  - Removed `userId` filter (replaced with `userName`)
+  - Supports `siteId` as UUID or slug
+  - Loads `manager` relationship
+
+**6. Admin Exchange API Filter Changes:**
+- ✅ `GET /admin/points/exchanges`: Changed `userId` filter to `userName` filter
+  - Removed `@IsUUID()` validation from `userId`
+  - Added `userName?: string` filter (searches user display name or email)
+  - Updated DTO: `ListExchangesQueryDto`
+  - Updated use case: `ListExchangesUseCase`
+  - Updated controller: `AdminPointExchangeController`
+
+**7. Real-time Events:**
+- ✅ All exchange events (`exchange:approved`, `exchange:rejected`, `exchange:processing`) include `manager` data in response
+- ✅ Events include `slug` in site object
+
+**Key Files:**
+- `src/migrations/1767900000000-add-manager-id-to-point-exchanges.ts` (new)
+- `src/modules/point/domain/entities/point-exchange.entity.ts` (updated)
+- `src/modules/point/application/handlers/manager/*.use-case.ts` (new: 4 use cases)
+- `src/modules/point/interface/rest/manager/manager-point-exchange.controller.ts` (new)
+- `src/modules/point/infrastructure/persistence/typeorm/point-exchange.repository.ts` (updated)
+- `src/modules/point/interface/rest/dto/list-exchanges-query.dto.ts` (updated)
+- `src/shared/utils/uuid.util.ts` (new, `isUuid()` function)
+
+---
+
+### 42. Badge Icon Name Field
+
+**Changes:**
+
+**1. Database Schema:**
+- ✅ Added `icon_name` column (varchar 255, nullable) to `badges` table
+- ✅ Migration: `1768000000000-add-icon-name-to-badges.ts`
+
+**2. Entity & DTOs:**
+- ✅ Added `iconName?: string` field to `Badge` entity
+- ✅ Added `iconName?: string` to `CreateBadgeDto` (optional)
+- ✅ Added `iconName?: string` to `UpdateBadgeDto` (optional)
+- ✅ Updated `CreateBadgeCommand` and `UpdateBadgeCommand` interfaces
+
+**3. Use Cases:**
+- ✅ `CreateBadgeUseCase`: Saves `iconName` when creating badge
+- ✅ `UpdateBadgeUseCase`: Updates `iconName` when provided
+
+**4. API Response Updates:**
+- ✅ `AdminBadgeResponse`: Added `iconName?: string` field
+- ✅ `BadgeResponse` (shared): Added `iconName?: string` field
+- ✅ `BadgeResponse` (site-response.dto): Added `iconName?: string` field
+- ✅ `UserBadgeSummary`: Added `iconName?: string` field
+
+**5. Controller Mapping:**
+- ✅ All badge mapping functions updated to include `iconName`:
+  - `AdminBadgeController.mapBadgeToResponse()`
+  - `UserController` (GET /api/me, PUT /api/me, GET /api/me/badges)
+  - `AdminUserController` (GET /admin/users, GET /admin/users/:id)
+  - `ScamReportController` (user & admin)
+  - `SiteReviewController` (user & admin)
+  - `PostController` (user & admin)
+  - `SiteController` (user, admin, partner)
+  - All scam report use cases (create, update, approve, reject)
+  - All site use cases (create, update, partner create)
+
+**Key Files:**
+- `src/migrations/1768000000000-add-icon-name-to-badges.ts` (new)
+- `src/modules/badge/domain/entities/badge.entity.ts` (updated)
+- `src/modules/badge/interface/rest/admin/dto/create-badge.dto.ts` (updated)
+- `src/modules/badge/interface/rest/admin/dto/update-badge.dto.ts` (updated)
+- `src/modules/badge/application/handlers/admin/create-badge.use-case.ts` (updated)
+- `src/modules/badge/application/handlers/admin/update-badge.use-case.ts` (updated)
+- `src/modules/badge/interface/rest/admin/badge.controller.ts` (updated)
+- `src/shared/dto/badge-response.dto.ts` (updated)
+- `src/shared/dto/user-response.dto.ts` (updated)
+- `src/modules/site/interface/rest/dto/site-response.dto.ts` (updated)
+- All controllers and use cases mapping badge data (updated)
+
+---
+
+### 43. Phone OTP System & Token-Based Verification Flow
+
+**Changes:**
+
+**1. Database Schema - OTP Requests Table:**
+- ✅ Created `otp_requests` table (Migration: `1767630000000-create-otp-requests-system.ts`)
+  - Fields: `id` (uuid), `phone` (varchar 20), `otp` (varchar 10), `ip_address` (varchar 45, nullable), `request_count` (integer, default 1), `last_request_at` (timestamptz), `expires_at` (timestamptz), `verified_at` (timestamptz, nullable), `created_at`, `updated_at`
+  - Indexes: `IDX_otp_requests_phone`, `IDX_otp_requests_expires_at`
+- ✅ Added `user_id` and `deleted_at` columns (Migration: `1767640000000-add-user-id-and-deleted-at-to-otp-requests.ts`)
+  - `user_id` (uuid, nullable) with foreign key to `users` table (`ON DELETE SET NULL`)
+  - `deleted_at` (timestamptz, nullable) for soft-deleting OTP records
+  - Indexes: `IDX_otp_requests_user_id`, `IDX_otp_requests_deleted_at`
+- ✅ Removed unique constraint on `phone`, added partial unique index (Migration: `1767650000000-remove-unique-constraint-from-otp-requests-phone.ts`)
+  - Allows multiple records with same phone (one active, others deleted for history)
+  - Partial unique index `UQ_otp_requests_phone_active` ensures only one active record per phone (`WHERE deleted_at IS NULL`)
+- ✅ Added `token` and `token_expires_at` columns (Migration: `1767660000000-add-token-to-otp-requests.ts`)
+  - `token` (varchar 64, nullable, unique) - one-time use token for registration/phone update
+  - `token_expires_at` (timestamptz, nullable) - token expiration (2 minutes from verification)
+  - Unique index `UQ_otp_requests_token` on `token` where `token IS NOT NULL`
+  - Index: `IDX_otp_requests_token_expires_at`
+
+**2. Phone Number Normalization:**
+- ✅ Created `normalizePhone()` utility function (`src/shared/utils/phone.util.ts`)
+  - Converts phone numbers to E.164 international format
+  - Validates phone number format (min 5 digits after optional `+`, max 16 characters)
+  - Used consistently across all phone-related operations
+
+**3. Phone OTP Request API:**
+- ✅ `POST /api/auth/request-otp-phone`: Request OTP via SMS (Twilio)
+  - Normalizes phone number to E.164 format
+  - Generates 6-digit OTP
+  - Stores OTP in `otp_requests` table with 3-minute expiry
+  - Sends OTP via Twilio SMS
+  - Throttling: Max 5 requests per 10-minute window per phone
+  - Prevents duplicate requests if OTP already exists and not expired
+  - Blocks if phone already verified by another user
+  - Saves `ip_address` for audit trail
+  - Returns error (503 Service Unavailable) if SMS sending fails
+  - Environment variable `TEST_OTP=true`: Returns OTP in response instead of sending SMS
+
+**4. Token-Based OTP Verification:**
+- ✅ `POST /api/auth/verify-otp`: Verify OTP and generate token
+  - Takes `phone` and `otp` in request body
+  - Normalizes phone number
+  - Verifies OTP against `otp_requests` table
+  - Checks OTP expiration and verification status
+  - Generates 64-character alphanumeric token
+  - Sets `token_expires_at` to 2 minutes from now
+  - Updates `otp_requests` record with token and expiration
+  - Returns `{ token: string }` in response
+  - Token is one-time use and expires after 2 minutes
+
+**5. Registration Flow (Updated):**
+- ✅ `POST /api/auth/register`: Updated to use token instead of phone + OTP
+  - Request body: `token` (required) instead of `phone` and `otp`
+  - Verifies token from `otp_requests` table
+  - Checks token expiration
+  - Retrieves phone number from OTP request
+  - Validates phone not already verified by another user
+  - Creates user account with phone number
+  - Updates `otp_requests.user_id` to link OTP record to user
+  - Sets `otp_requests.verified_at` to mark phone as verified
+  - Invalidates token (one-time use)
+  - Saves `register_ip` in `user_profiles` table
+  - Auto-login after registration
+
+**6. Phone Number Update Flow:**
+- ✅ `PUT /api/me`: Updated to support phone number updates with token verification
+  - If new phone number is different from current phone:
+    - Requires `token` field in request body
+    - Verifies token for the new phone number
+    - Checks if new phone already verified by another user
+    - If valid:
+      - Sets `deleted_at` for old phone's OTP record (preserves history)
+      - Updates `user_id` and `verified_at` for new phone's OTP record
+      - Invalidates token (one-time use)
+  - If new phone is same as current phone, no token required
+  - If `activeBadge` is `null` or empty string, clears all active badges
+  - Saves `last_request_ip` in `user_profiles` table
+
+**7. Email OTP Request API (Updated):**
+- ✅ `POST /api/auth/request-otp`: Updated to support test mode
+  - Environment variable `TEST_MAIL=true`: Returns OTP in response instead of sending email
+  - Useful for development/testing environments
+  - OTP still stored in Redis with 3-minute TTL
+
+**8. OTP Request Repository:**
+- ✅ `IOtpRequestRepository` interface:
+  - `findByPhone(phone: string)`: Finds active OTP request (excludes `deleted_at IS NOT NULL`)
+  - `findActiveByPhone(phone: string)`: Finds active OTP request (excludes deleted records)
+  - `findByPhoneAndUserId(phone: string, userId: string)`: Finds OTP request by phone and user ID
+  - `findByToken(token: string)`: Finds OTP request by token
+  - `save(otpRequest: OtpRequest)`: Saves OTP request
+  - `update(otpRequest: OtpRequest)`: Updates OTP request
+
+**9. Security Features:**
+- ✅ Phone number normalization prevents format inconsistencies
+- ✅ Partial unique index ensures only one active OTP record per phone
+- ✅ Token-based verification prevents OTP reuse
+- ✅ Token expiration (2 minutes) limits window for attacks
+- ✅ One-time use tokens invalidated after successful registration/phone update
+- ✅ Soft-delete preserves OTP history while allowing new requests
+- ✅ IP address tracking for audit trail
+- ✅ Throttling prevents OTP spam (max 5 requests per 10 minutes)
+
+**10. Data Integrity:**
+- ✅ When user registers, `otp_requests.user_id` is updated to link OTP to user
+- ✅ When user updates phone, old OTP record is soft-deleted (`deleted_at` set)
+- ✅ New OTP record created for new phone number
+- ✅ If OTP record has `deleted_at`, new record is created instead of reviving old one
+- ✅ History preserved: Deleted OTP records remain in database for audit
+
+**Key Files:**
+- `src/migrations/1767630000000-create-otp-requests-system.ts` (new)
+- `src/migrations/1767640000000-add-user-id-and-deleted-at-to-otp-requests.ts` (new)
+- `src/migrations/1767650000000-remove-unique-constraint-from-otp-requests-phone.ts` (new)
+- `src/migrations/1767660000000-add-token-to-otp-requests.ts` (new)
+- `src/modules/auth/domain/entities/otp-request.entity.ts` (new)
+- `src/modules/auth/infrastructure/persistence/repositories/otp-request.repository.ts` (new)
+- `src/modules/auth/infrastructure/persistence/typeorm/otp-request.repository.ts` (new)
+- `src/modules/auth/application/handlers/request-otp-phone.use-case.ts` (new)
+- `src/modules/auth/application/handlers/verify-otp.use-case.ts` (new)
+- `src/modules/auth/application/handlers/register.use-case.ts` (updated)
+- `src/modules/user/application/handlers/update-profile.use-case.ts` (updated)
+- `src/modules/auth/interface/rest/dto/register.dto.ts` (updated: `token` instead of `phone` + `otp`)
+- `src/modules/auth/interface/rest/dto/verify-otp.dto.ts` (new)
+- `src/modules/auth/interface/rest/dto/request-otp-phone.dto.ts` (new)
+- `src/modules/user/interface/rest/dto/update-profile.dto.ts` (updated: `token` instead of `otp`)
+- `src/shared/utils/phone.util.ts` (new: `normalizePhone()` function)
+- `src/modules/auth/interface/rest/auth.controller.ts` (updated: added `verify-otp` and `request-otp-phone` endpoints)
+
+**API Endpoints:**
+- `POST /api/auth/request-otp-phone`: Request OTP via SMS
+- `POST /api/auth/verify-otp`: Verify OTP and get token
+- `POST /api/auth/register`: Register with token (updated)
+- `PUT /api/me`: Update phone with token (updated)
+- `POST /api/auth/request-otp`: Request OTP via email (updated with TEST_MAIL support)
+
+**Environment Variables:**
+- `TEST_OTP=true`: Returns OTP in response for `request-otp-phone` (doesn't send SMS)
+- `TEST_MAIL=true`: Returns OTP in response for `request-otp` (doesn't send email)
+
+---
