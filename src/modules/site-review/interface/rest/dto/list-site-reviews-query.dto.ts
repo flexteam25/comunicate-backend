@@ -3,7 +3,6 @@ import {
   IsString,
   IsNumber,
   IsEnum,
-  IsUUID,
   Min,
   Max,
   IsNotEmpty,
@@ -11,7 +10,7 @@ import {
 import { Type } from 'class-transformer';
 
 export class ListSiteReviewsQueryDto {
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   siteId: string;
 

@@ -8,7 +8,7 @@ export class ListExchangesQueryDto {
   status?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   siteId?: string;
 
   @IsOptional()

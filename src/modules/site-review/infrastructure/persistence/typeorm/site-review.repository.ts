@@ -8,6 +8,8 @@ import {
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
 
+import { isUuid } from '../../../../../shared/utils/uuid.util';
+
 @Injectable()
 export class SiteReviewRepository implements ISiteReviewRepository {
   constructor(
@@ -142,8 +144,16 @@ export class SiteReviewRepository implements ISiteReviewRepository {
         'comment',
         (qb) => qb.andWhere('comment.deletedAt IS NULL'),
       )
-      .where('review.siteId = :siteId', { siteId })
-      .andWhere('review.deletedAt IS NULL');
+      .where('review.deletedAt IS NULL');
+
+    // Filter by siteId (UUID or slug)
+    if (isUuid(siteId)) {
+      // Filter by site UUID
+      queryBuilder.andWhere('review.siteId = :siteId', { siteId });
+    } else {
+      // Filter by site slug
+      queryBuilder.andWhere('site.slug = :siteSlug', { siteSlug: siteId });
+    }
 
     if (filters?.isPublished !== undefined) {
       queryBuilder.andWhere('review.isPublished = :isPublished', {
@@ -279,9 +289,17 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       .where('review.deletedAt IS NULL');
 
     if (filters?.siteId) {
-      queryBuilder.andWhere('review.siteId = :siteId', {
-        siteId: filters.siteId,
-      });
+      if (isUuid(filters.siteId)) {
+        // Filter by site UUID
+        queryBuilder.andWhere('review.siteId = :siteId', {
+          siteId: filters.siteId,
+        });
+      } else {
+        // Filter by site slug
+        queryBuilder.andWhere('site.slug = :siteSlug', {
+          siteSlug: filters.siteId,
+        });
+      }
     }
 
     if (filters?.userId) {

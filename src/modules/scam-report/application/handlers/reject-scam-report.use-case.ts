@@ -96,6 +96,7 @@ export class RejectScamReportUseCase {
     return {
       id: report.id,
       siteId: report.siteId || null,
+      siteSlug: report.site?.slug || null,
       siteUrl: report.siteUrl,
       siteName: report.siteName || report.site?.name || null,
       siteAccountInfo: report.siteAccountInfo,

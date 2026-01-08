@@ -10,7 +10,7 @@ import {
 import { Type } from 'class-transformer';
 
 export class CreateSiteReviewDto {
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   siteId: string;
 

@@ -10,7 +10,7 @@ export interface ISiteEventRepository {
   ): Promise<CursorPaginationResult<SiteEvent>>;
   findAll(
     filters?: {
-      siteId?: string; // For exact match by UUID
+      siteId?: string; // For exact match by UUID or slug
       siteName?: string; // For LIKE search by site name
       userName?: string; // For LIKE search by user display name
       adminName?: string; // For LIKE search by admin display name

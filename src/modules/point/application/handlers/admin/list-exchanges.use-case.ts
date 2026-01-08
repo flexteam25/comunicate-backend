@@ -9,6 +9,7 @@ export interface ListExchangesCommand {
   userId?: string;
   cursor?: string;
   limit?: number;
+  userName?: string;
 }
 
 @Injectable()

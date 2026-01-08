@@ -32,6 +32,7 @@ export class ListScamReportsUseCase {
 
     return this.scamReportRepository.findAll(
       command.status,
+      command.siteId,
       command.siteName,
       command.cursor,
       command.limit,

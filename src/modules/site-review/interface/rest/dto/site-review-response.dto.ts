@@ -25,6 +25,7 @@ export class SiteReviewImageResponseDto {
 export class SiteReviewResponseDto {
   id: string;
   siteId: string;
+  siteSlug?: string;
   siteName?: string;
   userId: string;
   userName: string;

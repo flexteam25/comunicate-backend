@@ -7,6 +7,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { isUuid } from '../../../../../shared/utils/uuid.util';
 
 @Injectable()
 export class SiteEventRepository implements ISiteEventRepository {
@@ -58,10 +59,18 @@ export class SiteEventRepository implements ISiteEventRepository {
       .leftJoinAndSelect('event.admin', 'admin')
       .leftJoinAndSelect('event.banners', 'banners')
       .loadRelationCountAndMap('event.viewCount', 'event.views', 'view')
-      .where('event.siteId = :siteId', { siteId })
-      .andWhere('event.deletedAt IS NULL')
+      .where('event.deletedAt IS NULL')
       .andWhere('event.isActive = :isActive', { isActive: true })
       .andWhere('event.endDate >= :now', { now });
+
+    // Filter by siteId (UUID or slug)
+    if (isUuid(siteId)) {
+      // Filter by site UUID
+      queryBuilder.andWhere('event.siteId = :siteId', { siteId });
+    } else {
+      // Filter by site slug
+      queryBuilder.andWhere('site.slug = :siteSlug', { siteSlug: siteId });
+    }
 
     if (cursor) {
       try {
@@ -130,9 +139,15 @@ export class SiteEventRepository implements ISiteEventRepository {
       .loadRelationCountAndMap('event.viewCount', 'event.views', 'view')
       .where('event.deletedAt IS NULL');
 
-    // Filter by siteId (exact match - for user API)
+    // Filter by siteId (UUID or slug)
     if (filters?.siteId) {
-      queryBuilder.andWhere('event.siteId = :siteId', { siteId: filters.siteId });
+      if (isUuid(filters.siteId)) {
+        // Filter by site UUID
+        queryBuilder.andWhere('event.siteId = :siteId', { siteId: filters.siteId });
+      } else {
+        // Filter by site slug
+        queryBuilder.andWhere('site.slug = :siteSlug', { siteSlug: filters.siteId });
+      }
     }
 
     // Filter by siteName (LIKE search - for admin API)

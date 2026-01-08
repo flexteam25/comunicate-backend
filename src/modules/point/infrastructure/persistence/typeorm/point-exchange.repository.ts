@@ -7,6 +7,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { isUuid } from '../../../../../shared/utils/uuid.util';
 
 @Injectable()
 export class PointExchangeRepository implements IPointExchangeRepository {
@@ -114,9 +115,17 @@ export class PointExchangeRepository implements IPointExchangeRepository {
     }
 
     if (filters?.siteId) {
-      queryBuilder.andWhere('exchange.siteId = :siteId', {
-        siteId: filters.siteId,
-      });
+      if (isUuid(filters.siteId)) {
+        // Filter by site UUID
+        queryBuilder.andWhere('exchange.siteId = :siteId', {
+          siteId: filters.siteId,
+        });
+      } else {
+        // Filter by site slug
+        queryBuilder.andWhere('site.slug = :siteSlug', {
+          siteSlug: filters.siteId,
+        });
+      }
     }
 
     if (filters?.userId) {

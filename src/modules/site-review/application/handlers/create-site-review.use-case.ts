@@ -33,7 +33,7 @@ export class CreateSiteReviewUseCase {
   ) {}
 
   async execute(command: CreateSiteReviewCommand): Promise<SiteReview> {
-    const site = await this.siteRepository.findById(command.siteId);
+    const site = await this.siteRepository.findByIdOrSlug(command.siteId);
     if (!site) {
       throw new BadRequestException('Site not found');
     }
@@ -58,7 +58,7 @@ export class CreateSiteReviewUseCase {
           // Create new review
           const review = reviewRepo.create({
             userId: command.userId,
-            siteId: command.siteId,
+            siteId: site.id, // Use resolved site.id (UUID) instead of command.siteId (which could be slug)
             rating: command.rating,
             odds: command.odds,
             limit: command.limit,
@@ -104,7 +104,7 @@ export class CreateSiteReviewUseCase {
         // Recalculate site statistics after transaction (only published reviews count)
         const reviewRepoImpl = this.siteReviewRepository as any;
         if (reviewRepoImpl.recalculateSiteStatistics) {
-          await reviewRepoImpl.recalculateSiteStatistics(command.siteId);
+          await reviewRepoImpl.recalculateSiteStatistics(site.id);
         }
         return review;
       });

@@ -73,6 +73,7 @@ export class SiteReviewController {
     return {
       id: review.id,
       siteId: review.siteId,
+      siteSlug: review.site?.slug || null,
       siteName: review.site?.name || null,
       userId: review.userId,
       userName: review.user?.displayName || null,

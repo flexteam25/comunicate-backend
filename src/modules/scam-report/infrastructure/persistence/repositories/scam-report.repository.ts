@@ -20,6 +20,7 @@ export interface IScamReportRepository {
   ): Promise<CursorPaginationResult<ScamReport>>;
   findAll(
     status?: ScamReportStatus,
+    siteId?: string,
     siteName?: string,
     cursor?: string,
     limit?: number,

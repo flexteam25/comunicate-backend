@@ -53,6 +53,7 @@ export class AdminPointExchangeController {
         ? {
             id: exchange.site.id,
             name: exchange.site.name,
+            slug: exchange.site.slug || null,
           }
         : null,
       pointsAmount: exchange.pointsAmount,

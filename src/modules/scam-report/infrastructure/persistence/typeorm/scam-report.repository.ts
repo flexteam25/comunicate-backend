@@ -10,6 +10,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { isUuid } from '../../../../../shared/utils/uuid.util';
 
 @Injectable()
 export class ScamReportRepository implements IScamReportRepository {
@@ -270,6 +271,7 @@ export class ScamReportRepository implements IScamReportRepository {
 
   async findAll(
     status?: ScamReportStatus,
+    siteId?: string,
     siteName?: string,
     cursor?: string,
     limit = 20,
@@ -307,6 +309,18 @@ export class ScamReportRepository implements IScamReportRepository {
       queryBuilder.andWhere('report.status = :status', { status });
     }
 
+    // Filter by siteId (UUID or slug)
+    if (siteId) {
+      if (isUuid(siteId)) {
+        // Filter by site UUID
+        queryBuilder.andWhere('report.siteId = :siteId', { siteId });
+      } else {
+        // Filter by site slug
+        queryBuilder.andWhere('site.slug = :siteSlug', { siteSlug: siteId });
+      }
+    }
+
+    // Filter by siteName (LIKE search - for backward compatibility)
     if (siteName) {
       queryBuilder.andWhere('LOWER(site.name) LIKE LOWER(:siteName)', {
         siteName: `%${siteName}%`,

@@ -88,6 +88,7 @@ export class AdminSiteEventController {
         ? {
             id: event.site.id,
             name: event.site.name,
+            slug: event.site.slug || null,
             logoUrl: buildFullUrl(this.apiServiceUrl, event.site.logoUrl || null),
           }
         : null,

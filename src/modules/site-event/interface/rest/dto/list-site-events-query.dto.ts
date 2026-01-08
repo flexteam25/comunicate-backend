@@ -3,9 +3,9 @@ import { TransformToBoolean } from '../../../../../shared/utils/transform-boolea
 import { Type } from 'class-transformer';
 
 export class ListSiteEventsQueryDto {
-  // For user API - filter by siteId (UUID)
+  // For user API - filter by siteId (UUID or slug)
   @IsOptional()
-  @IsUUID()
+  @IsString()
   siteId?: string;
 
   // For admin API - filter by names (LIKE search)
