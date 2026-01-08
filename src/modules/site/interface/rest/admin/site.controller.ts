@@ -112,6 +112,7 @@ export class AdminSiteController {
             name: sb.badge.name,
             description: sb.badge.description || null,
             iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
+            iconName: sb.badge.iconName || null,
             color: sb.badge.color || null,
           };
         })

@@ -15,6 +15,10 @@ export class UpdateBadgeDto {
   @IsOptional()
   iconUrl?: string;
 
+  @IsString()
+  @IsOptional()
+  iconName?: string;
+
   @IsOptional()
   @TransformToBoolean
   @IsBoolean()

@@ -6,10 +6,11 @@ import { PointExchange } from '../../../domain/entities/point-exchange.entity';
 export interface ListExchangesCommand {
   status?: string;
   siteId?: string;
-  userId?: string;
+  userName?: string;
+  startDate?: Date;
+  endDate?: Date;
   cursor?: string;
   limit?: number;
-  userName?: string;
 }
 
 @Injectable()
@@ -26,7 +27,9 @@ export class ListExchangesUseCase {
       {
         status: command.status,
         siteId: command.siteId,
-        userId: command.userId,
+        userName: command.userName,
+        startDate: command.startDate,
+        endDate: command.endDate,
       },
       command.cursor,
       command.limit || 20,

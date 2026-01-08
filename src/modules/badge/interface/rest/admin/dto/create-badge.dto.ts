@@ -25,6 +25,10 @@ export class CreateBadgeDto {
   @IsOptional()
   iconUrl?: string;
 
+  @IsString()
+  @IsOptional()
+  iconName?: string;
+
   @IsEnum(BadgeType)
   @IsNotEmpty()
   badgeType: BadgeType;

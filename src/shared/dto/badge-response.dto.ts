@@ -1,6 +1,7 @@
 export interface BadgeResponse {
   name: string;
   iconUrl?: string;
+  iconName?: string;
   color?: string;
   earnedAt?: Date;
   active?: boolean;

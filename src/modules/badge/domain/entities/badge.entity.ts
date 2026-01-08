@@ -18,6 +18,9 @@ export class Badge extends BaseEntity {
   @Column({ name: 'icon_url', type: 'varchar', length: 500, nullable: true })
   iconUrl?: string;
 
+  @Column({ name: 'icon_name', type: 'varchar', length: 255, nullable: true })
+  iconName?: string;
+
   @Column({
     name: 'badge_type',
     type: 'varchar',

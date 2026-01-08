@@ -9,15 +9,11 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class ListExchangesQueryDto {
+export class ListSiteExchangesQueryDto {
   @IsOptional()
   @IsString()
   @IsIn(['pending', 'processing', 'completed', 'rejected', 'cancelled'])
   status?: string;
-
-  @IsOptional()
-  @IsString()
-  siteId?: string;
 
   @IsOptional()
   @IsString()
@@ -42,3 +38,4 @@ export class ListExchangesQueryDto {
   @Max(50)
   limit?: number;
 }
+

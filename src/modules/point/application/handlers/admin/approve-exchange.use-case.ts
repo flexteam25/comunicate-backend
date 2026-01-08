@@ -16,6 +16,7 @@ import { LoggerService } from '../../../../../shared/logger/logger.service';
 export interface ApproveExchangeCommand {
   exchangeId: string;
   adminId: string;
+  managerId?: string;
 }
 
 @Injectable()
@@ -43,16 +44,26 @@ export class ApproveExchangeUseCase {
       );
     }
 
-    await this.pointExchangeRepository.update(command.exchangeId, {
+    const updateData: Partial<PointExchange> = {
       status: PointExchangeStatus.COMPLETED,
       adminId: command.adminId,
       processedAt: new Date(),
-    });
+    };
+
+    // If managerId is provided, set it (manager moved to processing, then admin approved)
+    // If exchange already has managerId, keep it
+    if (command.managerId) {
+      updateData.managerId = command.managerId;
+    } else if (exchange.managerId) {
+      updateData.managerId = exchange.managerId;
+    }
+
+    await this.pointExchangeRepository.update(command.exchangeId, updateData);
 
     // Reload with relationships for response
     const updatedExchange = await this.pointExchangeRepository.findById(
       command.exchangeId,
-      ['user', 'site', 'admin'],
+      ['user', 'site', 'admin', 'manager'],
     );
 
     if (!updatedExchange) {
@@ -112,6 +123,14 @@ export class ApproveExchangeUseCase {
             id: exchange.admin.id,
             email: exchange.admin.email,
             displayName: exchange.admin.displayName || null,
+          }
+        : null,
+      managerId: exchange.managerId || null,
+      manager: exchange.manager
+        ? {
+            id: exchange.manager.id,
+            email: exchange.manager.email,
+            displayName: exchange.manager.displayName || null,
           }
         : null,
       processedAt: exchange.processedAt || null,

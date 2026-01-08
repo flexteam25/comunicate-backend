@@ -18,8 +18,14 @@ import { ListPointTransactionsUseCase } from './application/handlers/admin/list-
 import { PointController } from './interface/rest/user/point.controller';
 import { AdminPointExchangeController } from './interface/rest/admin/point-exchange.controller';
 import { AdminPointTransactionController } from './interface/rest/admin/point-transaction.controller';
+import { ManagerPointExchangeController } from './interface/rest/manager/manager-point-exchange.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { AuthPersistenceModule } from '../auth/auth-persistence.module';
+import { SiteManagerPersistenceModule } from '../site-manager/site-manager-persistence.module';
+import { ListSiteExchangesUseCase } from './application/handlers/manager/list-site-exchanges.use-case';
+import { ManagerApproveExchangeUseCase } from './application/handlers/manager/manager-approve-exchange.use-case';
+import { ManagerRejectExchangeUseCase } from './application/handlers/manager/manager-reject-exchange.use-case';
+import { ManagerMoveExchangeToProcessingUseCase } from './application/handlers/manager/manager-move-exchange-to-processing.use-case';
 
 @Module({
   imports: [
@@ -27,6 +33,7 @@ import { AuthPersistenceModule } from '../auth/auth-persistence.module';
     ServicesModule,
     UserPersistenceModule,
     SiteModule,
+    SiteManagerPersistenceModule,
     AdminGuardsModule,
     AuthPersistenceModule,
   ],
@@ -34,6 +41,7 @@ import { AuthPersistenceModule } from '../auth/auth-persistence.module';
     PointController,
     AdminPointExchangeController,
     AdminPointTransactionController,
+    ManagerPointExchangeController,
   ],
   providers: [
     CreatePointTransactionUseCase,
@@ -48,6 +56,10 @@ import { AuthPersistenceModule } from '../auth/auth-persistence.module';
     ApproveExchangeUseCase,
     RejectExchangeUseCase,
     ListPointTransactionsUseCase,
+    ListSiteExchangesUseCase,
+    ManagerApproveExchangeUseCase,
+    ManagerRejectExchangeUseCase,
+    ManagerMoveExchangeToProcessingUseCase,
   ],
   exports: [CreatePointTransactionUseCase, PointPersistenceModule],
 })

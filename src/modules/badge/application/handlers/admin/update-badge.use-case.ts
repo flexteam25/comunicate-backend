@@ -14,6 +14,7 @@ export interface UpdateBadgeCommand {
   name?: string;
   description?: string;
   iconUrl?: string;
+  iconName?: string;
   isActive?: boolean;
   obtain?: string;
   point?: number;
@@ -58,6 +59,7 @@ export class UpdateBadgeUseCase {
         if (command.description !== undefined)
           updateData.description = command.description || null;
         if (command.iconUrl !== undefined) updateData.iconUrl = command.iconUrl || null;
+        if (command.iconName !== undefined) updateData.iconName = command.iconName || null;
         if (command.isActive !== undefined) updateData.isActive = command.isActive;
         if (command.obtain !== undefined) updateData.obtain = command.obtain || null;
         if (command.point !== undefined) {

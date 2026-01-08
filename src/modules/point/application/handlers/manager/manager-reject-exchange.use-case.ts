@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   Inject,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
@@ -10,6 +11,8 @@ import {
   PointExchangeStatus,
 } from '../../../domain/entities/point-exchange.entity';
 import { IPointExchangeRepository } from '../../../infrastructure/persistence/repositories/point-exchange.repository';
+import { ISiteManagerRepository } from '../../../../site-manager/infrastructure/persistence/repositories/site-manager.repository';
+import { ISiteRepository } from '../../../../site/infrastructure/persistence/repositories/site.repository';
 import { IUserRepository } from '../../../../user/infrastructure/persistence/repositories/user.repository';
 import { UserProfile } from '../../../../user/domain/entities/user-profile.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
@@ -21,29 +24,22 @@ import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
 
-/**
- * Command for admin to reject point exchange request
- */
-export interface RejectExchangeCommand {
+export interface ManagerRejectExchangeCommand {
   exchangeId: string;
-  adminId: string;
-  managerId?: string;
-  /** Rejection reason (optional) */
+  siteIdOrSlug: string;
+  managerUserId: string;
   reason?: string;
 }
 
-/**
- * Use case for admin to reject point exchange request
- * - Only allow reject if status = pending or processing
- * - Refund points to user
- * - Update status = rejected
- * - Create refund transaction
- */
 @Injectable()
-export class RejectExchangeUseCase {
+export class ManagerRejectExchangeUseCase {
   constructor(
     @Inject('IPointExchangeRepository')
     private readonly pointExchangeRepository: IPointExchangeRepository,
+    @Inject('ISiteManagerRepository')
+    private readonly siteManagerRepository: ISiteManagerRepository,
+    @Inject('ISiteRepository')
+    private readonly siteRepository: ISiteRepository,
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly transactionService: TransactionService,
@@ -51,18 +47,33 @@ export class RejectExchangeUseCase {
     private readonly logger: LoggerService,
   ) {}
 
-  /**
-   * Execute rejection of point exchange request and refund points to user
-   * All operations are performed within a transaction to ensure data consistency
-   */
-  async execute(command: RejectExchangeCommand): Promise<PointExchange> {
-    // Check exchange exists
-    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, [
-      'site',
-    ]);
+  async execute(command: ManagerRejectExchangeCommand): Promise<PointExchange> {
+    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, ['site']);
 
     if (!exchange) {
       throw new NotFoundException('Exchange not found');
+    }
+
+    // Resolve site by ID or slug
+    const site = await this.siteRepository.findByIdOrSlug(command.siteIdOrSlug);
+
+    if (!site) {
+      throw new NotFoundException('Site not found');
+    }
+
+    // Verify exchange belongs to this site
+    if (exchange.siteId !== site.id) {
+      throw new BadRequestException('Exchange does not belong to this site');
+    }
+
+    // Check if user is manager of this site
+    const manager = await this.siteManagerRepository.findBySiteAndUser(
+      site.id,
+      command.managerUserId,
+    );
+
+    if (!manager) {
+      throw new ForbiddenException('You do not have permission to reject exchanges for this site');
     }
 
     // Only allow reject if status = pending or processing
@@ -96,22 +107,12 @@ export class RejectExchangeUseCase {
 
         // Update exchange status = rejected
         const exchangeRepo = manager.getRepository(PointExchange);
-        const updateData: Partial<PointExchange> = {
+        await exchangeRepo.update(command.exchangeId, {
           status: PointExchangeStatus.REJECTED,
-          adminId: command.adminId,
+          managerId: command.managerUserId,
           processedAt: new Date(),
           rejectionReason: command.reason,
-        };
-
-        // If managerId is provided, set it (manager moved to processing, then admin rejected)
-        // If exchange already has managerId, keep it
-        if (command.managerId) {
-          updateData.managerId = command.managerId;
-        } else if (exchange.managerId) {
-          updateData.managerId = exchange.managerId;
-        }
-
-        await exchangeRepo.update(command.exchangeId, updateData);
+        });
 
         // Create refund transaction for history
         const pointTransactionRepo = manager.getRepository(PointTransaction);
@@ -193,7 +194,7 @@ export class RejectExchangeUseCase {
             {
               error: error instanceof Error ? error.message : String(error),
               exchangeId: updatedExchange.id,
-              adminId: command.adminId,
+              managerUserId: command.managerUserId,
             },
             'point',
           );
@@ -219,7 +220,6 @@ export class RejectExchangeUseCase {
         ? {
             id: exchange.site.id,
             name: exchange.site.name,
-            slug: exchange.site.slug || null,
           }
         : null,
       pointsAmount: exchange.pointsAmount,
@@ -250,3 +250,4 @@ export class RejectExchangeUseCase {
     };
   }
 }
+

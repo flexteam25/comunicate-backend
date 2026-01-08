@@ -8,6 +8,7 @@ export interface CreateBadgeCommand {
   name: string;
   description?: string;
   iconUrl?: string;
+  iconName?: string;
   badgeType: BadgeType;
   isActive?: boolean;
   obtain?: string;
@@ -46,6 +47,7 @@ export class CreateBadgeUseCase {
           name: command.name,
           description: command.description,
           iconUrl: command.iconUrl,
+          iconName: command.iconName,
           badgeType: command.badgeType,
           isActive: command.isActive ?? true,
           obtain: command.obtain,

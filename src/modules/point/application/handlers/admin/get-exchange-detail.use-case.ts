@@ -18,6 +18,7 @@ export class GetExchangeDetailUseCase {
       'user',
       'site',
       'admin',
+      'manager',
     ]);
 
     if (!exchange) {

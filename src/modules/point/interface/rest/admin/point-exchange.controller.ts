@@ -69,6 +69,14 @@ export class AdminPointExchangeController {
             displayName: exchange.admin.displayName || null,
           }
         : null,
+      managerId: exchange.managerId || null,
+      manager: exchange.manager
+        ? {
+            id: exchange.manager.id,
+            email: exchange.manager.email,
+            displayName: exchange.manager.displayName || null,
+          }
+        : null,
       processedAt: exchange.processedAt || null,
       rejectionReason: exchange.rejectionReason || null,
       createdAt: exchange.createdAt,
@@ -83,7 +91,9 @@ export class AdminPointExchangeController {
     const result = await this.listExchangesUseCase.execute({
       status: query.status,
       siteId: query.siteId,
-      userId: query.userId,
+      userName: query.userName,
+      startDate: query.startDate ? new Date(query.startDate) : undefined,
+      endDate: query.endDate ? new Date(query.endDate) : undefined,
       cursor: query.cursor,
       limit: query.limit || 20,
     });

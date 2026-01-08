@@ -20,6 +20,7 @@ export class BadgeResponse {
   name: string;
   description?: string;
   iconUrl?: string;
+  iconName?: string;
   color?: string;
 }
 
@@ -28,6 +29,7 @@ export class AdminBadgeResponse {
   name: string;
   description?: string;
   iconUrl?: string;
+  iconName?: string;
   badgeType: BadgeType;
   isActive: boolean;
   obtain?: string;

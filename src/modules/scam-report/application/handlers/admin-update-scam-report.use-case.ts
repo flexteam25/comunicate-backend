@@ -196,7 +196,8 @@ export class AdminUpdateScamReportUseCase {
           name: activeBadge.badge.name,
           iconUrl:
             buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
-            color: activeBadge.badge.color || null,
+          iconName: activeBadge.badge.iconName || null,
+          color: activeBadge.badge.color || null,
           earnedAt: activeBadge.earnedAt,
         };
       })(),

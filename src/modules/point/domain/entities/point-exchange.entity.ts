@@ -82,7 +82,11 @@ export class PointExchange {
   @Column({ name: 'admin_id', type: 'uuid', nullable: true })
   adminId?: string;
 
-  /** Time when admin processed (approve/reject) */
+  /** ID of the manager (site manager) who processed the request */
+  @Column({ name: 'manager_id', type: 'uuid', nullable: true })
+  managerId?: string;
+
+  /** Time when admin/manager processed (approve/reject) */
   @Column({ name: 'processed_at', type: 'timestamptz', nullable: true })
   processedAt?: Date;
 
@@ -114,4 +118,9 @@ export class PointExchange {
   @ManyToOne(() => Admin, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'admin_id' })
   admin?: Admin;
+
+  /** Relationship with User (manager who processed) */
+  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'manager_id' })
+  manager?: User;
 }

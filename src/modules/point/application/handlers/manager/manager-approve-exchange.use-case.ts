@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   Inject,
 } from '@nestjs/common';
 import {
@@ -9,48 +10,75 @@ import {
   PointExchangeStatus,
 } from '../../../domain/entities/point-exchange.entity';
 import { IPointExchangeRepository } from '../../../infrastructure/persistence/repositories/point-exchange.repository';
+import { ISiteManagerRepository } from '../../../../site-manager/infrastructure/persistence/repositories/site-manager.repository';
+import { ISiteRepository } from '../../../../site/infrastructure/persistence/repositories/site.repository';
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
 
-export interface MoveExchangeToProcessingCommand {
+export interface ManagerApproveExchangeCommand {
   exchangeId: string;
-  adminId: string;
-  managerId?: string;
+  siteIdOrSlug: string;
+  managerUserId: string;
 }
 
 @Injectable()
-export class MoveExchangeToProcessingUseCase {
+export class ManagerApproveExchangeUseCase {
   constructor(
     @Inject('IPointExchangeRepository')
     private readonly pointExchangeRepository: IPointExchangeRepository,
+    @Inject('ISiteManagerRepository')
+    private readonly siteManagerRepository: ISiteManagerRepository,
+    @Inject('ISiteRepository')
+    private readonly siteRepository: ISiteRepository,
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
   ) {}
 
-  async execute(command: MoveExchangeToProcessingCommand): Promise<PointExchange> {
-    const exchange = await this.pointExchangeRepository.findById(command.exchangeId);
+  async execute(command: ManagerApproveExchangeCommand): Promise<PointExchange> {
+    const exchange = await this.pointExchangeRepository.findById(command.exchangeId, ['site']);
 
     if (!exchange) {
       throw new NotFoundException('Exchange not found');
     }
 
-    if (exchange.status !== PointExchangeStatus.PENDING) {
-      throw new BadRequestException('Only pending exchanges can be moved to processing');
+    // Resolve site by ID or slug
+    const site = await this.siteRepository.findByIdOrSlug(command.siteIdOrSlug);
+
+    if (!site) {
+      throw new NotFoundException('Site not found');
     }
 
-    const updateData: Partial<PointExchange> = {
-      status: PointExchangeStatus.PROCESSING,
-      adminId: command.adminId,
+    // Verify exchange belongs to this site
+    if (exchange.siteId !== site.id) {
+      throw new BadRequestException('Exchange does not belong to this site');
+    }
+
+    // Check if user is manager of this site
+    const manager = await this.siteManagerRepository.findBySiteAndUser(
+      site.id,
+      command.managerUserId,
+    );
+
+    if (!manager) {
+      throw new ForbiddenException('You do not have permission to approve exchanges for this site');
+    }
+
+    // Only allow approve if status = pending or processing
+    if (
+      exchange.status !== PointExchangeStatus.PENDING &&
+      exchange.status !== PointExchangeStatus.PROCESSING
+    ) {
+      throw new BadRequestException(
+        'Only pending or processing exchanges can be approved',
+      );
+    }
+
+    await this.pointExchangeRepository.update(command.exchangeId, {
+      status: PointExchangeStatus.COMPLETED,
+      managerId: command.managerUserId,
       processedAt: new Date(),
-    };
-
-    // If managerId is provided, also set it (manager moved to processing)
-    if (command.managerId) {
-      updateData.managerId = command.managerId;
-    }
-
-    await this.pointExchangeRepository.update(command.exchangeId, updateData);
+    });
 
     // Reload with relationships for response
     const updatedExchange = await this.pointExchangeRepository.findById(
@@ -68,14 +96,14 @@ export class MoveExchangeToProcessingUseCase {
     // Publish event after transaction (fire and forget)
     setImmediate(() => {
       this.redisService
-        .publishEvent(RedisChannel.EXCHANGE_PROCESSING as string, eventData)
+        .publishEvent(RedisChannel.EXCHANGE_APPROVED as string, eventData)
         .catch((error) => {
           this.logger.error(
-            'Failed to publish exchange:processing event',
+            'Failed to publish exchange:approved event',
             {
               error: error instanceof Error ? error.message : String(error),
               exchangeId: updatedExchange.id,
-              adminId: command.adminId,
+              managerUserId: command.managerUserId,
             },
             'point',
           );
@@ -101,7 +129,6 @@ export class MoveExchangeToProcessingUseCase {
         ? {
             id: exchange.site.id,
             name: exchange.site.name,
-            slug: exchange.site.slug || null,
           }
         : null,
       pointsAmount: exchange.pointsAmount,
@@ -132,3 +159,4 @@ export class MoveExchangeToProcessingUseCase {
     };
   }
 }
+

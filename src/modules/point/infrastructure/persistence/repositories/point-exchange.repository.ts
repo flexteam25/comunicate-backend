@@ -15,7 +15,9 @@ export interface IPointExchangeRepository {
     filters?: {
       status?: string;
       siteId?: string;
-      userId?: string;
+      userName?: string;
+      startDate?: Date;
+      endDate?: Date;
     },
     cursor?: string,
     limit?: number,

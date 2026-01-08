@@ -98,6 +98,7 @@ export class ScamReportController {
         return {
           name: activeBadge.badge.name,
           iconUrl: buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null),
+          iconName: activeBadge.badge.iconName || null,
           color: activeBadge.badge.color || null,
           earnedAt: activeBadge.earnedAt,
         };

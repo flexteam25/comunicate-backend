@@ -92,19 +92,22 @@ export class PointExchangeRepository implements IPointExchangeRepository {
       status?: string;
       siteId?: string;
       userId?: string;
+      userName?: string;
+      startDate?: Date;
+      endDate?: Date;
     },
     cursor?: string,
     limit = 20,
   ): Promise<CursorPaginationResult<PointExchange>> {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = 'createdAt';
-    const sortOrder: 'ASC' | 'DESC' = 'DESC';
 
     const queryBuilder = this.repository
       .createQueryBuilder('exchange')
       .leftJoinAndSelect('exchange.user', 'user')
       .leftJoinAndSelect('exchange.site', 'site')
       .leftJoinAndSelect('exchange.admin', 'admin')
+      .leftJoinAndSelect('exchange.manager', 'manager')
       .orderBy('exchange.createdAt', 'DESC')
       .addOrderBy('exchange.id', 'DESC');
 
@@ -128,9 +131,24 @@ export class PointExchangeRepository implements IPointExchangeRepository {
       }
     }
 
-    if (filters?.userId) {
-      queryBuilder.andWhere('exchange.userId = :userId', {
-        userId: filters.userId,
+    if (filters?.userName) {
+      queryBuilder.andWhere(
+        '(user.email ILIKE :userName OR user.displayName ILIKE :userName)',
+        {
+          userName: `%${filters.userName}%`,
+        },
+      );
+    }
+
+    if (filters?.startDate) {
+      queryBuilder.andWhere('exchange.createdAt >= :startDate', {
+        startDate: filters.startDate,
+      });
+    }
+
+    if (filters?.endDate) {
+      queryBuilder.andWhere('exchange.createdAt <= :endDate', {
+        endDate: filters.endDate,
       });
     }
 
