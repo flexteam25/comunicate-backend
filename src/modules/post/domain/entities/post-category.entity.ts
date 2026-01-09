@@ -8,6 +8,9 @@ export class PostCategory extends BaseEntity {
   @Column({ type: 'varchar', length: 50, unique: true })
   name: string;
 
+  @Column({ name: 'name_ko', type: 'varchar', length: 50, nullable: true })
+  nameKo?: string;
+
   @Column({ type: 'text', nullable: true })
   description?: string;
 

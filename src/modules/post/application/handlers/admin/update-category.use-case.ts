@@ -10,6 +10,7 @@ import { IPostCategoryRepository } from '../../../infrastructure/persistence/rep
 export interface UpdateCategoryCommand {
   categoryId: string;
   name?: string;
+  nameKo?: string;
   description?: string;
   showMain?: boolean;
 }
@@ -37,6 +38,7 @@ export class UpdateCategoryUseCase {
 
     const updateData: Partial<PostCategory> = {};
     if (command.name !== undefined) updateData.name = command.name;
+    if (command.nameKo !== undefined) updateData.nameKo = command.nameKo || null;
     if (command.description !== undefined)
       updateData.description = command.description || null;
     if (command.showMain !== undefined) updateData.showMain = command.showMain;

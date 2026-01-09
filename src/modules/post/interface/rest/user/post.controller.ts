@@ -100,6 +100,7 @@ export class PostController {
         buildFullUrl(this.apiServiceUrl, post.admin?.avatarUrl || null) || null,
       categoryId: post.categoryId,
       categoryName: post.category?.name || null,
+      categoryNameKo: post.category?.nameKo || null,
       title: post.title,
       content: post.content,
       thumbnailUrl: post.thumbnailUrl
@@ -184,6 +185,7 @@ export class PostController {
       categories.map((cat) => ({
         id: cat.id,
         name: cat.name,
+        nameKo: cat.nameKo || null,
         description: cat.description || null,
         showMain: cat.showMain ?? false,
       })),

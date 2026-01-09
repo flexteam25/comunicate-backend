@@ -85,6 +85,7 @@ export class AdminPostController {
       adminName: post.admin?.displayName || null,
       categoryId: post.categoryId,
       categoryName: post.category?.name || null,
+      categoryNameKo: post.category?.nameKo || null,
       title: post.title,
       content: post.content,
       thumbnailUrl: post.thumbnailUrl
@@ -104,6 +105,7 @@ export class AdminPostController {
     return {
       id: category.id,
       name: category.name,
+      nameKo: category.nameKo || null,
       description: category.description || null,
       showMain: category.showMain ?? false,
       createdAt: category.createdAt,

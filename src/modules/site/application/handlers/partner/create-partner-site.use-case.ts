@@ -296,6 +296,7 @@ export class CreatePartnerSiteUseCase {
         ? {
             id: site.category.id,
             name: site.category.name,
+            nameKo: site.category.nameKo || null,
             description: site.category.description || null,
           }
         : {

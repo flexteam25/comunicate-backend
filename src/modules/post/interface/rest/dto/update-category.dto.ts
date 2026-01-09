@@ -7,6 +7,11 @@ export class UpdateCategoryDto {
   name?: string;
 
   @IsOptional()
+  @IsString({ message: 'nameKo must be a string' })
+  @MaxLength(50, { message: 'nameKo must not exceed 50 characters' })
+  nameKo?: string;
+
+  @IsOptional()
   @IsString({ message: 'Description must be a string' })
   description?: string;
 

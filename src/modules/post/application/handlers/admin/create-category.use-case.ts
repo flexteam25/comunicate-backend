@@ -4,6 +4,7 @@ import { IPostCategoryRepository } from '../../../infrastructure/persistence/rep
 
 export interface CreateCategoryCommand {
   name: string;
+  nameKo?: string;
   description?: string;
   showMain?: boolean;
 }
@@ -23,6 +24,7 @@ export class CreateCategoryUseCase {
 
     return this.categoryRepository.create({
       name: command.name,
+      nameKo: command.nameKo,
       description: command.description,
       showMain: command.showMain ?? false,
     });

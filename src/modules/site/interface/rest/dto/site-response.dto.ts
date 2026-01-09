@@ -4,6 +4,7 @@ import { BadgeType } from 'src/modules/badge/domain/entities/badge.entity';
 export class SiteCategoryResponse {
   id: string;
   name: string;
+  nameKo?: string;
   description?: string;
 }
 

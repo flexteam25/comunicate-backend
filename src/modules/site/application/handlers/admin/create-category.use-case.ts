@@ -5,6 +5,7 @@ import { EntityManager } from 'typeorm';
 
 export interface CreateCategoryCommand {
   name: string;
+  nameKo?: string;
   description?: string;
 }
 
@@ -29,6 +30,7 @@ export class CreateCategoryUseCase {
 
         const category = categoryRepo.create({
           name: command.name,
+          nameKo: command.nameKo,
           description: command.description,
         });
         return categoryRepo.save(category);
