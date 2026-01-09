@@ -186,9 +186,12 @@ export class PostRepository implements IPostRepository {
     }
 
     if (filters?.search) {
-      queryBuilder.andWhere('LOWER(post.title) LIKE LOWER(:search)', {
-        search: `%${filters.search}%`,
-      });
+      queryBuilder.andWhere(
+        '(LOWER(post.title) LIKE LOWER(:search) OR LOWER(user.displayName) LIKE LOWER(:search))',
+        {
+          search: `%${filters.search}%`,
+        },
+      );
     }
 
     if (cursor) {
@@ -351,9 +354,12 @@ export class PostRepository implements IPostRepository {
     }
 
     if (filters?.search) {
-      queryBuilder.andWhere('LOWER(post.title) LIKE LOWER(:search)', {
-        search: `%${filters.search}%`,
-      });
+      queryBuilder.andWhere(
+        '(LOWER(post.title) LIKE LOWER(:search) OR LOWER(user.displayName) LIKE LOWER(:search))',
+        {
+          search: `%${filters.search}%`,
+        },
+      );
     }
 
     // Build sort field expression for WHERE clause (for cursor pagination)
