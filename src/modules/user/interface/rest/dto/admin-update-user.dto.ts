@@ -1,4 +1,4 @@
-import { IsOptional, IsBoolean, IsInt, Min } from 'class-validator';
+import { IsOptional, IsBoolean, IsInt, Min, IsString } from 'class-validator';
 import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 import { Type } from 'class-transformer';
 
@@ -18,4 +18,8 @@ export class AdminUpdateUserDto {
   @TransformToBoolean
   @IsBoolean()
   partner?: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'Bio must be a string' })
+  bio?: string;
 }

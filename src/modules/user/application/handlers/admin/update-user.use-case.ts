@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { User } from '../../../domain/entities/user.entity';
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
@@ -26,6 +21,7 @@ export interface UpdateUserCommand {
   isActive?: boolean;
   points?: number; // Absolute value (>= 0), not delta
   partner?: boolean;
+  bio?: string;
 }
 
 @Injectable()
@@ -48,12 +44,10 @@ export class UpdateUserUseCase {
     // Check if points is being updated
     const currentPoints = user.userProfile?.points ?? 0;
     const newPoints = command.points;
-    const pointsChanged =
-      newPoints !== undefined && newPoints !== currentPoints;
+    const pointsChanged = newPoints !== undefined && newPoints !== currentPoints;
 
     // Calculate diff if points are being updated
-    const pointsDelta =
-      newPoints !== undefined ? newPoints - currentPoints : undefined;
+    const pointsDelta = newPoints !== undefined ? newPoints - currentPoints : undefined;
 
     // Check if isActive is being changed to false (user being deactivated)
     const wasActive = user.isActive;
@@ -82,11 +76,31 @@ export class UpdateUserUseCase {
           }
         }
 
+        // Update bio if provided
+        if (command.bio !== undefined) {
+          if (!user.userProfile) {
+            // Create user profile if it doesn't exist
+            const userProfile = new UserProfile();
+            userProfile.userId = user.id;
+            userProfile.bio = command.bio || null;
+            await entityManager.save(UserProfile, userProfile);
+            user.userProfile = userProfile;
+          } else {
+            user.userProfile.bio = command.bio || null;
+            await entityManager.save(UserProfile, user.userProfile);
+          }
+        }
+
         // Save user
         const savedUser = await entityManager.save(User, user);
 
         // Create point transaction if points changed (diff !== 0)
-        if (pointsChanged && pointsDelta !== undefined && pointsDelta !== 0) {
+        if (
+          pointsChanged &&
+          pointsDelta !== undefined &&
+          pointsDelta !== 0 &&
+          newPoints !== undefined
+        ) {
           const transactionType =
             pointsDelta > 0 ? PointTransactionType.EARN : PointTransactionType.SPEND;
 
@@ -95,7 +109,7 @@ export class UpdateUserUseCase {
             userId: command.userId,
             type: transactionType,
             amount: pointsDelta, // Positive for earn, negative for spend
-            balanceAfter: newPoints!,
+            balanceAfter: newPoints,
             category: 'admin_adjustment',
             referenceType: 'admin_adjustment',
             referenceId: command.adminId,
@@ -104,7 +118,7 @@ export class UpdateUserUseCase {
               adminId: command.adminId,
               previousPoints: currentPoints,
               pointsDelta: pointsDelta,
-              newPoints: newPoints!,
+              newPoints: newPoints,
             },
           });
           await pointTransactionRepo.save(pointTransaction);
@@ -115,7 +129,7 @@ export class UpdateUserUseCase {
             userId: command.userId,
             pointsDelta: pointsDelta,
             previousPoints: currentPoints,
-            newPoints: newPoints!,
+            newPoints: newPoints,
             transactionType: transactionType,
             updatedAt: new Date(),
           };
