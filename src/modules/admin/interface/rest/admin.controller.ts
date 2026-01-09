@@ -22,6 +22,7 @@ import { LoginUseCase } from '../../application/handlers/login.use-case';
 import { RefreshTokenUseCase } from '../../application/handlers/refresh-token.use-case';
 import { LogoutUseCase } from '../../application/handlers/logout.use-case';
 import { RequestOtpUseCase } from '../../application/handlers/request-otp.use-case';
+import { VerifyOtpForgotPasswordUseCase } from '../../application/handlers/verify-otp-forgot-password.use-case';
 import { ResetPasswordUseCase } from '../../application/handlers/reset-password.use-case';
 import { ChangePasswordUseCase } from '../../application/handlers/change-password.use-case';
 import { UpdateProfileUseCase } from '../../application/handlers/update-profile.use-case';
@@ -30,6 +31,7 @@ import { CreateAdminUseCase } from '../../application/handlers/create-admin.use-
 import { AdminLoginDto } from './dto/login.dto';
 import { AdminRefreshTokenDto } from './dto/refresh-token.dto';
 import { AdminRequestOtpDto } from './dto/request-otp.dto';
+import { VerifyOtpForgotPasswordDto } from './dto/verify-otp-forgot-password.dto';
 import { AdminResetPasswordDto } from './dto/reset-password.dto';
 import { AdminChangePasswordDto } from './dto/change-password.dto';
 import { AdminUpdateProfileDto } from './dto/update-profile.dto';
@@ -80,6 +82,7 @@ export class AdminController {
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly logoutUseCase: LogoutUseCase,
     private readonly requestOtpUseCase: RequestOtpUseCase,
+    private readonly verifyOtpForgotPasswordUseCase: VerifyOtpForgotPasswordUseCase,
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
     private readonly changePasswordUseCase: ChangePasswordUseCase,
     private readonly updateProfileUseCase: UpdateProfileUseCase,
@@ -187,7 +190,36 @@ export class AdminController {
       email: dto.email,
     });
 
+    const isTestMail =
+      this.configService.get<string>('TEST_MAIL')?.toLowerCase() === 'true';
+
+    if (isTestMail) {
+      return ApiResponseUtil.success(
+        {
+          code: result.otp || null,
+          note: 'Testing: OTP is returned in response instead of sending email',
+        },
+        result?.message || 'OTP generated successfully',
+      );
+    }
+
     return ApiResponseUtil.success(null, result?.message || 'OTP sent successfully');
+  }
+
+  @Post('verify-otp-forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async verifyOtpForgotPassword(
+    @Body() dto: VerifyOtpForgotPasswordDto,
+  ): Promise<ApiResponse<{ token: string }>> {
+    const result = await this.verifyOtpForgotPasswordUseCase.execute({
+      email: dto.email,
+      verifyCode: dto.verifyCode,
+    });
+
+    return ApiResponseUtil.success(
+      { token: result.token },
+      'OTP verified successfully. Use the token to reset your password.',
+    );
   }
 
   @Post('reset-password')
@@ -196,10 +228,9 @@ export class AdminController {
     @Body() dto: AdminResetPasswordDto,
   ): Promise<ApiResponse<{ message: string }>> {
     const result = await this.resetPasswordUseCase.execute({
-      email: dto.email,
+      token: dto.token,
       newPassword: dto.newPassword,
       passwordConfirmation: dto.passwordConfirmation,
-      verifyCode: dto.verifyCode,
     });
 
     return ApiResponseUtil.success({ message: result.message }, result.message);

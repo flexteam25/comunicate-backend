@@ -1,17 +1,16 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class AdminResetPasswordDto {
-  @IsEmail()
-  email: string;
+  @IsString()
+  @IsNotEmpty({ message: 'Token is required' })
+  token: string;
 
   @IsString()
-  @MinLength(8)
+  @IsNotEmpty({ message: 'New password is required' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
   newPassword: string;
 
   @IsString()
-  @MinLength(8)
+  @IsNotEmpty({ message: 'Password confirmation is required' })
   passwordConfirmation: string;
-
-  @IsString()
-  verifyCode: string;
 }

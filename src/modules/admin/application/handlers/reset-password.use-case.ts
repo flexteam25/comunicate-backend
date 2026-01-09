@@ -19,10 +19,9 @@ import {
 import { AdminToken } from '../../domain/entities/admin-token.entity';
 
 export interface ResetPasswordCommand {
-  email: string;
+  token: string;
   newPassword: string;
   passwordConfirmation: string;
-  verifyCode: string;
 }
 
 @Injectable()
@@ -45,26 +44,34 @@ export class ResetPasswordUseCase {
       throw new BadRequestException('Password confirmation does not match');
     }
 
-    // Find admin by email
-    const admin = await this.adminRepository.findByEmail(command.email);
+    // Verify token from Redis
+    const tokenKey = `token:forgot-password:admin:${command.token}`;
+    const tokenValue = await this.redisService.getString(tokenKey);
+
+    if (!tokenValue) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    // Parse token value to get adminId
+    let tokenData: { adminId: string; email: string };
+    try {
+      tokenData = JSON.parse(tokenValue);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    if (!tokenData.adminId) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    // Find admin by adminId
+    const admin = await this.adminRepository.findById(tokenData.adminId);
     if (!admin) {
-      throw new UnauthorizedException('Invalid email or OTP');
+      throw new UnauthorizedException('Invalid or expired token');
     }
 
     if (!admin.isActive) {
       throw new UnauthorizedException('Admin account is inactive');
-    }
-
-    // Verify OTP from Redis
-    const redisKey = `otp:forgot-password:admin:${admin.id}`;
-    const storedOtp = await this.redisService.getString(redisKey);
-
-    if (!storedOtp) {
-      throw new UnauthorizedException('OTP has expired or is invalid');
-    }
-
-    if (storedOtp !== command.verifyCode) {
-      throw new UnauthorizedException('Invalid OTP code');
     }
 
     // Hash new password (outside transaction)
@@ -98,8 +105,8 @@ export class ResetPasswordUseCase {
       },
     );
 
-    // Delete OTP from Redis after successful password reset
-    await this.redisService.delete(redisKey);
+    // Delete token from Redis after successful password reset
+    await this.redisService.delete(tokenKey);
 
     return {
       message: 'Password reset successfully. Please login with your new password.',

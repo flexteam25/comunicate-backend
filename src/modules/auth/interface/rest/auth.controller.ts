@@ -15,6 +15,7 @@ import { LogoutUseCase } from '../../application/handlers/logout.use-case';
 import { RequestOtpUseCase } from '../../application/handlers/request-otp.use-case';
 import { RequestOtpPhoneUseCase } from '../../application/handlers/request-otp-phone.use-case';
 import { VerifyOtpUseCase } from '../../application/handlers/verify-otp.use-case';
+import { VerifyOtpForgotPasswordUseCase } from '../../application/handlers/verify-otp-forgot-password.use-case';
 import { ResetPasswordUseCase } from '../../application/handlers/reset-password.use-case';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -22,6 +23,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { RequestOtpPhoneDto } from './dto/request-otp-phone.dto';
+import { VerifyOtpForgotPasswordDto } from './dto/verify-otp-forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponse } from '../../../../shared/dto/auth-response.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
@@ -47,6 +49,7 @@ export class AuthController {
     private readonly requestOtpUseCase: RequestOtpUseCase,
     private readonly requestOtpPhoneUseCase: RequestOtpPhoneUseCase,
     private readonly verifyOtpUseCase: VerifyOtpUseCase,
+    private readonly verifyOtpForgotPasswordUseCase: VerifyOtpForgotPasswordUseCase,
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
@@ -272,16 +275,31 @@ export class AuthController {
     return ApiResponseUtil.success(responseData, result.message);
   }
 
+  @Post('verify-otp-forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async verifyOtpForgotPassword(
+    @Body() dto: VerifyOtpForgotPasswordDto,
+  ): Promise<ApiResponse<{ token: string }>> {
+    const result = await this.verifyOtpForgotPasswordUseCase.execute({
+      email: dto.email,
+      verifyCode: dto.verifyCode,
+    });
+
+    return ApiResponseUtil.success(
+      { token: result.token },
+      'OTP verified successfully. Use the token to reset your password.',
+    );
+  }
+
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
     @Body() dto: ResetPasswordDto,
   ): Promise<ApiResponse<{ message: string }>> {
     const result = await this.resetPasswordUseCase.execute({
-      email: dto.email,
+      token: dto.token,
       newPassword: dto.newPassword,
       passwordConfirmation: dto.passwordConfirmation,
-      verifyCode: dto.verifyCode,
     });
 
     return ApiResponseUtil.success(

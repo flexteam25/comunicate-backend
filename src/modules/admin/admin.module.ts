@@ -15,6 +15,7 @@ import { LoginUseCase } from './application/handlers/login.use-case';
 import { RefreshTokenUseCase } from './application/handlers/refresh-token.use-case';
 import { LogoutUseCase } from './application/handlers/logout.use-case';
 import { RequestOtpUseCase } from './application/handlers/request-otp.use-case';
+import { VerifyOtpForgotPasswordUseCase } from './application/handlers/verify-otp-forgot-password.use-case';
 import { ResetPasswordUseCase } from './application/handlers/reset-password.use-case';
 import { ChangePasswordUseCase } from './application/handlers/change-password.use-case';
 import { UpdateProfileUseCase } from './application/handlers/update-profile.use-case';
@@ -29,6 +30,7 @@ import { TransactionService } from '../../shared/services/transaction.service';
 import { QueueClientModule } from '../../shared/queue/queue-client.module';
 import { UploadModule } from '../../shared/services/upload';
 import { AdminGuardsModule } from './infrastructure/guards/admin-guards.module';
+import { RedisModule } from '../../shared/redis/redis.module';
 
 @Module({
   imports: [
@@ -45,6 +47,7 @@ import { AdminGuardsModule } from './infrastructure/guards/admin-guards.module';
     UploadModule.register({ storageType: 'local' }),
     AdminGuardsModule,
     UserModule,
+    RedisModule,
   ],
   controllers: [AdminController, AdminUserBadgeController],
   providers: [
@@ -72,6 +75,7 @@ import { AdminGuardsModule } from './infrastructure/guards/admin-guards.module';
     RefreshTokenUseCase,
     LogoutUseCase,
     RequestOtpUseCase,
+    VerifyOtpForgotPasswordUseCase,
     ResetPasswordUseCase,
     ChangePasswordUseCase,
     UpdateProfileUseCase,
