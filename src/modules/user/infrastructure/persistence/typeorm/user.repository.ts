@@ -90,7 +90,8 @@ export class UserRepository implements IUserRepository {
     limit = 20,
   ): Promise<CursorPaginationResult<User>> {
     const realLimit = limit > 50 ? 50 : limit;
-    const sortBy = 'createdAt';
+    const sortBy = filters?.sortBy || 'createdAt';
+    const sortDir = filters?.sortDir || 'DESC';
 
     const queryBuilder = this.repository
       .createQueryBuilder('user')
@@ -99,20 +100,42 @@ export class UserRepository implements IUserRepository {
       .leftJoinAndSelect('userRoles.role', 'role')
       .leftJoinAndSelect('user.userBadges', 'userBadges')
       .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
-      .where('user.deletedAt IS NULL')
-      .orderBy('user.createdAt', 'DESC')
-      .addOrderBy('user.id', 'DESC');
+      .where('user.deletedAt IS NULL');
 
-    if (filters?.email) {
-      queryBuilder.andWhere('LOWER(user.email) LIKE LOWER(:email)', {
-        email: `%${filters.email}%`,
-      });
+    // Search in email or displayName
+    if (filters?.search) {
+      queryBuilder.andWhere(
+        '(LOWER(user.email) LIKE LOWER(:search) OR LOWER(user.displayName) LIKE LOWER(:search))',
+        {
+          search: `%${filters.search}%`,
+        },
+      );
+    } else {
+      // Only apply email and displayName filters if search is not provided
+      if (filters?.email) {
+        queryBuilder.andWhere('LOWER(user.email) LIKE LOWER(:email)', {
+          email: `%${filters.email}%`,
+        });
+      }
+
+      if (filters?.displayName) {
+        queryBuilder.andWhere('LOWER(user.displayName) LIKE LOWER(:displayName)', {
+          displayName: `%${filters.displayName}%`,
+        });
+      }
     }
 
-    if (filters?.displayName) {
-      queryBuilder.andWhere('LOWER(user.displayName) LIKE LOWER(:displayName)', {
-        displayName: `%${filters.displayName}%`,
-      });
+    // Status filter (if provided and not empty)
+    if (filters?.status && filters.status.trim() !== '') {
+      // Assuming status maps to isActive, but can be extended
+      if (filters.status.toLowerCase() === 'active' || filters.status === 'true') {
+        queryBuilder.andWhere('user.isActive = :isActive', { isActive: true });
+      } else if (
+        filters.status.toLowerCase() === 'inactive' ||
+        filters.status === 'false'
+      ) {
+        queryBuilder.andWhere('user.isActive = :isActive', { isActive: false });
+      }
     }
 
     if (filters?.isActive !== undefined) {
@@ -121,17 +144,41 @@ export class UserRepository implements IUserRepository {
       });
     }
 
+    // Determine sort field and apply sorting
+    if (sortBy === 'points') {
+      // Use COALESCE to handle NULL values (treat NULL as 0) for proper sorting
+      // Add as select with alias, then order by the alias
+      queryBuilder
+        .addSelect('COALESCE(userProfile.points, 0)', 'pointsValue')
+        .orderBy('pointsValue', sortDir)
+        .addOrderBy('user.id', sortDir);
+    } else {
+      queryBuilder.orderBy(`user.${sortBy}`, sortDir).addOrderBy('user.id', sortDir);
+    }
+
     if (cursor) {
       try {
         const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = `user.${sortBy}`;
+        // Determine sort field for cursor (same as above)
+        let cursorSortField: string;
+        if (sortBy === 'points') {
+          // Use COALESCE to handle NULL values (treat NULL as 0)
+          cursorSortField = 'COALESCE(userProfile.points, 0)';
+        } else {
+          cursorSortField = `user.${sortBy}`;
+        }
+
+        // For DESC order, use < comparison; for ASC, use >
+        const comparisonOp = sortDir === 'DESC' ? '<' : '>';
+        const idComparisonOp = sortDir === 'DESC' ? '<' : '>';
+
         if (sortValue !== null && sortValue !== undefined) {
           queryBuilder.andWhere(
-            `(${sortField} < :sortValue OR (${sortField} = :sortValue AND user.id < :cursorId))`,
+            `(${cursorSortField} ${comparisonOp} :sortValue OR (${cursorSortField} = :sortValue AND user.id ${idComparisonOp} :cursorId))`,
             { sortValue, cursorId: id },
           );
         } else {
-          queryBuilder.andWhere('user.id < :cursorId', {
+          queryBuilder.andWhere(`user.id ${idComparisonOp} :cursorId`, {
             cursorId: id,
           });
         }
@@ -142,6 +189,78 @@ export class UserRepository implements IUserRepository {
 
     queryBuilder.take(realLimit + 1);
 
+    // For points sorting, we need to use raw SQL to handle COALESCE properly
+    if (sortBy === 'points') {
+      // Get the SQL and parameters
+      const [sql, parameters] = queryBuilder.getQueryAndParameters();
+
+      // Modify ORDER BY to use COALESCE expression directly
+      const orderByExpression = `ORDER BY COALESCE("userProfile"."points", 0) ${sortDir}, "user"."id" ${sortDir}`;
+      let modifiedSql = sql;
+      if (sql.match(/ORDER BY/i)) {
+        modifiedSql = sql.replace(/ORDER BY.*$/i, orderByExpression);
+      } else {
+        modifiedSql = `${sql} ${orderByExpression}`;
+      }
+
+      // Execute the modified query
+      const rawResults: Array<Record<string, unknown>> =
+        await this.repository.manager.query(modifiedSql, parameters);
+
+      if (rawResults.length === 0) {
+        return { data: [], nextCursor: null, hasMore: false };
+      }
+
+      // Extract user IDs from raw results
+      const userIds: string[] = [];
+      const pointsMap = new Map<string, number>();
+      for (const row of rawResults) {
+        const userId = (row.user_id || row.userId || row.id) as string;
+        if (userId && !userIds.includes(userId)) {
+          userIds.push(userId);
+          const pointsValue =
+            (row.pointsValue as number | undefined) ??
+            (row.userProfile_points as number | undefined) ??
+            0;
+          pointsMap.set(userId, pointsValue);
+        }
+      }
+
+      if (userIds.length === 0) {
+        return { data: [], nextCursor: null, hasMore: false };
+      }
+
+      // Fetch entities with relations
+      const entities = await this.repository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.userProfile', 'userProfile')
+        .leftJoinAndSelect('user.userRoles', 'userRoles')
+        .leftJoinAndSelect('userRoles.role', 'role')
+        .leftJoinAndSelect('user.userBadges', 'userBadges')
+        .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
+        .where('user.id IN (:...ids)', { ids: userIds })
+        .getMany();
+
+      // Sort entities by pointsValue (maintain order from raw query)
+      const entityMap = new Map(entities.map((e) => [e.id, e]));
+      const sortedEntities = userIds
+        .map((id) => entityMap.get(id))
+        .filter((e): e is User => e !== undefined);
+
+      const hasMore = sortedEntities.length > realLimit;
+      const data = sortedEntities.slice(0, realLimit);
+
+      let nextCursor: string | null = null;
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        const pointsValue = pointsMap.get(lastItem.id) ?? 0;
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, pointsValue);
+      }
+
+      return { data, nextCursor, hasMore };
+    }
+
+    // For other sort fields, use normal query
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
@@ -149,7 +268,12 @@ export class UserRepository implements IUserRepository {
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
+      let fieldValue: unknown = null;
+      if (sortBy === 'points') {
+        fieldValue = lastItem.userProfile?.points ?? null;
+      } else {
+        fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
+      }
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
         sortValue = fieldValue as string | number | Date;

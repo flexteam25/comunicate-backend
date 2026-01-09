@@ -7,11 +7,15 @@ import {
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 export interface ListUsersCommand {
+  search?: string;
   email?: string;
   displayName?: string;
+  status?: string;
   isActive?: boolean;
   cursor?: string;
   limit?: number;
+  sortBy?: string;
+  sortDir?: 'ASC' | 'DESC';
 }
 
 @Injectable()
@@ -23,9 +27,14 @@ export class ListUsersUseCase {
 
   async execute(command: ListUsersCommand): Promise<CursorPaginationResult<User>> {
     const filters: UserFilters = {
-      email: command.email,
-      displayName: command.displayName,
+      // If search is provided, ignore email and displayName
+      search: command.search,
+      email: command.search ? undefined : command.email,
+      displayName: command.search ? undefined : command.displayName,
+      status: command.status,
       isActive: command.isActive,
+      sortBy: command.sortBy,
+      sortDir: command.sortDir,
     };
 
     return this.userRepository.findAllWithCursor(

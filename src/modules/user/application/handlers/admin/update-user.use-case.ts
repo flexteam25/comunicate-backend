@@ -24,7 +24,7 @@ export interface UpdateUserCommand {
   userId: string;
   adminId: string;
   isActive?: boolean;
-  points?: number;
+  points?: number; // Absolute value (>= 0), not delta
   partner?: boolean;
 }
 
@@ -47,19 +47,13 @@ export class UpdateUserUseCase {
 
     // Check if points is being updated
     const currentPoints = user.userProfile?.points ?? 0;
-    const pointsDelta = command.points;
-    const pointsChanged = pointsDelta !== undefined && pointsDelta !== 0;
+    const newPoints = command.points;
+    const pointsChanged =
+      newPoints !== undefined && newPoints !== currentPoints;
 
-    // Validate points adjustment if subtracting
-    if (pointsDelta !== undefined && pointsDelta < 0) {
-      // If subtracting, check if user has enough points
-      const newPoints = currentPoints + pointsDelta;
-      if (newPoints < 0) {
-        throw new BadRequestException(
-          `Insufficient points. Current: ${currentPoints}, attempting to subtract: ${Math.abs(pointsDelta)}`,
-        );
-      }
-    }
+    // Calculate diff if points are being updated
+    const pointsDelta =
+      newPoints !== undefined ? newPoints - currentPoints : undefined;
 
     // Check if isActive is being changed to false (user being deactivated)
     const wasActive = user.isActive;
@@ -74,9 +68,7 @@ export class UpdateUserUseCase {
         }
 
         // Update points if provided
-        if (pointsDelta !== undefined) {
-          const newPoints = currentPoints + pointsDelta;
-
+        if (newPoints !== undefined) {
           if (!user.userProfile) {
             // Create user profile if it doesn't exist
             const userProfile = new UserProfile();
@@ -93,18 +85,17 @@ export class UpdateUserUseCase {
         // Save user
         const savedUser = await entityManager.save(User, user);
 
-        // Create point transaction if points changed
-        if (pointsChanged && pointsDelta !== undefined) {
+        // Create point transaction if points changed (diff !== 0)
+        if (pointsChanged && pointsDelta !== undefined && pointsDelta !== 0) {
           const transactionType =
             pointsDelta > 0 ? PointTransactionType.EARN : PointTransactionType.SPEND;
 
-          const newPoints = currentPoints + pointsDelta;
           const pointTransactionRepo = entityManager.getRepository(PointTransaction);
           const pointTransaction = pointTransactionRepo.create({
             userId: command.userId,
             type: transactionType,
             amount: pointsDelta, // Positive for earn, negative for spend
-            balanceAfter: newPoints,
+            balanceAfter: newPoints!,
             category: 'admin_adjustment',
             referenceType: 'admin_adjustment',
             referenceId: command.adminId,
@@ -113,7 +104,7 @@ export class UpdateUserUseCase {
               adminId: command.adminId,
               previousPoints: currentPoints,
               pointsDelta: pointsDelta,
-              newPoints: newPoints,
+              newPoints: newPoints!,
             },
           });
           await pointTransactionRepo.save(pointTransaction);
@@ -124,7 +115,7 @@ export class UpdateUserUseCase {
             userId: command.userId,
             pointsDelta: pointsDelta,
             previousPoints: currentPoints,
-            newPoints: newPoints,
+            newPoints: newPoints!,
             transactionType: transactionType,
             updatedAt: new Date(),
           };

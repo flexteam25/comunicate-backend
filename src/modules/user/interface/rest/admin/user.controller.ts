@@ -136,11 +136,15 @@ export class AdminUserController {
   @HttpCode(HttpStatus.OK)
   async listUsers(@Query() query: AdminListUsersQueryDto): Promise<ApiResponse<any>> {
     const result = await this.listUsersUseCase.execute({
+      search: query.search,
       email: query.email,
       displayName: query.displayName,
+      status: query.status,
       isActive: query.isActive,
       cursor: query.cursor,
       limit: query.limit || 20,
+      sortBy: query.sortBy,
+      sortDir: query.sortDir?.toUpperCase() as 'ASC' | 'DESC' | undefined,
     });
 
     const users = result.data;
@@ -154,49 +158,93 @@ export class AdminUserController {
         exchangeAmount: number;
         refundCount: number;
         refundAmount: number;
+        giftCount: number;
+        giftAmount: number;
+        giftRefundCount: number;
+        giftRefundAmount: number;
       }
     > = {};
 
     if (userIds.length > 0) {
+      // Use conditional aggregation to calculate all stats in one query (1 row per user)
       const rawStats = await this.pointTransactionRepository
         .createQueryBuilder('pt')
         .select('pt.userId', 'userId')
-        .addSelect('pt.category', 'category')
-        .addSelect('COUNT(*)', 'count')
-        .addSelect('COALESCE(SUM(pt.amount), 0)', 'amount')
+        .addSelect(
+          `SUM(CASE WHEN pt.category = 'point_exchange' THEN 1 ELSE 0 END)`,
+          'exchangeCount',
+        )
+        .addSelect(
+          `COALESCE(SUM(CASE WHEN pt.category = 'point_exchange' THEN pt.amount ELSE 0 END), 0)`,
+          'exchangeAmount',
+        )
+        .addSelect(
+          `SUM(CASE WHEN pt.category = 'point_exchange_refund' THEN 1 ELSE 0 END)`,
+          'refundCount',
+        )
+        .addSelect(
+          `COALESCE(SUM(CASE WHEN pt.category = 'point_exchange_refund' THEN pt.amount ELSE 0 END), 0)`,
+          'refundAmount',
+        )
+        .addSelect(
+          `SUM(CASE WHEN pt.category = 'gifticon_redemption' THEN 1 ELSE 0 END)`,
+          'giftCount',
+        )
+        .addSelect(
+          `COALESCE(SUM(CASE WHEN pt.category = 'gifticon_redemption' THEN pt.amount ELSE 0 END), 0)`,
+          'giftAmount',
+        )
+        .addSelect(
+          `SUM(CASE WHEN pt.category = 'gifticon_redemption_refund' THEN 1 ELSE 0 END)`,
+          'giftRefundCount',
+        )
+        .addSelect(
+          `COALESCE(SUM(CASE WHEN pt.category = 'gifticon_redemption_refund' THEN pt.amount ELSE 0 END), 0)`,
+          'giftRefundAmount',
+        )
         .where('pt.userId IN (:...userIds)', { userIds })
         .andWhere('pt.category IN (:...categories)', {
-          categories: ['point_exchange', 'point_exchange_refund'],
+          categories: [
+            'point_exchange',
+            'point_exchange_refund',
+            'gifticon_redemption',
+            'gifticon_redemption_refund',
+          ],
         })
         .groupBy('pt.userId')
-        .addGroupBy('pt.category')
         .getRawMany();
 
-      for (const row of rawStats as Array<{
-        userId: string;
-        category: string;
-        count: string;
-        amount: string;
-      }>) {
-        if (!exchangeStatsByUser[row.userId]) {
-          exchangeStatsByUser[row.userId] = {
-            exchangeCount: 0,
-            exchangeAmount: 0,
-            refundCount: 0,
-            refundAmount: 0,
-          };
-        }
-        const stats = exchangeStatsByUser[row.userId];
-        const count = Number(row.count) || 0;
-        const amount = Number(row.amount) || 0;
-        if (row.category === 'point_exchange') {
-          stats.exchangeCount += count;
-          stats.exchangeAmount += amount;
-        } else if (row.category === 'point_exchange_refund') {
-          stats.refundCount += count;
-          stats.refundAmount += amount;
-        }
-      }
+      // Map results directly using Object.fromEntries (no explicit loop)
+      Object.assign(
+        exchangeStatsByUser,
+        Object.fromEntries(
+          (
+            rawStats as Array<{
+              userId: string;
+              exchangeCount: string;
+              exchangeAmount: string;
+              refundCount: string;
+              refundAmount: string;
+              giftCount: string;
+              giftAmount: string;
+              giftRefundCount: string;
+              giftRefundAmount: string;
+            }>
+          ).map((row) => [
+            row.userId,
+            {
+              exchangeCount: Number(row.exchangeCount) || 0,
+              exchangeAmount: Number(row.exchangeAmount) || 0,
+              refundCount: Number(row.refundCount) || 0,
+              refundAmount: Number(row.refundAmount) || 0,
+              giftCount: Number(row.giftCount) || 0,
+              giftAmount: Number(row.giftAmount) || 0,
+              giftRefundCount: Number(row.giftRefundCount) || 0,
+              giftRefundAmount: Number(row.giftRefundAmount) || 0,
+            },
+          ]),
+        ),
+      );
     }
 
     return ApiResponseUtil.success({
@@ -206,6 +254,10 @@ export class AdminUserController {
           exchangeAmount: 0,
           refundCount: 0,
           refundAmount: 0,
+          giftCount: 0,
+          giftAmount: 0,
+          giftRefundCount: 0,
+          giftRefundAmount: 0,
         };
 
         return {
@@ -228,6 +280,10 @@ export class AdminUserController {
           exchangeAmount: stats.exchangeAmount,
           refundCount: stats.refundCount,
           refundAmount: stats.refundAmount,
+          giftCount: stats.giftCount,
+          giftAmount: stats.giftAmount,
+          giftRefundCount: stats.giftRefundCount,
+          giftRefundAmount: stats.giftRefundAmount,
           badge: (() => {
             const activeBadge = (user.userBadges || []).find(
               (ub) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,

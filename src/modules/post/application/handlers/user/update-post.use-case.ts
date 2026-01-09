@@ -100,6 +100,12 @@ export class UpdatePostUseCase {
             if (!category) {
               throw new NotFoundException('Category not found');
             }
+
+            if (category.specialKey !== null) {
+              throw new BadRequestException(
+                'Cannot update post to category that has special key',
+              );
+            }
           }
 
           // Check for duplicate title if title is being updated

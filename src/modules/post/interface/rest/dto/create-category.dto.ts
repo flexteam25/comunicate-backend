@@ -18,4 +18,8 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsBoolean({ message: 'showMain must be a boolean' })
   showMain?: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'specialKey must be a string' })
+  specialKey?: string;
 }

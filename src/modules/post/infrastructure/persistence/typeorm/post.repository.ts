@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from '../../../domain/entities/post.entity';
 import { IPostRepository } from '../repositories/post.repository';
+import { IPostCategoryRepository } from '../repositories/post-category.repository';
 import {
   CursorPaginationResult,
   CursorPaginationUtil,
@@ -13,6 +14,8 @@ export class PostRepository implements IPostRepository {
   constructor(
     @InjectRepository(Post)
     private readonly repository: Repository<Post>,
+    @Inject('IPostCategoryRepository')
+    private readonly categoryRepository: IPostCategoryRepository,
   ) {}
 
   async findById(id: string, relations?: string[]): Promise<Post | null> {
@@ -161,9 +164,19 @@ export class PostRepository implements IPostRepository {
     }
 
     if (filters?.categoryId) {
-      queryBuilder.andWhere('post.categoryId = :categoryId', {
-        categoryId: filters.categoryId,
-      });
+      // Check if category has specialKey
+      const category = await this.categoryRepository.findById(filters.categoryId);
+      if (category && category.specialKey === 'popular') {
+        // Special query: posts with likeCount > 5
+        queryBuilder.andWhere(
+          `(SELECT COUNT(*) FROM post_reactions WHERE post_id = post.id AND reaction_type = 'like') > 5`,
+        );
+      } else {
+        // Normal query: filter by categoryId
+        queryBuilder.andWhere('post.categoryId = :categoryId', {
+          categoryId: filters.categoryId,
+        });
+      }
     }
 
     if (filters?.userId) {
@@ -323,9 +336,18 @@ export class PostRepository implements IPostRepository {
     }
 
     if (filters?.categoryId) {
-      queryBuilder.andWhere('post.categoryId = :categoryId', {
-        categoryId: filters.categoryId,
-      });
+      // Check if category has specialKey
+      const category = await this.categoryRepository.findById(filters.categoryId);
+      if (category && category.specialKey === 'popular') {
+        // Special query: posts with likeCount > 5
+        // Note: likeCount is already computed in the query above
+        queryBuilder.having('COUNT(DISTINCT likeReaction.id) > 5');
+      } else {
+        // Normal query: filter by categoryId
+        queryBuilder.andWhere('post.categoryId = :categoryId', {
+          categoryId: filters.categoryId,
+        });
+      }
     }
 
     if (filters?.search) {

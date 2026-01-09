@@ -188,6 +188,7 @@ export class PostController {
         nameKo: cat.nameKo || null,
         description: cat.description || null,
         showMain: cat.showMain ?? false,
+        specialKey: cat.specialKey || null,
       })),
     );
   }

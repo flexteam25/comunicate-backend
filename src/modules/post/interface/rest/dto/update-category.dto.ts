@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsBoolean, ValidateIf } from 'class-validator';
 
 export class UpdateCategoryDto {
   @IsOptional()
@@ -18,4 +18,9 @@ export class UpdateCategoryDto {
   @IsOptional()
   @IsBoolean({ message: 'showMain must be a boolean' })
   showMain?: boolean;
+
+  @IsOptional()
+  @ValidateIf((o) => o.specialKey !== null)
+  @IsString({ message: 'specialKey must be a string' })
+  specialKey?: string | null;
 }

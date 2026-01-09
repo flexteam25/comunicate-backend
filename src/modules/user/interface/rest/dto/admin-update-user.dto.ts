@@ -11,6 +11,7 @@ export class AdminUpdateUserDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  @Min(0, { message: 'Points must be greater than or equal to 0' })
   points?: number;
 
   @IsOptional()

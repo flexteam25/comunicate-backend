@@ -34,6 +34,12 @@ export class CreatePostUseCase {
       throw new BadRequestException('Category not found');
     }
 
+    if (category.specialKey !== null) {
+      throw new BadRequestException(
+        'Cannot create post with category that has special key',
+      );
+    }
+
     // Check for duplicate title
     const existingPost = await this.postRepository.findByTitle(command.title);
     if (existingPost) {

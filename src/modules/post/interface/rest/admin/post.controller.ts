@@ -41,6 +41,7 @@ import {
   CurrentAdmin,
   CurrentAdminPayload,
 } from '../../../../admin/infrastructure/decorators/current-admin.decorator';
+import { POST_CATEGORY_SPECIAL_KEYS } from '../../../domain/constants/post-category-special-keys';
 
 @Controller('admin/posts')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -108,6 +109,7 @@ export class AdminPostController {
       nameKo: category.nameKo || null,
       description: category.description || null,
       showMain: category.showMain ?? false,
+      specialKey: category.specialKey || null,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };
@@ -122,6 +124,13 @@ export class AdminPostController {
     return ApiResponseUtil.success(
       categories.map((cat) => this.mapCategoryToResponse(cat)),
     );
+  }
+
+  @Get('categories/special-keys')
+  @RequirePermission('posts.manage')
+  @HttpCode(HttpStatus.OK)
+  listSpecialKeys(): ApiResponse<string[]> {
+    return ApiResponseUtil.success([...POST_CATEGORY_SPECIAL_KEYS]);
   }
 
   @Post('categories')

@@ -2,9 +2,13 @@ import { User } from '../../../domain/entities/user.entity';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 export interface UserFilters {
+  search?: string; // Search in email or displayName
   email?: string;
   displayName?: string;
+  status?: string;
   isActive?: boolean;
+  sortBy?: string;
+  sortDir?: 'ASC' | 'DESC';
 }
 
 export interface IUserRepository {
