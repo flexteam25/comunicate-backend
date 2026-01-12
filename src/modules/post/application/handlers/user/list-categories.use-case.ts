@@ -10,6 +10,6 @@ export class ListCategoriesUseCase {
   ) {}
 
   async execute(): Promise<PostCategory[]> {
-    return this.categoryRepository.findAllForUser();
+    return this.categoryRepository.findAll();
   }
 }

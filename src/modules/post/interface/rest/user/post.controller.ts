@@ -191,6 +191,7 @@ export class PostController {
         showMain: cat.showMain ?? false,
         specialKey: cat.specialKey || null,
         order: cat.order || null,
+        adminCreateOnly: cat.adminCreateOnly ?? true,
       })),
     );
   }
