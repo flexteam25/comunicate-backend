@@ -1,7 +1,5 @@
 import {
   Injectable,
-  BadRequestException,
-  ForbiddenException,
   Inject,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
@@ -12,6 +10,8 @@ import { TransactionService } from '../../../../shared/services/transaction.serv
 import { Admin } from '../../domain/entities/admin.entity';
 import { AdminPermission } from '../../domain/entities/admin-permission.entity';
 import { Permission } from '../../../user/domain/entities/permission.entity';
+import { badRequest, forbidden } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface CreateAdminCommand {
   creatorAdminId: string;
@@ -36,7 +36,7 @@ export class CreateAdminUseCase {
     // Check if creator has permission (outside transaction)
     const creator = await this.adminRepository.findById(command.creatorAdminId);
     if (!creator) {
-      throw new BadRequestException('Creator admin not found');
+      throw badRequest(MessageKeys.ADMIN_NOT_FOUND);
     }
 
     // Super admin bypasses permission check
@@ -47,14 +47,14 @@ export class CreateAdminUseCase {
         'admin.create',
       );
       if (!hasPermission) {
-        throw new ForbiddenException('You do not have permission to create admins');
+        throw forbidden(MessageKeys.PERMISSION_DENIED);
       }
     }
 
     // Check if email already exists (outside transaction)
     const existingAdmin = await this.adminRepository.findByEmail(command.email);
     if (existingAdmin) {
-      throw new BadRequestException('Email already exists');
+      throw badRequest(MessageKeys.EMAIL_ALREADY_EXISTS);
     }
 
     // Hash password (outside transaction)

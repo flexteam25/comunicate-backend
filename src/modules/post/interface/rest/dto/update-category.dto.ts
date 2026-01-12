@@ -1,4 +1,12 @@
-import { IsString, IsOptional, MaxLength, IsBoolean, ValidateIf, IsInt, Min } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  MaxLength,
+  IsBoolean,
+  ValidateIf,
+  IsInt,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateCategoryDto {

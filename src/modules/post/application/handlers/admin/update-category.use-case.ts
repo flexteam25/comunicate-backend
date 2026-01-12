@@ -44,7 +44,10 @@ export class UpdateCategoryUseCase {
 
     // Validate specialKey if provided
     if (command.specialKey !== undefined) {
-      if (command.specialKey !== null && !isValidPostCategorySpecialKey(command.specialKey)) {
+      if (
+        command.specialKey !== null &&
+        !isValidPostCategorySpecialKey(command.specialKey)
+      ) {
         throw new BadRequestException(
           `specialKey must be one of: ${POST_CATEGORY_SPECIAL_KEYS.join(', ')}`,
         );

@@ -9,11 +9,14 @@ import {
 import { Request, Response } from 'express';
 import { ApiResponseUtil } from '../dto/api-response.dto';
 import { LoggerService } from '../logger/logger.service';
+import { ApiExceptionWithKey } from '../exceptions/api-exception-with-key';
 
 interface HttpExceptionResponse {
   message?: string | string[];
   error?: string;
   statusCode?: number;
+  messageKey?: string;
+  params?: Record<string, string | number>;
 }
 
 /**
@@ -33,9 +36,17 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
+    let messageKey: string | undefined = undefined;
+    let params: Record<string, string | number> | undefined = undefined;
     let data: Record<string, unknown> | undefined = undefined;
 
-    if (exception instanceof HttpException) {
+    if (exception instanceof ApiExceptionWithKey) {
+      // Handle custom exception with messageKey and params
+      status = exception.getStatus();
+      messageKey = exception.getMessageKey();
+      params = exception.getParams();
+      message = exception.message; // Keep for logging
+    } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
@@ -43,11 +54,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         const responseObj = exceptionResponse as HttpExceptionResponse;
-        const responseMessage = Array.isArray(responseObj.message)
-          ? responseObj.message.join(', ')
-          : responseObj.message;
 
-        message = responseMessage || exception.message || 'An error occurred';
+        // Check if response has messageKey (from ApiExceptionWithKey)
+        if (responseObj.messageKey) {
+          messageKey = responseObj.messageKey;
+          params = responseObj.params || {};
+        } else {
+          // Legacy format - convert message to messageKey if possible
+          const responseMessage = Array.isArray(responseObj.message)
+            ? responseObj.message.join(', ')
+            : responseObj.message;
+          message = responseMessage || exception.message || 'An error occurred';
+        }
 
         // Include additional error details if available
         if (responseObj.error || responseObj.statusCode) {
@@ -85,14 +103,49 @@ export class ApiExceptionFilter implements ExceptionFilter {
       this.logger.warn('Client error', logData, 'error');
     }
 
-    // For 500 errors, hide detailed message in production unless debug mode is enabled
-    if (status === HttpStatus.INTERNAL_SERVER_ERROR && !isDebugMode) {
-      message = 'Internal server error';
-      data = undefined;
+    // Map HTTP status codes to messageKey if not already set
+    if (!messageKey) {
+      switch (status) {
+        case HttpStatus.BAD_REQUEST:
+          messageKey = 'BAD_REQUEST';
+          break;
+        case HttpStatus.UNAUTHORIZED:
+          messageKey = 'UNAUTHORIZED';
+          break;
+        case HttpStatus.FORBIDDEN:
+          messageKey = 'FORBIDDEN';
+          break;
+        case HttpStatus.NOT_FOUND:
+          messageKey = 'NOT_FOUND';
+          break;
+        case HttpStatus.CONFLICT:
+          messageKey = 'CONFLICT';
+          break;
+        case HttpStatus.INTERNAL_SERVER_ERROR:
+          messageKey = 'INTERNAL_SERVER_ERROR';
+          // For 500 errors, hide detailed message in production unless debug mode is enabled
+          if (!isDebugMode) {
+            message = 'Internal server error';
+            params = undefined;
+            data = undefined;
+          }
+          break;
+        default:
+          messageKey = 'INTERNAL_SERVER_ERROR';
+      }
+    } else {
+      // For 500 errors with messageKey, hide detailed message in production unless debug mode is enabled
+      if (status === HttpStatus.INTERNAL_SERVER_ERROR && !isDebugMode) {
+        message = 'Internal server error';
+        messageKey = 'INTERNAL_SERVER_ERROR';
+        params = undefined;
+        data = undefined;
+      }
     }
 
     // Format response using ApiResponseUtil
-    const apiResponse = ApiResponseUtil.error(message, data);
+    // Always use messageKey format
+    const apiResponse = ApiResponseUtil.error(messageKey, params || {}, data);
 
     response.status(status).json(apiResponse);
   }

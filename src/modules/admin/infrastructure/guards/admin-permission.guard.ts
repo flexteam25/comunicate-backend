@@ -2,12 +2,13 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
   Inject,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IAdminPermissionRepository } from '../persistence/repositories/admin-permission.repository';
 import { IAdminRepository } from '../persistence/repositories/admin.repository';
+import { forbidden } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class AdminPermissionGuard implements CanActivate {
@@ -36,7 +37,7 @@ export class AdminPermissionGuard implements CanActivate {
     const admin = request.admin;
 
     if (!admin) {
-      throw new ForbiddenException('Admin not authenticated');
+      throw forbidden(MessageKeys.PERMISSION_DENIED);
     }
 
     // Super admin bypasses all permission checks
@@ -51,7 +52,7 @@ export class AdminPermissionGuard implements CanActivate {
     );
 
     if (!hasPermission) {
-      throw new ForbiddenException(`You do not have permission: ${requiredPermission}`);
+      throw forbidden(MessageKeys.PERMISSION_DENIED, { permission: requiredPermission });
     }
 
     return true;

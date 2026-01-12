@@ -1,8 +1,10 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IAdminRepository } from '../../infrastructure/persistence/repositories/admin.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { Admin } from '../../domain/entities/admin.entity';
+import { unauthorized } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateProfileCommand {
   adminId: string;
@@ -22,7 +24,7 @@ export class UpdateProfileUseCase {
     // Find admin (outside transaction for validation)
     const admin = await this.adminRepository.findById(command.adminId);
     if (!admin) {
-      throw new UnauthorizedException('Admin not found');
+      throw unauthorized(MessageKeys.ADMIN_NOT_FOUND);
     }
 
     // Execute update in transaction

@@ -1,11 +1,11 @@
 import {
   Injectable,
-  NotFoundException,
-  UnauthorizedException,
   Inject,
 } from '@nestjs/common';
 import { IAdminRepository } from '../../infrastructure/persistence/repositories/admin.repository';
 import { RedisService } from '../../../../shared/redis/redis.service';
+import { notFound, unauthorized } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface VerifyOtpForgotPasswordCommand {
   email: string;
@@ -24,11 +24,11 @@ export class VerifyOtpForgotPasswordUseCase {
     // Find admin by email
     const admin = await this.adminRepository.findByEmail(command.email);
     if (!admin) {
-      throw new NotFoundException('Account not found');
+      throw notFound(MessageKeys.ADMIN_NOT_FOUND);
     }
 
     if (!admin.isActive) {
-      throw new NotFoundException('Account not found');
+      throw notFound(MessageKeys.ADMIN_NOT_FOUND);
     }
 
     // Verify OTP from Redis
@@ -36,11 +36,11 @@ export class VerifyOtpForgotPasswordUseCase {
     const storedOtp = await this.redisService.getString(redisKey);
 
     if (!storedOtp) {
-      throw new UnauthorizedException('OTP has expired or is invalid');
+      throw unauthorized(MessageKeys.OTP_EXPIRED_OR_INVALID);
     }
 
     if (storedOtp !== command.verifyCode) {
-      throw new UnauthorizedException('Invalid OTP code');
+      throw unauthorized(MessageKeys.INVALID_OTP_CODE);
     }
 
     // Generate token (64 characters, alphanumeric)

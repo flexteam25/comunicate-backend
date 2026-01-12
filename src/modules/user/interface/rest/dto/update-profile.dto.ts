@@ -1,10 +1,12 @@
 import { IsDate, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
+import { MaxKoreanChars } from '../../../../../shared/validators/max-korean-chars.validator';
 
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @MaxKoreanChars(6)
   displayName?: string;
 
   @IsOptional()

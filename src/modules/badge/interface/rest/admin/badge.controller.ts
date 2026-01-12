@@ -31,6 +31,7 @@ import { CreateBadgeDto } from './dto/create-badge.dto';
 import { UpdateBadgeDto } from './dto/update-badge.dto';
 import { Badge } from '../../../domain/entities/badge.entity';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
@@ -189,7 +190,10 @@ export class AdminBadgeController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ success: boolean }>> {
     await this.deleteBadgeUseCase.execute({ badgeId: id });
-    return ApiResponseUtil.success({ success: true }, 'Badge deleted successfully');
+    return ApiResponseUtil.success(
+      { success: true },
+      MessageKeys.BADGE_DELETED_SUCCESS,
+    );
   }
 
   @Post(':id/restore')
@@ -199,6 +203,9 @@ export class AdminBadgeController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ success: boolean }>> {
     await this.restoreBadgeUseCase.execute({ badgeId: id });
-    return ApiResponseUtil.success({ success: true }, 'Badge restored successfully');
+    return ApiResponseUtil.success(
+      { success: true },
+      MessageKeys.BADGE_RESTORED_SUCCESS,
+    );
   }
 }

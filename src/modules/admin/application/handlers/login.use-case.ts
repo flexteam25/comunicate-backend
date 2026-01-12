@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IAdminRepository } from '../../infrastructure/persistence/repositories/admin.repository';
 import { IAdminTokenRepository } from '../../infrastructure/persistence/repositories/admin-token.repository';
@@ -7,6 +7,8 @@ import { JwtService, TokenPair } from '../../../../shared/services/jwt.service';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { AdminToken } from '../../domain/entities/admin-token.entity';
 import { Admin } from '../../domain/entities/admin.entity';
+import { unauthorized } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface LoginCommand {
   email: string;
@@ -36,11 +38,11 @@ export class LoginUseCase {
     // Find admin (outside transaction for validation)
     const admin = await this.adminRepository.findByEmail(command.email);
     if (!admin) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw unauthorized(MessageKeys.INVALID_CREDENTIALS);
     }
 
     if (!admin.isActive) {
-      throw new UnauthorizedException('Admin account is inactive');
+      throw unauthorized(MessageKeys.ADMIN_ACCOUNT_INACTIVE);
     }
 
     // Verify password (outside transaction)
@@ -49,7 +51,7 @@ export class LoginUseCase {
       admin.passwordHash,
     );
     if (!isValidPassword) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw unauthorized(MessageKeys.INVALID_CREDENTIALS);
     }
 
     // Generate token pair (outside transaction)

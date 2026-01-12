@@ -19,6 +19,7 @@ import { RestoreCategoryUseCase } from '../../../application/handlers/admin/rest
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/admin-permission.guard';
 import { RequirePermission } from '../../../../admin/infrastructure/decorators/require-permission.decorator';
@@ -42,7 +43,7 @@ export class AdminCategoryController {
     @Body() dto: CreateCategoryDto,
   ): Promise<ApiResponse<SiteCategory>> {
     const category = await this.createCategoryUseCase.execute(dto);
-    return ApiResponseUtil.success(category, 'Category created successfully');
+    return ApiResponseUtil.success(category, MessageKeys.CATEGORY_CREATED_SUCCESS);
   }
 
   @Get()
@@ -64,7 +65,7 @@ export class AdminCategoryController {
       categoryId: id,
       ...dto,
     });
-    return ApiResponseUtil.success(category, 'Category updated successfully');
+    return ApiResponseUtil.success(category, MessageKeys.CATEGORY_UPDATED_SUCCESS);
   }
 
   @Delete(':id')
@@ -74,9 +75,10 @@ export class AdminCategoryController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteCategoryUseCase.execute({ categoryId: id });
-    return ApiResponseUtil.success({
-      message: 'Category deleted successfully',
-    });
+    return ApiResponseUtil.success(
+      { message: 'Category deleted successfully' },
+      MessageKeys.CATEGORY_DELETED_SUCCESS,
+    );
   }
 
   @Put('/restore/:id')
@@ -86,8 +88,9 @@ export class AdminCategoryController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.restoreCategoryUseCase.execute({ categoryId: id });
-    return ApiResponseUtil.success({
-      message: 'Category restored successfully',
-    });
+    return ApiResponseUtil.success(
+      { message: 'Category restored successfully' },
+      MessageKeys.CATEGORY_RESTORED_SUCCESS,
+    );
   }
 }

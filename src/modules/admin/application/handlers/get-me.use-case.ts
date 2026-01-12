@@ -1,6 +1,8 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IAdminRepository } from '../../infrastructure/persistence/repositories/admin.repository';
 import { Admin } from '../../domain/entities/admin.entity';
+import { unauthorized } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class GetMeUseCase {
@@ -18,7 +20,7 @@ export class GetMeUseCase {
     ]);
 
     if (!admin) {
-      throw new UnauthorizedException('Admin not found');
+      throw unauthorized(MessageKeys.ADMIN_NOT_FOUND);
     }
 
     return admin;

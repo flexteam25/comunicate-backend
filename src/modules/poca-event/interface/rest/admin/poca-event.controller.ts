@@ -30,6 +30,7 @@ import { CreatePocaEventDto } from '../dto/create-poca-event.dto';
 import { UpdatePocaEventDto } from '../dto/update-poca-event.dto';
 import { ListAdminPocaEventsQueryDto } from '../dto/list-admin-poca-events-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { MulterFile } from '../../../../../shared/services/upload';
@@ -212,7 +213,10 @@ export class AdminPocaEventController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deletePocaEventUseCase.execute({ eventId: id });
-    return ApiResponseUtil.success({ message: 'Event deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Event deleted successfully' },
+      MessageKeys.EVENT_DELETED_SUCCESS,
+    );
   }
 
   @Get()

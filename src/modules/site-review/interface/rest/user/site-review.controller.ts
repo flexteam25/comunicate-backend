@@ -44,6 +44,7 @@ import {
 import { SiteReviewStatisticsResponseDto } from '../dto/site-review-statistics-response.dto';
 import { ListSiteReviewsQueryDto } from '../dto/list-site-reviews-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 
@@ -325,7 +326,7 @@ export class SiteReviewController {
       userId: user.userId,
     });
 
-    return ApiResponseUtil.success(null, 'Site review deleted successfully');
+    return ApiResponseUtil.success(null, MessageKeys.SITE_REVIEW_DELETED_SUCCESS);
   }
 
   @Post(':id/react')
@@ -342,7 +343,7 @@ export class SiteReviewController {
       reactionType: dto.reactionType,
     });
 
-    return ApiResponseUtil.success(reaction, 'Reaction updated successfully');
+    return ApiResponseUtil.success(reaction, MessageKeys.REACTION_UPDATED_SUCCESS);
   }
 
   @Get(':id/comments')
@@ -410,6 +411,6 @@ export class SiteReviewController {
       userId: user.userId,
     });
 
-    return ApiResponseUtil.success(null, 'Comment deleted successfully');
+    return ApiResponseUtil.success(null, MessageKeys.COMMENT_DELETED_SUCCESS);
   }
 }

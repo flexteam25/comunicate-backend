@@ -15,6 +15,7 @@ import { RemoveBadgeUseCase } from '../../../user/application/handlers/admin/rem
 import { AssignBadgeDto } from './dto/assign-badge.dto';
 import { RemoveBadgeDto } from './dto/remove-badge.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 import { UserBadge } from '../../../user/domain/entities/user-badge.entity';
 
 @Controller('admin/user-badges')
@@ -34,7 +35,7 @@ export class AdminUserBadgeController {
       badgeId: dto.badgeId,
       handlePoint: dto.handlePoint ?? false,
     });
-    return ApiResponseUtil.success(userBadge, 'Badge assigned successfully');
+    return ApiResponseUtil.success(userBadge, MessageKeys.BADGE_ASSIGNED_SUCCESS);
   }
 
   @Delete()
@@ -48,6 +49,9 @@ export class AdminUserBadgeController {
       badgeId: dto.badgeId,
       handlePoint: dto.handlePoint ?? false,
     });
-    return ApiResponseUtil.success({ success: true }, 'Badge removed successfully');
+    return ApiResponseUtil.success(
+      { success: true },
+      MessageKeys.BADGE_REMOVED_SUCCESS,
+    );
   }
 }

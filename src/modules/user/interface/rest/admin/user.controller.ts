@@ -29,6 +29,7 @@ import { AdminListUsersQueryDto } from '../dto/admin-list-users-query.dto';
 import { AdminUpdateUserDto } from '../dto/admin-update-user.dto';
 import { AdminCreateUserDto } from '../dto/admin-create-user.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
 import { Inject } from '@nestjs/common';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
@@ -428,6 +429,9 @@ export class AdminUserController {
       adminId: admin.adminId,
     });
 
-    return ApiResponseUtil.success({ message: 'User deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'User deleted successfully' },
+      MessageKeys.USER_DELETED_SUCCESS,
+    );
   }
 }

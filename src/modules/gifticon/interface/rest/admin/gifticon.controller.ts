@@ -40,6 +40,7 @@ import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-resp
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { MulterFile } from '../../../../../shared/services/upload';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Controller('admin/gifticons')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -143,7 +144,10 @@ export class AdminGifticonController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteGifticonUseCase.execute({ gifticonId: id });
-    return ApiResponseUtil.success({ message: 'Gifticon deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Gifticon deleted successfully' },
+      MessageKeys.GIFTCON_DELETED_SUCCESS,
+    );
   }
 
   @Get()

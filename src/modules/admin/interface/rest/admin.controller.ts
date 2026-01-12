@@ -37,6 +37,7 @@ import { AdminChangePasswordDto } from './dto/change-password.dto';
 import { AdminUpdateProfileDto } from './dto/update-profile.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 import { AdminJwtAuthGuard } from '../../infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../infrastructure/guards/admin-permission.guard';
 import {
@@ -139,7 +140,7 @@ export class AdminController {
       refreshToken: result.tokens.refreshToken,
     };
 
-    return ApiResponseUtil.success(authResponse, 'Login successful');
+    return ApiResponseUtil.success(authResponse, MessageKeys.LOGIN_SUCCESS);
   }
 
   @Post('refresh')
@@ -167,7 +168,7 @@ export class AdminController {
       refreshToken: result.tokens.refreshToken,
     };
 
-    return ApiResponseUtil.success(authResponse, 'Token refreshed successfully');
+    return ApiResponseUtil.success(authResponse, MessageKeys.TOKEN_REFRESHED_SUCCESS);
   }
 
   @Post('logout')
@@ -180,7 +181,10 @@ export class AdminController {
       tokenId: admin.tokenId,
     });
 
-    return ApiResponseUtil.success({ message: 'Logout successful' }, 'Logout successful');
+    return ApiResponseUtil.success(
+      { message: MessageKeys.LOGOUT_SUCCESS },
+      MessageKeys.LOGOUT_SUCCESS,
+    );
   }
 
   @Post('request-otp')
@@ -199,11 +203,11 @@ export class AdminController {
           code: result.otp || null,
           note: 'Testing: OTP is returned in response instead of sending email',
         },
-        result?.message || 'OTP generated successfully',
+        result?.message || MessageKeys.OTP_GENERATED_SUCCESS,
       );
     }
 
-    return ApiResponseUtil.success(null, result?.message || 'OTP sent successfully');
+    return ApiResponseUtil.success(null, result?.message || MessageKeys.OTP_SENT_SUCCESS);
   }
 
   @Post('verify-otp-forgot-password')
@@ -308,7 +312,7 @@ export class AdminController {
       updatedAt: adminData.updatedAt,
     };
 
-    return ApiResponseUtil.success(adminResponse, 'Profile updated successfully');
+    return ApiResponseUtil.success(adminResponse, MessageKeys.PROFILE_UPDATED_SUCCESS);
   }
 
   @Get('me')
@@ -332,7 +336,7 @@ export class AdminController {
       updatedAt: adminData.updatedAt,
     };
 
-    return ApiResponseUtil.success(adminResponse, 'Admin retrieved successfully');
+    return ApiResponseUtil.success(adminResponse, MessageKeys.ADMIN_RETRIEVED_SUCCESS);
   }
 
   @Post('create')
@@ -367,6 +371,6 @@ export class AdminController {
       updatedAt: adminData.updatedAt,
     };
 
-    return ApiResponseUtil.success(adminResponse, 'Admin created successfully');
+    return ApiResponseUtil.success(adminResponse, MessageKeys.ADMIN_CREATED_SUCCESS);
   }
 }

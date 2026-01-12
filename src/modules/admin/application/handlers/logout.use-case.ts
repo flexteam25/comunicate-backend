@@ -1,8 +1,10 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IAdminTokenRepository } from '../../infrastructure/persistence/repositories/admin-token.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { AdminToken } from '../../domain/entities/admin-token.entity';
+import { unauthorized } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface LogoutCommand {
   tokenId: string;
@@ -20,7 +22,7 @@ export class LogoutUseCase {
     // Check if token exists (outside transaction for validation)
     const token = await this.adminTokenRepository.findByTokenId(command.tokenId);
     if (!token) {
-      throw new UnauthorizedException('Token not found');
+      throw unauthorized(MessageKeys.TOKEN_NOT_FOUND);
     }
 
     // Revoke the token in transaction

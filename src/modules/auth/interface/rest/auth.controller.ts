@@ -27,6 +27,7 @@ import { VerifyOtpForgotPasswordDto } from './dto/verify-otp-forgot-password.dto
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponse } from '../../../../shared/dto/auth-response.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
@@ -120,7 +121,7 @@ export class AuthController {
       refreshToken: result.tokens.refreshToken,
     };
 
-    return ApiResponseUtil.success(authResponse, 'User registered successfully');
+    return ApiResponseUtil.success(authResponse, MessageKeys.USER_REGISTERED_SUCCESS);
   }
 
   @Post('login')
@@ -162,7 +163,7 @@ export class AuthController {
       refreshToken: result.tokens.refreshToken,
     };
 
-    return ApiResponseUtil.success(authResponse, 'Login successful');
+    return ApiResponseUtil.success(authResponse, MessageKeys.LOGIN_SUCCESS);
   }
 
   @Post('verify-otp')
@@ -173,7 +174,7 @@ export class AuthController {
       otp: dto.otp,
     });
 
-    return ApiResponseUtil.success(result, 'OTP verified successfully');
+    return ApiResponseUtil.success(result, MessageKeys.OTP_VERIFIED_SUCCESS);
   }
 
   @Post('refresh')
@@ -207,7 +208,7 @@ export class AuthController {
       refreshToken: result.tokens.refreshToken,
     };
 
-    return ApiResponseUtil.success(authResponse, 'Token refreshed successfully');
+    return ApiResponseUtil.success(authResponse, MessageKeys.TOKEN_REFRESHED_SUCCESS);
   }
 
   @Post('logout')
@@ -222,7 +223,7 @@ export class AuthController {
 
     return ApiResponseUtil.success(
       { message: 'Logged out successfully' },
-      'Logged out successfully',
+      MessageKeys.LOGOUT_SUCCESS,
     );
   }
 
@@ -242,11 +243,11 @@ export class AuthController {
           code: result.otp || null,
           note: 'Testing: OTP is returned in response instead of sending email',
         },
-        result?.message || 'OTP generated successfully',
+        result?.message || MessageKeys.OTP_GENERATED_SUCCESS,
       );
     }
 
-    return ApiResponseUtil.success(null, result?.message || 'OTP sent successfully');
+    return ApiResponseUtil.success(null, result?.message || MessageKeys.OTP_SENT_SUCCESS);
   }
 
   @Post('request-otp-phone')

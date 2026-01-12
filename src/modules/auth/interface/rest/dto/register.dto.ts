@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
+import { MaxKoreanChars } from '../../../../../shared/validators/max-korean-chars.validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -22,6 +23,7 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @MaxKoreanChars(6)
   displayName?: string;
 
   @IsOptional()

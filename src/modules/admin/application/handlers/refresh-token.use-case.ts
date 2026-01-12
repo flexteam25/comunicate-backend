@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IAdminRepository } from '../../infrastructure/persistence/repositories/admin.repository';
 import { IAdminTokenRepository } from '../../infrastructure/persistence/repositories/admin-token.repository';
@@ -7,6 +7,8 @@ import { JwtService, TokenPair } from '../../../../shared/services/jwt.service';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { AdminToken } from '../../domain/entities/admin-token.entity';
 import { Admin } from '../../domain/entities/admin.entity';
+import { unauthorized } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface RefreshTokenCommand {
   refreshToken: string;
@@ -35,18 +37,18 @@ export class RefreshTokenUseCase {
     try {
       payload = this.jwtService.verifyRefreshToken(command.refreshToken);
     } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     // Find token record (outside transaction for validation)
     const tokenRecord = await this.adminTokenRepository.findByTokenId(payload.jti);
     if (!tokenRecord) {
-      throw new UnauthorizedException('Token not found');
+      throw unauthorized(MessageKeys.TOKEN_NOT_FOUND);
     }
 
     // Check if token is valid
     if (!tokenRecord.isValid()) {
-      throw new UnauthorizedException('Token expired or revoked');
+      throw unauthorized(MessageKeys.TOKEN_REVOKED_OR_EXPIRED);
     }
 
     // Verify refresh token hash (outside transaction)
@@ -55,13 +57,13 @@ export class RefreshTokenUseCase {
       tokenRecord.refreshTokenHash,
     );
     if (!isValidToken) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     // Find admin (outside transaction for validation)
     const admin = await this.adminRepository.findById(payload.sub);
     if (!admin || !admin.isActive) {
-      throw new UnauthorizedException('Admin not found or inactive');
+      throw unauthorized(MessageKeys.ADMIN_NOT_FOUND);
     }
 
     // Generate new token pair (outside transaction)

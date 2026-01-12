@@ -8,6 +8,7 @@ import { join } from 'path';
 import { LoggerService } from './shared/logger/logger.service';
 import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middleware';
 import { CorsTrustMiddleware } from './shared/middleware/cors-trust.middleware';
+import { validationExceptionFactory } from './shared/pipes/validation-exception.factory';
 
 async function bootstrap() {
   // CORS is handled by CorsTrustMiddleware
@@ -36,13 +37,14 @@ async function bootstrap() {
       forbidNonWhitelisted: false, // Allow non-whitelisted properties to pass through but ignore them
       transform: true,
       stopAtFirstError: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 
   // Enable ClassSerializerInterceptor to respect @Exclude() decorators
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  const port = process.env.PORT || 3008;
+const port = process.env.PORT || 3008;
   await app.listen(port);
   Logger.log(`Server started on port ${port}`);
   Logger.log(`Static files served from /${uploadDir}`);

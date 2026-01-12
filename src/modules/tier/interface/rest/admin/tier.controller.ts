@@ -18,6 +18,7 @@ import { ListTiersUseCase } from '../../../application/handlers/admin/list-tiers
 import { CreateTierDto } from '../dto/create-tier.dto';
 import { UpdateTierDto } from '../dto/update-tier.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/admin-permission.guard';
 import { RequirePermission } from '../../../../admin/infrastructure/decorators/require-permission.decorator';
@@ -40,7 +41,7 @@ export class AdminTierController {
   @RequirePermission('site.update')
   async createTier(@Body() dto: CreateTierDto): Promise<ApiResponse<Tier>> {
     const tier = await this.createTierUseCase.execute(dto);
-    return ApiResponseUtil.success(tier, 'Tier created successfully');
+    return ApiResponseUtil.success(tier, MessageKeys.TIER_CREATED_SUCCESS);
   }
 
   @Get()
@@ -59,7 +60,7 @@ export class AdminTierController {
     @Body() dto: UpdateTierDto,
   ): Promise<ApiResponse<Tier>> {
     const tier = await this.updateTierUseCase.execute({ tierId: id, ...dto });
-    return ApiResponseUtil.success(tier, 'Tier updated successfully');
+    return ApiResponseUtil.success(tier, MessageKeys.TIER_UPDATED_SUCCESS);
   }
 
   @Delete(':id')
@@ -69,7 +70,10 @@ export class AdminTierController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteTierUseCase.execute({ tierId: id });
-    return ApiResponseUtil.success({ message: 'Tier deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Tier deleted successfully' },
+      MessageKeys.TIER_DELETED_SUCCESS,
+    );
   }
 
   @Put('/restore/:id')
@@ -79,6 +83,9 @@ export class AdminTierController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.restoreTierUseCase.execute({ tierId: id });
-    return ApiResponseUtil.success({ message: 'Tier restored successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Tier restored successfully' },
+      MessageKeys.TIER_RESTORED_SUCCESS,
+    );
   }
 }

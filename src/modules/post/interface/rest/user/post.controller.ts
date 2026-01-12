@@ -38,6 +38,7 @@ import { ReactToPostDto } from '../dto/react-to-post.dto';
 import { ReactToCommentDto } from '../dto/react-to-comment.dto';
 import { AddCommentDto } from '../dto/add-comment.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { getClientIp } from '../../../../../shared/utils/request.util';
@@ -298,7 +299,10 @@ export class PostController {
       postId: id,
       userId: user.userId,
     });
-    return ApiResponseUtil.success({ message: 'Reaction deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Reaction deleted successfully' },
+      MessageKeys.REACTION_DELETED_SUCCESS,
+    );
   }
 
   @Post(':postId/comments/:commentId/reactions')
@@ -337,7 +341,10 @@ export class PostController {
       commentId,
       userId: user.userId,
     });
-    return ApiResponseUtil.success({ message: 'Reaction deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Reaction deleted successfully' },
+      MessageKeys.REACTION_DELETED_SUCCESS,
+    );
   }
 
   @Delete('comments/:commentId')
@@ -351,7 +358,10 @@ export class PostController {
       commentId,
       userId: user.userId,
     });
-    return ApiResponseUtil.success({ message: 'Comment deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Comment deleted successfully' },
+      MessageKeys.COMMENT_DELETED_SUCCESS,
+    );
   }
 
   @Post()
@@ -414,6 +424,9 @@ export class PostController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deletePostUseCase.execute({ postId: id, userId: user.userId });
-    return ApiResponseUtil.success({ message: 'Post deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Post deleted successfully' },
+      MessageKeys.POST_DELETED_SUCCESS,
+    );
   }
 }

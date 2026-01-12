@@ -1,9 +1,11 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IAdminRepository } from '../../infrastructure/persistence/repositories/admin.repository';
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { QueueService } from '../../../../shared/queue/queue.service';
 import { Admin } from '../../domain/entities/admin.entity';
+import { notFound } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface RequestOtpCommand {
   email: string;
@@ -28,11 +30,11 @@ export class RequestOtpUseCase {
     // Find admin by email
     const admin = await this.adminRepository.findByEmail(command.email);
     if (!admin) {
-      throw new NotFoundException('Account not found');
+      throw notFound(MessageKeys.ADMIN_NOT_FOUND);
     }
 
     if (!admin.isActive) {
-      throw new NotFoundException('Account not found');
+      throw notFound(MessageKeys.ADMIN_NOT_FOUND);
     }
 
     const redisKey = `otp:forgot-password:admin:${admin.id}`;

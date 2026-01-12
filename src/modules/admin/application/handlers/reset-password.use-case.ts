@@ -1,7 +1,5 @@
 import {
   Injectable,
-  BadRequestException,
-  UnauthorizedException,
   Inject,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
@@ -17,6 +15,8 @@ import {
   AdminOldPasswordType,
 } from '../../../user/domain/entities/admin-old-password.entity';
 import { AdminToken } from '../../domain/entities/admin-token.entity';
+import { badRequest, unauthorized } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface ResetPasswordCommand {
   token: string;
@@ -41,7 +41,7 @@ export class ResetPasswordUseCase {
   async execute(command: ResetPasswordCommand): Promise<{ message: string }> {
     // Validate password confirmation
     if (command.newPassword !== command.passwordConfirmation) {
-      throw new BadRequestException('Password confirmation does not match');
+      throw badRequest(MessageKeys.PASSWORD_CONFIRMATION_MISMATCH);
     }
 
     // Verify token from Redis
@@ -49,7 +49,7 @@ export class ResetPasswordUseCase {
     const tokenValue = await this.redisService.getString(tokenKey);
 
     if (!tokenValue) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     // Parse token value to get adminId
@@ -57,21 +57,21 @@ export class ResetPasswordUseCase {
     try {
       tokenData = JSON.parse(tokenValue);
     } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     if (!tokenData.adminId) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     // Find admin by adminId
     const admin = await this.adminRepository.findById(tokenData.adminId);
     if (!admin) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     if (!admin.isActive) {
-      throw new UnauthorizedException('Admin account is inactive');
+      throw unauthorized(MessageKeys.ADMIN_ACCOUNT_INACTIVE);
     }
 
     // Hash new password (outside transaction)

@@ -30,6 +30,7 @@ import { CreateSiteDomainDto } from '../dto/create-site-domain.dto';
 import { UpdateSiteDomainDto } from '../dto/update-site-domain.dto';
 import { SiteResponse, CursorPaginatedSitesResponse } from '../dto/site-response.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/admin-permission.guard';
 import { RequirePermission } from '../../../../admin/infrastructure/decorators/require-permission.decorator';
@@ -188,7 +189,7 @@ export class AdminSiteController {
 
     return ApiResponseUtil.success(
       this.mapSiteToResponse(site),
-      'Site created successfully',
+      MessageKeys.SITE_CREATED_SUCCESS,
     );
   }
 
@@ -282,7 +283,10 @@ export class AdminSiteController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteSiteUseCase.execute({ siteId: id });
-    return ApiResponseUtil.success({ message: 'Site deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Site deleted successfully' },
+      MessageKeys.SITE_DELETED_SUCCESS,
+    );
   }
 
   @Put('restore/:id')
@@ -294,7 +298,7 @@ export class AdminSiteController {
     const site = await this.restoreSiteUseCase.execute({ siteId: id });
     return ApiResponseUtil.success(
       this.mapSiteToResponse(site),
-      'Site restored successfully',
+      MessageKeys.SITE_RESTORED_SUCCESS,
     );
   }
 
@@ -311,7 +315,7 @@ export class AdminSiteController {
       isActive: dto.isActive,
       isCurrent: dto.isCurrent,
     });
-    return ApiResponseUtil.success(null, 'Domain added successfully');
+    return ApiResponseUtil.success(null, MessageKeys.DOMAIN_ADDED_SUCCESS);
   }
 
   @Put(':id/domains/:domainId')
@@ -329,7 +333,7 @@ export class AdminSiteController {
       isActive: dto.isActive,
       isCurrent: dto.isCurrent,
     });
-    return ApiResponseUtil.success(null, 'Domain updated successfully');
+    return ApiResponseUtil.success(null, MessageKeys.DOMAIN_UPDATED_SUCCESS);
   }
 
   @Delete(':id/domains/:domainId')
@@ -343,7 +347,7 @@ export class AdminSiteController {
       siteId: id,
       domainId,
     });
-    return ApiResponseUtil.success(null, 'Domain deleted successfully');
+    return ApiResponseUtil.success(null, MessageKeys.DOMAIN_DELETED_SUCCESS);
   }
 
   @Post(':id/badges')
@@ -354,7 +358,10 @@ export class AdminSiteController {
     @Body() dto: AssignBadgeDto,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.assignBadgeUseCase.execute({ siteId: id, badgeId: dto.badgeId });
-    return ApiResponseUtil.success({ message: 'Badge assigned successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Badge assigned successfully' },
+      MessageKeys.SITE_BADGE_ASSIGNED_SUCCESS,
+    );
   }
 
   @Delete(':id/badges/:badgeId')
@@ -365,6 +372,9 @@ export class AdminSiteController {
     @Param('badgeId', new ParseUUIDPipe()) badgeId: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.removeBadgeUseCase.execute({ siteId: id, badgeId });
-    return ApiResponseUtil.success({ message: 'Badge removed successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Badge removed successfully' },
+      MessageKeys.SITE_BADGE_REMOVED_SUCCESS,
+    );
   }
 }

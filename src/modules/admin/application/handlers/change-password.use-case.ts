@@ -1,7 +1,5 @@
 import {
   Injectable,
-  UnauthorizedException,
-  BadRequestException,
   Inject,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
@@ -16,6 +14,8 @@ import {
   AdminOldPasswordType,
 } from '../../../user/domain/entities/admin-old-password.entity';
 import { AdminToken } from '../../domain/entities/admin-token.entity';
+import { badRequest, unauthorized } from '../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface ChangePasswordCommand {
   adminId: string;
@@ -42,13 +42,13 @@ export class ChangePasswordUseCase {
   async execute(command: ChangePasswordCommand): Promise<Admin> {
     // Validate password confirmation (outside transaction)
     if (command.newPassword !== command.passwordConfirmation) {
-      throw new BadRequestException('Password confirmation does not match');
+      throw badRequest(MessageKeys.PASSWORD_CONFIRMATION_MISMATCH);
     }
 
     // Find admin (outside transaction for validation)
     const admin = await this.adminRepository.findById(command.adminId);
     if (!admin) {
-      throw new UnauthorizedException('Admin not found');
+      throw unauthorized(MessageKeys.ADMIN_NOT_FOUND);
     }
 
     // Verify current password (outside transaction)
@@ -57,7 +57,7 @@ export class ChangePasswordUseCase {
       admin.passwordHash,
     );
     if (!isValidPassword) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw unauthorized(MessageKeys.CURRENT_PASSWORD_INCORRECT);
     }
 
     // Hash new password (outside transaction)

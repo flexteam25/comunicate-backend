@@ -35,6 +35,7 @@ import { UpdatePostDto } from '../dto/update-post.dto';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { ListAdminPostsQueryDto } from '../dto/list-admin-posts-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import {
@@ -158,7 +159,7 @@ export class AdminPostController {
     });
     return ApiResponseUtil.success(
       this.mapCategoryToResponse(category),
-      'Category updated successfully',
+      MessageKeys.CATEGORY_UPDATED_SUCCESS,
     );
   }
 
@@ -169,7 +170,10 @@ export class AdminPostController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteCategoryUseCase.execute({ categoryId: id });
-    return ApiResponseUtil.success({ message: 'Category deleted successfully' });
+    return ApiResponseUtil.success(
+      { message: 'Category deleted successfully' },
+      MessageKeys.CATEGORY_DELETED_SUCCESS,
+    );
   }
 
   @Post('categories/:id/restore')
@@ -277,6 +281,6 @@ export class AdminPostController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deletePostUseCase.execute({ postId: id });
-    return ApiResponseUtil.success({ message: 'Post deleted successfully' });
+    return ApiResponseUtil.success({ message: MessageKeys.POST_DELETED_SUCCESS });
   }
 }

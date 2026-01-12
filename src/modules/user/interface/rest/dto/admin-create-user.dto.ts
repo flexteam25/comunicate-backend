@@ -1,5 +1,6 @@
 import { IsEmail, IsString, MinLength, IsOptional, IsBoolean } from 'class-validator';
 import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
+import { MaxKoreanChars } from '../../../../../shared/validators/max-korean-chars.validator';
 
 export class AdminCreateUserDto {
   @IsEmail()
@@ -11,6 +12,7 @@ export class AdminCreateUserDto {
 
   @IsOptional()
   @IsString()
+  @MaxKoreanChars(6)
   displayName?: string;
 
   @IsOptional()

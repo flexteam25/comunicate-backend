@@ -33,6 +33,7 @@ import {
   CurrentUserPayload,
 } from '../../../../shared/decorators/current-user.decorator';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 import { UploadService, MulterFile } from '../../../../shared/services/upload';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
@@ -337,7 +338,7 @@ export class UserController {
       points: dbUser.userProfile?.points ?? 0,
     };
 
-    return ApiResponseUtil.success(userResponse, 'Profile updated successfully');
+    return ApiResponseUtil.success(userResponse, MessageKeys.PROFILE_UPDATED_SUCCESS);
   }
 
   @Get('me')
