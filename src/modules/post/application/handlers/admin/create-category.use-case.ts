@@ -1,10 +1,12 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PostCategory } from '../../../domain/entities/post-category.entity';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
 import {
   isValidPostCategorySpecialKey,
   POST_CATEGORY_SPECIAL_KEYS,
 } from '../../../domain/constants/post-category-special-keys';
+import { badRequest } from '../../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreateCategoryCommand {
   name: string;
@@ -13,6 +15,7 @@ export interface CreateCategoryCommand {
   showMain?: boolean;
   specialKey?: string | null;
   order: number;
+  adminCreateOnly: boolean;
 }
 
 @Injectable()
@@ -25,15 +28,15 @@ export class CreateCategoryUseCase {
   async execute(command: CreateCategoryCommand): Promise<PostCategory> {
     const existing = await this.categoryRepository.findByName(command.name);
     if (existing) {
-      throw new BadRequestException('Category with this name already exists');
+      throw badRequest(MessageKeys.CATEGORY_NAME_ALREADY_EXISTS);
     }
 
     // Validate specialKey if provided
     if (command.specialKey !== undefined && command.specialKey !== null) {
       if (!isValidPostCategorySpecialKey(command.specialKey)) {
-        throw new BadRequestException(
-          `specialKey must be one of: ${POST_CATEGORY_SPECIAL_KEYS.join(', ')}`,
-        );
+        throw badRequest(MessageKeys.INVALID_SPECIAL_KEY, {
+          allowedKeys: POST_CATEGORY_SPECIAL_KEYS.join(', '),
+        });
       }
     }
 
@@ -44,6 +47,7 @@ export class CreateCategoryUseCase {
       showMain: command.showMain ?? false,
       specialKey: command.specialKey || null,
       order: command.order,
+      adminCreateOnly: command.adminCreateOnly,
     });
   }
 }

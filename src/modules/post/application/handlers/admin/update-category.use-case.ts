@@ -1,15 +1,12 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PostCategory } from '../../../domain/entities/post-category.entity';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
 import {
   isValidPostCategorySpecialKey,
   POST_CATEGORY_SPECIAL_KEYS,
 } from '../../../domain/constants/post-category-special-keys';
+import { notFound, badRequest } from '../../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateCategoryCommand {
   categoryId: string;
@@ -19,6 +16,7 @@ export interface UpdateCategoryCommand {
   showMain?: boolean;
   specialKey?: string | null;
   order?: number;
+  adminCreateOnly: boolean;
 }
 
 @Injectable()
@@ -31,14 +29,14 @@ export class UpdateCategoryUseCase {
   async execute(command: UpdateCategoryCommand): Promise<PostCategory> {
     const category = await this.categoryRepository.findById(command.categoryId);
     if (!category) {
-      throw new NotFoundException('Category not found');
+      throw notFound(MessageKeys.CATEGORY_NOT_FOUND);
     }
 
     // Check name uniqueness if name is being updated
     if (command.name && command.name !== category.name) {
       const existing = await this.categoryRepository.findByName(command.name);
       if (existing) {
-        throw new BadRequestException('Category with this name already exists');
+        throw badRequest(MessageKeys.CATEGORY_NAME_ALREADY_EXISTS);
       }
     }
 
@@ -48,9 +46,9 @@ export class UpdateCategoryUseCase {
         command.specialKey !== null &&
         !isValidPostCategorySpecialKey(command.specialKey)
       ) {
-        throw new BadRequestException(
-          `specialKey must be one of: ${POST_CATEGORY_SPECIAL_KEYS.join(', ')}`,
-        );
+        throw badRequest(MessageKeys.INVALID_SPECIAL_KEY, {
+          allowedKeys: POST_CATEGORY_SPECIAL_KEYS.join(', '),
+        });
       }
     }
 
@@ -65,6 +63,9 @@ export class UpdateCategoryUseCase {
     // Only update order if provided and not null/undefined
     if (command.order !== undefined && command.order !== null) {
       updateData.order = command.order;
+    }
+    if (command.adminCreateOnly !== undefined) {
+      updateData.adminCreateOnly = command.adminCreateOnly;
     }
 
     return this.categoryRepository.update(command.categoryId, updateData);

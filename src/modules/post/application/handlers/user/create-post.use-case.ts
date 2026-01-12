@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Post } from '../../../domain/entities/post.entity';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
@@ -6,6 +6,8 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { EntityManager } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { randomUUID } from 'crypto';
+import { badRequest } from '../../../../../shared/exceptions/exception-helpers';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreatePostCommand {
   userId: string; // User's ID
@@ -29,33 +31,38 @@ export class CreatePostUseCase {
   async execute(command: CreatePostCommand): Promise<Post> {
     const category = await this.categoryRepository.findById(command.categoryId);
     if (!category) {
-      throw new BadRequestException('Category not found');
+      throw badRequest(MessageKeys.CATEGORY_NOT_FOUND);
+    }
+
+    if (category.adminCreateOnly === true) {
+      throw badRequest(MessageKeys.CANNOT_CREATE_POST_WITH_ADMIN_ONLY_CATEGORY);
     }
 
     if (category.specialKey !== null) {
-      throw new BadRequestException(
-        'Cannot create post with category that has special key',
-      );
+      throw badRequest(MessageKeys.CANNOT_CREATE_POST_WITH_SPECIAL_KEY_CATEGORY);
     }
 
     // Check for duplicate title
     const existingPost = await this.postRepository.findByTitle(command.title);
     if (existingPost) {
-      throw new BadRequestException('A post with this title already exists');
+      throw badRequest(MessageKeys.POST_TITLE_ALREADY_EXISTS);
     }
 
     // Validate file size (20MB max)
     const maxSize = 20 * 1024 * 1024; // 20MB
     if (command.thumbnail && command.thumbnail.size > maxSize) {
-      throw new BadRequestException('Thumbnail file size exceeds 20MB');
+      throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+        fileType: 'thumbnail',
+        maxSize: '20MB',
+      });
     }
 
     // Validate file type
     const allowedTypes = /(jpg|jpeg|png|webp)$/i;
     if (command.thumbnail && !allowedTypes.test(command.thumbnail.mimetype)) {
-      throw new BadRequestException(
-        'Invalid thumbnail file type. Allowed: jpg, jpeg, png, webp',
-      );
+      throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+        allowedTypes: 'jpg, jpeg, png, webp',
+      });
     }
 
     // Generate post ID first
@@ -70,9 +77,9 @@ export class CreatePostUseCase {
         });
         thumbnailUrl = result.relativePath;
       } catch (error) {
-        throw new BadRequestException(
-          `Failed to upload thumbnail: ${(error as Error).message}`,
-        );
+        throw badRequest(MessageKeys.UPLOAD_FAILED, {
+          error: (error as Error).message,
+        });
       }
     }
 

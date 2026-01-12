@@ -103,44 +103,47 @@ export class ApiExceptionFilter implements ExceptionFilter {
       this.logger.warn('Client error', logData, 'error');
     }
 
-    // Map HTTP status codes to messageKey if not already set
-    if (!messageKey) {
-      switch (status) {
-        case HttpStatus.BAD_REQUEST:
+    // Map HTTP status codes to messageKey
+    // For specific status codes, always use the standard messageKey regardless of custom messageKey
+    switch (status) {
+      case HttpStatus.UNAUTHORIZED:
+        // Always use UNAUTHORIZED for 401
+        messageKey = 'UNAUTHORIZED';
+        break;
+      case HttpStatus.FORBIDDEN:
+        // Always use FORBIDDEN for 403
+        messageKey = 'FORBIDDEN';
+        break;
+      case HttpStatus.BAD_REQUEST:
+        if (!messageKey) {
           messageKey = 'BAD_REQUEST';
-          break;
-        case HttpStatus.UNAUTHORIZED:
-          messageKey = 'UNAUTHORIZED';
-          break;
-        case HttpStatus.FORBIDDEN:
-          messageKey = 'FORBIDDEN';
-          break;
-        case HttpStatus.NOT_FOUND:
+        }
+        break;
+      case HttpStatus.NOT_FOUND:
+        if (!messageKey) {
           messageKey = 'NOT_FOUND';
-          break;
-        case HttpStatus.CONFLICT:
+        }
+        break;
+      case HttpStatus.CONFLICT:
+        if (!messageKey) {
           messageKey = 'CONFLICT';
-          break;
-        case HttpStatus.INTERNAL_SERVER_ERROR:
+        }
+        break;
+      case HttpStatus.INTERNAL_SERVER_ERROR:
+        if (!messageKey) {
           messageKey = 'INTERNAL_SERVER_ERROR';
-          // For 500 errors, hide detailed message in production unless debug mode is enabled
-          if (!isDebugMode) {
-            message = 'Internal server error';
-            params = undefined;
-            data = undefined;
-          }
-          break;
-        default:
+        }
+        // For 500 errors, hide detailed message in production unless debug mode is enabled
+        if (!isDebugMode) {
+          message = 'Internal server error';
+          params = undefined;
+          data = undefined;
+        }
+        break;
+      default:
+        if (!messageKey) {
           messageKey = 'INTERNAL_SERVER_ERROR';
-      }
-    } else {
-      // For 500 errors with messageKey, hide detailed message in production unless debug mode is enabled
-      if (status === HttpStatus.INTERNAL_SERVER_ERROR && !isDebugMode) {
-        message = 'Internal server error';
-        messageKey = 'INTERNAL_SERVER_ERROR';
-        params = undefined;
-        data = undefined;
-      }
+        }
     }
 
     // Format response using ApiResponseUtil

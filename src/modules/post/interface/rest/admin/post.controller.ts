@@ -112,6 +112,7 @@ export class AdminPostController {
       showMain: category.showMain ?? false,
       specialKey: category.specialKey || null,
       order: category.order || null,
+      adminCreateOnly: category.adminCreateOnly ?? true,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };

@@ -23,6 +23,9 @@ export class PostCategory extends BaseEntity {
   @Column({ type: 'integer', nullable: true })
   order?: number | null;
 
+  @Column({ name: 'admin_create_only', type: 'boolean', default: true })
+  adminCreateOnly: boolean;
+
   @OneToMany(() => Post, (post) => post.category)
   posts: Post[];
 }

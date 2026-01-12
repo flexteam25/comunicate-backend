@@ -24,7 +24,7 @@ import {
 } from '../../../../../shared/decorators/current-user.decorator';
 import { ListPublicPostsUseCase } from '../../../application/handlers/user/list-posts.use-case';
 import { GetPostUseCase as GetPublicPostUseCase } from '../../../application/handlers/user/get-post.use-case';
-import { ListCategoriesUseCase } from '../../../application/handlers/admin/list-categories.use-case';
+import { ListCategoriesUseCase } from '../../../application/handlers/user/list-categories.use-case';
 import { ReactToPostUseCase } from '../../../application/handlers/user/react-to-post.use-case';
 import { AddCommentUseCase } from '../../../application/handlers/user/add-comment.use-case';
 import { ListCommentsUseCase } from '../../../application/handlers/user/list-comments.use-case';

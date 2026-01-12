@@ -1,15 +1,15 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Post } from '../../../domain/entities/post.entity';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdatePostCommand {
   postId: string;
@@ -37,21 +37,24 @@ export class UpdatePostUseCase {
     // Get existing post first to check for old thumbnail
     const existingPost = await this.postRepository.findById(command.postId);
     if (!existingPost) {
-      throw new NotFoundException('Post not found');
+      throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
     // Validate file size (20MB max)
     const maxSize = 20 * 1024 * 1024; // 20MB
     if (command.thumbnail && command.thumbnail.size > maxSize) {
-      throw new BadRequestException('Thumbnail file size exceeds 20MB');
+      throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+        fileType: 'thumbnail',
+        maxSize: '20MB',
+      });
     }
 
     // Validate file type
     const allowedTypes = /(jpg|jpeg|png|webp)$/i;
     if (command.thumbnail && !allowedTypes.test(command.thumbnail.mimetype)) {
-      throw new BadRequestException(
-        'Invalid thumbnail file type. Allowed: jpg, jpeg, png, webp',
-      );
+      throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+        allowedTypes: 'jpg, jpeg, png, webp',
+      });
     }
 
     // Store old thumbnail URL for cleanup
@@ -66,9 +69,9 @@ export class UpdatePostUseCase {
         });
         thumbnailUrl = result.relativePath;
       } catch (error) {
-        throw new BadRequestException(
-          `Failed to upload thumbnail: ${(error as Error).message}`,
-        );
+        throw badRequest(MessageKeys.UPLOAD_FAILED, {
+          error: (error as Error).message,
+        });
       }
     } else if (command.deleteThumbnail === true || command.deleteThumbnail === 'true') {
       thumbnailUrl = null;
@@ -84,13 +87,11 @@ export class UpdatePostUseCase {
           if (command.categoryId) {
             const category = await this.categoryRepository.findById(command.categoryId);
             if (!category) {
-              throw new NotFoundException('Category not found');
+              throw notFound(MessageKeys.CATEGORY_NOT_FOUND);
             }
 
             if (category.specialKey !== null) {
-              throw new BadRequestException(
-                'Cannot update post to category that has special key',
-              );
+              throw badRequest(MessageKeys.CANNOT_UPDATE_POST_TO_SPECIAL_KEY_CATEGORY);
             }
           }
 
@@ -101,7 +102,7 @@ export class UpdatePostUseCase {
               command.postId,
             );
             if (duplicatePost) {
-              throw new BadRequestException('A post with this title already exists');
+              throw badRequest(MessageKeys.POST_TITLE_ALREADY_EXISTS);
             }
           }
 
@@ -135,7 +136,7 @@ export class UpdatePostUseCase {
       // Reload with aggregates after transaction commits
       const reloaded = await this.postRepository.findByIdWithAggregates(command.postId);
       if (!reloaded) {
-        throw new NotFoundException('Post not found after update');
+        throw notFound(MessageKeys.POST_NOT_FOUND_AFTER_UPDATE);
       }
       return reloaded;
     } catch (error) {

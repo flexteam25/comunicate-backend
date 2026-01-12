@@ -6,6 +6,7 @@ import {
   ValidateIf,
   IsInt,
   Min,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -38,4 +39,9 @@ export class UpdateCategoryDto {
   @IsInt({ message: 'Order must be an integer' })
   @Min(1, { message: 'Order must be at least 1' })
   order?: number;
+
+  @IsNotEmpty({ message: 'adminCreateOnly is required' })
+  @Type(() => Boolean)
+  @IsBoolean({ message: 'adminCreateOnly must be a boolean' })
+  adminCreateOnly: boolean;
 }
