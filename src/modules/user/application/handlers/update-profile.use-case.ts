@@ -86,7 +86,7 @@ export class UpdateProfileUseCase {
 
       // Check if phone is already verified by another user
       if (otpRequest.isVerified() && otpRequest.userId !== command.userId) {
-        throw badRequest(MessageKeys.EMAIL_ALREADY_EXISTS);
+        throw badRequest(MessageKeys.PHONE_ALREADY_EXISTS);
       }
 
       verifiedOtpRequest = otpRequest;

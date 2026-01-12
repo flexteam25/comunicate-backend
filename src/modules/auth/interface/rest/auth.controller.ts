@@ -273,7 +273,12 @@ export class AuthController {
       responseData.otp = result.otp;
     }
 
-    return ApiResponseUtil.success(responseData, result.message);
+    // Use appropriate message key based on test mode
+    const messageKey = result.otp
+      ? MessageKeys.OTP_GENERATED_TO_PHONE_SUCCESS
+      : MessageKeys.OTP_SENT_TO_PHONE_SUCCESS;
+
+    return ApiResponseUtil.success(responseData, messageKey);
   }
 
   @Post('verify-otp-forgot-password')

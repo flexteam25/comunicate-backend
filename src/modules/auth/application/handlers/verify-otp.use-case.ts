@@ -31,7 +31,7 @@ export class VerifyOtpUseCase {
     }
 
     if (otpRequest.isVerified()) {
-      throw badRequest(MessageKeys.EMAIL_ALREADY_EXISTS);
+      throw badRequest(MessageKeys.PHONE_ALREADY_EXISTS);
     }
 
     if (otpRequest.isExpired()) {

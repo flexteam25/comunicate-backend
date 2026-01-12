@@ -61,7 +61,7 @@ export class RequestOtpPhoneUseCase {
       await this.otpRequestRepository.findByPhone(normalizedPhone);
 
     if (existingOtpRequest && existingOtpRequest?.isVerified()) {
-      throw badRequest(MessageKeys.EMAIL_ALREADY_EXISTS);
+      throw badRequest(MessageKeys.PHONE_ALREADY_EXISTS);
     }
 
     // Check throttle: if requestCount >= maxRequestsPerWindow
