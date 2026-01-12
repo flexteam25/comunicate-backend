@@ -1,6 +1,7 @@
 import { Type, Transform } from 'class-transformer';
 import {
   IsString,
+  IsNotEmpty,
   IsOptional,
   IsNumber,
   IsUUID,
@@ -15,6 +16,11 @@ export class AdminUpdateScamReportDto {
   @IsOptional()
   @IsUUID()
   siteId?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  title: string;
 
   @IsOptional()
   @IsString()

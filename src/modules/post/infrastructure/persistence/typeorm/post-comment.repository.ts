@@ -7,6 +7,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class PostCommentRepository implements IPostCommentRepository {
@@ -133,7 +134,7 @@ export class PostCommentRepository implements IPostCommentRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('PostComment not found after update');
+      throw notFound(MessageKeys.POST_COMMENT_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

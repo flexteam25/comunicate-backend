@@ -222,7 +222,7 @@ export class AuthController {
     });
 
     return ApiResponseUtil.success(
-      { message: 'Logged out successfully' },
+      null,
       MessageKeys.LOGOUT_SUCCESS,
     );
   }
@@ -293,7 +293,7 @@ export class AuthController {
 
     return ApiResponseUtil.success(
       { token: result.token },
-      'OTP verified successfully. Use the token to reset your password.',
+      MessageKeys.OTP_VERIFIED_SUCCESS,
     );
   }
 
@@ -310,7 +310,7 @@ export class AuthController {
 
     return ApiResponseUtil.success(
       null,
-      result?.message || 'Password reset successfully',
+      MessageKeys.PASSWORD_RESET_SUCCESS,
     );
   }
 }

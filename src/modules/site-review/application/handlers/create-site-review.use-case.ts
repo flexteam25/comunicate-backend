@@ -11,6 +11,7 @@ import {
 } from '../../../user/domain/entities/user-comment.entity';
 import {
   badRequest,
+  notFound,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
 
@@ -99,7 +100,7 @@ export class CreateSiteReviewUseCase {
         });
 
         if (!reloaded) {
-          throw new Error('Failed to reload site review after creation');
+          throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND_AFTER_CREATE);
         }
 
         return reloaded;

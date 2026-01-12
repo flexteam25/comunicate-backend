@@ -106,7 +106,7 @@ export class ApprovePartnerRequestUseCase {
         });
 
         if (!reloaded) {
-          throw new Error('Failed to reload partner request after approval');
+          throw notFound(MessageKeys.PARTNER_REQUEST_NOT_FOUND_AFTER_APPROVAL);
         }
 
         // Publish role updated event to Redis (after transaction commits)

@@ -8,6 +8,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class SiteManagerApplicationRepository implements ISiteManagerApplicationRepository {
@@ -304,7 +305,7 @@ export class SiteManagerApplicationRepository implements ISiteManagerApplication
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('SiteManagerApplication not found after update');
+      throw notFound(MessageKeys.SITE_MANAGER_APPLICATION_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

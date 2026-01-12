@@ -64,7 +64,7 @@ export class RejectPartnerRequestUseCase {
         });
 
         if (!reloaded) {
-          throw new Error('Failed to reload partner request after rejection');
+          throw notFound(MessageKeys.PARTNER_REQUEST_NOT_FOUND_AFTER_REJECTION);
         }
 
         return reloaded;

@@ -198,7 +198,7 @@ export class UpdatePocaEventUseCase {
           });
 
           if (!reloaded) {
-            throw new Error('Failed to reload event after update');
+            throw notFound(MessageKeys.POCA_EVENT_NOT_FOUND_AFTER_UPDATE);
           }
 
           return reloaded;

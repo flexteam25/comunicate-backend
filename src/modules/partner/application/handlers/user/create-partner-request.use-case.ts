@@ -9,7 +9,7 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { User } from '../../../../user/domain/entities/user.entity';
 import { UserRole } from '../../../../user/domain/entities/user-role.entity';
 import { Role } from '../../../../user/domain/entities/role.entity';
-import { badRequest, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import { badRequest, notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreatePartnerRequestCommand {
   userId: string;
@@ -91,7 +91,7 @@ export class CreatePartnerRequestUseCase {
             });
 
             if (!reloaded) {
-              throw new Error('Failed to reload partner request after update');
+              throw notFound(MessageKeys.PARTNER_REQUEST_NOT_FOUND_AFTER_UPDATE);
             }
 
             return reloaded;
@@ -113,7 +113,7 @@ export class CreatePartnerRequestUseCase {
         });
 
         if (!reloaded) {
-          throw new Error('Failed to reload partner request after creation');
+          throw notFound(MessageKeys.PARTNER_REQUEST_NOT_FOUND_AFTER_CREATE);
         }
 
         return reloaded;

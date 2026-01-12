@@ -7,6 +7,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class SiteRepository implements ISiteRepository {
@@ -322,7 +323,7 @@ export class SiteRepository implements ISiteRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('Site not found after update');
+      throw notFound(MessageKeys.SITE_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

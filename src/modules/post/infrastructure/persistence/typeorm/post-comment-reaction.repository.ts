@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PostCommentReaction } from '../../../domain/entities/post-comment-reaction.entity';
 import { IPostCommentReactionRepository } from '../repositories/post-comment-reaction.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class PostCommentReactionRepository implements IPostCommentReactionRepository {
@@ -32,7 +33,7 @@ export class PostCommentReactionRepository implements IPostCommentReactionReposi
     await this.repository.update(id, data);
     const updated = await this.repository.findOne({ where: { id } });
     if (!updated) {
-      throw new Error('PostCommentReaction not found after update');
+      throw notFound(MessageKeys.POST_COMMENT_REACTION_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

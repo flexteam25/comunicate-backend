@@ -11,6 +11,7 @@ import { OtpRequest } from '../../../auth/domain/entities/otp-request.entity';
 import {
   unauthorized,
   badRequest,
+  notFound,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
 
@@ -134,14 +135,14 @@ export class UpdateProfileUseCase {
 
         if (command.bio !== undefined) {
           if (!user.userProfile) {
-            throw new Error('User profile should exist at this point');
+            throw notFound(MessageKeys.USER_PROFILE_NOT_FOUND);
           }
           user.userProfile.bio = command.bio || null;
         }
 
         if (command.phone !== undefined) {
           if (!user.userProfile) {
-            throw new Error('User profile should exist at this point');
+            throw notFound(MessageKeys.USER_PROFILE_NOT_FOUND);
           }
 
           // If phone is being changed, handle OTP verification and update records
@@ -181,14 +182,14 @@ export class UpdateProfileUseCase {
 
         if (command.birthDate !== undefined) {
           if (!user.userProfile) {
-            throw new Error('User profile should exist at this point');
+            throw notFound(MessageKeys.USER_PROFILE_NOT_FOUND);
           }
           user.userProfile.birthDate = command.birthDate || null;
         }
 
         if (command.gender !== undefined) {
           if (!user.userProfile) {
-            throw new Error('User profile should exist at this point');
+            throw notFound(MessageKeys.USER_PROFILE_NOT_FOUND);
           }
           user.userProfile.gender = command.gender || null;
         }

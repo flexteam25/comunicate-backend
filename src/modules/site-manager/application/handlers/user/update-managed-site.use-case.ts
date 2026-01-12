@@ -287,7 +287,7 @@ export class UpdateManagedSiteUseCase {
       ]);
 
       if (!reloaded) {
-        throw new Error('Failed to reload site after update');
+        throw notFound(MessageKeys.SITE_NOT_FOUND_AFTER_UPDATE);
       }
 
       return reloaded;

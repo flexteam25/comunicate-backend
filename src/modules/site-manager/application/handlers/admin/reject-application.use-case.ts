@@ -46,7 +46,7 @@ export class RejectApplicationUseCase {
     ]);
 
     if (!reloaded) {
-      throw new Error('Failed to reload application after rejection');
+      throw notFound(MessageKeys.APPLICATION_NOT_FOUND_AFTER_REJECTION);
     }
 
     return reloaded;

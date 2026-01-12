@@ -201,7 +201,7 @@ export class UpdateSiteEventUseCase {
           });
 
           if (!reloaded) {
-            throw new Error('Failed to reload event after update');
+            throw notFound(MessageKeys.EVENT_NOT_FOUND_AFTER_UPDATE);
           }
 
           return reloaded;

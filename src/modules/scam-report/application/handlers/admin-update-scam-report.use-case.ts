@@ -19,6 +19,7 @@ import {
 export interface AdminUpdateScamReportCommand {
   reportId: string;
   adminId: string;
+  title: string;
   siteId?: string;
   siteUrl?: string;
   siteName?: string;
@@ -71,6 +72,7 @@ export class AdminUpdateScamReportUseCase {
 
         // Build update data (admin can update all fields, including status)
         const updateData: Partial<ScamReport> = {};
+        updateData.title = command.title;
         if (command.siteId !== undefined) updateData.siteId = command.siteId;
         if (command.siteUrl !== undefined) updateData.siteUrl = command.siteUrl;
         if (command.siteName !== undefined) updateData.siteName = command.siteName;
@@ -180,6 +182,7 @@ export class AdminUpdateScamReportUseCase {
       id: report.id,
       siteId: report.siteId || null,
       siteSlug: report.site?.slug || null,
+      title: report.title || null,
       siteUrl: report.siteUrl,
       siteName: report.siteName || report.site?.name || null,
       siteAccountInfo: report.siteAccountInfo,

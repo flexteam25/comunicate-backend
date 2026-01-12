@@ -7,6 +7,7 @@ import { ISiteRepository } from '../../../site/infrastructure/persistence/reposi
 import {
   badRequest,
   conflict,
+  notFound,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
 
@@ -78,7 +79,7 @@ export class ApplySiteManagerUseCase {
     ]);
 
     if (!reloaded) {
-      throw new Error('Failed to reload application after creation');
+      throw notFound(MessageKeys.APPLICATION_NOT_FOUND_AFTER_CREATE);
     }
 
     return reloaded;

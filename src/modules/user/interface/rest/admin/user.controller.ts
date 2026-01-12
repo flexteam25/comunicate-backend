@@ -432,7 +432,7 @@ export class AdminUserController {
     });
 
     return ApiResponseUtil.success(
-      { message: 'User deleted successfully' },
+      null,
       MessageKeys.USER_DELETED_SUCCESS,
     );
   }

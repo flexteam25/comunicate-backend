@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PostCategory } from '../../../domain/entities/post-category.entity';
 import { IPostCategoryRepository } from '../repositories/post-category.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class PostCategoryRepository implements IPostCategoryRepository {
@@ -41,7 +42,7 @@ export class PostCategoryRepository implements IPostCategoryRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('PostCategory not found after update');
+      throw notFound(MessageKeys.POST_CATEGORY_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

@@ -134,7 +134,7 @@ export class UpdateGifticonUseCase {
           });
 
           if (!reloaded) {
-            throw new Error('Failed to reload gifticon after update');
+            throw notFound(MessageKeys.GIFTICON_NOT_FOUND_AFTER_UPDATE);
           }
 
           return reloaded;

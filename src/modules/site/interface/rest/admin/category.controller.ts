@@ -76,7 +76,7 @@ export class AdminCategoryController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteCategoryUseCase.execute({ categoryId: id });
     return ApiResponseUtil.success(
-      { message: 'Category deleted successfully' },
+      null,
       MessageKeys.CATEGORY_DELETED_SUCCESS,
     );
   }
@@ -89,7 +89,7 @@ export class AdminCategoryController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.restoreCategoryUseCase.execute({ categoryId: id });
     return ApiResponseUtil.success(
-      { message: 'Category restored successfully' },
+      null,
       MessageKeys.CATEGORY_RESTORED_SUCCESS,
     );
   }

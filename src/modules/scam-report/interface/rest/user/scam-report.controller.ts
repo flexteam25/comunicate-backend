@@ -84,6 +84,7 @@ export class ScamReportController {
       id: report.id,
       siteId: report.siteId || null,
       siteSlug: report.site?.slug || null,
+      title: report.title || null,
       siteUrl: report.siteUrl,
       siteName: report.siteName || report.site?.name || null,
       siteAccountInfo: report.siteAccountInfo,
@@ -179,7 +180,7 @@ export class ScamReportController {
 
     return ApiResponseUtil.success(
       this.mapScamReportToResponse(report),
-      'Scam report created successfully',
+      MessageKeys.SCAM_REPORT_CREATED_SUCCESS,
     );
   }
 
@@ -286,7 +287,7 @@ export class ScamReportController {
 
     return ApiResponseUtil.success(
       this.mapScamReportToResponse(report),
-      'Scam report updated successfully',
+      MessageKeys.SCAM_REPORT_UPDATED_SUCCESS,
     );
   }
 
@@ -303,8 +304,8 @@ export class ScamReportController {
     });
 
     return ApiResponseUtil.success(
-      { message: 'Scam report deleted successfully' },
-      'Scam report deleted successfully',
+      null,
+      MessageKeys.SCAM_REPORT_DELETED_SUCCESS,
     );
   }
 
@@ -455,8 +456,8 @@ export class ScamReportController {
     });
 
     return ApiResponseUtil.success(
-      { message: 'Comment deleted successfully' },
-      'Comment deleted successfully',
+      null,
+      MessageKeys.COMMENT_DELETED_SUCCESS,
     );
   }
 

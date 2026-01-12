@@ -9,6 +9,7 @@ import {
 } from '../../../../../shared/utils/cursor-pagination.util';
 
 import { isUuid } from '../../../../../shared/utils/uuid.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class SiteReviewRepository implements ISiteReviewRepository {
@@ -489,7 +490,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     await this.repository.update(id, data);
     const updated = await this.repository.findOne({ where: { id } });
     if (!updated) {
-      throw new Error('Review not found after update');
+      throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

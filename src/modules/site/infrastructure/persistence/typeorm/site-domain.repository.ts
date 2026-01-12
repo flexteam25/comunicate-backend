@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SiteDomain } from '../../../domain/entities/site-domain.entity';
 import { ISiteDomainRepository } from '../repositories/site-domain.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class SiteDomainRepository implements ISiteDomainRepository {
@@ -41,7 +42,7 @@ export class SiteDomainRepository implements ISiteDomainRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('SiteDomain not found after update');
+      throw notFound(MessageKeys.DOMAIN_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

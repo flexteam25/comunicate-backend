@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SiteReviewReaction } from '../../../domain/entities/site-review-reaction.entity';
 import { ISiteReviewReactionRepository } from '../repositories/site-review-reaction.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class SiteReviewReactionRepository implements ISiteReviewReactionRepository {
@@ -32,7 +33,7 @@ export class SiteReviewReactionRepository implements ISiteReviewReactionReposito
     await this.repository.update(id, data);
     const updated = await this.repository.findOne({ where: { id } });
     if (!updated) {
-      throw new Error('Reaction not found after update');
+      throw notFound(MessageKeys.SITE_REVIEW_REACTION_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

@@ -301,7 +301,7 @@ export class PostController {
       userId: user.userId,
     });
     return ApiResponseUtil.success(
-      { message: 'Reaction deleted successfully' },
+      null,
       MessageKeys.REACTION_DELETED_SUCCESS,
     );
   }
@@ -343,7 +343,7 @@ export class PostController {
       userId: user.userId,
     });
     return ApiResponseUtil.success(
-      { message: 'Reaction deleted successfully' },
+      null,
       MessageKeys.REACTION_DELETED_SUCCESS,
     );
   }
@@ -360,7 +360,7 @@ export class PostController {
       userId: user.userId,
     });
     return ApiResponseUtil.success(
-      { message: 'Comment deleted successfully' },
+      null,
       MessageKeys.COMMENT_DELETED_SUCCESS,
     );
   }
@@ -384,7 +384,7 @@ export class PostController {
 
     return ApiResponseUtil.success(
       this.mapPostToResponse(post),
-      'Post created successfully',
+      MessageKeys.POST_CREATED_SUCCESS,
     );
   }
 
@@ -413,7 +413,7 @@ export class PostController {
 
     return ApiResponseUtil.success(
       this.mapPostToResponse(post),
-      'Post updated successfully',
+      MessageKeys.POST_UPDATED_SUCCESS,
     );
   }
 
@@ -426,7 +426,7 @@ export class PostController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deletePostUseCase.execute({ postId: id, userId: user.userId });
     return ApiResponseUtil.success(
-      { message: 'Post deleted successfully' },
+      null,
       MessageKeys.POST_DELETED_SUCCESS,
     );
   }

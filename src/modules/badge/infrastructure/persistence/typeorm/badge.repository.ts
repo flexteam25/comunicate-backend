@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Badge } from '../../../domain/entities/badge.entity';
 import { IBadgeRepository } from '../repositories/badge.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class BadgeRepository implements IBadgeRepository {
@@ -72,7 +73,7 @@ export class BadgeRepository implements IBadgeRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('Badge not found after update');
+      throw notFound(MessageKeys.BADGE_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

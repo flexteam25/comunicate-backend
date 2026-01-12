@@ -4,6 +4,7 @@ import { Repository, DataSource, In } from 'typeorm';
 import { AttendanceStatistic } from '../../../domain/entities/attendance-statistic.entity';
 import { IAttendanceStatisticRepository } from '../repositories/attendance-statistic.repository';
 import { CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
+import { badRequest, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class AttendanceStatisticRepository implements IAttendanceStatisticRepository {
@@ -44,7 +45,7 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
     statistic: Partial<AttendanceStatistic>,
   ): Promise<AttendanceStatistic> {
     if (!statistic.userId || !statistic.statisticDate) {
-      throw new Error('userId and statisticDate are required');
+      throw badRequest(MessageKeys.ATTENDANCE_STATISTIC_REQUIRED_FIELDS);
     }
 
     const existing = await this.repository.findOne({

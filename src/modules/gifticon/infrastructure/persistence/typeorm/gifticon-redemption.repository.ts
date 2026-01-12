@@ -7,6 +7,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class GifticonRedemptionRepository implements IGifticonRedemptionRepository {
@@ -167,7 +168,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
     });
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('GifticonRedemption not found after update');
+      throw notFound(MessageKeys.GIFTCON_REDEMPTION_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

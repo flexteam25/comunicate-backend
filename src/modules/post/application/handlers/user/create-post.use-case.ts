@@ -6,8 +6,7 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { EntityManager } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { randomUUID } from 'crypto';
-import { badRequest } from '../../../../../shared/exceptions/exception-helpers';
-import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import { badRequest, notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreatePostCommand {
   userId: string; // User's ID
@@ -115,7 +114,7 @@ export class CreatePostUseCase {
           });
 
           if (!reloaded) {
-            throw new Error('Failed to reload post after creation');
+            throw notFound(MessageKeys.POST_NOT_FOUND_AFTER_CREATE);
           }
 
           return reloaded;

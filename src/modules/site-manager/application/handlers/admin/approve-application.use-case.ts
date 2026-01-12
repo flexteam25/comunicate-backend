@@ -85,7 +85,7 @@ export class ApproveApplicationUseCase {
         });
 
         if (!reloaded) {
-          throw new Error('Failed to reload application after approval');
+          throw notFound(MessageKeys.APPLICATION_NOT_FOUND_AFTER_APPROVAL);
         }
 
         return reloaded;

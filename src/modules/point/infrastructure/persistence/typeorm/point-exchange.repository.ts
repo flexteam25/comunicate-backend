@@ -8,6 +8,7 @@ import {
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
 import { isUuid } from '../../../../../shared/utils/uuid.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class PointExchangeRepository implements IPointExchangeRepository {
@@ -203,7 +204,7 @@ export class PointExchangeRepository implements IPointExchangeRepository {
     });
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('PointExchange not found after update');
+      throw notFound(MessageKeys.POINT_EXCHANGE_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

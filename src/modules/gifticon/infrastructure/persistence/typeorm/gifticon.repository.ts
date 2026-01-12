@@ -8,6 +8,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class GifticonRepository implements IGifticonRepository {
@@ -208,7 +209,7 @@ export class GifticonRepository implements IGifticonRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('Gifticon not found after update');
+      throw notFound(MessageKeys.GIFTICON_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

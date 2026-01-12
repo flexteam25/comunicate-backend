@@ -162,7 +162,7 @@ export class CreateSiteEventUseCase {
           });
 
           if (!reloaded) {
-            throw new Error('Failed to reload event after creation');
+            throw notFound(MessageKeys.EVENT_NOT_FOUND_AFTER_CREATE);
           }
 
           return reloaded;

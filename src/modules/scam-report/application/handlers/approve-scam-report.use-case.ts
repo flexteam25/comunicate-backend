@@ -15,6 +15,7 @@ import {
 export interface ApproveScamReportCommand {
   reportId: string;
   adminId: string;
+  title: string;
 }
 
 @Injectable()
@@ -43,6 +44,7 @@ export class ApproveScamReportUseCase {
     }
 
     const updatedReport = await this.scamReportRepository.update(command.reportId, {
+      title: command.title,
       status: ScamReportStatus.PUBLISHED,
       adminId: command.adminId,
       reviewedAt: new Date(),
@@ -100,6 +102,7 @@ export class ApproveScamReportUseCase {
       id: report.id,
       siteId: report.siteId || null,
       siteSlug: report.site?.slug || null,
+      title: report.title || null,
       siteUrl: report.siteUrl,
       siteName: report.siteName || report.site?.name || null,
       siteAccountInfo: report.siteAccountInfo,

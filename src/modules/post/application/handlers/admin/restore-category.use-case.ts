@@ -44,7 +44,7 @@ export class RestoreCategoryUseCase {
     // Return the restored category
     const restored = await this.categoryRepository.findById(command.categoryId);
     if (!restored) {
-      throw new Error('Category not found after restore');
+      throw notFound(MessageKeys.POST_CATEGORY_NOT_FOUND_AFTER_RESTORE);
     }
     return restored;
   }

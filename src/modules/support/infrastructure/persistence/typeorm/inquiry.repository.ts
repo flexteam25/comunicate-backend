@@ -7,6 +7,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class InquiryRepository implements IInquiryRepository {
@@ -120,7 +121,7 @@ export class InquiryRepository implements IInquiryRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id, ['user', 'admin']);
     if (!updated) {
-      throw new Error('Inquiry not found after update');
+      throw notFound(MessageKeys.INQUIRY_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

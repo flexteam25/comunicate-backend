@@ -213,8 +213,8 @@ export class UserController {
     });
 
     return ApiResponseUtil.success(
-      { message: 'Password changed successfully' },
-      'Password changed successfully',
+      null,
+      MessageKeys.PASSWORD_CHANGED_SUCCESS,
     );
   }
 

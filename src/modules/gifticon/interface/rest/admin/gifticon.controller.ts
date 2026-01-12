@@ -145,7 +145,7 @@ export class AdminGifticonController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteGifticonUseCase.execute({ gifticonId: id });
     return ApiResponseUtil.success(
-      { message: 'Gifticon deleted successfully' },
+      null,
       MessageKeys.GIFTCON_DELETED_SUCCESS,
     );
   }

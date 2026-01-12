@@ -214,7 +214,7 @@ export class AdminPocaEventController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deletePocaEventUseCase.execute({ eventId: id });
     return ApiResponseUtil.success(
-      { message: 'Event deleted successfully' },
+      null,
       MessageKeys.EVENT_DELETED_SUCCESS,
     );
   }

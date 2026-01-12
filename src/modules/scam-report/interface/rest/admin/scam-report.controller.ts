@@ -36,6 +36,7 @@ import { AdminDeleteScamReportUseCase } from '../../../application/handlers/admi
 import { ScamReportResponseDto } from '../dto/scam-report-response.dto';
 import { AdminCreateScamReportDto } from '../dto/admin-create-scam-report.dto';
 import { AdminUpdateScamReportDto } from '../dto/admin-update-scam-report.dto';
+import { ApproveScamReportDto } from '../dto/approve-scam-report.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import {
@@ -102,6 +103,7 @@ export class AdminScamReportController {
       id: report.id,
       siteId: report.siteId || null,
       siteSlug: report.site?.slug || null,
+      title: report.title || null,
       siteUrl: report.siteUrl,
       siteName: report.siteName || report.site?.name || null,
       siteAccountInfo: report.siteAccountInfo,
@@ -184,16 +186,18 @@ export class AdminScamReportController {
   @RequirePermission('scam-reports.moderate')
   async approveScamReport(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: ApproveScamReportDto,
     @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ApiResponse<ScamReportResponseDto>> {
     const fullReport = await this.approveScamReportUseCase.execute({
       reportId: id,
       adminId: admin.adminId,
+      title: dto.title,
     });
 
     return ApiResponseUtil.success(
       this.mapScamReportToResponse(fullReport),
-      'Scam report approved successfully',
+      MessageKeys.SCAM_REPORT_APPROVED_SUCCESS,
     );
   }
 
@@ -211,7 +215,7 @@ export class AdminScamReportController {
 
     return ApiResponseUtil.success(
       this.mapScamReportToResponse(fullReport),
-      'Scam report rejected successfully',
+      MessageKeys.SCAM_REPORT_REJECTED_SUCCESS,
     );
   }
 
@@ -253,6 +257,7 @@ export class AdminScamReportController {
     const report = await this.adminCreateScamReportUseCase.execute({
       adminId: admin.adminId,
       siteId: dto.siteId,
+      title: dto.title,
       siteUrl: dto.siteUrl,
       siteName: dto.siteName,
       siteAccountInfo: dto.siteAccountInfo,
@@ -272,7 +277,7 @@ export class AdminScamReportController {
 
     return ApiResponseUtil.success(
       this.mapScamReportToResponse(fullReport),
-      'Scam report created successfully',
+      MessageKeys.SCAM_REPORT_CREATED_SUCCESS,
     );
   }
 
@@ -316,6 +321,7 @@ export class AdminScamReportController {
     const fullReport = await this.adminUpdateScamReportUseCase.execute({
       reportId: id,
       adminId: admin.adminId,
+      title: dto.title,
       siteId: dto.siteId,
       siteUrl: dto.siteUrl,
       siteName: dto.siteName,
@@ -331,7 +337,7 @@ export class AdminScamReportController {
 
     return ApiResponseUtil.success(
       this.mapScamReportToResponse(fullReport),
-      'Scam report updated successfully',
+      MessageKeys.SCAM_REPORT_UPDATED_SUCCESS,
     );
   }
 
@@ -346,8 +352,8 @@ export class AdminScamReportController {
     });
 
     return ApiResponseUtil.success(
-      { message: 'Scam report deleted successfully' },
-      'Scam report deleted successfully',
+      null,
+      MessageKeys.SCAM_REPORT_DELETED_SUCCESS,
     );
   }
 }

@@ -284,7 +284,7 @@ export class AdminSiteController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteSiteUseCase.execute({ siteId: id });
     return ApiResponseUtil.success(
-      { message: 'Site deleted successfully' },
+      null,
       MessageKeys.SITE_DELETED_SUCCESS,
     );
   }
@@ -359,7 +359,7 @@ export class AdminSiteController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.assignBadgeUseCase.execute({ siteId: id, badgeId: dto.badgeId });
     return ApiResponseUtil.success(
-      { message: 'Badge assigned successfully' },
+      null,
       MessageKeys.SITE_BADGE_ASSIGNED_SUCCESS,
     );
   }
@@ -373,7 +373,7 @@ export class AdminSiteController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.removeBadgeUseCase.execute({ siteId: id, badgeId });
     return ApiResponseUtil.success(
-      { message: 'Badge removed successfully' },
+      null,
       MessageKeys.SITE_BADGE_REMOVED_SUCCESS,
     );
   }

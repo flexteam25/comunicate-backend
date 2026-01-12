@@ -7,12 +7,14 @@ import { ISiteRepository } from '../../../site/infrastructure/persistence/reposi
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import {
   badRequest,
+  notFound,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
 
 export interface AdminCreateScamReportCommand {
   adminId: string;
   siteId?: string;
+  title: string;
   siteUrl: string;
   siteName: string;
   siteAccountInfo: string;
@@ -53,6 +55,7 @@ export class AdminCreateScamReportUseCase {
         // Note: userId is not set for admin-created reports
         const report = reportRepo.create({
           siteId: command.siteId,
+          title: command.title,
           siteUrl: command.siteUrl,
           siteName: command.siteName,
           siteAccountInfo: command.siteAccountInfo,
@@ -86,7 +89,7 @@ export class AdminCreateScamReportUseCase {
         });
 
         if (!reloaded) {
-          throw new Error('Failed to reload scam report after creation');
+          throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND_AFTER_UPDATE);
         }
 
         return reloaded;

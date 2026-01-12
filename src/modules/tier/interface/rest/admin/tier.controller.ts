@@ -71,7 +71,7 @@ export class AdminTierController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deleteTierUseCase.execute({ tierId: id });
     return ApiResponseUtil.success(
-      { message: 'Tier deleted successfully' },
+      null,
       MessageKeys.TIER_DELETED_SUCCESS,
     );
   }
@@ -84,7 +84,7 @@ export class AdminTierController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.restoreTierUseCase.execute({ tierId: id });
     return ApiResponseUtil.success(
-      { message: 'Tier restored successfully' },
+      null,
       MessageKeys.TIER_RESTORED_SUCCESS,
     );
   }

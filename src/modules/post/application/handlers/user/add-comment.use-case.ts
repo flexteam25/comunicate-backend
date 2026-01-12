@@ -123,7 +123,7 @@ export class AddCommentUseCase {
           });
 
           if (!reloaded) {
-            throw new Error('Failed to reload comment after creation');
+            throw notFound(MessageKeys.POST_COMMENT_NOT_FOUND_AFTER_CREATE);
           }
 
           return reloaded;

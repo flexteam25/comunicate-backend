@@ -10,6 +10,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class PartnerRequestRepository implements IPartnerRequestRepository {
@@ -122,7 +123,7 @@ export class PartnerRequestRepository implements IPartnerRequestRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('Partner request not found after update');
+      throw notFound(MessageKeys.PARTNER_REQUEST_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

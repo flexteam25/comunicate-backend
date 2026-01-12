@@ -8,6 +8,7 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import {
   badRequest,
+  notFound,
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
 
@@ -166,7 +167,7 @@ export class CreatePocaEventUseCase {
           });
 
           if (!reloaded) {
-            throw new Error('Failed to reload event after creation');
+            throw notFound(MessageKeys.POCA_EVENT_NOT_FOUND_AFTER_CREATE);
           }
 
           return reloaded;

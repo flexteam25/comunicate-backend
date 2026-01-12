@@ -237,7 +237,10 @@ export class AdminController {
       passwordConfirmation: dto.passwordConfirmation,
     });
 
-    return ApiResponseUtil.success({ message: result.message }, result.message);
+    return ApiResponseUtil.success(
+      null,
+      MessageKeys.PASSWORD_RESET_SUCCESS,
+    );
   }
 
   @Put('change-password')
@@ -257,8 +260,8 @@ export class AdminController {
     });
 
     return ApiResponseUtil.success(
-      { message: 'Password changed successfully' },
-      'Password changed successfully',
+      null,
+      MessageKeys.PASSWORD_CHANGED_SUCCESS,
     );
   }
 

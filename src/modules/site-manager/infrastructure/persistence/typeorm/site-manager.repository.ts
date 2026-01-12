@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SiteManager } from '../../../domain/entities/site-manager.entity';
 import { ISiteManagerRepository } from '../repositories/site-manager.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class SiteManagerRepository implements ISiteManagerRepository {
@@ -57,7 +58,7 @@ export class SiteManagerRepository implements ISiteManagerRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('SiteManager not found after update');
+      throw notFound(MessageKeys.SITE_MANAGER_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

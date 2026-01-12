@@ -256,7 +256,7 @@ export class CreatePartnerSiteUseCase {
       ]);
 
       if (!siteWithRelations) {
-        throw new Error('Site not found after creation');
+        throw notFound(MessageKeys.SITE_NOT_FOUND_AFTER_CREATE);
       }
 
       // Map site to response format for event

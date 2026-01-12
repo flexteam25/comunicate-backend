@@ -7,6 +7,10 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class ScamReportCommentRepository implements IScamReportCommentRepository {
@@ -96,7 +100,7 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
     await this.repository.update(id, data);
     const updated = await this.repository.findOne({ where: { id } });
     if (!updated) {
-      throw new Error('Comment not found after update');
+      throw notFound(MessageKeys.COMMENT_NOT_FOUND);
     }
     return updated;
   }

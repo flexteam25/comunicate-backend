@@ -8,7 +8,6 @@ import {
   MaxLength,
   Min,
   IsEnum,
-  IsArray,
 } from 'class-validator';
 import { ScamReportStatus } from '../../../domain/entities/scam-report.entity';
 
@@ -16,6 +15,11 @@ export class AdminCreateScamReportDto {
   @IsOptional()
   @IsUUID()
   siteId?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  title: string;
 
   @IsString()
   @IsNotEmpty()

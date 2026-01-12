@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tier } from '../../../domain/entities/tier.entity';
 import { ITierRepository } from '../repositories/tier.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class TierRepository implements ITierRepository {
@@ -55,7 +56,7 @@ export class TierRepository implements ITierRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('Tier not found after update');
+      throw notFound(MessageKeys.TIER_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

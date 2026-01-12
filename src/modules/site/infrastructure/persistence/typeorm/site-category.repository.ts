@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
 import { ISiteCategoryRepository } from '../repositories/site-category.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class SiteCategoryRepository implements ISiteCategoryRepository {
@@ -70,7 +71,7 @@ export class SiteCategoryRepository implements ISiteCategoryRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('SiteCategory not found after update');
+      throw notFound(MessageKeys.SITE_CATEGORY_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

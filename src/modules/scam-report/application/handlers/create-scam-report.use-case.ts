@@ -140,6 +140,7 @@ export class CreateScamReportUseCase {
       id: report.id,
       siteId: report.siteId || null,
       siteSlug: report.site?.slug || null,
+      title: report.title || null,
       siteUrl: report.siteUrl,
       siteName: report.siteName || report.site?.name || null,
       siteAccountInfo: report.siteAccountInfo,

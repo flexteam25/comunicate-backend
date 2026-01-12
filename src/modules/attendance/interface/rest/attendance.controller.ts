@@ -11,6 +11,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 import { JwtAuthGuard } from '../../../../shared/guards/jwt-auth.guard';
 import {
   CurrentUser,
@@ -50,7 +51,7 @@ export class AttendanceController {
   async createAttendance(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateAttendanceDto,
-  ): Promise<ApiResponse<{ message: string; attendanceDate: string }>> {
+  ): Promise<ApiResponse<{ attendanceDate: string }>> {
     const attendance = await this.createAttendanceUseCase.execute({
       userId: user.userId,
       message: dto.message,
@@ -61,10 +62,9 @@ export class AttendanceController {
 
     return ApiResponseUtil.success(
       {
-        message: 'Attendance checked successfully',
         attendanceDate,
       },
-      'Attendance checked successfully',
+      MessageKeys.ATTENDANCE_CHECKED_SUCCESS,
     );
   }
 

@@ -8,6 +8,7 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class PostRepository implements IPostRepository {
@@ -593,7 +594,7 @@ export class PostRepository implements IPostRepository {
     await this.repository.update(id, data);
     const updated = await this.findById(id);
     if (!updated) {
-      throw new Error('Post not found after update');
+      throw notFound(MessageKeys.POST_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }
