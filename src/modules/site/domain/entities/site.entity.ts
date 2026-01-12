@@ -6,6 +6,12 @@ import { SiteBadge } from './site-badge.entity';
 import { SiteDomain } from './site-domain.entity';
 import { ScamReport } from '../../../scam-report/domain/entities/scam-report.entity';
 
+export enum TetherDepositWithdrawalStatus {
+  POSSIBLE = 'possible', // 테더입출금 가능시
+  NOT_POSSIBLE = 'not_possible', // 불가능시
+  NO_INFO = 'no_info', // 정보없을시 (기본상태)
+}
+
 export enum SiteStatus {
   UNVERIFIED = 'unverified',
   VERIFIED = 'verified',
@@ -102,6 +108,15 @@ export class Site extends BaseEntity {
     comment: 'Experience points',
   })
   experience: number;
+
+  @Column({
+    name: 'tether_deposit_withdrawal_status',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+    default: TetherDepositWithdrawalStatus.NO_INFO,
+  })
+  tetherDepositWithdrawalStatus?: TetherDepositWithdrawalStatus;
 
   @ManyToOne(() => SiteCategory, (category) => category.sites)
   @JoinColumn({ name: 'category_id' })

@@ -10,7 +10,10 @@ import {
   IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SiteStatus } from '../../../domain/entities/site.entity';
+import {
+  SiteStatus,
+  TetherDepositWithdrawalStatus,
+} from '../../../domain/entities/site.entity';
 import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
 
 export class UpdateSiteDto {
@@ -87,4 +90,8 @@ export class UpdateSiteDto {
   @IsArray({ message: 'Remove partner UIDs must be an array' })
   @IsUUID('4', { each: true, message: 'Each remove partner UID must be a valid UUID' })
   removePartnerUid?: string[];
+
+  @IsOptional()
+  @IsEnum(TetherDepositWithdrawalStatus)
+  tetherDepositWithdrawalStatus?: TetherDepositWithdrawalStatus;
 }

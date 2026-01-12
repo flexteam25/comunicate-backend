@@ -1,4 +1,7 @@
-import { SiteStatus } from '../../../domain/entities/site.entity';
+import {
+  SiteStatus,
+  TetherDepositWithdrawalStatus,
+} from '../../../domain/entities/site.entity';
 import { BadgeType } from 'src/modules/badge/domain/entities/badge.entity';
 
 export class SiteCategoryResponse {
@@ -72,6 +75,7 @@ export class SiteResponse {
   recharge?: number;
   experience: number;
   issueCount: number;
+  tetherDepositWithdrawalStatus?: TetherDepositWithdrawalStatus;
   badges: BadgeResponse[];
   domains: SiteDomainResponse[];
   managers?: SiteManagerResponse[];

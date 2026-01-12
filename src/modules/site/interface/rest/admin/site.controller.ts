@@ -36,7 +36,10 @@ import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/ad
 import { RequirePermission } from '../../../../admin/infrastructure/decorators/require-permission.decorator';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ConfigService } from '@nestjs/config';
-import { Site } from '../../../domain/entities/site.entity';
+import {
+  Site,
+  TetherDepositWithdrawalStatus,
+} from '../../../domain/entities/site.entity';
 import { MulterFile } from '../../../../../shared/services/upload';
 import { SiteManager } from '../../../../site-manager/domain/entities/site-manager.entity';
 import { RestoreSiteUseCase } from '../../../application/handlers/admin/restore-site.use-case';
@@ -103,6 +106,7 @@ export class AdminSiteController {
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
       issueCount: site.issueCount || 0,
+      tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
       badges: (site.siteBadges || [])
         .map((sb) => {
           // Filter out if badge is null or deleted
@@ -182,6 +186,7 @@ export class AdminSiteController {
       recharge: dto.recharge,
       experience: dto.experience,
       partnerUid: dto.partnerUid,
+      tetherDepositWithdrawalStatus: dto.tetherDepositWithdrawalStatus,
       logo: files?.logo?.[0],
       mainImage: files?.mainImage?.[0],
       siteImage: files?.siteImage?.[0],
@@ -219,6 +224,33 @@ export class AdminSiteController {
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
     });
+  }
+
+  @Get('tether-status')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('site.view')
+  getTetherStatusOptions(): ApiResponse<
+    { value: TetherDepositWithdrawalStatus; label: string; labelKo: string }[]
+  > {
+    const options = [
+      {
+        value: TetherDepositWithdrawalStatus.POSSIBLE,
+        label: 'Possible',
+        labelKo: '테더입출금 가능시',
+      },
+      {
+        value: TetherDepositWithdrawalStatus.NOT_POSSIBLE,
+        label: 'Not Possible',
+        labelKo: '불가능시',
+      },
+      {
+        value: TetherDepositWithdrawalStatus.NO_INFO,
+        label: 'No Information',
+        labelKo: '정보 없음',
+      },
+    ];
+
+    return ApiResponseUtil.success(options);
   }
 
   @Get(':id')
@@ -269,6 +301,7 @@ export class AdminSiteController {
       deleteSiteImage: dto.deleteSiteImage === 'true',
       partnerUid: dto.partnerUid,
       removePartnerUid: dto.removePartnerUid,
+      tetherDepositWithdrawalStatus: dto.tetherDepositWithdrawalStatus,
     });
     return ApiResponseUtil.success(
       this.mapSiteToResponse(site),
@@ -372,9 +405,6 @@ export class AdminSiteController {
     @Param('badgeId', new ParseUUIDPipe()) badgeId: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.removeBadgeUseCase.execute({ siteId: id, badgeId });
-    return ApiResponseUtil.success(
-      null,
-      MessageKeys.SITE_BADGE_REMOVED_SUCCESS,
-    );
+    return ApiResponseUtil.success(null, MessageKeys.SITE_BADGE_REMOVED_SUCCESS);
   }
 }

@@ -7,9 +7,11 @@ import {
   Min,
   Max,
   IsNotEmpty,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
+import { TetherDepositWithdrawalStatus } from '../../../domain/entities/site.entity';
 
 export class CreateSiteDto {
   @IsString()
@@ -71,4 +73,8 @@ export class CreateSiteDto {
   @IsOptional()
   @IsUUID()
   partnerUid?: string;
+
+  @IsOptional()
+  @IsEnum(TetherDepositWithdrawalStatus)
+  tetherDepositWithdrawalStatus?: TetherDepositWithdrawalStatus;
 }

@@ -527,6 +527,7 @@ export class UserController {
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
       issueCount: site.issueCount || 0,
+      tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
       slug: site.slug,
     });
 

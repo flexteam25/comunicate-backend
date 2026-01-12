@@ -2,7 +2,11 @@ import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
 import { ISiteCategoryRepository } from '../../../infrastructure/persistence/repositories/site-category.repository';
 import { ITierRepository } from '../../../../tier/infrastructure/persistence/repositories/tier.repository';
-import { Site, SiteStatus } from '../../../domain/entities/site.entity';
+import {
+  Site,
+  SiteStatus,
+  TetherDepositWithdrawalStatus,
+} from '../../../domain/entities/site.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager, In } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
@@ -45,6 +49,7 @@ export interface UpdateSiteCommand {
   experience?: number;
   partnerUid?: string[];
   removePartnerUid?: string[];
+  tetherDepositWithdrawalStatus?: TetherDepositWithdrawalStatus;
 }
 
 @Injectable()
@@ -241,6 +246,9 @@ export class UpdateSiteUseCase {
             updateData.recharge = command.recharge || null;
           if (command.experience !== undefined)
             updateData.experience = command.experience;
+          if (command.tetherDepositWithdrawalStatus !== undefined)
+            updateData.tetherDepositWithdrawalStatus =
+              command.tetherDepositWithdrawalStatus;
 
           await siteRepo.update(command.siteId, updateData);
 
@@ -529,6 +537,7 @@ export class UpdateSiteUseCase {
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
       issueCount: site.issueCount || 0,
+      tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
       badges: (site.siteBadges || [])
         .map((sb) => {
           // Filter out if badge is null or deleted

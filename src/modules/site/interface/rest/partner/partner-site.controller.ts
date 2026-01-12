@@ -114,6 +114,7 @@ export class PartnerSiteController {
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
       issueCount: site.issueCount || 0,
+      tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
       badges: (site.siteBadges || [])
         .map((sb) => {
           // Filter out if badge is null or deleted

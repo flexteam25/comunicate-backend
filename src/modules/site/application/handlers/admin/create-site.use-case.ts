@@ -3,7 +3,11 @@ import { ISiteRepository } from '../../../infrastructure/persistence/repositorie
 import { ISiteCategoryRepository } from '../../../infrastructure/persistence/repositories/site-category.repository';
 import { ITierRepository } from '../../../../tier/infrastructure/persistence/repositories/tier.repository';
 import { ISiteManagerRepository } from '../../../../site-manager/infrastructure/persistence/repositories/site-manager.repository';
-import { Site, SiteStatus } from '../../../domain/entities/site.entity';
+import {
+  Site,
+  SiteStatus,
+  TetherDepositWithdrawalStatus,
+} from '../../../domain/entities/site.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
@@ -40,6 +44,7 @@ export interface CreateSiteCommand {
   recharge?: number;
   experience?: number;
   partnerUid?: string;
+  tetherDepositWithdrawalStatus?: TetherDepositWithdrawalStatus;
 }
 @Injectable()
 export class CreateSiteUseCase {
@@ -233,6 +238,9 @@ export class CreateSiteUseCase {
             firstCharge: command.firstCharge,
             recharge: command.recharge,
             experience: command.experience || 0,
+            tetherDepositWithdrawalStatus:
+              command.tetherDepositWithdrawalStatus ||
+              TetherDepositWithdrawalStatus.NO_INFO,
             status: SiteStatus.UNVERIFIED,
             reviewCount: 0,
             averageRating: 0,
@@ -342,6 +350,7 @@ export class CreateSiteUseCase {
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
       issueCount: site.issueCount || 0,
+      tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
       badges: (site.siteBadges || [])
         .map((sb) => {
           // Filter out if badge is null or deleted
