@@ -12,6 +12,7 @@ export interface CreateCategoryCommand {
   description?: string;
   showMain?: boolean;
   specialKey?: string | null;
+  order: number;
 }
 
 @Injectable()
@@ -42,6 +43,7 @@ export class CreateCategoryUseCase {
       description: command.description,
       showMain: command.showMain ?? false,
       specialKey: command.specialKey || null,
+      order: command.order,
     });
   }
 }

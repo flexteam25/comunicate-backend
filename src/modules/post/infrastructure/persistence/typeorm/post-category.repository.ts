@@ -18,10 +18,12 @@ export class PostCategoryRepository implements IPostCategoryRepository {
   }
 
   async findAll(): Promise<PostCategory[]> {
-    return this.repository.find({
-      where: { deletedAt: null },
-      order: { name: 'ASC' },
-    });
+    return this.repository
+      .createQueryBuilder('category')
+      .where('category.deletedAt IS NULL')
+      .orderBy('category.order', 'ASC', 'NULLS LAST')
+      .addOrderBy('category.name', 'ASC')
+      .getMany();
   }
 
   async findByName(name: string): Promise<PostCategory | null> {

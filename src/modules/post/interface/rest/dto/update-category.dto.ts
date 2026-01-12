@@ -1,4 +1,5 @@
-import { IsString, IsOptional, MaxLength, IsBoolean, ValidateIf } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsBoolean, ValidateIf, IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class UpdateCategoryDto {
   @IsOptional()
@@ -23,4 +24,10 @@ export class UpdateCategoryDto {
   @ValidateIf((o) => o.specialKey !== null)
   @IsString({ message: 'specialKey must be a string' })
   specialKey?: string | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Order must be an integer' })
+  @Min(1, { message: 'Order must be at least 1' })
+  order?: number;
 }

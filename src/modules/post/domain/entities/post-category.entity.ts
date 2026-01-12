@@ -20,6 +20,9 @@ export class PostCategory extends BaseEntity {
   @Column({ name: 'special_key', type: 'varchar', length: 50, nullable: true })
   specialKey?: string | null;
 
+  @Column({ type: 'integer', nullable: true })
+  order?: number | null;
+
   @OneToMany(() => Post, (post) => post.category)
   posts: Post[];
 }

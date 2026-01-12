@@ -1,4 +1,13 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  MaxLength,
+  IsBoolean,
+  IsInt,
+  Min,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateCategoryDto {
   @IsString({ message: 'Name must be a string' })
@@ -22,4 +31,10 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsString({ message: 'specialKey must be a string' })
   specialKey?: string;
+
+  @IsNotEmpty({ message: 'Order is required' })
+  @Type(() => Number)
+  @IsInt({ message: 'Order must be an integer' })
+  @Min(1, { message: 'Order must be at least 1' })
+  order: number;
 }

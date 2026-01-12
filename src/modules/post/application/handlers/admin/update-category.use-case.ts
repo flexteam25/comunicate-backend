@@ -18,6 +18,7 @@ export interface UpdateCategoryCommand {
   description?: string;
   showMain?: boolean;
   specialKey?: string | null;
+  order?: number;
 }
 
 @Injectable()
@@ -58,6 +59,10 @@ export class UpdateCategoryUseCase {
     if (command.showMain !== undefined) updateData.showMain = command.showMain;
     if (command.specialKey !== undefined)
       updateData.specialKey = command.specialKey || null;
+    // Only update order if provided and not null/undefined
+    if (command.order !== undefined && command.order !== null) {
+      updateData.order = command.order;
+    }
 
     return this.categoryRepository.update(command.categoryId, updateData);
   }
