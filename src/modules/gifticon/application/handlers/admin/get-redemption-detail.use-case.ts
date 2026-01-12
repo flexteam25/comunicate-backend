@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { GifticonRedemption } from '../../../domain/entities/gifticon-redemption.entity';
 import { IGifticonRedemptionRepository } from '../../../infrastructure/persistence/repositories/gifticon-redemption.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetRedemptionDetailCommand {
   redemptionId: string;
@@ -20,7 +21,7 @@ export class GetRedemptionDetailUseCase {
     ]);
 
     if (!redemption) {
-      throw new NotFoundException('Redemption not found');
+      throw notFound(MessageKeys.REDEMPTION_NOT_FOUND);
     }
 
     return redemption;

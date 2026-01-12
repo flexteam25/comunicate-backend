@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { ScamReportComment } from '../../domain/entities/scam-report-comment.entity';
@@ -19,6 +14,11 @@ import {
   UserComment,
   CommentType,
 } from '../../../user/domain/entities/user-comment.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface AddCommentCommand {
   reportId: string;
@@ -43,7 +43,7 @@ export class AddCommentUseCase {
     const report = await this.scamReportRepository.findById(command.reportId);
 
     if (!report) {
-      throw new NotFoundException('Scam report not found');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND);
     }
 
     // Public users can only comment on published reports
@@ -52,7 +52,7 @@ export class AddCommentUseCase {
       report.status !== ScamReportStatus.PUBLISHED &&
       report.userId !== command.userId
     ) {
-      throw new BadRequestException('You can only comment on published scam reports');
+      throw badRequest(MessageKeys.CAN_ONLY_COMMENT_ON_PUBLISHED_SCAM_REPORTS);
     }
 
     const result = await this.transactionService.executeInTransaction(

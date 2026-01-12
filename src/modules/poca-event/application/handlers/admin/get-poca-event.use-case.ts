@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PocaEvent } from '../../../domain/entities/poca-event.entity';
 import { IPocaEventRepository } from '../../../infrastructure/persistence/repositories/poca-event.repository';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface AdminGetPocaEventCommand {
   eventId: string;
@@ -17,7 +21,7 @@ export class AdminGetPocaEventUseCase {
     const event = await this.pocaEventRepository.findById(command.eventId, ['banners']);
 
     if (!event) {
-      throw new NotFoundException('Event not found');
+      throw notFound(MessageKeys.EVENT_NOT_FOUND);
     }
 
     return event;

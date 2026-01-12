@@ -1,15 +1,15 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
 import { IScamReportCommentRepository } from '../../infrastructure/persistence/repositories/scam-report-comment.repository';
 import { CursorPaginationResult } from '../../../../shared/utils/cursor-pagination.util';
 import { ScamReportComment } from '../../domain/entities/scam-report-comment.entity';
+import {
+  notFound,
+  forbidden,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface ListScamReportCommentsCommand {
   reportId: string;
@@ -36,14 +36,14 @@ export class ListScamReportCommentsUseCase {
     const report = await this.scamReportRepository.findById(command.reportId);
 
     if (!report) {
-      throw new NotFoundException('Scam report not found');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND);
     }
 
     // Public can only see comments of published reports
     if (!command.isAdmin && report.status !== ScamReportStatus.PUBLISHED) {
       // Owner can see comments of their own reports
       if (!command.userId || report.userId !== command.userId) {
-        throw new ForbiddenException('Scam report is not available for viewing');
+        throw forbidden(MessageKeys.SCAM_REPORT_NOT_AVAILABLE_FOR_VIEWING);
       }
     }
 
@@ -53,13 +53,11 @@ export class ListScamReportCommentsUseCase {
         command.parentCommentId,
       );
       if (!parentComment) {
-        throw new NotFoundException('Parent comment not found or has been deleted');
+        throw notFound(MessageKeys.PARENT_COMMENT_NOT_FOUND_OR_DELETED);
       }
       // Verify parent comment belongs to the same report
       if (parentComment.scamReportId !== command.reportId) {
-        throw new BadRequestException(
-          'Parent comment does not belong to this scam report',
-        );
+        throw badRequest(MessageKeys.PARENT_COMMENT_DOES_NOT_BELONG_TO_REPORT);
       }
     }
 

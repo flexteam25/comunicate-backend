@@ -1,8 +1,12 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ITierRepository } from '../../../infrastructure/persistence/repositories/tier.repository';
 import { Tier } from '../../../domain/entities/tier.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
+import {
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreateTierCommand {
   name: string;
@@ -30,7 +34,7 @@ export class CreateTierUseCase {
           .andWhere('t.deletedAt IS NULL')
           .getOne();
         if (duplicate) {
-          throw new BadRequestException('Tier with this name already exists');
+          throw badRequest(MessageKeys.TIER_NAME_ALREADY_EXISTS);
         }
 
         const tier = tierRepo.create({

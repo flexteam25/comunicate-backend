@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
 import { IUserTokenRepository } from '../../../auth/infrastructure/persistence/repositories/user-token.repository';
@@ -16,6 +11,11 @@ import {
   UserOldPasswordType,
 } from '../../domain/entities/user-old-password.entity';
 import { UserToken } from '../../../auth/domain/entities/user-token.entity';
+import {
+  unauthorized,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface ChangePasswordCommand {
   userId: string;
@@ -42,13 +42,13 @@ export class ChangePasswordUseCase {
   async execute(command: ChangePasswordCommand): Promise<User> {
     // Validate password confirmation (outside transaction)
     if (command.newPassword !== command.passwordConfirmation) {
-      throw new BadRequestException('Password confirmation does not match');
+      throw badRequest(MessageKeys.PASSWORD_CONFIRMATION_MISMATCH);
     }
 
     // Find user (outside transaction for validation)
     const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw unauthorized(MessageKeys.USER_NOT_FOUND);
     }
 
     // Verify current password (outside transaction)
@@ -57,7 +57,7 @@ export class ChangePasswordUseCase {
       user.passwordHash,
     );
     if (!isValidPassword) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw unauthorized(MessageKeys.CURRENT_PASSWORD_INCORRECT);
     }
 
     // Hash new password (outside transaction)

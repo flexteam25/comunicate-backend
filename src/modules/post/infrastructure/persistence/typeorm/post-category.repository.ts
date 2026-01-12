@@ -26,18 +26,6 @@ export class PostCategoryRepository implements IPostCategoryRepository {
       .getMany();
   }
 
-  async findAllForUser(): Promise<PostCategory[]> {
-    return this.repository
-      .createQueryBuilder('category')
-      .where('category.deletedAt IS NULL')
-      .andWhere('category.adminCreateOnly = :adminCreateOnly', {
-        adminCreateOnly: false,
-      })
-      .orderBy('category.order', 'ASC', 'NULLS LAST')
-      .addOrderBy('category.name', 'ASC')
-      .getMany();
-  }
-
   async findByName(name: string): Promise<PostCategory | null> {
     return this.repository.findOne({
       where: { name, deletedAt: null },

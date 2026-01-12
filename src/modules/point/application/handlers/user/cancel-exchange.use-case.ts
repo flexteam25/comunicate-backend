@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import {
   PointExchange,
@@ -21,6 +15,12 @@ import {
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import {
+  notFound,
+  badRequest,
+  forbidden,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CancelExchangeCommand {
   exchangeId: string;
@@ -52,20 +52,18 @@ export class CancelExchangeUseCase {
     ]);
 
     if (!exchange) {
-      throw new NotFoundException('Exchange not found');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND);
     }
 
     if (exchange.userId !== command.userId) {
-      throw new ForbiddenException('You can only cancel your own exchanges');
+      throw forbidden(MessageKeys.CAN_ONLY_CANCEL_OWN_EXCHANGES);
     }
 
     if (
       exchange.status !== PointExchangeStatus.PENDING &&
       exchange.status !== PointExchangeStatus.PROCESSING
     ) {
-      throw new BadRequestException(
-        'Only pending or processing exchanges can be cancelled',
-      );
+      throw badRequest(MessageKeys.ONLY_PENDING_OR_PROCESSING_EXCHANGES_CAN_BE_CANCELLED);
     }
 
     // Execute refund and status update in transaction
@@ -79,7 +77,7 @@ export class CancelExchangeUseCase {
         });
 
         if (!userProfile) {
-          throw new NotFoundException('User profile not found');
+          throw notFound(MessageKeys.USER_PROFILE_NOT_FOUND);
         }
 
         // Refund points to user
@@ -143,7 +141,7 @@ export class CancelExchangeUseCase {
         });
 
         if (!updated) {
-          throw new NotFoundException('Exchange not found after update');
+          throw notFound(MessageKeys.EXCHANGE_NOT_FOUND_AFTER_UPDATE);
         }
 
         return updated;

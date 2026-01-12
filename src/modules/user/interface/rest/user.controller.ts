@@ -10,8 +10,6 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
-  NotFoundException,
-  BadRequestException,
   Get,
   Inject,
   Post,
@@ -33,7 +31,11 @@ import {
   CurrentUserPayload,
 } from '../../../../shared/decorators/current-user.decorator';
 import { ApiResponse, ApiResponseUtil } from '../../../../shared/dto/api-response.dto';
-import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 import { UploadService, MulterFile } from '../../../../shared/services/upload';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
@@ -246,7 +248,7 @@ export class UserController {
     // Check if phone is being changed
     const currentUser = await this.userRepository.findById(user.userId, ['userProfile']);
     if (!currentUser) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     const currentPhone = currentUser.userProfile?.phone || null;
@@ -260,7 +262,7 @@ export class UserController {
 
     // If phone is being changed, require token
     if (phoneChanged && !dto.token) {
-      throw new BadRequestException('Token is required when updating phone number');
+      throw badRequest(MessageKeys.TOKEN_REQUIRED_FOR_PHONE_UPDATE);
     }
 
     // Determine client IP (for auditing)
@@ -295,7 +297,7 @@ export class UserController {
     ]);
 
     if (!dbUser) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     // Map single active badge (filter out soft-deleted badges)
@@ -356,7 +358,7 @@ export class UserController {
       'userProfile',
     ]);
     if (!dbUser) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     // Update last request IP for auditing
@@ -420,7 +422,7 @@ export class UserController {
     // Query user's earned badges
     const dbUser = await this.userRepository.findByIdWithBadges(user.userId);
     if (!dbUser) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     // Create a map of user's earned badges by badgeId

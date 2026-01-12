@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PocaEvent } from '../../../domain/entities/poca-event.entity';
 import { PocaEventStatus } from '../../../domain/entities/poca-event.entity';
 import { PocaEventBanner } from '../../../domain/entities/poca-event-banner.entity';
@@ -11,6 +6,11 @@ import { IPocaEventRepository } from '../../../infrastructure/persistence/reposi
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdatePocaEventCommand {
   eventId: string;
@@ -42,7 +42,7 @@ export class UpdatePocaEventUseCase {
       'banners',
     ]);
     if (!existingEvent) {
-      throw new NotFoundException('Event not found');
+      throw notFound(MessageKeys.EVENT_NOT_FOUND);
     }
 
     // Validate file sizes and types
@@ -51,12 +51,15 @@ export class UpdatePocaEventUseCase {
 
     if (command.primaryBanner) {
       if (command.primaryBanner.size > maxSize) {
-        throw new BadRequestException('Primary banner file size exceeds 20MB');
+        throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+          fileType: 'primary banner',
+          maxSize: '20MB',
+        });
       }
       if (!allowedTypes.test(command.primaryBanner.mimetype)) {
-        throw new BadRequestException(
-          'Invalid primary banner file type. Allowed: jpg, jpeg, png, webp',
-        );
+        throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+          allowedTypes: 'jpg, jpeg, png, webp',
+        });
       }
     }
 
@@ -64,12 +67,15 @@ export class UpdatePocaEventUseCase {
       for (let i = 0; i < command.banners.length; i++) {
         const banner = command.banners[i];
         if (banner.image.size > maxSize) {
-          throw new BadRequestException(`Banner ${i + 1} file size exceeds 20MB`);
+          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+            fileType: `banner ${i + 1}`,
+            maxSize: '20MB',
+          });
         }
         if (!allowedTypes.test(banner.image.mimetype)) {
-          throw new BadRequestException(
-            `Invalid banner ${i + 1} file type. Allowed: jpg, jpeg, png, webp`,
-          );
+          throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+            allowedTypes: 'jpg, jpeg, png, webp',
+          });
         }
       }
     }
@@ -126,21 +132,21 @@ export class UpdatePocaEventUseCase {
           });
 
           if (!event) {
-            throw new NotFoundException('Event not found');
+            throw notFound(MessageKeys.EVENT_NOT_FOUND);
           }
 
           // Validate dates
           if (command.startsAt && command.endsAt) {
             if (command.startsAt >= command.endsAt) {
-              throw new BadRequestException('Start date must be before end date');
+              throw badRequest(MessageKeys.START_DATE_MUST_BE_BEFORE_END_DATE);
             }
           } else if (command.startsAt && event.endsAt) {
             if (command.startsAt >= event.endsAt) {
-              throw new BadRequestException('Start date must be before end date');
+              throw badRequest(MessageKeys.START_DATE_MUST_BE_BEFORE_END_DATE);
             }
           } else if (command.endsAt && event.startsAt) {
             if (event.startsAt >= command.endsAt) {
-              throw new BadRequestException('Start date must be before end date');
+              throw badRequest(MessageKeys.START_DATE_MUST_BE_BEFORE_END_DATE);
             }
           }
 
@@ -150,7 +156,7 @@ export class UpdatePocaEventUseCase {
               where: { slug: command.slug, deletedAt: null },
             });
             if (existing) {
-              throw new BadRequestException('Slug already exists');
+              throw badRequest(MessageKeys.SLUG_ALREADY_EXISTS);
             }
           }
 

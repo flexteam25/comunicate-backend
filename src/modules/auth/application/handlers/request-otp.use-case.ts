@@ -1,9 +1,10 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { QueueService } from '../../../../shared/queue/queue.service';
 import { User } from '../../../user/domain/entities/user.entity';
+import { notFound, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface RequestOtpCommand {
   email: string;
@@ -28,11 +29,11 @@ export class RequestOtpUseCase {
     // Find user by email
     const user = await this.userRepository.findByEmail(command.email);
     if (!user) {
-      throw new NotFoundException('Account not found');
+      throw notFound(MessageKeys.ACCOUNT_NOT_FOUND);
     }
 
     if (!user.isActive) {
-      throw new NotFoundException('Account not found');
+      throw notFound(MessageKeys.ACCOUNT_NOT_FOUND);
     }
 
     const redisKey = `otp:forgot-password:${user.id}`;

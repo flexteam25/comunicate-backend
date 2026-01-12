@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import {
   PointExchange,
@@ -20,6 +15,11 @@ import {
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 /**
  * Command for admin to reject point exchange request
@@ -62,7 +62,7 @@ export class RejectExchangeUseCase {
     ]);
 
     if (!exchange) {
-      throw new NotFoundException('Exchange not found');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND);
     }
 
     // Only allow reject if status = pending or processing
@@ -70,9 +70,7 @@ export class RejectExchangeUseCase {
       exchange.status !== PointExchangeStatus.PENDING &&
       exchange.status !== PointExchangeStatus.PROCESSING
     ) {
-      throw new BadRequestException(
-        'Only pending or processing exchanges can be rejected',
-      );
+      throw badRequest(MessageKeys.ONLY_PENDING_OR_PROCESSING_EXCHANGES_CAN_BE_REJECTED);
     }
 
     // Execute refund and status update in transaction
@@ -86,7 +84,7 @@ export class RejectExchangeUseCase {
         });
 
         if (!userProfile) {
-          throw new NotFoundException('User profile not found');
+          throw notFound(MessageKeys.USER_PROFILE_NOT_FOUND);
         }
 
         // Refund points to user
@@ -163,7 +161,7 @@ export class RejectExchangeUseCase {
         });
 
         if (!updated) {
-          throw new NotFoundException('Exchange not found after update');
+          throw notFound(MessageKeys.EXCHANGE_NOT_FOUND_AFTER_UPDATE);
         }
 
         return updated;

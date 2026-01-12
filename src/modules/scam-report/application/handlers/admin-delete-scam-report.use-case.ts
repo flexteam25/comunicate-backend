@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface AdminDeleteScamReportCommand {
   reportId: string;
@@ -16,7 +20,7 @@ export class AdminDeleteScamReportUseCase {
     const report = await this.scamReportRepository.findById(command.reportId);
 
     if (!report) {
-      throw new NotFoundException('Scam report not found');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND);
     }
 
     // Soft delete (comments and reactions are kept as per requirements)

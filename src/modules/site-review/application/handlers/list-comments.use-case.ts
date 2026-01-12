@@ -1,13 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteReviewRepository } from '../../infrastructure/persistence/repositories/site-review.repository';
 import { ISiteReviewCommentRepository } from '../../infrastructure/persistence/repositories/site-review-comment.repository';
 import { CursorPaginationResult } from '../../../../shared/utils/cursor-pagination.util';
 import { SiteReviewComment } from '../../domain/entities/site-review-comment.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface ListCommentsCommand {
   reviewId: string;
@@ -32,15 +32,13 @@ export class ListCommentsUseCase {
     const review = await this.siteReviewRepository.findById(command.reviewId);
 
     if (!review) {
-      throw new NotFoundException('Site review not found');
+      throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND);
     }
 
     // Public can view comments on published reviews
     // Owners can view comments on their own reviews
     if (!review.isPublished && review.userId !== command.userId) {
-      throw new BadRequestException(
-        'You can only view comments on published site reviews',
-      );
+      throw badRequest(MessageKeys.CAN_ONLY_VIEW_COMMENTS_ON_PUBLISHED_REVIEWS);
     }
 
     // Validate parent comment if provided (not undefined and not null)
@@ -53,9 +51,7 @@ export class ListCommentsUseCase {
         parentComment.siteReviewId !== command.reviewId ||
         parentComment.deletedAt
       ) {
-        throw new BadRequestException(
-          'Parent comment not found, does not belong to this review, or has been deleted',
-        );
+        throw badRequest(MessageKeys.PARENT_COMMENT_NOT_FOUND_OR_INVALID);
       }
     }
 

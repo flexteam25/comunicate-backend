@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   PostReaction,
   ReactionType,
@@ -7,6 +7,7 @@ import { IPostRepository } from '../../../infrastructure/persistence/repositorie
 import { IPostReactionRepository } from '../../../infrastructure/persistence/repositories/post-reaction.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface ReactToPostCommand {
   postId: string;
@@ -27,7 +28,7 @@ export class ReactToPostUseCase {
   async execute(command: ReactToPostCommand): Promise<PostReaction> {
     const post = await this.postRepository.findById(command.postId);
     if (!post || !post.isPublished) {
-      throw new NotFoundException('Post not found');
+      throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
     return this.transactionService.executeInTransaction(

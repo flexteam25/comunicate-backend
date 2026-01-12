@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   ParseUUIDPipe,
   Post,
@@ -29,7 +28,10 @@ import { AdminListUsersQueryDto } from '../dto/admin-list-users-query.dto';
 import { AdminUpdateUserDto } from '../dto/admin-update-user.dto';
 import { AdminCreateUserDto } from '../dto/admin-create-user.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
-import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
 import { Inject } from '@nestjs/common';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
@@ -97,7 +99,7 @@ export class AdminUserController {
     ]);
 
     if (!dbUser) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     return ApiResponseUtil.success(
@@ -379,7 +381,7 @@ export class AdminUserController {
     ]);
 
     if (!dbUser) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     return ApiResponseUtil.success(

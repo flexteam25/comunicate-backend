@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import {
@@ -12,6 +7,11 @@ import {
 } from '../../domain/entities/scam-report-reaction.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface ReactToScamReportCommand {
   reportId: string;
@@ -31,11 +31,11 @@ export class ReactToScamReportUseCase {
     const report = await this.scamReportRepository.findById(command.reportId);
 
     if (!report) {
-      throw new NotFoundException('Scam report not found');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND);
     }
 
     if (report.status !== ScamReportStatus.PUBLISHED) {
-      throw new BadRequestException('Scam report is not published');
+      throw badRequest(MessageKeys.SCAM_REPORT_NOT_PUBLISHED);
     }
 
     return this.transactionService.executeInTransaction(

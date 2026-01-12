@@ -1,15 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteReviewRepository } from '../../infrastructure/persistence/repositories/site-review.repository';
 import { ISiteReviewReactionRepository } from '../../infrastructure/persistence/repositories/site-review-reaction.repository';
 import {
   SiteReviewReaction,
   ReactionType,
 } from '../../domain/entities/site-review-reaction.entity';
+import { notFound, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface ReactToSiteReviewCommand {
   reviewId: string;
@@ -30,7 +26,7 @@ export class ReactToSiteReviewUseCase {
     const review = await this.siteReviewRepository.findById(command.reviewId);
 
     if (!review) {
-      throw new NotFoundException('Site review not found');
+      throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND);
     }
 
     const existingReaction = await this.reactionRepository.findByReviewIdAndUserId(

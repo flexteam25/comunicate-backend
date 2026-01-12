@@ -13,8 +13,11 @@ import {
   UseInterceptors,
   UploadedFiles,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
+import {
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { MulterFile } from '../../../../../shared/services/upload';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
@@ -122,7 +125,7 @@ export class SiteEventController {
     @CurrentUser() user?: CurrentUserPayload,
   ): Promise<ApiResponse<any>> {
     if (!query.siteId) {
-      throw new BadRequestException('Site ID is required');
+      throw badRequest(MessageKeys.SITE_ID_REQUIRED);
     }
 
     const result = await this.listSiteEventsUseCase.execute({

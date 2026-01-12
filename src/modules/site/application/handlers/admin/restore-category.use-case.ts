@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RestoreCategoryCommand {
   categoryId: string;
@@ -20,11 +25,11 @@ export class RestoreCategoryUseCase {
         withDeleted: true,
       });
       if (!category) {
-        throw new NotFoundException('Category not found');
+        throw notFound(MessageKeys.CATEGORY_NOT_FOUND);
       }
 
       if (!category.deletedAt) {
-        throw new BadRequestException('Category is not deleted');
+        throw badRequest(MessageKeys.CATEGORY_NOT_DELETED);
       }
 
       await categoryRepo.restore(command.categoryId);

@@ -1,14 +1,14 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
 import { ISiteViewRepository } from '../../../infrastructure/persistence/repositories/site-view.repository';
 import { IUserHistorySiteRepository } from '../../../../user/infrastructure/persistence/repositories/user-history-site.repository';
 import { Site, SiteStatus } from '../../../domain/entities/site.entity';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import {
+  notFound,
+  forbidden,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetSiteCommand {
   siteId: string;
@@ -38,33 +38,35 @@ export class GetSiteUseCase {
     ]);
 
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Only allow viewing verified or monitored sites
     if (site.status !== SiteStatus.VERIFIED && site.status !== SiteStatus.MONITORED) {
-      throw new ForbiddenException('Site is not available for viewing');
+      throw forbidden(MessageKeys.SITE_NOT_AVAILABLE_FOR_VIEWING);
     }
 
-    // Track view and user history (async, don't wait for it)
-    this.siteViewRepository
-      .create({
-        siteId: command.siteId,
-        userId: command.userId,
-        ipAddress: command.ipAddress,
-      })
-      .catch((error) => {
-        // Log error but don't fail the request
-        this.logger.error(
-          'Failed to track site view',
-          {
-            error: error instanceof Error ? error.message : String(error),
-            siteId: command.siteId,
-            userId: command.userId,
-          },
-          'site',
-        );
-      });
+    // Track view only for authenticated users (async, don't wait for it)
+    if (command.userId) {
+      this.siteViewRepository
+        .create({
+          siteId: command.siteId,
+          userId: command.userId,
+          ipAddress: command.ipAddress,
+        })
+        .catch((error) => {
+          // Log error but don't fail the request
+          this.logger.error(
+            'Failed to track site view',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              siteId: command.siteId,
+              userId: command.userId,
+            },
+            'site',
+          );
+        });
+    }
 
     if (command.userId) {
       // Use site.id (actual UUID) for tracking, not the identifier

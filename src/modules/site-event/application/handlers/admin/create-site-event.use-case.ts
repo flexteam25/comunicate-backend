@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { SiteEvent } from '../../../domain/entities/site-event.entity';
 import { SiteEventBanner } from '../../../domain/entities/site-event-banner.entity';
@@ -12,6 +7,11 @@ import { ISiteRepository } from '../../../../site/infrastructure/persistence/rep
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { randomUUID } from 'crypto';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreateSiteEventCommand {
   adminId: string;
@@ -39,12 +39,12 @@ export class CreateSiteEventUseCase {
     // Validate site exists
     const site = await this.siteRepository.findById(command.siteId);
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Validate date range
     if (command.endDate <= command.startDate) {
-      throw new BadRequestException('End date must be after start date');
+      throw badRequest(MessageKeys.START_DATE_MUST_BE_BEFORE_END_DATE);
     }
 
     // Validate and upload banners before transaction
@@ -59,7 +59,7 @@ export class CreateSiteEventUseCase {
 
     if (command.banners && command.banners.length > 0) {
       if (command.banners.length > 10) {
-        throw new BadRequestException('Maximum 10 banners allowed');
+        throw badRequest(MessageKeys.MAX_BANNERS_EXCEEDED, { maxBanners: 10 });
       }
 
       for (let i = 0; i < command.banners.length; i++) {
@@ -67,9 +67,9 @@ export class CreateSiteEventUseCase {
 
         // Validate: banner must have either image or linkUrl
         if (!banner.image && !banner.linkUrl) {
-          throw new BadRequestException(
-            `Banner ${i + 1} must have either an image file or a link URL`,
-          );
+          throw badRequest(MessageKeys.BANNER_MUST_HAVE_IMAGE_OR_LINK, {
+            bannerIndex: i + 1,
+          });
         }
 
         let imageUrl: string;
@@ -77,12 +77,15 @@ export class CreateSiteEventUseCase {
         if (banner.image) {
           // Upload file if image is provided
           if (banner.image.size > maxSize) {
-            throw new BadRequestException(`Banner ${i + 1} file size exceeds 20MB`);
+            throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+              fileType: `banner ${i + 1}`,
+              maxSize: '20MB',
+            });
           }
           if (!allowedTypes.test(banner.image.mimetype)) {
-            throw new BadRequestException(
-              `Invalid banner ${i + 1} file type. Allowed: jpg, jpeg, png, webp`,
-            );
+            throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+              allowedTypes: 'jpg, jpeg, png, webp',
+            });
           }
 
           const uploadResult = await this.uploadService.uploadImage(banner.image, {

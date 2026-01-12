@@ -1,8 +1,12 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserTokenRepository } from '../../infrastructure/persistence/repositories/user-token.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { UserToken } from '../../domain/entities/user-token.entity';
+import {
+  unauthorized,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface LogoutCommand {
   tokenId: string;
@@ -20,7 +24,7 @@ export class LogoutUseCase {
     // Check if token exists (outside transaction for validation)
     const token = await this.userTokenRepository.findByTokenId(command.tokenId);
     if (!token) {
-      throw new UnauthorizedException('Token not found');
+      throw unauthorized(MessageKeys.TOKEN_NOT_FOUND);
     }
 
     // Revoke the token in transaction

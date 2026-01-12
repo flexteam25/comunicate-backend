@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   PointExchange,
   PointExchangeStatus,
@@ -15,6 +9,12 @@ import { ISiteRepository } from '../../../../site/infrastructure/persistence/rep
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import {
+  notFound,
+  badRequest,
+  forbidden,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface ManagerMoveExchangeToProcessingCommand {
   exchangeId: string;
@@ -41,19 +41,19 @@ export class ManagerMoveExchangeToProcessingUseCase {
     ]);
 
     if (!exchange) {
-      throw new NotFoundException('Exchange not found');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND);
     }
 
     // Resolve site by ID or slug
     const site = await this.siteRepository.findByIdOrSlug(command.siteIdOrSlug);
 
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Verify exchange belongs to this site
     if (exchange.siteId !== site.id) {
-      throw new BadRequestException('Exchange does not belong to this site');
+      throw badRequest(MessageKeys.EXCHANGE_DOES_NOT_BELONG_TO_SITE);
     }
 
     // Check if user is manager of this site
@@ -63,13 +63,11 @@ export class ManagerMoveExchangeToProcessingUseCase {
     );
 
     if (!manager) {
-      throw new ForbiddenException(
-        'You do not have permission to move exchanges to processing for this site',
-      );
+      throw forbidden(MessageKeys.NO_PERMISSION_TO_MOVE_EXCHANGES_TO_PROCESSING);
     }
 
     if (exchange.status !== PointExchangeStatus.PENDING) {
-      throw new BadRequestException('Only pending exchanges can be moved to processing');
+      throw badRequest(MessageKeys.ONLY_PENDING_EXCHANGES_CAN_BE_MOVED_TO_PROCESSING);
     }
 
     await this.pointExchangeRepository.update(command.exchangeId, {
@@ -85,7 +83,7 @@ export class ManagerMoveExchangeToProcessingUseCase {
     );
 
     if (!updatedExchange) {
-      throw new NotFoundException('Exchange not found after update');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND_AFTER_UPDATE);
     }
 
     // Map exchange to response format (same as admin API response)

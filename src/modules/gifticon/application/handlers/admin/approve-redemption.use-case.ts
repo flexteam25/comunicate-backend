@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   GifticonRedemption,
   GifticonRedemptionStatus,
@@ -14,6 +9,11 @@ import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface ApproveRedemptionCommand {
   redemptionId: string;
@@ -37,11 +37,11 @@ export class ApproveRedemptionUseCase {
     const redemption = await this.redemptionRepository.findById(command.redemptionId);
 
     if (!redemption) {
-      throw new NotFoundException('Redemption not found');
+      throw notFound(MessageKeys.REDEMPTION_NOT_FOUND);
     }
 
     if (redemption.status !== GifticonRedemptionStatus.PENDING) {
-      throw new BadRequestException('Only pending redemptions can be approved');
+      throw badRequest(MessageKeys.ONLY_PENDING_REDEMPTIONS_CAN_BE_APPROVED);
     }
 
     const updatedRedemption = await this.redemptionRepository.update(

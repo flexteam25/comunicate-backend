@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteSiteCommand {
   siteId: string;
@@ -16,7 +17,7 @@ export class DeleteSiteUseCase {
     // Check if site exists
     const site = await this.siteRepository.findById(command.siteId);
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Soft delete

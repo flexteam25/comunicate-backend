@@ -1,14 +1,14 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteReviewCommentRepository } from '../../infrastructure/persistence/repositories/site-review-comment.repository';
 import {
   CommentHasChildService,
   CommentType,
 } from '../../../../shared/services/comment-has-child.service';
+import {
+  notFound,
+  forbidden,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteCommentCommand {
   commentId: string;
@@ -27,11 +27,11 @@ export class DeleteCommentUseCase {
     const comment = await this.commentRepository.findById(command.commentId);
 
     if (!comment) {
-      throw new NotFoundException('Site review comment not found');
+      throw notFound(MessageKeys.COMMENT_NOT_FOUND);
     }
 
     if (comment.userId !== command.userId) {
-      throw new ForbiddenException('You can only delete your own comments');
+      throw forbidden(MessageKeys.CAN_ONLY_DELETE_OWN_COMMENTS);
     }
 
     // Store parentCommentId before deletion for async update

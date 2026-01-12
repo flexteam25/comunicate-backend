@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Post } from '../../../domain/entities/post.entity';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 import { IPostViewRepository } from '../../../infrastructure/persistence/repositories/post-view.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetPostCommand {
   postId: string;
@@ -25,23 +26,25 @@ export class GetPostUseCase {
     );
 
     if (!post) {
-      throw new NotFoundException('Post not found');
+      throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
     if (!post.isPublished) {
-      throw new NotFoundException('Post not found');
+      throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
-    // Track view (best-effort, don't block on errors)
-    try {
-      await this.postViewRepository.create({
-        postId: command.postId,
-        userId: command.userId,
-        ipAddress: command.ipAddress || 'unknown',
-      });
-    } catch (error) {
-      // Log error but don't fail the request
-      console.error('Failed to track post view:', error);
+    // Track view only for authenticated users (best-effort, don't block on errors)
+    if (command.userId) {
+      try {
+        await this.postViewRepository.create({
+          postId: command.postId,
+          userId: command.userId,
+          ipAddress: command.ipAddress || 'unknown',
+        });
+      } catch (error) {
+        // Log error but don't fail the request
+        console.error('Failed to track post view:', error);
+      }
     }
 
     return post;

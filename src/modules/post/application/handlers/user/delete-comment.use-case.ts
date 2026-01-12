@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IPostCommentRepository } from '../../../infrastructure/persistence/repositories/post-comment.repository';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
@@ -13,6 +8,11 @@ import {
 } from '../../../../../shared/services/comment-has-child.service';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { PostComment } from '../../../domain/entities/post-comment.entity';
+import {
+  notFound,
+  forbidden,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteCommentCommand {
   commentId: string;
@@ -34,11 +34,11 @@ export class DeleteCommentUseCase {
     const comment = await this.commentRepository.findById(command.commentId, ['post']);
 
     if (!comment) {
-      throw new NotFoundException('Comment not found');
+      throw notFound(MessageKeys.COMMENT_NOT_FOUND);
     }
 
     if (comment.userId !== command.userId) {
-      throw new ForbiddenException('You do not have permission to delete this comment');
+      throw forbidden(MessageKeys.CAN_ONLY_DELETE_OWN_COMMENTS);
     }
 
     // Store parentCommentId before deletion for async update

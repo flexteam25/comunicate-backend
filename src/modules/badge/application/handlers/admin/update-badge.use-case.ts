@@ -1,13 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IBadgeRepository } from '../../../infrastructure/persistence/repositories/badge.repository';
 import { Badge } from '../../../domain/entities/badge.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateBadgeCommand {
   badgeId: string;
@@ -38,7 +38,7 @@ export class UpdateBadgeUseCase {
           where: { id: command.badgeId, deletedAt: null },
         });
         if (!badge) {
-          throw new NotFoundException('Badge not found');
+          throw notFound(MessageKeys.BADGE_NOT_FOUND);
         }
 
         // Check if new name conflicts with existing badge
@@ -50,7 +50,7 @@ export class UpdateBadgeUseCase {
             .andWhere('b.deletedAt IS NULL')
             .getOne();
           if (duplicate) {
-            throw new BadRequestException('Badge with this name already exists');
+            throw badRequest(MessageKeys.BADGE_NAME_ALREADY_EXISTS);
           }
         }
 
@@ -73,7 +73,7 @@ export class UpdateBadgeUseCase {
           where: { id: command.badgeId, deletedAt: null },
         });
         if (!updated) {
-          throw new NotFoundException('Badge not found after update');
+          throw notFound(MessageKeys.BADGE_NOT_FOUND_AFTER_UPDATE);
         }
         return updated;
       },

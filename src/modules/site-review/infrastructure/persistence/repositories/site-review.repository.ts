@@ -46,5 +46,5 @@ export interface ISiteReviewRepository {
     averageSpeed: number;
     reviewCount: number;
   }>;
-  findTop5StarReviews(siteId: string): Promise<string[]>;
+  findTopStarReviews(siteId: string): Promise<string[]>;
 }

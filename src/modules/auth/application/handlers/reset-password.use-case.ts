@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  UnauthorizedException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { IUserTokenRepository } from '../../infrastructure/persistence/repositories/user-token.repository';
@@ -16,6 +11,11 @@ import {
   UserOldPasswordType,
 } from '../../../user/domain/entities/user-old-password.entity';
 import { UserToken } from '../../domain/entities/user-token.entity';
+import {
+  badRequest,
+  unauthorized,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface ResetPasswordCommand {
   token: string;
@@ -38,7 +38,7 @@ export class ResetPasswordUseCase {
   async execute(command: ResetPasswordCommand): Promise<{ message: string }> {
     // Validate password confirmation
     if (command.newPassword !== command.passwordConfirmation) {
-      throw new BadRequestException('Password confirmation does not match');
+      throw badRequest(MessageKeys.PASSWORD_CONFIRMATION_MISMATCH);
     }
 
     // Verify token from Redis
@@ -46,7 +46,7 @@ export class ResetPasswordUseCase {
     const tokenValue = await this.redisService.getString(tokenKey);
 
     if (!tokenValue) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     // Parse token value to get userId
@@ -54,21 +54,21 @@ export class ResetPasswordUseCase {
     try {
       tokenData = JSON.parse(tokenValue);
     } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     if (!tokenData.userId) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     // Find user by userId
     const user = await this.userRepository.findById(tokenData.userId);
     if (!user) {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('User account is inactive');
+      throw unauthorized(MessageKeys.USER_ACCOUNT_INACTIVE);
     }
 
     // Hash new password (outside transaction)

@@ -1,13 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ITierRepository } from '../../../infrastructure/persistence/repositories/tier.repository';
 import { Tier } from '../../../domain/entities/tier.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateTierCommand {
   tierId: string;
@@ -35,7 +35,7 @@ export class UpdateTierUseCase {
           where: { id: command.tierId, deletedAt: null },
         });
         if (!tier) {
-          throw new NotFoundException('Tier not found');
+          throw notFound(MessageKeys.TIER_NOT_FOUND);
         }
 
         // Check if new name conflicts with existing tier
@@ -47,7 +47,7 @@ export class UpdateTierUseCase {
             .andWhere('t.deletedAt IS NULL')
             .getOne();
           if (duplicate) {
-            throw new BadRequestException('Tier with this name already exists');
+            throw badRequest(MessageKeys.TIER_NAME_ALREADY_EXISTS);
           }
         }
 
@@ -64,7 +64,7 @@ export class UpdateTierUseCase {
           where: { id: command.tierId, deletedAt: null },
         });
         if (!updated) {
-          throw new NotFoundException('Tier not found after update');
+          throw notFound(MessageKeys.TIER_NOT_FOUND_AFTER_UPDATE);
         }
         return updated;
       },

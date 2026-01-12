@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import {
@@ -12,6 +7,11 @@ import {
   InquiryCategory,
 } from '../../../domain/entities/inquiry.entity';
 import { IInquiryRepository } from '../../../infrastructure/persistence/repositories/inquiry.repository';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateUserInquiryCommand {
   inquiryId: string;
@@ -34,11 +34,11 @@ export class UpdateUserInquiryUseCase {
     const inquiry = await this.inquiryRepository.findById(command.inquiryId);
 
     if (!inquiry || inquiry.userId !== command.userId) {
-      throw new NotFoundException('Inquiry not found');
+      throw notFound(MessageKeys.INQUIRY_NOT_FOUND);
     }
 
     if (inquiry.status !== InquiryStatus.PENDING) {
-      throw new BadRequestException('Only pending inquiries can be updated');
+      throw badRequest(MessageKeys.ONLY_PENDING_INQUIRIES_CAN_BE_UPDATED);
     }
 
     return this.transactionService.executeInTransaction(

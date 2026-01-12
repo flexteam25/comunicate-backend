@@ -1,10 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ITierRepository } from '../../../infrastructure/persistence/repositories/tier.repository';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RestoreTierCommand {
   tierId: string;
@@ -20,12 +20,12 @@ export class RestoreTierUseCase {
   async execute(command: RestoreTierCommand): Promise<void> {
     const tier = await this.tierRepository.findByIdIncludingDeleted(command.tierId);
     if (!tier) {
-      throw new NotFoundException('Tier not found');
+      throw notFound(MessageKeys.TIER_NOT_FOUND);
     }
 
     // If not soft-deleted, nothing to restore
     if (!tier.deletedAt) {
-      throw new BadRequestException('Tier is not deleted');
+      throw badRequest(MessageKeys.TIER_IS_NOT_DELETED);
     }
 
     // Restore

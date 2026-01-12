@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { User } from '../../../domain/entities/user.entity';
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
@@ -7,6 +7,7 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { UserProfile } from '../../../domain/entities/user-profile.entity';
 import { UserRole } from '../../../domain/entities/user-role.entity';
 import { Role } from '../../../domain/entities/role.entity';
+import { conflict, notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreateUserCommand {
   email: string;
@@ -34,7 +35,7 @@ export class CreateUserUseCase {
           where: { email: command.email, deletedAt: null },
         });
         if (existingUser) {
-          throw new ConflictException('User with this email already exists');
+          throw conflict(MessageKeys.EMAIL_ALREADY_EXISTS);
         }
 
         // Hash password
@@ -70,7 +71,9 @@ export class CreateUserUseCase {
         });
 
         if (!targetRole) {
-          throw new NotFoundException(`${targetRoleName} role not found`);
+          throw notFound(MessageKeys.PARTNER_ROLE_NOT_FOUND, {
+            roleName: targetRoleName,
+          });
         }
 
         // Create user role

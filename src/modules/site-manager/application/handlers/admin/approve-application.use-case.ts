@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { SiteManagerApplication } from '../../../domain/entities/site-manager-application.entity';
 import { SiteManagerApplicationStatus } from '../../../domain/entities/site-manager-application.entity';
@@ -12,6 +7,11 @@ import { SiteManagerRole } from '../../../domain/entities/site-manager.entity';
 import { ISiteManagerApplicationRepository } from '../../../infrastructure/persistence/repositories/site-manager-application.repository';
 import { ISiteManagerRepository } from '../../../infrastructure/persistence/repositories/site-manager.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface ApproveApplicationCommand {
   applicationId: string;
@@ -42,12 +42,12 @@ export class ApproveApplicationUseCase {
           .getOne();
 
         if (!application) {
-          throw new NotFoundException('Application not found');
+          throw notFound(MessageKeys.APPLICATION_NOT_FOUND);
         }
 
         // Check status is pending
         if (application.status !== SiteManagerApplicationStatus.PENDING) {
-          throw new BadRequestException('Application has already been processed');
+          throw badRequest(MessageKeys.APPLICATION_ALREADY_PROCESSED);
         }
 
         // Double-check user is NOT already manager (handle race condition)
@@ -60,7 +60,7 @@ export class ApproveApplicationUseCase {
         });
 
         if (existingManager) {
-          throw new BadRequestException('User is already a manager for this site');
+          throw badRequest(MessageKeys.USER_ALREADY_MANAGER_FOR_SITE);
         }
 
         // Update application

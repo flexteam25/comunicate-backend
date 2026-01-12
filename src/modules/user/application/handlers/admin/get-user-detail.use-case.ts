@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { User } from '../../../domain/entities/user.entity';
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetUserDetailCommand {
   userId: string;
@@ -23,7 +24,7 @@ export class GetUserDetailUseCase {
     ]);
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     return user;

@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Post } from '../../../domain/entities/post.entity';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetPostCommand {
   postId: string;
@@ -17,7 +18,7 @@ export class GetPostUseCase {
     const post = await this.postRepository.findByIdWithAggregates(command.postId);
 
     if (!post) {
-      throw new NotFoundException('Post not found');
+      throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
     return post;

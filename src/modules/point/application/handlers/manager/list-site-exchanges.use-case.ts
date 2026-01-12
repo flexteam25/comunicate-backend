@@ -1,14 +1,14 @@
-import {
-  Injectable,
-  Inject,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IPointExchangeRepository } from '../../../infrastructure/persistence/repositories/point-exchange.repository';
 import { ISiteManagerRepository } from '../../../../site-manager/infrastructure/persistence/repositories/site-manager.repository';
 import { ISiteRepository } from '../../../../site/infrastructure/persistence/repositories/site.repository';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import { PointExchange } from '../../../domain/entities/point-exchange.entity';
+import {
+  notFound,
+  forbidden,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface ListSiteExchangesCommand {
   siteIdOrSlug: string;
@@ -39,7 +39,7 @@ export class ListSiteExchangesUseCase {
     const site = await this.siteRepository.findByIdOrSlug(command.siteIdOrSlug);
 
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Check if user is manager of this site
@@ -49,9 +49,7 @@ export class ListSiteExchangesUseCase {
     );
 
     if (!manager) {
-      throw new ForbiddenException(
-        'You do not have permission to view exchanges for this site',
-      );
+      throw forbidden(MessageKeys.NO_PERMISSION_TO_VIEW_EXCHANGES);
     }
 
     // List exchanges for this site with filters

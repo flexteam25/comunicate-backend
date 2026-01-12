@@ -1,11 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PointExchange } from '../../../domain/entities/point-exchange.entity';
 import { IPointExchangeRepository } from '../../../infrastructure/persistence/repositories/point-exchange.repository';
+import {
+  notFound,
+  unauthorized,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetExchangeDetailCommand {
   userId: string;
@@ -25,11 +25,11 @@ export class GetExchangeDetailUseCase {
     ]);
 
     if (!exchange) {
-      throw new NotFoundException('Exchange not found');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND);
     }
 
     if (exchange.userId !== command.userId) {
-      throw new UnauthorizedException('Not authorized to view this exchange');
+      throw unauthorized(MessageKeys.NOT_AUTHORIZED_TO_VIEW_EXCHANGE);
     }
 
     return exchange;

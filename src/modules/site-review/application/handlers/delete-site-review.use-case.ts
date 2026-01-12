@@ -1,10 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteReviewRepository } from '../../infrastructure/persistence/repositories/site-review.repository';
+import {
+  notFound,
+  forbidden,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteSiteReviewCommand {
   reviewId: string;
@@ -22,11 +22,11 @@ export class DeleteSiteReviewUseCase {
     const review = await this.siteReviewRepository.findById(command.reviewId);
 
     if (!review) {
-      throw new NotFoundException('Site review not found');
+      throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND);
     }
 
     if (review.userId !== command.userId) {
-      throw new ForbiddenException('You can only delete your own reviews');
+      throw forbidden(MessageKeys.CAN_ONLY_DELETE_OWN_REVIEWS);
     }
 
     await this.siteReviewRepository.delete(command.reviewId);

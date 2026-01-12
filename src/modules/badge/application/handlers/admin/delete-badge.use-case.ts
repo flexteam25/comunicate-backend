@@ -1,14 +1,14 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IBadgeRepository } from '../../../infrastructure/persistence/repositories/badge.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 import { Badge } from '../../../domain/entities/badge.entity';
 import { UserBadge } from '../../../../user/domain/entities/user-badge.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteBadgeCommand {
   badgeId: string;
@@ -33,12 +33,12 @@ export class DeleteBadgeUseCase {
         withDeleted: true,
       });
       if (!badge) {
-        throw new NotFoundException('Badge not found');
+        throw notFound(MessageKeys.BADGE_NOT_FOUND);
       }
 
       // Check if already soft deleted
       if (badge.deletedAt) {
-        throw new BadRequestException('Badge is already deleted');
+        throw badRequest(MessageKeys.BADGE_ALREADY_DELETED);
       }
 
       // Check if badge is assigned to any users
@@ -46,9 +46,9 @@ export class DeleteBadgeUseCase {
         where: { badgeId: command.badgeId },
       });
       if (usedCount > 0) {
-        throw new BadRequestException(
-          `Cannot delete badge. It is assigned to ${usedCount} user(s)`,
-        );
+        throw badRequest(MessageKeys.CANNOT_DELETE_BADGE_ASSIGNED_TO_USERS, {
+          userCount: usedCount,
+        });
       }
 
       // Soft delete

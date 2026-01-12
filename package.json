@@ -23,7 +23,8 @@
     "queue-worker": "node dist/queue-worker-cli.js queue-worker",
     "queue-worker:dev": "ts-node src/queue-worker-cli.ts queue-worker",
     "scheduler": "node dist/scheduler-cli.js scheduler",
-    "scheduler:dev": "ts-node src/scheduler-cli.ts scheduler"
+    "scheduler:dev": "ts-node src/scheduler-cli.ts scheduler",
+    "trigger": "ts-node src/trigger-cli.ts trigger"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.3",

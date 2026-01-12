@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { IUserTokenRepository } from '../../infrastructure/persistence/repositories/user-token.repository';
@@ -7,6 +7,10 @@ import { JwtService, TokenPair } from '../../../../shared/services/jwt.service';
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { UserToken } from '../../domain/entities/user-token.entity';
 import { User } from '../../../user/domain/entities/user.entity';
+import {
+  unauthorized,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface RefreshTokenCommand {
   refreshToken: string;
@@ -35,18 +39,18 @@ export class RefreshTokenUseCase {
     try {
       payload = this.jwtService.verifyRefreshToken(command.refreshToken);
     } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     // Find token record (outside transaction for validation)
     const tokenRecord = await this.userTokenRepository.findByTokenId(payload.jti);
     if (!tokenRecord) {
-      throw new UnauthorizedException('Token not found');
+      throw unauthorized(MessageKeys.TOKEN_NOT_FOUND);
     }
 
     // Check if token is valid
     if (!tokenRecord.isValid()) {
-      throw new UnauthorizedException('Token expired or revoked');
+      throw unauthorized(MessageKeys.TOKEN_REVOKED_OR_EXPIRED);
     }
 
     // Verify refresh token hash (outside transaction)
@@ -55,13 +59,13 @@ export class RefreshTokenUseCase {
       tokenRecord.refreshTokenHash,
     );
     if (!isValidToken) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw unauthorized(MessageKeys.TOKEN_INVALID);
     }
 
     // Find user (outside transaction for validation)
     const user = await this.userRepository.findById(payload.sub, ['userProfile']);
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('User not found or inactive');
+      throw unauthorized(MessageKeys.USER_NOT_FOUND_OR_INACTIVE);
     }
 
     // Generate new token pair (outside transaction)

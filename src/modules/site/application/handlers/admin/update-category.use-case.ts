@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateCategoryCommand {
   categoryId: string;
@@ -24,7 +29,7 @@ export class UpdateCategoryUseCase {
           where: { id: command.categoryId, deletedAt: null },
         });
         if (!category) {
-          throw new NotFoundException('Category not found');
+          throw notFound(MessageKeys.CATEGORY_NOT_FOUND);
         }
 
         // Check if new name conflicts with existing category
@@ -36,7 +41,7 @@ export class UpdateCategoryUseCase {
             .andWhere('c.deletedAt IS NULL')
             .getOne();
           if (duplicate) {
-            throw new BadRequestException('Category with this name already exists');
+            throw badRequest(MessageKeys.CATEGORY_NAME_ALREADY_EXISTS);
           }
         }
 
@@ -52,7 +57,7 @@ export class UpdateCategoryUseCase {
           where: { id: command.categoryId, deletedAt: null },
         });
         if (!updated) {
-          throw new NotFoundException('Category not found after update');
+          throw notFound(MessageKeys.CATEGORY_NOT_FOUND_AFTER_UPDATE);
         }
         return updated;
       },

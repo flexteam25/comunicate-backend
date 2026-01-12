@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { SiteEvent } from '../../../domain/entities/site-event.entity';
 import { ISiteEventRepository } from '../../../infrastructure/persistence/repositories/site-event.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetSiteEventCommand {
   eventId: string;
@@ -22,7 +23,7 @@ export class GetSiteEventUseCase {
     ]);
 
     if (!event) {
-      throw new NotFoundException('Event not found');
+      throw notFound(MessageKeys.EVENT_NOT_FOUND);
     }
 
     return event;

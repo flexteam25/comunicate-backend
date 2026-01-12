@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
 import { IUserBadgeRepository } from '../../../infrastructure/persistence/repositories/user-badge.repository';
 import {
@@ -12,6 +7,7 @@ import {
 } from '../../../../point/domain/entities/point-transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { notFound, badRequest, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RemoveBadgeCommand {
   userId: string;
@@ -34,7 +30,7 @@ export class RemoveBadgeUseCase {
     // Check if user exists
     const user = await this.userRepository.findById(command.userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     // Check if badge is assigned and load full userBadge with badge
@@ -43,7 +39,7 @@ export class RemoveBadgeUseCase {
       command.badgeId,
     );
     if (!userBadge) {
-      throw new BadRequestException('Badge is not assigned to this user');
+      throw badRequest(MessageKeys.BADGE_NOT_ASSIGNED_TO_USER);
     }
 
     // Optionally handle point deduction

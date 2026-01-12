@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   PointExchange,
   PointExchangeStatus,
@@ -12,6 +7,11 @@ import { IPointExchangeRepository } from '../../../infrastructure/persistence/re
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface MoveExchangeToProcessingCommand {
   exchangeId: string;
@@ -32,11 +32,11 @@ export class MoveExchangeToProcessingUseCase {
     const exchange = await this.pointExchangeRepository.findById(command.exchangeId);
 
     if (!exchange) {
-      throw new NotFoundException('Exchange not found');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND);
     }
 
     if (exchange.status !== PointExchangeStatus.PENDING) {
-      throw new BadRequestException('Only pending exchanges can be moved to processing');
+      throw badRequest(MessageKeys.ONLY_PENDING_EXCHANGES_CAN_BE_MOVED_TO_PROCESSING);
     }
 
     const updateData: Partial<PointExchange> = {
@@ -59,7 +59,7 @@ export class MoveExchangeToProcessingUseCase {
     );
 
     if (!updatedExchange) {
-      throw new NotFoundException('Exchange not found after update');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND_AFTER_UPDATE);
     }
 
     // Map exchange to response format (same as admin API response)

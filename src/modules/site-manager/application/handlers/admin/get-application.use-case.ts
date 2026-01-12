@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { SiteManagerApplication } from '../../../domain/entities/site-manager-application.entity';
 import { ISiteManagerApplicationRepository } from '../../../infrastructure/persistence/repositories/site-manager-application.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetApplicationCommand {
   applicationId: string;
@@ -21,7 +22,7 @@ export class GetApplicationUseCase {
     ]);
 
     if (!application) {
-      throw new NotFoundException('Application not found');
+      throw notFound(MessageKeys.APPLICATION_NOT_FOUND);
     }
 
     return application;

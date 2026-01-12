@@ -1,9 +1,10 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { User } from '../../../domain/entities/user.entity';
 import { UserToken } from '../../../../auth/domain/entities/user-token.entity';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteUserCommand {
   userId: string;
@@ -27,7 +28,7 @@ export class DeleteUserUseCase {
   async execute(command: DeleteUserCommand): Promise<void> {
     const user = await this.userRepository.findById(command.userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     await this.transactionService.executeInTransaction(

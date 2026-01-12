@@ -1,11 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ScamReport, ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
+import {
+  notFound,
+  forbidden,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface GetScamReportCommand {
   reportId: string;
@@ -32,14 +32,14 @@ export class GetScamReportUseCase {
     ]);
 
     if (!report) {
-      throw new NotFoundException('Scam report not found');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND);
     }
 
     // Public can only see published reports
     if (!command.isAdmin && report.status !== ScamReportStatus.PUBLISHED) {
       // Owner can see their own reports
       if (!command.userId || report.userId !== command.userId) {
-        throw new ForbiddenException('Scam report is not available for viewing');
+        throw forbidden(MessageKeys.SCAM_REPORT_NOT_AVAILABLE_FOR_VIEWING);
       }
     }
 

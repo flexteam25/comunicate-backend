@@ -1,12 +1,12 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
+import {
+  notFound,
+  forbidden,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteScamReportCommand {
   reportId: string;
@@ -24,15 +24,15 @@ export class DeleteScamReportUseCase {
     const report = await this.scamReportRepository.findById(command.reportId);
 
     if (!report) {
-      throw new NotFoundException('Scam report not found');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND);
     }
 
     if (report.userId !== command.userId) {
-      throw new ForbiddenException('You can only delete your own scam reports');
+      throw forbidden(MessageKeys.NO_PERMISSION_TO_DELETE_SCAM_REPORT);
     }
 
     if (report.status !== ScamReportStatus.PENDING) {
-      throw new BadRequestException('You can only delete pending scam reports');
+      throw badRequest(MessageKeys.ONLY_PENDING_SCAM_REPORTS_CAN_BE_DELETED);
     }
 
     await this.scamReportRepository.delete(command.reportId);

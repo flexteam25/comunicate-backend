@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { SiteReviewComment } from '../../domain/entities/site-review-comment.entity';
 import { ISiteReviewRepository } from '../../infrastructure/persistence/repositories/site-review.repository';
@@ -17,6 +12,11 @@ import {
   UserComment,
   CommentType,
 } from '../../../user/domain/entities/user-comment.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface AddCommentCommand {
   reviewId: string;
@@ -40,13 +40,13 @@ export class AddCommentUseCase {
     const review = await this.siteReviewRepository.findById(command.reviewId);
 
     if (!review) {
-      throw new NotFoundException('Site review not found');
+      throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND);
     }
 
     // Public users can only comment on published reviews
     // Owners can comment on any status
     if (!review.isPublished && review.userId !== command.userId) {
-      throw new BadRequestException('You can only comment on published site reviews');
+      throw badRequest(MessageKeys.CAN_ONLY_COMMENT_ON_PUBLISHED_REVIEWS);
     }
 
     // Validate parent comment if provided
@@ -55,9 +55,7 @@ export class AddCommentUseCase {
         command.parentCommentId,
       );
       if (!parentComment || parentComment.siteReviewId !== command.reviewId) {
-        throw new BadRequestException(
-          'Parent comment not found or does not belong to this review',
-        );
+        throw badRequest(MessageKeys.PARENT_COMMENT_NOT_FOUND_OR_INVALID);
       }
     }
 

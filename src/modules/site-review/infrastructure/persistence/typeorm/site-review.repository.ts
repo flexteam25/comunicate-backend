@@ -557,11 +557,11 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     };
   }
 
-  async findTop5StarReviews(siteId: string): Promise<string[]> {
+  async findTopStarReviews(siteId: string): Promise<string[]> {
     const reviews = await this.repository.find({
       where: {
         siteId,
-        rating: 5,
+        rating: 4,
         isPublished: true,
         deletedAt: null,
       },

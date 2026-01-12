@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { SiteEvent } from '../../../domain/entities/site-event.entity';
 import { SiteEventView } from '../../../domain/entities/site-event-view.entity';
 import { ISiteEventRepository } from '../../../infrastructure/persistence/repositories/site-event.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetSiteEventCommand {
   eventId: string;
@@ -28,21 +32,31 @@ export class GetSiteEventUseCase {
     ]);
 
     if (!event) {
-      throw new NotFoundException('Event not found');
+      throw notFound(MessageKeys.EVENT_NOT_FOUND);
     }
 
-    // Track view (optional auth - userId may be undefined)
-    if (command.ipAddress) {
-      // Track view asynchronously without blocking response
+    // Track view only for authenticated users (async, don't block on errors)
+    if (command.userId && command.ipAddress) {
       this.transactionService
         .executeInTransaction(async (manager: EntityManager) => {
           const viewRepo = manager.getRepository(SiteEventView);
-          const view = viewRepo.create({
-            eventId: command.eventId,
-            userId: command.userId || null,
-            ipAddress: command.ipAddress || null,
+
+          // Check if view already exists for this user and event
+          const existing = await viewRepo.findOne({
+            where: {
+              eventId: command.eventId,
+              userId: command.userId,
+            },
           });
-          await viewRepo.save(view);
+
+          if (!existing) {
+            const view = viewRepo.create({
+              eventId: command.eventId,
+              userId: command.userId,
+              ipAddress: command.ipAddress,
+            });
+            await viewRepo.save(view);
+          }
         })
         .catch((error) => {
           // Log but don't throw - view tracking should not block request

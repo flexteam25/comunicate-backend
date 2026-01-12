@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PostComment } from '../../../domain/entities/post-comment.entity';
 import { PostCommentImage } from '../../../domain/entities/post-comment-image.entity';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
@@ -18,6 +13,11 @@ import {
   UserComment,
   CommentType as UserCommentType,
 } from '../../../../user/domain/entities/user-comment.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface AddCommentCommand {
   postId: string;
@@ -40,7 +40,7 @@ export class AddCommentUseCase {
   async execute(command: AddCommentCommand): Promise<PostComment> {
     const post = await this.postRepository.findById(command.postId);
     if (!post || !post.isPublished) {
-      throw new NotFoundException('Post not found');
+      throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
     // Validate images
@@ -48,17 +48,22 @@ export class AddCommentUseCase {
     const allowedTypes = /(jpg|jpeg|png|webp)$/i;
     if (command.images) {
       if (command.images.length > 5) {
-        throw new BadRequestException('Maximum 5 images per comment');
+        throw badRequest(MessageKeys.MAX_IMAGES_PER_COMMENT_EXCEEDED, {
+          maxImages: 5,
+        });
       }
       for (let i = 0; i < command.images.length; i++) {
         const image = command.images[i];
         if (image.size > maxSize) {
-          throw new BadRequestException(`Image ${i + 1} file size exceeds 20MB`);
+          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+            fileType: `image ${i + 1}`,
+            maxSize: '20MB',
+          });
         }
         if (!allowedTypes.test(image.mimetype)) {
-          throw new BadRequestException(
-            `Invalid image ${i + 1} file type. Allowed: jpg, jpeg, png, webp`,
-          );
+          throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+            allowedTypes: 'jpg, jpeg, png, webp',
+          });
         }
       }
     }

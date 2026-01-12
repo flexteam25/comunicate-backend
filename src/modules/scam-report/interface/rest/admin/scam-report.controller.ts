@@ -13,8 +13,11 @@ import {
   ParseUUIDPipe,
   UseInterceptors,
   UploadedFiles,
-  BadRequestException,
 } from '@nestjs/common';
+import {
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/admin-permission.guard';
@@ -231,12 +234,14 @@ export class AdminScamReportController {
       for (const file of files.images) {
         // Validate file
         if (file.size > 20 * 1024 * 1024) {
-          throw new BadRequestException('Image file size exceeds 20MB');
+          throw badRequest(MessageKeys.IMAGE_FILE_SIZE_EXCEEDS_LIMIT, {
+            maxSize: '20MB',
+          });
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
-          );
+          throw badRequest(MessageKeys.INVALID_IMAGE_FILE_TYPE, {
+            allowedTypes: 'jpg, jpeg, png, webp',
+          });
         }
         const uploadResult = await this.uploadService.uploadImage(file, {
           folder: 'scam-reports',
@@ -292,12 +297,14 @@ export class AdminScamReportController {
       for (const file of files.images) {
         // Validate file
         if (file.size > 20 * 1024 * 1024) {
-          throw new BadRequestException('Image file size exceeds 20MB');
+          throw badRequest(MessageKeys.IMAGE_FILE_SIZE_EXCEEDS_LIMIT, {
+            maxSize: '20MB',
+          });
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
-          );
+          throw badRequest(MessageKeys.INVALID_IMAGE_FILE_TYPE, {
+            allowedTypes: 'jpg, jpeg, png, webp',
+          });
         }
         const uploadResult = await this.uploadService.uploadImage(file, {
           folder: 'scam-reports',

@@ -1,8 +1,9 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IBadgeRepository } from '../../../infrastructure/persistence/repositories/badge.repository';
 import { Badge, BadgeType } from '../../../domain/entities/badge.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
+import { badRequest, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreateBadgeCommand {
   name: string;
@@ -36,11 +37,11 @@ export class CreateBadgeUseCase {
           .andWhere('b.deletedAt IS NULL')
           .getOne();
         if (duplicate) {
-          throw new BadRequestException('Badge with this name already exists');
+          throw badRequest(MessageKeys.BADGE_NAME_ALREADY_EXISTS);
         }
 
         if (command.badgeType === BadgeType.USER && command.point === undefined) {
-          throw new BadRequestException('Point is required for user badges');
+          throw badRequest(MessageKeys.POINT_REQUIRED_FOR_USER_BADGES);
         }
 
         const badge = badgeRepo.create({

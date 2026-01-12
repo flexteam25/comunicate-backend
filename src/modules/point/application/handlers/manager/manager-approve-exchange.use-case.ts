@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   PointExchange,
   PointExchangeStatus,
@@ -15,6 +9,12 @@ import { ISiteRepository } from '../../../../site/infrastructure/persistence/rep
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import {
+  notFound,
+  badRequest,
+  forbidden,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface ManagerApproveExchangeCommand {
   exchangeId: string;
@@ -41,19 +41,19 @@ export class ManagerApproveExchangeUseCase {
     ]);
 
     if (!exchange) {
-      throw new NotFoundException('Exchange not found');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND);
     }
 
     // Resolve site by ID or slug
     const site = await this.siteRepository.findByIdOrSlug(command.siteIdOrSlug);
 
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Verify exchange belongs to this site
     if (exchange.siteId !== site.id) {
-      throw new BadRequestException('Exchange does not belong to this site');
+      throw badRequest(MessageKeys.EXCHANGE_DOES_NOT_BELONG_TO_SITE);
     }
 
     // Check if user is manager of this site
@@ -63,9 +63,7 @@ export class ManagerApproveExchangeUseCase {
     );
 
     if (!manager) {
-      throw new ForbiddenException(
-        'You do not have permission to approve exchanges for this site',
-      );
+      throw forbidden(MessageKeys.NO_PERMISSION_TO_APPROVE_EXCHANGES);
     }
 
     // Only allow approve if status = pending or processing
@@ -73,9 +71,7 @@ export class ManagerApproveExchangeUseCase {
       exchange.status !== PointExchangeStatus.PENDING &&
       exchange.status !== PointExchangeStatus.PROCESSING
     ) {
-      throw new BadRequestException(
-        'Only pending or processing exchanges can be approved',
-      );
+      throw badRequest(MessageKeys.ONLY_PENDING_OR_PROCESSING_EXCHANGES_CAN_BE_APPROVED);
     }
 
     await this.pointExchangeRepository.update(command.exchangeId, {
@@ -91,7 +87,7 @@ export class ManagerApproveExchangeUseCase {
     );
 
     if (!updatedExchange) {
-      throw new NotFoundException('Exchange not found after update');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND_AFTER_UPDATE);
     }
 
     // Map exchange to response format (same as admin API response)

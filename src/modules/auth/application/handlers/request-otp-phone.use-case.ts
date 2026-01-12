@@ -1,16 +1,11 @@
-import {
-  Injectable,
-  BadRequestException,
-  HttpException,
-  HttpStatus,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IOtpRequestRepository } from '../../infrastructure/persistence/repositories/otp-request.repository';
 import { OtpRequest } from '../../domain/entities/otp-request.entity';
 import { TwilioService } from '../../../../shared/services/twilio/twilio.service';
 import { LoggerService } from '../../../../shared/logger/logger.service';
 import { normalizePhone } from '../../../../shared/utils/phone.util';
+import { badRequest, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface RequestOtpPhoneCommand {
   phone: string;
@@ -55,7 +50,7 @@ export class RequestOtpPhoneUseCase {
     // Normalize phone number to E.164 format
     const normalizedPhone = normalizePhone(command.phone);
     if (!normalizedPhone) {
-      throw new BadRequestException('Invalid phone number format');
+      throw badRequest(MessageKeys.INVALID_PHONE_NUMBER_FORMAT);
     }
 
     // Check if phone already verified (cannot be used for registration)
@@ -66,9 +61,7 @@ export class RequestOtpPhoneUseCase {
       await this.otpRequestRepository.findByPhone(normalizedPhone);
 
     if (existingOtpRequest && existingOtpRequest?.isVerified()) {
-      throw new BadRequestException(
-        'This phone number has already been used for registration',
-      );
+      throw badRequest(MessageKeys.EMAIL_ALREADY_EXISTS);
     }
 
     // Check throttle: if requestCount >= maxRequestsPerWindow

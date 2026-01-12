@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PostCommentReaction } from '../../../domain/entities/post-comment-reaction.entity';
 import { ReactionType } from '../../../domain/entities/post-reaction.entity';
 import { IPostCommentRepository } from '../../../infrastructure/persistence/repositories/post-comment.repository';
 import { IPostCommentReactionRepository } from '../../../infrastructure/persistence/repositories/post-comment-reaction.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface ReactToCommentCommand {
   commentId: string;
@@ -25,7 +26,7 @@ export class ReactToCommentUseCase {
   async execute(command: ReactToCommentCommand): Promise<PostCommentReaction> {
     const comment = await this.commentRepository.findById(command.commentId);
     if (!comment || comment.deletedAt) {
-      throw new NotFoundException('Comment not found');
+      throw notFound(MessageKeys.COMMENT_NOT_FOUND);
     }
 
     return this.transactionService.executeInTransaction(

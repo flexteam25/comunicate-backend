@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../infrastructure/persistence/repositories/user.repository';
 import { IUserBadgeRepository } from '../../infrastructure/persistence/repositories/user-badge.repository';
@@ -13,6 +8,11 @@ import { UserProfile } from '../../domain/entities/user-profile.entity';
 import { IOtpRequestRepository } from '../../../auth/infrastructure/persistence/repositories/otp-request.repository';
 import { normalizePhone } from '../../../../shared/utils/phone.util';
 import { OtpRequest } from '../../../auth/domain/entities/otp-request.entity';
+import {
+  unauthorized,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateProfileCommand {
   userId: string;
@@ -44,7 +44,7 @@ export class UpdateProfileUseCase {
     // Find user (outside transaction for validation)
     const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw unauthorized(MessageKeys.USER_NOT_FOUND);
     }
 
     // Normalize phone number if provided
@@ -52,7 +52,7 @@ export class UpdateProfileUseCase {
     if (command.phone !== undefined) {
       normalizedPhone = normalizePhone(command.phone);
       if (command.phone && !normalizedPhone) {
-        throw new BadRequestException('Invalid phone number format');
+        throw badRequest(MessageKeys.INVALID_PHONE_NUMBER_FORMAT);
       }
     }
 
@@ -64,33 +64,29 @@ export class UpdateProfileUseCase {
     let verifiedOtpRequest: any = null;
     if (phoneChanged) {
       if (!command.token) {
-        throw new BadRequestException('Token is required when updating phone number');
+        throw badRequest(MessageKeys.TOKEN_REQUIRED_FOR_PHONE_UPDATE);
       }
 
       // Verify token outside transaction (read-only check)
       const otpRequest = await this.otpRequestRepository.findByToken(command.token);
 
       if (!otpRequest) {
-        throw new BadRequestException(
-          'Invalid or expired token. Please verify OTP first',
-        );
+        throw badRequest(MessageKeys.TOKEN_EXPIRED_PLEASE_VERIFY_OTP);
       }
 
       // Check if token is expired
       if (otpRequest.tokenExpiresAt && otpRequest.tokenExpiresAt < new Date()) {
-        throw new BadRequestException('Token has expired. Please verify OTP again');
+        throw badRequest(MessageKeys.TOKEN_EXPIRED_PLEASE_VERIFY_OTP);
       }
 
       // Verify that the token's phone matches the requested phone
       if (otpRequest.phone !== normalizedPhone) {
-        throw new BadRequestException('Token does not match the provided phone number');
+        throw badRequest(MessageKeys.TOKEN_DOES_NOT_MATCH_PHONE);
       }
 
       // Check if phone is already verified by another user
       if (otpRequest.isVerified() && otpRequest.userId !== command.userId) {
-        throw new BadRequestException(
-          'This phone number has already been used by another user',
-        );
+        throw badRequest(MessageKeys.EMAIL_ALREADY_EXISTS);
       }
 
       verifiedOtpRequest = otpRequest;
@@ -103,9 +99,9 @@ export class UpdateProfileUseCase {
         command.activeBadge,
       );
       if (!userBadge) {
-        throw new BadRequestException(
-          `Invalid badge ID: ${command.activeBadge}. This badge is not assigned to the user.`,
-        );
+        throw badRequest(MessageKeys.BADGE_NOT_ASSIGNED_TO_USER, {
+          badgeId: command.activeBadge,
+        });
       }
     }
 

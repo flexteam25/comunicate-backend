@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { IOtpRequestRepository } from '../../infrastructure/persistence/repositories/otp-request.repository';
@@ -16,6 +11,11 @@ import {
   PartnerRequestStatus,
 } from '../../../partner/domain/entities/partner-request.entity';
 import { OtpRequest } from '../../domain/entities/otp-request.entity';
+import {
+  conflict,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface RegisterCommand {
   email: string;
@@ -45,18 +45,16 @@ export class RegisterUseCase {
     const otpRequest = await this.otpRequestRepository.findByToken(command.token);
 
     if (!otpRequest) {
-      throw new BadRequestException('Invalid or expired token. Please verify OTP first');
+      throw badRequest(MessageKeys.TOKEN_EXPIRED_PLEASE_VERIFY_OTP);
     }
 
     if (otpRequest.isVerified()) {
-      throw new BadRequestException(
-        'This phone number has already been used for registration',
-      );
+      throw badRequest(MessageKeys.EMAIL_ALREADY_EXISTS);
     }
 
     // Check if token is expired
     if (otpRequest.tokenExpiresAt && otpRequest.tokenExpiresAt < new Date()) {
-      throw new BadRequestException('Token has expired. Please verify OTP again');
+      throw badRequest(MessageKeys.TOKEN_EXPIRED_PLEASE_VERIFY_OTP);
     }
 
     const normalizedPhone = otpRequest.phone;
@@ -68,7 +66,7 @@ export class RegisterUseCase {
           where: { email: command.email, deletedAt: null },
         });
         if (existingUser) {
-          throw new ConflictException('User with this email already exists');
+          throw conflict(MessageKeys.EMAIL_ALREADY_EXISTS);
         }
 
         // Hash password
@@ -103,7 +101,7 @@ export class RegisterUseCase {
         });
 
         if (!otpRequestInTransaction) {
-          throw new BadRequestException('OTP request not found');
+          throw badRequest(MessageKeys.OTP_REQUEST_NOT_FOUND);
         }
 
         otpRequestInTransaction.verifiedAt = new Date();

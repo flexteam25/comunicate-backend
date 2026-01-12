@@ -1,7 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
+import { badRequest, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreateCategoryCommand {
   name: string;
@@ -25,7 +26,7 @@ export class CreateCategoryUseCase {
           .andWhere('c.deletedAt IS NULL')
           .getOne();
         if (duplicate) {
-          throw new BadRequestException('Category with this name already exists');
+          throw badRequest(MessageKeys.CATEGORY_NAME_ALREADY_EXISTS);
         }
 
         const category = categoryRepo.create({

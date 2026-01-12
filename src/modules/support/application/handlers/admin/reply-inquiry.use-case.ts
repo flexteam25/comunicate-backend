@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 import { IInquiryRepository } from '../../../infrastructure/persistence/repositories/inquiry.repository';
 import { Inquiry, InquiryStatus } from '../../../domain/entities/inquiry.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
@@ -35,7 +39,7 @@ export class ReplyInquiryUseCase {
     // Check if inquiry exists and get userId
     const existingInquiry = await this.inquiryRepository.findById(command.inquiryId);
     if (!existingInquiry) {
-      throw new NotFoundException('Inquiry not found');
+      throw notFound(MessageKeys.INQUIRY_NOT_FOUND);
     }
 
     const userId = existingInquiry.userId;

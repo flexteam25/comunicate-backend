@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IPartnerRequestRepository } from '../../../infrastructure/persistence/repositories/partner-request.repository';
 import {
@@ -11,6 +6,11 @@ import {
   PartnerRequestStatus,
 } from '../../../domain/entities/partner-request.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RejectPartnerRequestCommand {
   requestId: string;
@@ -40,12 +40,12 @@ export class RejectPartnerRequestUseCase {
           .getOne();
 
         if (!request) {
-          throw new NotFoundException('Partner request not found');
+          throw notFound(MessageKeys.PARTNER_REQUEST_NOT_FOUND);
         }
 
         // Check status is pending
         if (request.status !== PartnerRequestStatus.PENDING) {
-          throw new BadRequestException('Request has already been processed');
+          throw badRequest(MessageKeys.PARTNER_REQUEST_ALREADY_PROCESSED);
         }
 
         // Update request status

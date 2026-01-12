@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IPartnerRequestRepository } from '../../../infrastructure/persistence/repositories/partner-request.repository';
 import {
@@ -9,6 +9,7 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { User } from '../../../../user/domain/entities/user.entity';
 import { UserRole } from '../../../../user/domain/entities/user-role.entity';
 import { Role } from '../../../../user/domain/entities/role.entity';
+import { badRequest, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreatePartnerRequestCommand {
   userId: string;
@@ -36,7 +37,7 @@ export class CreatePartnerRequestUseCase {
         });
 
         if (!user) {
-          throw new BadRequestException('User not found');
+          throw badRequest(MessageKeys.USER_NOT_FOUND);
         }
 
         // Check if user already has partner role
@@ -53,7 +54,7 @@ export class CreatePartnerRequestUseCase {
           });
 
           if (existingUserRole) {
-            throw new BadRequestException('User already has partner role');
+            throw badRequest(MessageKeys.USER_ALREADY_HAS_PARTNER_ROLE);
           }
         }
 
@@ -66,13 +67,13 @@ export class CreatePartnerRequestUseCase {
         if (existingRequest) {
           // If request is PENDING, throw error
           if (existingRequest.status === PartnerRequestStatus.PENDING) {
-            throw new BadRequestException('You already have a pending partner request');
+            throw badRequest(MessageKeys.PARTNER_REQUEST_PENDING_EXISTS);
           }
 
           // If request is APPROVED, user already has partner role (checked above)
           // This should not happen, but handle it anyway
           if (existingRequest.status === PartnerRequestStatus.APPROVED) {
-            throw new BadRequestException('You already have an approved partner request');
+            throw badRequest(MessageKeys.PARTNER_REQUEST_APPROVED_EXISTS);
           }
 
           // If request is REJECTED, update it to PENDING (reset for new request)

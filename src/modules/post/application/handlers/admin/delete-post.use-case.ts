@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeletePostCommand {
   postId: string;
@@ -15,7 +16,7 @@ export class DeletePostUseCase {
   async execute(command: DeletePostCommand): Promise<void> {
     const post = await this.postRepository.findById(command.postId);
     if (!post) {
-      throw new NotFoundException('Post not found');
+      throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
     await this.postRepository.delete(command.postId);

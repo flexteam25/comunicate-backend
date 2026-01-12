@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import {
   PointExchange,
@@ -23,6 +17,12 @@ import {
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import {
+  notFound,
+  badRequest,
+  forbidden,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface ManagerRejectExchangeCommand {
   exchangeId: string;
@@ -53,19 +53,19 @@ export class ManagerRejectExchangeUseCase {
     ]);
 
     if (!exchange) {
-      throw new NotFoundException('Exchange not found');
+      throw notFound(MessageKeys.EXCHANGE_NOT_FOUND);
     }
 
     // Resolve site by ID or slug
     const site = await this.siteRepository.findByIdOrSlug(command.siteIdOrSlug);
 
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Verify exchange belongs to this site
     if (exchange.siteId !== site.id) {
-      throw new BadRequestException('Exchange does not belong to this site');
+      throw badRequest(MessageKeys.EXCHANGE_DOES_NOT_BELONG_TO_SITE);
     }
 
     // Check if user is manager of this site
@@ -75,9 +75,7 @@ export class ManagerRejectExchangeUseCase {
     );
 
     if (!manager) {
-      throw new ForbiddenException(
-        'You do not have permission to reject exchanges for this site',
-      );
+      throw forbidden(MessageKeys.NO_PERMISSION_TO_REJECT_EXCHANGES);
     }
 
     // Only allow reject if status = pending or processing
@@ -85,9 +83,7 @@ export class ManagerRejectExchangeUseCase {
       exchange.status !== PointExchangeStatus.PENDING &&
       exchange.status !== PointExchangeStatus.PROCESSING
     ) {
-      throw new BadRequestException(
-        'Only pending or processing exchanges can be rejected',
-      );
+      throw badRequest(MessageKeys.ONLY_PENDING_OR_PROCESSING_EXCHANGES_CAN_BE_REJECTED);
     }
 
     // Execute refund and status update in transaction
@@ -101,7 +97,7 @@ export class ManagerRejectExchangeUseCase {
         });
 
         if (!userProfile) {
-          throw new NotFoundException('User profile not found');
+          throw notFound(MessageKeys.USER_PROFILE_NOT_FOUND);
         }
 
         // Refund points to user
@@ -168,7 +164,7 @@ export class ManagerRejectExchangeUseCase {
         });
 
         if (!updated) {
-          throw new NotFoundException('Exchange not found after update');
+          throw notFound(MessageKeys.EXCHANGE_NOT_FOUND_AFTER_UPDATE);
         }
 
         return updated;

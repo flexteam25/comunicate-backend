@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { User } from '../../../domain/entities/user.entity';
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
@@ -14,6 +14,10 @@ import { Role } from '../../../domain/entities/role.entity';
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateUserCommand {
   userId: string;
@@ -38,7 +42,7 @@ export class UpdateUserUseCase {
     // Find user (outside transaction for validation)
     const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     // Check if points is being updated
@@ -173,7 +177,9 @@ export class UpdateUserUseCase {
           });
 
           if (!targetRole) {
-            throw new NotFoundException(`${targetRoleName} role not found`);
+            throw notFound(MessageKeys.PARTNER_ROLE_NOT_FOUND, {
+              roleName: targetRoleName,
+            });
           }
 
           // Get current user roles to determine previous role

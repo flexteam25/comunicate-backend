@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
 import { IUserBadgeRepository } from '../../../infrastructure/persistence/repositories/user-badge.repository';
 import { Badge, BadgeType } from '../../../../badge/domain/entities/badge.entity';
@@ -14,6 +9,7 @@ import {
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserBadge } from '../../../domain/entities/user-badge.entity';
+import { notFound, badRequest, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface AssignBadgeCommand {
   userId: string;
@@ -38,7 +34,7 @@ export class AssignBadgeUseCase {
     // Check if user exists (with profile for points)
     const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     // Check if badge exists, is active, and is of type 'user'
@@ -51,10 +47,10 @@ export class AssignBadgeUseCase {
       },
     });
     if (!badge) {
-      throw new BadRequestException('Badge not found or not available');
+      throw badRequest(MessageKeys.BADGE_NOT_AVAILABLE);
     }
     if (badge.badgeType !== BadgeType.USER) {
-      throw new BadRequestException('Badge must be of type "user"');
+      throw badRequest(MessageKeys.BADGE_WRONG_TYPE, { expectedType: 'user' });
     }
 
     // Check if already assigned
@@ -63,7 +59,7 @@ export class AssignBadgeUseCase {
       command.badgeId,
     );
     if (hasBadge) {
-      throw new BadRequestException('Badge already assigned to this user');
+      throw badRequest(MessageKeys.BADGE_ALREADY_ASSIGNED_TO_USER);
     }
 
     // Assign badge with active = false (user will decide which badge to activate)

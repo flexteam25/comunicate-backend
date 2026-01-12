@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
 import { ISiteCategoryRepository } from '../../../infrastructure/persistence/repositories/site-category.repository';
 import { ITierRepository } from '../../../../tier/infrastructure/persistence/repositories/tier.repository';
@@ -26,6 +20,12 @@ import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
+import {
+  badRequest,
+  notFound,
+  forbidden,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CreatePartnerSiteCommand {
   userId: string;
@@ -69,45 +69,54 @@ export class CreatePartnerSiteUseCase {
     // Validate category exists
     const category = await this.siteCategoryRepository.findById(command.categoryId);
     if (!category) {
-      throw new BadRequestException('Category not found');
+      throw badRequest(MessageKeys.CATEGORY_NOT_FOUND);
     }
 
     // Validate tier exists if provided
     if (command.tierId) {
       const tier = await this.tierRepository.findById(command.tierId);
       if (!tier) {
-        throw new BadRequestException('Tier not found');
+        throw badRequest(MessageKeys.TIER_NOT_FOUND);
       }
     }
 
     // Validate file sizes (20MB max)
     const maxSize = 20 * 1024 * 1024; // 20MB
     if (command.logo && command.logo.size > maxSize) {
-      throw new BadRequestException('Logo file size exceeds 20MB');
+      throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+        fileType: 'logo',
+        maxSize: '20MB',
+      });
     }
     if (command.mainImage && command.mainImage.size > maxSize) {
-      throw new BadRequestException('Main image file size exceeds 20MB');
+      throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+        fileType: 'main image',
+        maxSize: '20MB',
+      });
     }
     if (command.siteImage && command.siteImage.size > maxSize) {
-      throw new BadRequestException('Site image file size exceeds 20MB');
+      throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+        fileType: 'site image',
+        maxSize: '20MB',
+      });
     }
 
     // Validate file types
     const allowedTypes = /(jpg|jpeg|png|webp)$/i;
     if (command.logo && !allowedTypes.test(command.logo.mimetype)) {
-      throw new BadRequestException(
-        'Invalid logo file type. Allowed: jpg, jpeg, png, webp',
-      );
+      throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+        allowedTypes: 'jpg, jpeg, png, webp',
+      });
     }
     if (command.mainImage && !allowedTypes.test(command.mainImage.mimetype)) {
-      throw new BadRequestException(
-        'Invalid main image file type. Allowed: jpg, jpeg, png, webp',
-      );
+      throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+        allowedTypes: 'jpg, jpeg, png, webp',
+      });
     }
     if (command.siteImage && !allowedTypes.test(command.siteImage.mimetype)) {
-      throw new BadRequestException(
-        'Invalid site image file type. Allowed: jpg, jpeg, png, webp',
-      );
+      throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+        allowedTypes: 'jpg, jpeg, png, webp',
+      });
     }
 
     // Generate site ID first
@@ -162,7 +171,7 @@ export class CreatePartnerSiteUseCase {
           });
 
           if (!partnerUser) {
-            throw new NotFoundException('User not found');
+            throw notFound(MessageKeys.USER_NOT_FOUND);
           }
 
           // Find partner role
@@ -171,7 +180,7 @@ export class CreatePartnerSiteUseCase {
           });
 
           if (!partnerRole) {
-            throw new NotFoundException('Partner role not found');
+            throw notFound(MessageKeys.PARTNER_ROLE_NOT_FOUND);
           }
 
           // Check if user has partner role
@@ -180,7 +189,7 @@ export class CreatePartnerSiteUseCase {
           );
 
           if (!hasPartnerRole) {
-            throw new ForbiddenException('User does not have partner role');
+            throw forbidden(MessageKeys.USER_DOES_NOT_HAVE_PARTNER_ROLE);
           }
 
           // Check duplicate name (case-insensitive), excluding soft-deleted
@@ -190,7 +199,7 @@ export class CreatePartnerSiteUseCase {
             .andWhere('s.deletedAt IS NULL')
             .getOne();
           if (duplicate) {
-            throw new BadRequestException('Site with this name already exists');
+            throw badRequest(MessageKeys.SITE_NAME_ALREADY_EXISTS);
           }
 
           // Check duplicate slug, excluding soft-deleted
@@ -200,7 +209,7 @@ export class CreatePartnerSiteUseCase {
             .andWhere('s.deletedAt IS NULL')
             .getOne();
           if (duplicateSlug) {
-            throw new BadRequestException('Site with this slug already exists');
+            throw badRequest(MessageKeys.SITE_SLUG_ALREADY_EXISTS);
           }
 
           const site = siteRepo.create({

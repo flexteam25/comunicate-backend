@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Site, SiteStatus } from '../../../../site/domain/entities/site.entity';
 import { ISiteRepository } from '../../../../site/infrastructure/persistence/repositories/site.repository';
 import { ISiteManagerRepository } from '../../../infrastructure/persistence/repositories/site-manager.repository';
@@ -13,6 +7,12 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { EntityManager } from 'typeorm';
 import { ISiteCategoryRepository } from '../../../../site/infrastructure/persistence/repositories/site-category.repository';
 import { ITierRepository } from '../../../../tier/infrastructure/persistence/repositories/tier.repository';
+import {
+  notFound,
+  forbidden,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateManagedSiteCommand {
   userId: string;
@@ -57,13 +57,13 @@ export class UpdateManagedSiteUseCase {
     );
 
     if (!manager) {
-      throw new ForbiddenException('You do not have permission to edit this site');
+      throw forbidden(MessageKeys.NO_PERMISSION_TO_EDIT_SITE);
     }
 
     // Get existing site first to check for old files and validate
     const existingSite = await this.siteRepository.findById(command.siteId);
     if (!existingSite) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Partner can only update site if it's already VERIFIED
@@ -72,39 +72,46 @@ export class UpdateManagedSiteUseCase {
       existingSite.status !== SiteStatus.VERIFIED &&
       existingSite.status !== SiteStatus.MONITORED
     ) {
-      throw new ForbiddenException(
-        'Site must be verified before it can be updated by partner',
-      );
+      throw forbidden(MessageKeys.SITE_MUST_BE_VERIFIED_BEFORE_UPDATE);
     }
 
     // Validate file sizes (20MB max)
     const maxSize = 20 * 1024 * 1024; // 20MB
     if (command.logo && command.logo.size > maxSize) {
-      throw new BadRequestException('Logo file size exceeds 20MB');
+      throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+        fileType: 'logo',
+        maxSize: '20MB',
+      });
     }
     if (command.mainImage && command.mainImage.size > maxSize) {
-      throw new BadRequestException('Main image file size exceeds 20MB');
+      throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+        fileType: 'main image',
+        maxSize: '20MB',
+      });
     }
     if (command.siteImage && command.siteImage.size > maxSize) {
-      throw new BadRequestException('Site image file size exceeds 20MB');
+      throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+        fileType: 'site image',
+        maxSize: '20MB',
+      });
     }
 
     // Validate file types
     const allowedTypes = /(jpg|jpeg|png|webp)$/i;
     if (command.logo && !allowedTypes.test(command.logo.mimetype)) {
-      throw new BadRequestException(
-        'Invalid logo file type. Allowed: jpg, jpeg, png, webp',
-      );
+      throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+        allowedTypes: 'jpg, jpeg, png, webp',
+      });
     }
     if (command.mainImage && !allowedTypes.test(command.mainImage.mimetype)) {
-      throw new BadRequestException(
-        'Invalid main image file type. Allowed: jpg, jpeg, png, webp',
-      );
+      throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+        allowedTypes: 'jpg, jpeg, png, webp',
+      });
     }
     if (command.siteImage && !allowedTypes.test(command.siteImage.mimetype)) {
-      throw new BadRequestException(
-        'Invalid site image file type. Allowed: jpg, jpeg, png, webp',
-      );
+      throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+        allowedTypes: 'jpg, jpeg, png, webp',
+      });
     }
 
     // Store old file URLs for cleanup
@@ -162,7 +169,7 @@ export class UpdateManagedSiteUseCase {
               command.categoryId,
             );
             if (!category) {
-              throw new BadRequestException('Category not found');
+              throw badRequest(MessageKeys.CATEGORY_NOT_FOUND);
             }
           }
 
@@ -170,7 +177,7 @@ export class UpdateManagedSiteUseCase {
           if (command.tierId !== undefined && command.tierId) {
             const tier = await this.tierRepository.findById(command.tierId);
             if (!tier) {
-              throw new BadRequestException('Tier not found');
+              throw badRequest(MessageKeys.TIER_NOT_FOUND);
             }
           }
 
@@ -183,7 +190,7 @@ export class UpdateManagedSiteUseCase {
               .andWhere('s.deletedAt IS NULL')
               .getOne();
             if (duplicate) {
-              throw new BadRequestException('Site with this name already exists');
+              throw badRequest(MessageKeys.SITE_NAME_ALREADY_EXISTS);
             }
           }
 
@@ -201,7 +208,7 @@ export class UpdateManagedSiteUseCase {
               .andWhere('s.deletedAt IS NULL')
               .getOne();
             if (duplicateSlug) {
-              throw new BadRequestException('Site with this slug already exists');
+              throw badRequest(MessageKeys.SITE_SLUG_ALREADY_EXISTS);
             }
           }
 
@@ -238,7 +245,7 @@ export class UpdateManagedSiteUseCase {
             where: { id: command.siteId, deletedAt: null },
           });
           if (!updated) {
-            throw new NotFoundException('Site not found after update');
+            throw notFound(MessageKeys.SITE_NOT_FOUND_AFTER_UPDATE);
           }
 
           return updated;

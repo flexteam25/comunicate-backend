@@ -1,6 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { IUserFavoriteSiteRepository } from '../../infrastructure/persistence/repositories/user-favorite-site.repository';
 import { ISiteRepository } from '../../../site/infrastructure/persistence/repositories/site.repository';
+import { notFound, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface RemoveFavoriteSiteCommand {
   userId: string;
@@ -19,7 +20,7 @@ export class RemoveFavoriteSiteUseCase {
   async execute(command: RemoveFavoriteSiteCommand): Promise<void> {
     const site = await this.siteRepository.findById(command.siteId);
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     await this.favoriteRepository.removeFavorite(command.userId, command.siteId);

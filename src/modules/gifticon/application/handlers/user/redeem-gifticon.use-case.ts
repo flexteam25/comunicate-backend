@@ -1,9 +1,9 @@
+import { Injectable, Inject } from '@nestjs/common';
 import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 import { EntityManager } from 'typeorm';
 import { GifticonStatus } from '../../../domain/entities/gifticon.entity';
 import { IGifticonRepository } from '../../../infrastructure/persistence/repositories/gifticon.repository';
@@ -73,32 +73,32 @@ export class RedeemGifticonUseCase {
     // Check gifticon exists
     const gifticon = await this.gifticonRepository.findById(command.gifticonId);
     if (!gifticon) {
-      throw new NotFoundException('Gifticon not found');
+      throw notFound(MessageKeys.GIFTICON_NOT_FOUND);
     }
 
     // Check gifticon has status = published
     if (gifticon.status !== GifticonStatus.PUBLISHED) {
-      throw new BadRequestException('Gifticon is not available for redemption');
+      throw badRequest(MessageKeys.GIFTICON_NOT_AVAILABLE_FOR_REDEMPTION);
     }
 
     // Check gifticon is within valid period
     const now = new Date();
     if (gifticon.startsAt && gifticon.startsAt > now) {
-      throw new BadRequestException('Gifticon has not started yet');
+      throw badRequest(MessageKeys.GIFTICON_HAS_NOT_STARTED);
     }
 
     if (gifticon.endsAt && gifticon.endsAt < now) {
-      throw new BadRequestException('Gifticon has expired');
+      throw badRequest(MessageKeys.GIFTICON_HAS_EXPIRED);
     }
 
     // Check user has sufficient points (preliminary check before transaction)
     const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user || !user.userProfile) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     if (user.userProfile.points < gifticon.amount) {
-      throw new BadRequestException('Insufficient points');
+      throw badRequest(MessageKeys.INSUFFICIENT_POINTS);
     }
 
     // Execute all operations in transaction to ensure data consistency
@@ -113,7 +113,7 @@ export class RedeemGifticonUseCase {
 
         // Recheck balance after lock (in case points were deducted while waiting)
         if (!userProfile || userProfile.points < gifticon.amount) {
-          throw new BadRequestException('Insufficient points');
+          throw badRequest(MessageKeys.INSUFFICIENT_POINTS);
         }
 
         // Calculate new balance after deducting points

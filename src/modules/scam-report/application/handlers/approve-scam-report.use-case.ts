@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ScamReport, ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
 import { RedisService } from '../../../../shared/redis/redis.service';
@@ -11,6 +6,11 @@ import { RedisChannel } from '../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface ApproveScamReportCommand {
   reportId: string;
@@ -35,11 +35,11 @@ export class ApproveScamReportUseCase {
     const report = await this.scamReportRepository.findById(command.reportId);
 
     if (!report) {
-      throw new NotFoundException('Scam report not found');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND);
     }
 
     if (report.status !== ScamReportStatus.PENDING) {
-      throw new BadRequestException('Scam report has already been processed');
+      throw badRequest(MessageKeys.SCAM_REPORT_ALREADY_PROCESSED);
     }
 
     const updatedReport = await this.scamReportRepository.update(command.reportId, {

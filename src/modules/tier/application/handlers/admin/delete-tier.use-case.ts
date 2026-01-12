@@ -1,11 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ITierRepository } from '../../../infrastructure/persistence/repositories/tier.repository';
 import { ISiteRepository } from '../../../../site/infrastructure/persistence/repositories/site.repository';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteTierCommand {
   tierId: string;
@@ -24,20 +24,20 @@ export class DeleteTierUseCase {
     // Find tier including inactive ones
     const tier = await this.tierRepository.findByIdIncludingDeleted(command.tierId);
     if (!tier) {
-      throw new NotFoundException('Tier not found');
+      throw notFound(MessageKeys.TIER_NOT_FOUND);
     }
 
     // Check if tier is already soft deleted
     if (tier.deletedAt) {
-      throw new BadRequestException('Tier is already deleted');
+      throw badRequest(MessageKeys.TIER_IS_ALREADY_DELETED);
     }
 
     // Check if tier is used by any sites
     const sites = await this.siteRepository.findByTier(command.tierId);
     if (sites.length > 0) {
-      throw new BadRequestException(
-        `Cannot delete tier. It is used by ${sites.length} site(s)`,
-      );
+      throw badRequest(MessageKeys.CANNOT_DELETE_TIER_IN_USE, {
+        siteCount: sites.length,
+      });
     }
 
     // Soft delete: set deletedAt timestamp

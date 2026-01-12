@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteReviewRepository } from '../../infrastructure/persistence/repositories/site-review.repository';
 import { SiteReview } from '../../domain/entities/site-review.entity';
+import { notFound, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface GetSiteReviewCommand {
   reviewId: string;
@@ -23,7 +24,7 @@ export class GetSiteReviewUseCase {
     ]);
 
     if (!review) {
-      throw new NotFoundException('Site review not found');
+      throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND);
     }
 
     return review;

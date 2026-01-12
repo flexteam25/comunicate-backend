@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IInquiryRepository } from '../../../infrastructure/persistence/repositories/inquiry.repository';
 import { Inquiry } from '../../../domain/entities/inquiry.entity';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class GetInquiryUseCase {
@@ -12,7 +13,7 @@ export class GetInquiryUseCase {
   async execute(inquiryId: string): Promise<Inquiry> {
     const inquiry = await this.inquiryRepository.findById(inquiryId, ['user', 'admin']);
     if (!inquiry) {
-      throw new NotFoundException('Inquiry not found');
+      throw notFound(MessageKeys.INQUIRY_NOT_FOUND);
     }
     return inquiry;
   }

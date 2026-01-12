@@ -12,7 +12,6 @@ import {
   HttpStatus,
   UseInterceptors,
   UploadedFiles,
-  BadRequestException,
   ParseUUIDPipe,
   Req,
 } from '@nestjs/common';
@@ -43,6 +42,10 @@ import { UploadService, MulterFile } from '../../../../../shared/services/upload
 import { ConfigService } from '@nestjs/config';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
+import {
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 import { ScamReportStatus } from '../../../domain/entities/scam-report.entity';
 import { ListScamReportsQueryDto } from '../dto/list-scam-reports-query.dto';
 import { Request } from 'express';
@@ -141,12 +144,15 @@ export class ScamReportController {
       for (const file of files.images) {
         // Validate file
         if (file.size > 20 * 1024 * 1024) {
-          throw new BadRequestException('Image file size exceeds 20MB');
+          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+            fileType: 'image',
+            maxSize: '20MB',
+          });
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
-          );
+          throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+            allowedTypes: 'jpg, jpeg, png, webp',
+          });
         }
         const uploadResult = await this.uploadService.uploadImage(file, {
           folder: 'scam-reports',
@@ -253,12 +259,15 @@ export class ScamReportController {
       for (const file of files.images) {
         // Validate file
         if (file.size > 20 * 1024 * 1024) {
-          throw new BadRequestException('Image file size exceeds 20MB');
+          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+            fileType: 'image',
+            maxSize: '20MB',
+          });
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
-          );
+          throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+            allowedTypes: 'jpg, jpeg, png, webp',
+          });
         }
         const uploadResult = await this.uploadService.uploadImage(file, {
           folder: 'scam-reports',
@@ -373,12 +382,15 @@ export class ScamReportController {
       for (const file of files.images) {
         // Validate file
         if (file.size > 20 * 1024 * 1024) {
-          throw new BadRequestException('Image file size exceeds 20MB');
+          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+            fileType: 'image',
+            maxSize: '20MB',
+          });
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
-          throw new BadRequestException(
-            'Invalid image file type. Allowed: jpg, jpeg, png, webp',
-          );
+          throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+            allowedTypes: 'jpg, jpeg, png, webp',
+          });
         }
         const uploadResult = await this.uploadService.uploadImage(file, {
           folder: 'scam-reports/comments',

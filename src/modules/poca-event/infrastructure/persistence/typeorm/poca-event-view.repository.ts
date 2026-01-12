@@ -11,7 +11,26 @@ export class PocaEventViewRepository implements IPocaEventViewRepository {
     private readonly repository: Repository<PocaEventView>,
   ) {}
 
-  async create(view: Partial<PocaEventView>): Promise<PocaEventView> {
+  async create(view: Partial<PocaEventView>): Promise<PocaEventView | null> {
+    // Only track views for authenticated users (skip anonymous)
+    // Return null silently without throwing error to avoid breaking API
+    if (!view.userId) {
+      return null;
+    }
+
+    // Check if view already exists for this user and event
+    const existing = await this.repository.findOne({
+      where: {
+        eventId: view.eventId,
+        userId: view.userId,
+      },
+    });
+
+    if (existing) {
+      // View already exists, return existing record
+      return existing;
+    }
+
     const entity = this.repository.create(view);
     return this.repository.save(entity);
   }

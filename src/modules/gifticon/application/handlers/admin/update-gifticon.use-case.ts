@@ -1,15 +1,15 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Gifticon } from '../../../domain/entities/gifticon.entity';
 import { GifticonStatus } from '../../../domain/entities/gifticon.entity';
 import { IGifticonRepository } from '../../../infrastructure/persistence/repositories/gifticon.repository';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateGifticonCommand {
   gifticonId: string;
@@ -39,20 +39,23 @@ export class UpdateGifticonUseCase {
     // Get existing gifticon first to check for old file
     const existingGifticon = await this.gifticonRepository.findById(command.gifticonId);
     if (!existingGifticon) {
-      throw new NotFoundException('Gifticon not found');
+      throw notFound(MessageKeys.GIFTICON_NOT_FOUND);
     }
 
     // Validate file size and type if image provided
     if (command.image) {
       const maxSize = 20 * 1024 * 1024; // 20MB
       if (command.image.size > maxSize) {
-        throw new BadRequestException('Image file size exceeds 20MB');
+        throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+          fileType: 'image',
+          maxSize: '20MB',
+        });
       }
       const allowedTypes = /(jpg|jpeg|png|webp)$/i;
       if (!allowedTypes.test(command.image.mimetype)) {
-        throw new BadRequestException(
-          'Invalid image file type. Allowed: jpg, jpeg, png, webp',
-        );
+        throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+          allowedTypes: 'jpg, jpeg, png, webp',
+        });
       }
     }
 
@@ -81,21 +84,21 @@ export class UpdateGifticonUseCase {
           });
 
           if (!gifticon) {
-            throw new NotFoundException('Gifticon not found');
+            throw notFound(MessageKeys.GIFTICON_NOT_FOUND);
           }
 
           // Validate dates
           if (command.startsAt && command.endsAt) {
             if (command.startsAt >= command.endsAt) {
-              throw new BadRequestException('Start date must be before end date');
+              throw badRequest(MessageKeys.START_DATE_MUST_BE_BEFORE_END_DATE);
             }
           } else if (command.startsAt && gifticon.endsAt) {
             if (command.startsAt >= gifticon.endsAt) {
-              throw new BadRequestException('Start date must be before end date');
+              throw badRequest(MessageKeys.START_DATE_MUST_BE_BEFORE_END_DATE);
             }
           } else if (command.endsAt && gifticon.startsAt) {
             if (gifticon.startsAt >= command.endsAt) {
-              throw new BadRequestException('Start date must be before end date');
+              throw badRequest(MessageKeys.START_DATE_MUST_BE_BEFORE_END_DATE);
             }
           }
 
@@ -105,7 +108,7 @@ export class UpdateGifticonUseCase {
               where: { slug: command.slug, deletedAt: null },
             });
             if (existing) {
-              throw new BadRequestException('Slug already exists');
+              throw badRequest(MessageKeys.SLUG_ALREADY_EXISTS);
             }
           }
 

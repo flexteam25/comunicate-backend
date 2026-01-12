@@ -1,14 +1,14 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { ISiteReviewRepository } from '../../infrastructure/persistence/repositories/site-review.repository';
 import { SiteReview } from '../../domain/entities/site-review.entity';
 import { SiteReviewImage } from '../../domain/entities/site-review-image.entity';
 import { TransactionService } from '../../../../shared/services/transaction.service';
+import {
+  notFound,
+  forbidden,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateSiteReviewCommand {
   reviewId: string;
@@ -39,11 +39,11 @@ export class UpdateSiteReviewUseCase {
     ]);
 
     if (!review) {
-      throw new NotFoundException('Site review not found');
+      throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND);
     }
 
     if (review.userId !== command.userId) {
-      throw new ForbiddenException('You can only update your own reviews');
+      throw forbidden(MessageKeys.CAN_ONLY_UPDATE_OWN_REVIEWS);
     }
 
     // Check 2-hour time limit
@@ -53,9 +53,7 @@ export class UpdateSiteReviewUseCase {
     const timeDiff = now.getTime() - createdAt.getTime();
 
     if (timeDiff > twoHoursInMs) {
-      throw new ForbiddenException(
-        'Review can only be updated within 2 hours of submission',
-      );
+      throw forbidden(MessageKeys.CAN_ONLY_UPDATE_REVIEWS_WITHIN_TWO_HOURS);
     }
 
     return this.transactionService
@@ -101,7 +99,7 @@ export class UpdateSiteReviewUseCase {
         });
 
         if (!reloaded) {
-          throw new NotFoundException('Site review not found after update');
+          throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND_AFTER_UPDATE);
         }
 
         return reloaded;

@@ -17,11 +17,32 @@ export class PocaEventRepository implements IPocaEventRepository {
   ) {}
 
   async findById(id: string, relations?: string[]): Promise<PocaEvent | null> {
-    return this.repository.findOne({
-      where: { id, deletedAt: null },
-      ...(relations && relations.length > 0 ? { relations } : {}),
-      order: relations?.includes('banners') ? { banners: { order: 'ASC' } } : undefined,
-    });
+    const queryBuilder = this.repository
+      .createQueryBuilder('event')
+      .where('event.id = :id', { id })
+      .andWhere('event.deletedAt IS NULL');
+
+    if (relations?.includes('banners')) {
+      queryBuilder.leftJoinAndSelect('event.banners', 'banner');
+      queryBuilder.orderBy('banner.order', 'ASC');
+    }
+
+    // Calculate viewCount dynamically from view table (only authenticated users, distinct)
+    queryBuilder.addSelect(
+      `(SELECT COUNT(DISTINCT user_id) FROM poca_event_views WHERE event_id = event.id AND user_id IS NOT NULL)`,
+      'viewCount',
+    );
+
+    const result = await queryBuilder.getRawAndEntities();
+    if (result.entities.length === 0) {
+      return null;
+    }
+
+    const event = result.entities[0];
+    const rawData = result.raw[0];
+    (event as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
+
+    return event;
   }
 
   async findByIdOrSlugPublic(
@@ -51,7 +72,22 @@ export class PocaEventRepository implements IPocaEventRepository {
       queryBuilder.orderBy('banner.order', 'ASC');
     }
 
-    return queryBuilder.getOne();
+    // Calculate viewCount dynamically from view table (only authenticated users, distinct)
+    queryBuilder.addSelect(
+      `(SELECT COUNT(DISTINCT user_id) FROM poca_event_views WHERE event_id = event.id AND user_id IS NOT NULL)`,
+      'viewCount',
+    );
+
+    const result = await queryBuilder.getRawAndEntities();
+    if (result.entities.length === 0) {
+      return null;
+    }
+
+    const event = result.entities[0];
+    const rawData = result.raw[0];
+    (event as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
+
+    return event;
   }
 
   async findVisibleWithCursor(
@@ -71,6 +107,12 @@ export class PocaEventRepository implements IPocaEventRepository {
       .andWhere('(event.startsAt IS NULL OR event.startsAt <= :now)', { now })
       .andWhere('(event.endsAt IS NULL OR event.endsAt >= :now)', { now })
       .orderBy('banner.order', 'ASC');
+
+    // Calculate viewCount dynamically from view table (only authenticated users, distinct)
+    queryBuilder.addSelect(
+      `(SELECT COUNT(DISTINCT user_id) FROM poca_event_views WHERE event_id = event.id AND user_id IS NOT NULL)`,
+      'viewCount',
+    );
 
     // Sort by startsAt DESC, then createdAt DESC
     if (cursor) {
@@ -100,9 +142,15 @@ export class PocaEventRepository implements IPocaEventRepository {
       .addOrderBy('event.id', 'DESC')
       .take(realLimit + 1);
 
-    const entities = await queryBuilder.getMany();
-    const hasMore = entities.length > realLimit;
-    const data = entities.slice(0, realLimit);
+    const result = await queryBuilder.getRawAndEntities();
+    const hasMore = result.entities.length > realLimit;
+    const data = result.entities.slice(0, realLimit);
+    const rawData = result.raw.slice(0, realLimit);
+
+    // Map viewCount from raw data to entities
+    data.forEach((event, index) => {
+      (event as any).viewCount = parseInt(rawData[index]?.viewCount || '0', 10);
+    });
 
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {

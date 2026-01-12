@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IPartnerRequestRepository } from '../../../infrastructure/persistence/repositories/partner-request.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetMyPartnerRequestCommand {
   userId: string;
@@ -19,7 +20,7 @@ export class GetMyPartnerRequestUseCase {
     );
 
     if (!partnerRequest) {
-      throw new NotFoundException('No partner request found');
+      throw notFound(MessageKeys.PARTNER_REQUEST_NOT_FOUND);
     }
 
     return partnerRequest;

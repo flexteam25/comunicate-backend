@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { SiteReview } from '../../domain/entities/site-review.entity';
 import { SiteReviewImage } from '../../domain/entities/site-review-image.entity';
@@ -9,6 +9,10 @@ import {
   UserComment,
   CommentType,
 } from '../../../user/domain/entities/user-comment.entity';
+import {
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface CreateSiteReviewCommand {
   userId: string;
@@ -35,7 +39,7 @@ export class CreateSiteReviewUseCase {
   async execute(command: CreateSiteReviewCommand): Promise<SiteReview> {
     const site = await this.siteRepository.findByIdOrSlug(command.siteId);
     if (!site) {
-      throw new BadRequestException('Site not found');
+      throw badRequest(MessageKeys.SITE_NOT_FOUND);
     }
 
     return this.transactionService
@@ -53,7 +57,7 @@ export class CreateSiteReviewUseCase {
         let savedReview: SiteReview;
 
         if (existingReview) {
-          throw new BadRequestException('You have already reviewed this site');
+          throw badRequest(MessageKeys.SITE_REVIEW_ALREADY_EXISTS);
         } else {
           // Create new review
           const review = reviewRepo.create({

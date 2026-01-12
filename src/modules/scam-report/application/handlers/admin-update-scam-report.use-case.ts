@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { ScamReport, ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { ScamReportImage } from '../../domain/entities/scam-report-image.entity';
@@ -15,6 +10,11 @@ import { RedisChannel } from '../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface AdminUpdateScamReportCommand {
   reportId: string;
@@ -53,14 +53,14 @@ export class AdminUpdateScamReportUseCase {
     const report = await this.scamReportRepository.findById(command.reportId);
 
     if (!report) {
-      throw new NotFoundException('Scam report not found');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND);
     }
 
     // Validate site exists if siteId is being updated
     if (command.siteId !== undefined && command.siteId !== null) {
       const site = await this.siteRepository.findById(command.siteId);
       if (!site) {
-        throw new BadRequestException('Site not found');
+        throw badRequest(MessageKeys.SITE_NOT_FOUND);
       }
     }
 
@@ -125,7 +125,7 @@ export class AdminUpdateScamReportUseCase {
     );
 
     if (!updatedReport) {
-      throw new NotFoundException('Scam report not found after update');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND_AFTER_UPDATE);
     }
 
     // Reload with all relations and reaction counts for event

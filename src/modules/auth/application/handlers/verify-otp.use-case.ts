@@ -1,7 +1,8 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IOtpRequestRepository } from '../../infrastructure/persistence/repositories/otp-request.repository';
 import { OtpRequest } from '../../domain/entities/otp-request.entity';
 import { normalizePhone } from '../../../../shared/utils/phone.util';
+import { badRequest, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface VerifyOtpCommand {
   phone: string;
@@ -19,28 +20,26 @@ export class VerifyOtpUseCase {
     // Normalize phone number
     const normalizedPhone = normalizePhone(command.phone);
     if (!normalizedPhone) {
-      throw new BadRequestException('Invalid phone number format');
+      throw badRequest(MessageKeys.INVALID_PHONE_NUMBER_FORMAT);
     }
 
     // Find active OTP request
     const otpRequest = await this.otpRequestRepository.findByPhone(normalizedPhone);
 
     if (!otpRequest) {
-      throw new BadRequestException('OTP not found. Please request OTP first');
+      throw badRequest(MessageKeys.OTP_NOT_FOUND);
     }
 
     if (otpRequest.isVerified()) {
-      throw new BadRequestException(
-        'This phone number has already been used for registration',
-      );
+      throw badRequest(MessageKeys.EMAIL_ALREADY_EXISTS);
     }
 
     if (otpRequest.isExpired()) {
-      throw new BadRequestException('OTP has expired. Please request a new OTP');
+      throw badRequest(MessageKeys.OTP_HAS_EXPIRED);
     }
 
     if (otpRequest.otp !== command.otp) {
-      throw new BadRequestException('Invalid OTP code');
+      throw badRequest(MessageKeys.INVALID_OTP_CODE);
     }
 
     // Generate token (64 characters, alphanumeric)

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { ScamReport, ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { ScamReportImage } from '../../domain/entities/scam-report-image.entity';
@@ -10,6 +10,7 @@ import { RedisChannel } from '../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
+import { badRequest, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
 
 export interface CreateScamReportCommand {
   userId: string;
@@ -47,7 +48,7 @@ export class CreateScamReportUseCase {
     if (command.siteId) {
       const site = await this.siteRepository.findById(command.siteId);
       if (!site) {
-        throw new BadRequestException('Site not found');
+        throw badRequest(MessageKeys.SITE_NOT_FOUND);
       }
     }
 

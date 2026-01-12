@@ -55,7 +55,10 @@ export class PostRepository implements IPostRepository {
         `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id AND deleted_at IS NULL)`,
         'commentCount',
       )
-      .addSelect(`(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`, 'viewCount')
+      .addSelect(
+        `(SELECT COUNT(DISTINCT user_id) FROM post_views WHERE post_id = post.id AND user_id IS NOT NULL)`,
+        'viewCount',
+      )
       .where('post.deletedAt IS NULL')
       .andWhere('post.id = :id', { id });
 
@@ -154,7 +157,10 @@ export class PostRepository implements IPostRepository {
         `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id AND deleted_at IS NULL)`,
         'commentCount',
       )
-      .addSelect(`(SELECT COUNT(*) FROM post_views WHERE post_id = post.id)`, 'viewCount')
+      .addSelect(
+        `(SELECT COUNT(DISTINCT user_id) FROM post_views WHERE post_id = post.id AND user_id IS NOT NULL)`,
+        'viewCount',
+      )
       .where('post.deletedAt IS NULL');
 
     if (filters?.isPublished !== undefined) {

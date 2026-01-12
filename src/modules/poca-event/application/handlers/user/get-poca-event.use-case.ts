@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PocaEvent } from '../../../domain/entities/poca-event.entity';
 import { IPocaEventRepository } from '../../../infrastructure/persistence/repositories/poca-event.repository';
 import { IPocaEventViewRepository } from '../../../infrastructure/persistence/repositories/poca-event-view.repository';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetPocaEventCommand {
   idOrSlug: string;
@@ -25,23 +29,22 @@ export class GetPocaEventUseCase {
     ]);
 
     if (!event) {
-      throw new NotFoundException('Event not found');
+      throw notFound(MessageKeys.EVENT_NOT_FOUND);
     }
 
-    // Track view (best-effort, don't block on errors)
-    try {
-      await this.pocaEventViewRepository.create({
-        eventId: event.id,
-        userId: command.userId,
-        ipAddress: command.ipAddress,
-        userAgent: command.userAgent,
-      });
-
-      // Increment view count
-      await this.pocaEventRepository.incrementViewCount(event.id);
-    } catch (error) {
-      // Log error but don't fail the request
-      console.error('Failed to track event view:', error);
+    // Track view only for authenticated users (best-effort, don't block on errors)
+    if (command.userId) {
+      try {
+        await this.pocaEventViewRepository.create({
+          eventId: event.id,
+          userId: command.userId,
+          ipAddress: command.ipAddress,
+          userAgent: command.userAgent,
+        });
+      } catch (error) {
+        // Log error but don't fail the request
+        console.error('Failed to track event view:', error);
+      }
     }
 
     return event;

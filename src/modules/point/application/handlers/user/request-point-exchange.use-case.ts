@@ -1,9 +1,9 @@
+import { Injectable, Inject } from '@nestjs/common';
 import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 import { EntityManager } from 'typeorm';
 import {
   PointExchange,
@@ -68,27 +68,29 @@ export class RequestPointExchangeUseCase {
     // Check site exists
     const site = await this.siteRepository.findById(command.siteId);
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Validate exchange amount: minimum 10,000 points
     if (command.pointsAmount < 10000) {
-      throw new BadRequestException('Minimum exchange amount is 10,000 points');
+      throw badRequest(MessageKeys.MIN_EXCHANGE_AMOUNT, { minAmount: 10000 });
     }
 
     // Validate points must be multiple of 10,000 (만원 단위)
     if (command.pointsAmount % 10000 !== 0) {
-      throw new BadRequestException('Exchange amount must be a multiple of 10,000');
+      throw badRequest(MessageKeys.EXCHANGE_AMOUNT_NOT_MULTIPLE, {
+        multiple: 10000,
+      });
     }
 
     // Check user has sufficient points (preliminary check before transaction)
     const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user || !user.userProfile) {
-      throw new NotFoundException('User not found');
+      throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
     if (user.userProfile.points < command.pointsAmount) {
-      throw new BadRequestException('Insufficient points');
+      throw badRequest(MessageKeys.INSUFFICIENT_POINTS);
     }
 
     // Execute all operations in transaction to ensure data consistency
@@ -103,7 +105,7 @@ export class RequestPointExchangeUseCase {
 
         // Recheck balance after lock
         if (!userProfile || userProfile.points < command.pointsAmount) {
-          throw new BadRequestException('Insufficient points');
+          throw badRequest(MessageKeys.INSUFFICIENT_POINTS);
         }
 
         // Calculate new balance after deducting points

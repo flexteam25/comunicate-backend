@@ -1,10 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
+import {
+  notFound,
+  forbidden,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeletePostCommand {
   postId: string;
@@ -21,20 +21,18 @@ export class DeletePostUseCase {
   async execute(command: DeletePostCommand): Promise<void> {
     const post = await this.postRepository.findById(command.postId);
     if (!post) {
-      throw new NotFoundException('Post not found');
+      throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
     // Check ownership
     if (post.userId !== command.userId) {
-      throw new ForbiddenException('You can only delete your own posts');
+      throw forbidden(MessageKeys.CAN_ONLY_DELETE_OWN_POSTS);
     }
 
     // Check time limit: can only delete within 1 hour after creation
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
     if (post.createdAt < oneHourAgo) {
-      throw new ForbiddenException(
-        'You can only delete posts within 1 hour after creation',
-      );
+      throw forbidden(MessageKeys.CAN_ONLY_DELETE_POSTS_WITHIN_ONE_HOUR);
     }
 
     // Soft delete

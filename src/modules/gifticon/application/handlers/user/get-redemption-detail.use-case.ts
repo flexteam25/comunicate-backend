@@ -1,11 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { GifticonRedemption } from '../../../domain/entities/gifticon-redemption.entity';
 import { IGifticonRedemptionRepository } from '../../../infrastructure/persistence/repositories/gifticon-redemption.repository';
+import {
+  notFound,
+  unauthorized,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface GetRedemptionDetailCommand {
   userId: string;
@@ -26,11 +26,11 @@ export class GetRedemptionDetailUseCase {
     ]);
 
     if (!redemption) {
-      throw new NotFoundException('Redemption not found');
+      throw notFound(MessageKeys.REDEMPTION_NOT_FOUND);
     }
 
     if (redemption.userId !== command.userId) {
-      throw new UnauthorizedException('Not authorized to view this redemption');
+      throw unauthorized(MessageKeys.NOT_AUTHORIZED_TO_VIEW_REDEMPTION);
     }
 
     return redemption;

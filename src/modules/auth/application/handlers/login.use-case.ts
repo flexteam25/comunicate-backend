@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { IUserTokenRepository } from '../../infrastructure/persistence/repositories/user-token.repository';
@@ -8,6 +8,10 @@ import { TransactionService } from '../../../../shared/services/transaction.serv
 import { UserToken } from '../../domain/entities/user-token.entity';
 import { User } from '../../../user/domain/entities/user.entity';
 import { UserProfile } from '../../../user/domain/entities/user-profile.entity';
+import {
+  unauthorized,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 export interface LoginCommand {
   email: string;
   password: string;
@@ -36,11 +40,11 @@ export class LoginUseCase {
     // Find user (outside transaction for validation)
     const user = await this.userRepository.findByEmail(command.email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw unauthorized(MessageKeys.INVALID_CREDENTIALS);
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('User account is inactive');
+      throw unauthorized(MessageKeys.USER_ACCOUNT_INACTIVE);
     }
 
     // Verify password (outside transaction)
@@ -49,7 +53,7 @@ export class LoginUseCase {
       user.passwordHash,
     );
     if (!isValidPassword) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw unauthorized(MessageKeys.INVALID_CREDENTIALS);
     }
 
     // Generate token pair (outside transaction)

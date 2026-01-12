@@ -38,7 +38,11 @@ export class SiteEventRepository implements ISiteEventRepository {
       queryBuilder.leftJoinAndSelect('event.banners', 'banners');
     }
 
-    queryBuilder.loadRelationCountAndMap('event.viewCount', 'event.views', 'view');
+    // Count distinct authenticated user views only
+    queryBuilder.addSelect(
+      `(SELECT COUNT(DISTINCT user_id) FROM site_event_views WHERE event_id = event.id AND user_id IS NOT NULL)`,
+      'viewCount',
+    );
 
     const result = await queryBuilder.getOne();
     return result || null;
@@ -58,7 +62,10 @@ export class SiteEventRepository implements ISiteEventRepository {
       .leftJoinAndSelect('event.user', 'user')
       .leftJoinAndSelect('event.admin', 'admin')
       .leftJoinAndSelect('event.banners', 'banners')
-      .loadRelationCountAndMap('event.viewCount', 'event.views', 'view')
+      .addSelect(
+        `(SELECT COUNT(DISTINCT user_id) FROM site_event_views WHERE event_id = event.id AND user_id IS NOT NULL)`,
+        'viewCount',
+      )
       .where('event.deletedAt IS NULL')
       .andWhere('event.isActive = :isActive', { isActive: true })
       .andWhere('event.endDate >= :now', { now });
@@ -94,9 +101,15 @@ export class SiteEventRepository implements ISiteEventRepository {
       .addOrderBy('event.id', 'DESC')
       .take(realLimit + 1);
 
-    const entities = await queryBuilder.getMany();
-    const hasMore = entities.length > realLimit;
-    const data = entities.slice(0, realLimit);
+    const result = await queryBuilder.getRawAndEntities();
+    const hasMore = result.entities.length > realLimit;
+    const data = result.entities.slice(0, realLimit);
+    const rawData = result.raw.slice(0, realLimit);
+
+    // Map viewCount from raw data to entities
+    data.forEach((event, index) => {
+      (event as any).viewCount = parseInt(rawData[index]?.viewCount || '0', 10);
+    });
 
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
@@ -136,7 +149,10 @@ export class SiteEventRepository implements ISiteEventRepository {
       .leftJoinAndSelect('event.user', 'user')
       .leftJoinAndSelect('event.admin', 'admin')
       .leftJoinAndSelect('event.banners', 'banners')
-      .loadRelationCountAndMap('event.viewCount', 'event.views', 'view')
+      .addSelect(
+        `(SELECT COUNT(DISTINCT user_id) FROM site_event_views WHERE event_id = event.id AND user_id IS NOT NULL)`,
+        'viewCount',
+      )
       .where('event.deletedAt IS NULL');
 
     // Filter by siteId (UUID or slug)

@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IPocaEventRepository } from '../../../infrastructure/persistence/repositories/poca-event.repository';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeletePocaEventCommand {
   eventId: string;
@@ -16,7 +20,7 @@ export class DeletePocaEventUseCase {
     const event = await this.pocaEventRepository.findById(command.eventId);
 
     if (!event) {
-      throw new NotFoundException('Event not found');
+      throw notFound(MessageKeys.EVENT_NOT_FOUND);
     }
 
     await this.pocaEventRepository.softDelete(command.eventId);

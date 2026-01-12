@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteCategoryCommand {
   categoryId: string;
@@ -15,7 +16,7 @@ export class DeleteCategoryUseCase {
   async execute(command: DeleteCategoryCommand): Promise<void> {
     const category = await this.categoryRepository.findById(command.categoryId);
     if (!category) {
-      throw new NotFoundException('Category not found');
+      throw notFound(MessageKeys.CATEGORY_NOT_FOUND);
     }
 
     // Soft delete

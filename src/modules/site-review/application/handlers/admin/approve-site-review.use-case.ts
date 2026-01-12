@@ -1,11 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteReviewRepository } from '../../../infrastructure/persistence/repositories/site-review.repository';
 import { SiteReview } from '../../../domain/entities/site-review.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface ApproveSiteReviewCommand {
   reviewId: string;
@@ -22,11 +22,11 @@ export class ApproveSiteReviewUseCase {
     const review = await this.siteReviewRepository.findById(command.reviewId);
 
     if (!review) {
-      throw new NotFoundException('Site review not found');
+      throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND);
     }
 
     if (review.isPublished) {
-      throw new BadRequestException('Site review has already been approved');
+      throw badRequest(MessageKeys.SITE_REVIEW_ALREADY_APPROVED);
     }
 
     await this.siteReviewRepository.update(command.reviewId, {
@@ -46,7 +46,7 @@ export class ApproveSiteReviewUseCase {
     ]);
 
     if (!reloaded) {
-      throw new NotFoundException('Site review not found after update');
+      throw notFound(MessageKeys.SITE_REVIEW_NOT_FOUND_AFTER_UPDATE);
     }
 
     return reloaded;

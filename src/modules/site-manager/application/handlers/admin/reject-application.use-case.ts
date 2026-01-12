@@ -1,12 +1,12 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { SiteManagerApplication } from '../../../domain/entities/site-manager-application.entity';
 import { SiteManagerApplicationStatus } from '../../../domain/entities/site-manager-application.entity';
 import { ISiteManagerApplicationRepository } from '../../../infrastructure/persistence/repositories/site-manager-application.repository';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RejectApplicationCommand {
   applicationId: string;
@@ -24,11 +24,11 @@ export class RejectApplicationUseCase {
     const application = await this.applicationRepository.findById(command.applicationId);
 
     if (!application) {
-      throw new NotFoundException('Application not found');
+      throw notFound(MessageKeys.APPLICATION_NOT_FOUND);
     }
 
     if (application.status !== SiteManagerApplicationStatus.PENDING) {
-      throw new BadRequestException('Application has already been processed');
+      throw badRequest(MessageKeys.APPLICATION_ALREADY_PROCESSED);
     }
 
     // Update application

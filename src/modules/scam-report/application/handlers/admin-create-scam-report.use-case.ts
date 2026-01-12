@@ -1,10 +1,14 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { ScamReport, ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { ScamReportImage } from '../../domain/entities/scam-report-image.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
 import { ISiteRepository } from '../../../site/infrastructure/persistence/repositories/site.repository';
 import { TransactionService } from '../../../../shared/services/transaction.service';
+import {
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface AdminCreateScamReportCommand {
   adminId: string;
@@ -35,7 +39,7 @@ export class AdminCreateScamReportUseCase {
     if (command.siteId) {
       const site = await this.siteRepository.findById(command.siteId);
       if (!site) {
-        throw new BadRequestException('Site not found');
+        throw badRequest(MessageKeys.SITE_NOT_FOUND);
       }
     }
 

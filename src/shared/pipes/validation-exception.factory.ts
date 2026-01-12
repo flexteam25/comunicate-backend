@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, HttpStatus } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
 import { ApiExceptionWithKey } from '../exceptions/api-exception-with-key';
 import { propertyNameToNaturalLanguage } from '../utils/property-name.util';
@@ -143,5 +143,9 @@ export function validationExceptionFactory(
   const firstError = errors[0];
   const { messageKey, params } = mapValidationErrorToMessageKey(firstError);
 
-  return new ApiExceptionWithKey(messageKey, 400, params) as BadRequestException;
+  return new ApiExceptionWithKey(
+    messageKey,
+    HttpStatus.BAD_REQUEST,
+    params,
+  ) as BadRequestException;
 }

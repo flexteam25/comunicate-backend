@@ -1,13 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-  Inject,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PostCategory } from '../../../domain/entities/post-category.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RestoreCategoryCommand {
   categoryId: string;
@@ -30,12 +30,12 @@ export class RestoreCategoryUseCase {
     });
 
     if (!category) {
-      throw new NotFoundException('Category not found');
+      throw notFound(MessageKeys.CATEGORY_NOT_FOUND);
     }
 
     // Check if already restored
     if (!category.deletedAt) {
-      throw new BadRequestException('Category is not deleted');
+      throw badRequest(MessageKeys.CATEGORY_NOT_DELETED);
     }
 
     // Restore the category

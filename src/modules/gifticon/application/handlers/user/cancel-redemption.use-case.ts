@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import {
   GifticonRedemption,
@@ -23,6 +17,12 @@ import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
+import {
+  notFound,
+  forbidden,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface CancelRedemptionCommand {
   redemptionId: string;
@@ -57,15 +57,15 @@ export class CancelRedemptionUseCase {
     const redemption = await this.redemptionRepository.findById(command.redemptionId);
 
     if (!redemption) {
-      throw new NotFoundException('Redemption not found');
+      throw notFound(MessageKeys.REDEMPTION_NOT_FOUND);
     }
 
     if (redemption.userId !== command.userId) {
-      throw new ForbiddenException('You can only cancel your own redemptions');
+      throw forbidden(MessageKeys.CAN_ONLY_CANCEL_OWN_REDEMPTIONS);
     }
 
     if (redemption.status !== GifticonRedemptionStatus.PENDING) {
-      throw new BadRequestException('Only pending redemptions can be cancelled');
+      throw badRequest(MessageKeys.ONLY_PENDING_REDEMPTIONS_CAN_BE_CANCELLED);
     }
 
     // Execute refund and status update in transaction
@@ -79,7 +79,7 @@ export class CancelRedemptionUseCase {
         });
 
         if (!userProfile) {
-          throw new NotFoundException('User profile not found');
+          throw notFound(MessageKeys.USER_PROFILE_NOT_FOUND);
         }
 
         // Refund points to user
@@ -145,7 +145,7 @@ export class CancelRedemptionUseCase {
         });
 
         if (!updated) {
-          throw new NotFoundException('Redemption not found after update');
+          throw notFound(MessageKeys.REDEMPTION_NOT_FOUND_AFTER_UPDATE);
         }
 
         return updated;

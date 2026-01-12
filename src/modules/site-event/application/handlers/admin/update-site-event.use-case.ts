@@ -1,15 +1,15 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager, In } from 'typeorm';
 import { SiteEvent } from '../../../domain/entities/site-event.entity';
 import { SiteEventBanner } from '../../../domain/entities/site-event-banner.entity';
 import { ISiteEventRepository } from '../../../infrastructure/persistence/repositories/site-event.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateSiteEventCommand {
   eventId: string;
@@ -41,14 +41,14 @@ export class UpdateSiteEventUseCase {
     ]);
 
     if (!existingEvent) {
-      throw new NotFoundException('Event not found');
+      throw notFound(MessageKeys.EVENT_NOT_FOUND);
     }
 
     // Validate date range if dates are being updated
     const startDate = command.startDate || existingEvent.startDate;
     const endDate = command.endDate || existingEvent.endDate;
     if (endDate <= startDate) {
-      throw new BadRequestException('End date must be after start date');
+      throw badRequest(MessageKeys.START_DATE_MUST_BE_BEFORE_END_DATE);
     }
 
     // Validate and upload new banners before transaction
@@ -78,7 +78,7 @@ export class UpdateSiteEventUseCase {
       const totalBanners = existingBannerCount + newBannerCount;
 
       if (totalBanners > 10) {
-        throw new BadRequestException('Maximum 10 banners allowed per event');
+        throw badRequest(MessageKeys.MAX_BANNERS_EXCEEDED, { maxBanners: 10 });
       }
 
       // Calculate starting order for new banners
@@ -89,20 +89,23 @@ export class UpdateSiteEventUseCase {
 
         // Validate: banner must have either image or linkUrl
         if (!banner.image && !banner.linkUrl) {
-          throw new BadRequestException(
-            `Banner ${i + 1} must have either an image file or a link URL`,
-          );
+          throw badRequest(MessageKeys.BANNER_MUST_HAVE_IMAGE_OR_LINK, {
+            bannerIndex: i + 1,
+          });
         }
 
         if (banner.image) {
           // Upload file if image is provided
           if (banner.image.size > maxSize) {
-            throw new BadRequestException(`Banner ${i + 1} file size exceeds 20MB`);
+            throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
+              fileType: `banner ${i + 1}`,
+              maxSize: '20MB',
+            });
           }
           if (!allowedTypes.test(banner.image.mimetype)) {
-            throw new BadRequestException(
-              `Invalid banner ${i + 1} file type. Allowed: jpg, jpeg, png, webp`,
-            );
+            throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+              allowedTypes: 'jpg, jpeg, png, webp',
+            });
           }
 
           const uploadResult = await this.uploadService.uploadImage(banner.image, {
@@ -133,9 +136,9 @@ export class UpdateSiteEventUseCase {
         const existingBannerIds = existingEvent.banners.map((b) => b.id);
         for (const deleteId of command.deleteBannerIds) {
           if (!existingBannerIds.includes(deleteId)) {
-            throw new BadRequestException(
-              `Banner with ID ${deleteId} does not belong to this event`,
-            );
+            throw badRequest(MessageKeys.BANNER_DOES_NOT_BELONG_TO_EVENT, {
+              bannerId: deleteId,
+            });
           }
         }
       }

@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { ScamReport, ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { ScamReportImage } from '../../domain/entities/scam-report-image.entity';
@@ -16,6 +10,12 @@ import { RedisChannel } from '../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
+import {
+  notFound,
+  forbidden,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateScamReportCommand {
   reportId: string;
@@ -46,15 +46,15 @@ export class UpdateScamReportUseCase {
     const report = await this.scamReportRepository.findById(command.reportId);
 
     if (!report) {
-      throw new NotFoundException('Scam report not found');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND);
     }
 
     if (report.userId !== command.userId) {
-      throw new ForbiddenException('You can only update your own scam reports');
+      throw forbidden(MessageKeys.CAN_ONLY_UPDATE_OWN_SCAM_REPORTS);
     }
 
     if (report.status !== ScamReportStatus.PENDING) {
-      throw new BadRequestException('You can only update pending scam reports');
+      throw badRequest(MessageKeys.CAN_ONLY_UPDATE_PENDING_SCAM_REPORTS);
     }
 
     const updatedReport = await this.transactionService.executeInTransaction(
@@ -97,7 +97,7 @@ export class UpdateScamReportUseCase {
     );
 
     if (!updatedReport) {
-      throw new NotFoundException('Scam report not found after update');
+      throw notFound(MessageKeys.SCAM_REPORT_NOT_FOUND_AFTER_UPDATE);
     }
 
     // Reload with all relations and reaction counts for event
