@@ -1,13 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IBadgeRepository } from '../../../infrastructure/persistence/repositories/badge.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 import { Badge } from '../../../domain/entities/badge.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RestoreBadgeCommand {
   badgeId: string;
@@ -30,11 +30,11 @@ export class RestoreBadgeUseCase {
         withDeleted: true,
       });
       if (!badge) {
-        throw new NotFoundException('Badge not found');
+        throw notFound(MessageKeys.BADGE_NOT_FOUND);
       }
 
       if (!badge.deletedAt) {
-        throw new BadRequestException('Badge is not deleted');
+        throw badRequest(MessageKeys.BADGE_IS_NOT_DELETED);
       }
 
       await badgeRepo.restore(command.badgeId);

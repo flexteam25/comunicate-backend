@@ -1,15 +1,15 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
 import { ISiteBadgeRepository } from '../../../infrastructure/persistence/repositories/site-badge.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Badge, BadgeType } from '../../../../badge/domain/entities/badge.entity';
 import { SiteBadge } from '../../../domain/entities/site-badge.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface AssignBadgeCommand {
   siteId: string;
@@ -31,7 +31,7 @@ export class AssignBadgeToSiteUseCase {
     // Check if site exists
     const site = await this.siteRepository.findById(command.siteId);
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Check if badge exists, is active, and is of type 'site'
@@ -44,10 +44,10 @@ export class AssignBadgeToSiteUseCase {
       },
     });
     if (!badge) {
-      throw new BadRequestException('Badge not found');
+      throw badRequest(MessageKeys.BADGE_NOT_FOUND);
     }
     if (badge.badgeType !== BadgeType.SITE) {
-      throw new BadRequestException('Badge must be of type "site"');
+      throw badRequest(MessageKeys.BADGE_WRONG_TYPE);
     }
 
     // Check if already assigned
@@ -56,7 +56,7 @@ export class AssignBadgeToSiteUseCase {
       command.badgeId,
     );
     if (hasBadge) {
-      throw new BadRequestException('Badge already assigned to this site');
+      throw badRequest(MessageKeys.BADGE_ALREADY_ASSIGNED_TO_SITE);
     }
 
     // Assign badge

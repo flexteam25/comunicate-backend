@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
 import { ISiteBadgeRepository } from '../../../infrastructure/persistence/repositories/site-badge.repository';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RemoveBadgeCommand {
   siteId: string;
@@ -20,7 +24,7 @@ export class RemoveBadgeFromSiteUseCase {
     // Check if site exists
     const site = await this.siteRepository.findById(command.siteId);
     if (!site) {
-      throw new NotFoundException('Site not found');
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Remove badge

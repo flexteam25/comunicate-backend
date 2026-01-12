@@ -1,13 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Site } from '../../../domain/entities/site.entity';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RestoreSiteCommand {
   siteId: string;
@@ -31,11 +31,11 @@ export class RestoreSiteUseCase {
           withDeleted: true,
         });
         if (!site) {
-          throw new NotFoundException('Site not found');
+          throw notFound(MessageKeys.SITE_NOT_FOUND);
         }
 
         if (!site.deletedAt) {
-          throw new BadRequestException('Site is not deleted');
+          throw badRequest(MessageKeys.SITE_IS_NOT_DELETED);
         }
 
         await siteRepo.restore(command.siteId);
@@ -44,7 +44,7 @@ export class RestoreSiteUseCase {
           where: { id: command.siteId, deletedAt: null },
         });
         if (!restored) {
-          throw new NotFoundException('Site not found after restore');
+          throw notFound(MessageKeys.SITE_NOT_FOUND_AFTER_RESTORE);
         }
         return restored;
       },

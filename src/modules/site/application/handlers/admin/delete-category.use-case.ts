@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
 import { Site } from '../../../domain/entities/site.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteCategoryCommand {
   categoryId: string;
@@ -23,12 +28,12 @@ export class DeleteCategoryUseCase {
         withDeleted: true,
       });
       if (!category) {
-        throw new NotFoundException('Category not found');
+        throw notFound(MessageKeys.CATEGORY_NOT_FOUND);
       }
 
       // Check if already soft deleted
       if (category.deletedAt) {
-        throw new BadRequestException('Category is already deleted');
+        throw badRequest(MessageKeys.CATEGORY_IS_ALREADY_DELETED);
       }
 
       // Check if category is used by any sites
@@ -36,9 +41,9 @@ export class DeleteCategoryUseCase {
         where: { categoryId: command.categoryId, deletedAt: null },
       });
       if (usedCount > 0) {
-        throw new BadRequestException(
-          `Cannot delete category. It is used by ${usedCount} site(s)`,
-        );
+        throw badRequest(MessageKeys.CANNOT_DELETE_CATEGORY_IN_USE, {
+          siteCount: usedCount,
+        });
       }
 
       // Soft delete

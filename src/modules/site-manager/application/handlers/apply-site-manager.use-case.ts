@@ -1,14 +1,14 @@
-import {
-  Injectable,
-  BadRequestException,
-  ConflictException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { SiteManagerApplication } from '../../domain/entities/site-manager-application.entity';
 import { SiteManagerApplicationStatus } from '../../domain/entities/site-manager-application.entity';
 import { ISiteManagerApplicationRepository } from '../../infrastructure/persistence/repositories/site-manager-application.repository';
 import { ISiteManagerRepository } from '../../infrastructure/persistence/repositories/site-manager.repository';
 import { ISiteRepository } from '../../../site/infrastructure/persistence/repositories/site.repository';
+import {
+  badRequest,
+  conflict,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface ApplySiteManagerCommand {
   userId: string;
@@ -31,7 +31,7 @@ export class ApplySiteManagerUseCase {
     // Validate site exists
     const site = await this.siteRepository.findById(command.siteId);
     if (!site) {
-      throw new BadRequestException('Site not found');
+      throw badRequest(MessageKeys.SITE_NOT_FOUND);
     }
 
     // Check if user is already a manager of this site
@@ -40,7 +40,7 @@ export class ApplySiteManagerUseCase {
       command.userId,
     );
     if (existingManager) {
-      throw new ConflictException('User is already a manager for this site');
+      throw conflict(MessageKeys.USER_ALREADY_MANAGER_FOR_SITE);
     }
 
     // Check existing applications
@@ -50,7 +50,7 @@ export class ApplySiteManagerUseCase {
       SiteManagerApplicationStatus.PENDING,
     );
     if (existingPending) {
-      throw new ConflictException('You already have a pending application');
+      throw conflict(MessageKeys.PENDING_APPLICATION_EXISTS);
     }
 
     const existingApproved = await this.applicationRepository.findBySiteAndUser(
@@ -59,7 +59,7 @@ export class ApplySiteManagerUseCase {
       SiteManagerApplicationStatus.APPROVED,
     );
     if (existingApproved) {
-      throw new ConflictException('Application was already approved');
+      throw conflict(MessageKeys.APPROVED_APPLICATION_EXISTS);
     }
 
     // If rejected application exists, create new one (re-apply)

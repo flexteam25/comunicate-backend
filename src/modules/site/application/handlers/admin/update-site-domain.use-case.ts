@@ -1,8 +1,13 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { SiteDomain } from '../../../domain/entities/site-domain.entity';
 import { Site } from '../../../domain/entities/site.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface UpdateSiteDomainCommand {
   siteId: string;
@@ -27,7 +32,7 @@ export class UpdateSiteDomainUseCase {
           where: { id: command.siteId, deletedAt: null },
         });
         if (!site) {
-          throw new NotFoundException('Site not found');
+          throw notFound(MessageKeys.SITE_NOT_FOUND);
         }
 
         // Load domain
@@ -36,7 +41,7 @@ export class UpdateSiteDomainUseCase {
           withDeleted: false,
         });
         if (!domainEntity) {
-          throw new NotFoundException('Domain not found');
+          throw notFound(MessageKeys.DOMAIN_NOT_FOUND);
         }
 
         // Domain change uniqueness
@@ -50,7 +55,7 @@ export class UpdateSiteDomainUseCase {
             withDeleted: true,
           });
           if (existingDomain) {
-            throw new BadRequestException('Domain already exists');
+            throw badRequest(MessageKeys.DOMAIN_ALREADY_EXISTS);
           }
           domainEntity.domain = normalized;
         }
