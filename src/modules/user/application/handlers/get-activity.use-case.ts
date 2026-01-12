@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { IUserFavoriteSiteRepository } from '../../infrastructure/persistence/repositories/user-favorite-site.repository';
 import { IUserHistorySiteRepository } from '../../infrastructure/persistence/repositories/user-history-site.repository';
+import { IUserSearchSiteRepository } from '../../infrastructure/persistence/repositories/user-search-site.repository';
 import { ISiteRepository } from '../../../site/infrastructure/persistence/repositories/site.repository';
 import { Site } from '../../../site/domain/entities/site.entity';
 
@@ -11,6 +12,7 @@ export interface GetActivityCommand {
 export interface ActivityResult {
   favorite: Site[];
   recent: Site[];
+  searchHistory: { searchQuery: string; createdAt: Date }[];
 }
 
 @Injectable()
@@ -20,6 +22,8 @@ export class GetActivityUseCase {
     private readonly favoriteRepository: IUserFavoriteSiteRepository,
     @Inject('IUserHistorySiteRepository')
     private readonly historyRepository: IUserHistorySiteRepository,
+    @Inject('IUserSearchSiteRepository')
+    private readonly searchHistoryRepository: IUserSearchSiteRepository,
     @Inject('ISiteRepository')
     private readonly siteRepository: ISiteRepository,
   ) {}
@@ -64,9 +68,16 @@ export class GetActivityUseCase {
       .map((id) => recentSiteMap.get(id))
       .filter((site): site is Site => site !== undefined);
 
+    // Get 20 recent search history
+    const searchHistory = await this.searchHistoryRepository.findRecentSearchHistory(
+      command.userId,
+      20,
+    );
+
     return {
       favorite: orderedFavoriteSites,
       recent: orderedRecentSites,
+      searchHistory,
     };
   }
 }

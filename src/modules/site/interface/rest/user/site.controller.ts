@@ -109,8 +109,10 @@ export class UserSiteController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
+  @UseGuards(OptionalJwtAuthGuard)
   async listSites(
     @Query() query: ListSitesQueryDto,
+    @CurrentUser() user?: CurrentUserPayload,
   ): Promise<ApiResponse<CursorPaginatedSitesResponse>> {
     const result = await this.listSitesUseCase.execute({
       filters: {
@@ -124,6 +126,7 @@ export class UserSiteController {
       limit: query.limit,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
+      userId: user?.userId,
     });
     const sites = result.data.map((site) => this.mapSiteToResponse(site));
 

@@ -5,6 +5,7 @@ import { UserOldPassword } from './domain/entities/user-old-password.entity';
 import { UserBadge } from './domain/entities/user-badge.entity';
 import { UserFavoriteSite } from './domain/entities/user-favorite-site.entity';
 import { UserHistorySite } from './domain/entities/user-history-site.entity';
+import { UserSearchSite } from './domain/entities/user-search-site.entity';
 import { UserComment } from './domain/entities/user-comment.entity';
 import { Badge } from '../badge/domain/entities/badge.entity';
 import { UserRepository } from './infrastructure/persistence/typeorm/user.repository';
@@ -12,6 +13,8 @@ import { UserOldPasswordRepository } from './infrastructure/persistence/typeorm/
 import { UserBadgeRepository } from './infrastructure/persistence/typeorm/user-badge.repository';
 import { UserFavoriteSiteRepository } from './infrastructure/persistence/typeorm/user-favorite-site.repository';
 import { UserHistorySiteRepository } from './infrastructure/persistence/typeorm/user-history-site.repository';
+import { UserHistorySitePersistenceModule } from './user-history-site-persistence.module';
+import { UserSearchSitePersistenceModule } from './user-search-site-persistence.module';
 import { ChangePasswordUseCase } from './application/handlers/change-password.use-case';
 import { UpdateProfileUseCase } from './application/handlers/update-profile.use-case';
 import { AssignBadgeUseCase } from './application/handlers/admin/assign-badge.use-case';
@@ -29,6 +32,8 @@ import { AddFavoriteSiteUseCase } from './application/handlers/add-favorite-site
 import { RemoveFavoriteSiteUseCase } from './application/handlers/remove-favorite-site.use-case';
 import { ListFavoriteSitesUseCase } from './application/handlers/list-favorite-sites.use-case';
 import { GetActivityUseCase } from './application/handlers/get-activity.use-case';
+import { SaveSearchHistoryUseCase } from './application/handlers/save-search-history.use-case';
+import { GetSearchHistoryUseCase } from './application/handlers/get-search-history.use-case';
 import { PasswordService } from '../../shared/services/password.service';
 import { UploadModule } from '../../shared/services/upload';
 import { AuthPersistenceModule } from '../auth/auth-persistence.module';
@@ -43,6 +48,7 @@ import { BadgeModule } from '../badge/badge.module';
       UserBadge,
       UserFavoriteSite,
       UserHistorySite,
+      UserSearchSite,
       UserComment,
       Badge,
       PointTransaction,
@@ -52,6 +58,8 @@ import { BadgeModule } from '../badge/badge.module';
     SiteModule,
     BadgeModule,
     AdminGuardsModule,
+    UserHistorySitePersistenceModule,
+    UserSearchSitePersistenceModule,
   ],
   controllers: [UserController, AdminUserController],
   providers: [
@@ -86,6 +94,8 @@ import { BadgeModule } from '../badge/badge.module';
     RemoveFavoriteSiteUseCase,
     ListFavoriteSitesUseCase,
     GetActivityUseCase,
+    SaveSearchHistoryUseCase,
+    GetSearchHistoryUseCase,
     AssignBadgeUseCase,
     RemoveBadgeUseCase,
     ListUsersUseCase,

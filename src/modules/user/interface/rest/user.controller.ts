@@ -48,6 +48,7 @@ import { AddFavoriteSiteUseCase } from '../../application/handlers/add-favorite-
 import { RemoveFavoriteSiteUseCase } from '../../application/handlers/remove-favorite-site.use-case';
 import { ListFavoriteSitesUseCase } from '../../application/handlers/list-favorite-sites.use-case';
 import { GetActivityUseCase } from '../../application/handlers/get-activity.use-case';
+import { GetSearchHistoryUseCase } from '../../application/handlers/get-search-history.use-case';
 import { SiteResponse } from '../../../site/interface/rest/dto/site-response.dto';
 import { Site } from '../../../site/domain/entities/site.entity';
 import { Request } from 'express';
@@ -71,6 +72,7 @@ export class UserController {
     private readonly removeFavoriteSiteUseCase: RemoveFavoriteSiteUseCase,
     private readonly listFavoriteSitesUseCase: ListFavoriteSitesUseCase,
     private readonly getActivityUseCase: GetActivityUseCase,
+    private readonly getSearchHistoryUseCase: GetSearchHistoryUseCase,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -457,7 +459,13 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async getActivity(
     @CurrentUser() user: CurrentUserPayload,
-  ): Promise<ApiResponse<{ favorite: SiteResponse[]; recent: SiteResponse[] }>> {
+  ): Promise<
+    ApiResponse<{
+      favorite: SiteResponse[];
+      recent: SiteResponse[];
+      searchHistory: { searchQuery: string; createdAt: Date }[];
+    }>
+  > {
     const result = await this.getActivityUseCase.execute({
       userId: user.userId,
     });
@@ -528,6 +536,21 @@ export class UserController {
     return ApiResponseUtil.success({
       favorite: favoriteSites,
       recent: recentSites,
+      searchHistory: result.searchHistory,
     });
+  }
+
+  @Get('search-history')
+  @HttpCode(HttpStatus.OK)
+  async getSearchHistory(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('limit') limit?: string,
+  ): Promise<ApiResponse<{ searchQuery: string; createdAt: Date }[]>> {
+    const result = await this.getSearchHistoryUseCase.execute({
+      userId: user.userId,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+
+    return ApiResponseUtil.success(result);
   }
 }

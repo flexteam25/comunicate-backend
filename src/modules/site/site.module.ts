@@ -28,6 +28,7 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
 import { UploadModule } from '../../shared/services/upload';
 import { SitePersistenceModule } from './site-persistence.module';
 import { UserHistorySitePersistenceModule } from '../user/user-history-site-persistence.module';
+import { UserSearchSitePersistenceModule } from '../user/user-search-site-persistence.module';
 import { UserPersistenceModule } from '../user/user-persistence.module';
 import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { OptionalJwtAuthGuard } from '../../shared/guards/optional-jwt-auth.guard';
@@ -46,6 +47,7 @@ import { ConfigModule } from '@nestjs/config';
     TierModule,
     AdminGuardsModule,
     UserHistorySitePersistenceModule,
+    UserSearchSitePersistenceModule,
     UserPersistenceModule,
     AuthPersistenceModule,
     UploadModule.register({ storageType: 'local' }),

@@ -27,6 +27,7 @@ import { UserPermission } from './modules/user/domain/entities/user-permission.e
 import { UserBadge } from './modules/user/domain/entities/user-badge.entity';
 import { UserFavoriteSite } from './modules/user/domain/entities/user-favorite-site.entity';
 import { UserHistorySite } from './modules/user/domain/entities/user-history-site.entity';
+import { UserSearchSite } from './modules/user/domain/entities/user-search-site.entity';
 import { UserComment } from './modules/user/domain/entities/user-comment.entity';
 import { Admin } from './modules/admin/domain/entities/admin.entity';
 import { AdminToken } from './modules/admin/domain/entities/admin-token.entity';
@@ -108,6 +109,7 @@ import { SiteEventView } from './modules/site-event/domain/entities/site-event-v
         UserBadge,
         UserFavoriteSite,
         UserHistorySite,
+        UserSearchSite,
         UserComment,
         Admin,
         AdminToken,
