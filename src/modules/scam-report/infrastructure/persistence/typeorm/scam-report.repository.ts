@@ -166,11 +166,31 @@ export class ScamReportRepository implements IScamReportRepository {
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
+    // Create a map of report.id -> raw data to handle cases where joins create multiple rows per report
+    const rawDataMap = new Map<string, Record<string, unknown>>();
+    raw.forEach((rawRow: Record<string, unknown>) => {
+      const reportId =
+        (rawRow.report_id as string) ||
+        (rawRow.reportId as string) ||
+        (rawRow.scam_report_id as string) ||
+        (rawRow.scamReportId as string) ||
+        (rawRow['report_id'] as string) ||
+        (rawRow['reportId'] as string);
+      if (reportId && !rawDataMap.has(reportId)) {
+        rawDataMap.set(reportId, rawRow);
+      }
+    });
+
     // Map reaction counts from raw data to entities
-    data.forEach((report, index) => {
-      const rawData = raw[index];
-      (report as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-      (report as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+    data.forEach((report) => {
+      const rawData = rawDataMap.get(report.id);
+      if (rawData) {
+        (report as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
+        (report as any).dislikeCount = parseInt(String(rawData.dislikeCount || '0'), 10);
+      } else {
+        (report as any).likeCount = 0;
+        (report as any).dislikeCount = 0;
+      }
     });
 
     let nextCursor: string | null = null;
@@ -253,11 +273,31 @@ export class ScamReportRepository implements IScamReportRepository {
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
+    // Create a map of report.id -> raw data to handle cases where joins create multiple rows per report
+    const rawDataMap = new Map<string, Record<string, unknown>>();
+    raw.forEach((rawRow: Record<string, unknown>) => {
+      const reportId =
+        (rawRow.report_id as string) ||
+        (rawRow.reportId as string) ||
+        (rawRow.scam_report_id as string) ||
+        (rawRow.scamReportId as string) ||
+        (rawRow['report_id'] as string) ||
+        (rawRow['reportId'] as string);
+      if (reportId && !rawDataMap.has(reportId)) {
+        rawDataMap.set(reportId, rawRow);
+      }
+    });
+
     // Map reaction counts from raw data to entities
-    data.forEach((report, index) => {
-      const rawData = raw[index];
-      (report as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-      (report as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+    data.forEach((report) => {
+      const rawData = rawDataMap.get(report.id);
+      if (rawData) {
+        (report as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
+        (report as any).dislikeCount = parseInt(String(rawData.dislikeCount || '0'), 10);
+      } else {
+        (report as any).likeCount = 0;
+        (report as any).dislikeCount = 0;
+      }
     });
 
     let nextCursor: string | null = null;
@@ -358,11 +398,31 @@ export class ScamReportRepository implements IScamReportRepository {
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
+    // Create a map of report.id -> raw data to handle cases where joins create multiple rows per report
+    const rawDataMap = new Map<string, Record<string, unknown>>();
+    raw.forEach((rawRow: Record<string, unknown>) => {
+      const reportId =
+        (rawRow.report_id as string) ||
+        (rawRow.reportId as string) ||
+        (rawRow.scam_report_id as string) ||
+        (rawRow.scamReportId as string) ||
+        (rawRow['report_id'] as string) ||
+        (rawRow['reportId'] as string);
+      if (reportId && !rawDataMap.has(reportId)) {
+        rawDataMap.set(reportId, rawRow);
+      }
+    });
+
     // Map reaction counts from raw data to entities
-    data.forEach((report, index) => {
-      const rawData = raw[index];
-      (report as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-      (report as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+    data.forEach((report) => {
+      const rawData = rawDataMap.get(report.id);
+      if (rawData) {
+        (report as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
+        (report as any).dislikeCount = parseInt(String(rawData.dislikeCount || '0'), 10);
+      } else {
+        (report as any).likeCount = 0;
+        (report as any).dislikeCount = 0;
+      }
     });
 
     let nextCursor: string | null = null;

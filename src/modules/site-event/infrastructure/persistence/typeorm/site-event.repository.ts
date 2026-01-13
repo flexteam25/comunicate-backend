@@ -104,11 +104,30 @@ export class SiteEventRepository implements ISiteEventRepository {
     const result = await queryBuilder.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
     const data = result.entities.slice(0, realLimit);
-    const rawData = result.raw.slice(0, realLimit);
+
+    // Create a map of event.id -> raw data to handle cases where joins create multiple rows per event
+    const rawDataMap = new Map<string, Record<string, unknown>>();
+    result.raw.forEach((rawRow: Record<string, unknown>) => {
+      const eventId =
+        (rawRow.event_id as string) ||
+        (rawRow.eventId as string) ||
+        (rawRow.site_event_id as string) ||
+        (rawRow.siteEventId as string) ||
+        (rawRow['event_id'] as string) ||
+        (rawRow['eventId'] as string);
+      if (eventId && !rawDataMap.has(eventId)) {
+        rawDataMap.set(eventId, rawRow);
+      }
+    });
 
     // Map viewCount from raw data to entities
-    data.forEach((event, index) => {
-      (event as any).viewCount = parseInt(rawData[index]?.viewCount || '0', 10);
+    data.forEach((event) => {
+      const rawData = rawDataMap.get(event.id);
+      if (rawData) {
+        (event as any).viewCount = parseInt(String(rawData.viewCount || '0'), 10);
+      } else {
+        (event as any).viewCount = 0;
+      }
     });
 
     let nextCursor: string | null = null;

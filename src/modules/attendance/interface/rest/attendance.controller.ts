@@ -51,18 +51,28 @@ export class AttendanceController {
   async createAttendance(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateAttendanceDto,
-  ): Promise<ApiResponse<{ attendanceDate: string }>> {
-    const attendance = await this.createAttendanceUseCase.execute({
+  ): Promise<
+    ApiResponse<{
+      attendanceDate: string;
+      currentStreak: number;
+      totalAttendanceDays: number;
+      attendanceRank: number;
+    }>
+  > {
+    const result = await this.createAttendanceUseCase.execute({
       userId: user.userId,
       message: dto.message,
     });
 
     // Format date to YYYY-MM-DD
-    const attendanceDate = attendance.attendanceDate.toISOString().split('T')[0];
+    const attendanceDate = result.attendance.attendanceDate.toISOString().split('T')[0];
 
     return ApiResponseUtil.success(
       {
         attendanceDate,
+        currentStreak: result.currentStreak,
+        totalAttendanceDays: result.totalAttendanceDays,
+        attendanceRank: result.attendanceRank,
       },
       MessageKeys.ATTENDANCE_CHECKED_SUCCESS,
     );

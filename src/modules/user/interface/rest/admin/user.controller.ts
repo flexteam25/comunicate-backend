@@ -480,7 +480,6 @@ export class AdminUserController {
     const result = await userPostsQuery.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
     const userPostsData = result.entities.slice(0, realLimit);
-    const rawData = result.raw.slice(0, realLimit);
 
     if (userPostsData.length === 0) {
       return ApiResponseUtil.success({
@@ -490,13 +489,27 @@ export class AdminUserController {
       });
     }
 
+    // Create a map of userPost.id -> raw data to handle cases where joins create multiple rows
+    const rawDataMap = new Map<string, Record<string, unknown>>();
+    result.raw.forEach((rawRow: Record<string, unknown>) => {
+      const userPostId =
+        (rawRow.userPost_id as string) ||
+        (rawRow.userPostId as string) ||
+        (rawRow.user_post_id as string) ||
+        (rawRow['userPost_id'] as string) ||
+        (rawRow['userPostId'] as string);
+      if (userPostId && !rawDataMap.has(userPostId)) {
+        rawDataMap.set(userPostId, rawRow);
+      }
+    });
+
     // Map posts in the same order as userPostsData
     const data = userPostsData
-      .map((userPost, index) => {
+      .map((userPost) => {
         const post = userPost.post;
         if (!post) return null;
 
-        const raw = rawData[index] as
+        const raw = rawDataMap.get(userPost.id) as
           | {
               likeCount?: string;
               dislikeCount?: string;

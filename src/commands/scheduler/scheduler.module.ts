@@ -7,7 +7,6 @@ import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerCommand } from './scheduler.command';
 import { LoggerModule } from '../../shared/logger/logger.module';
-import { AttendanceStatisticsSchedulerService } from '../../modules/attendance/infrastructure/queue/attendance-statistics-scheduler.service';
 import { User } from '../../modules/user/domain/entities/user.entity';
 import { UserOldPassword } from '../../modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from '../../modules/auth/domain/entities/user-token.entity';
@@ -183,14 +182,7 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
       },
       inject: [ConfigService],
     }),
-    BullModule.registerQueue({
-      name: 'attendance-statistics',
-      defaultJobOptions: {
-        removeOnComplete: 10,
-        removeOnFail: 20,
-      },
-    }),
   ],
-  providers: [SchedulerCommand, AttendanceStatisticsSchedulerService],
+  providers: [SchedulerCommand],
 })
 export class SchedulerCommandModule {}

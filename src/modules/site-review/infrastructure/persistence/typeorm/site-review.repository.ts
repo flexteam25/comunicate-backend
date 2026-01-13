@@ -214,10 +214,28 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
-    data.forEach((review, index) => {
-      const rawData = raw[index];
-      (review as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-      (review as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+    // Create a map of review.id -> raw data to handle cases where joins create multiple rows per review
+    const rawDataMap = new Map<string, Record<string, unknown>>();
+    raw.forEach((rawRow: Record<string, unknown>) => {
+      const reviewId =
+        (rawRow.review_id as string) ||
+        (rawRow.reviewId as string) ||
+        (rawRow['review_id'] as string) ||
+        (rawRow['reviewId'] as string);
+      if (reviewId && !rawDataMap.has(reviewId)) {
+        rawDataMap.set(reviewId, rawRow);
+      }
+    });
+
+    data.forEach((review) => {
+      const rawData = rawDataMap.get(review.id);
+      if (rawData) {
+        (review as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
+        (review as any).dislikeCount = parseInt(String(rawData.dislikeCount || '0'), 10);
+      } else {
+        (review as any).likeCount = 0;
+        (review as any).dislikeCount = 0;
+      }
     });
 
     let nextCursor: string | null = null;
@@ -372,10 +390,28 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
-    data.forEach((review, index) => {
-      const rawData = raw[index];
-      (review as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-      (review as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+    // Create a map of review.id -> raw data to handle cases where joins create multiple rows per review
+    const rawDataMap = new Map<string, Record<string, unknown>>();
+    raw.forEach((rawRow: Record<string, unknown>) => {
+      const reviewId =
+        (rawRow.review_id as string) ||
+        (rawRow.reviewId as string) ||
+        (rawRow['review_id'] as string) ||
+        (rawRow['reviewId'] as string);
+      if (reviewId && !rawDataMap.has(reviewId)) {
+        rawDataMap.set(reviewId, rawRow);
+      }
+    });
+
+    data.forEach((review) => {
+      const rawData = rawDataMap.get(review.id);
+      if (rawData) {
+        (review as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
+        (review as any).dislikeCount = parseInt(String(rawData.dislikeCount || '0'), 10);
+      } else {
+        (review as any).likeCount = 0;
+        (review as any).dislikeCount = 0;
+      }
     });
 
     let nextCursor: string | null = null;
@@ -462,10 +498,28 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
-    data.forEach((review, index) => {
-      const rawData = raw[index];
-      (review as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-      (review as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+    // Create a map of review.id -> raw data to handle cases where joins create multiple rows per review
+    const rawDataMap = new Map<string, Record<string, unknown>>();
+    raw.forEach((rawRow: Record<string, unknown>) => {
+      const reviewId =
+        (rawRow.review_id as string) ||
+        (rawRow.reviewId as string) ||
+        (rawRow['review_id'] as string) ||
+        (rawRow['reviewId'] as string);
+      if (reviewId && !rawDataMap.has(reviewId)) {
+        rawDataMap.set(reviewId, rawRow);
+      }
+    });
+
+    data.forEach((review) => {
+      const rawData = rawDataMap.get(review.id);
+      if (rawData) {
+        (review as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
+        (review as any).dislikeCount = parseInt(String(rawData.dislikeCount || '0'), 10);
+      } else {
+        (review as any).likeCount = 0;
+        (review as any).dislikeCount = 0;
+      }
     });
 
     let nextCursor: string | null = null;
