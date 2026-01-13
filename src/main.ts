@@ -8,7 +8,10 @@ import { join } from 'path';
 import { LoggerService } from './shared/logger/logger.service';
 import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middleware';
 import { CorsTrustMiddleware } from './shared/middleware/cors-trust.middleware';
+import { IpTrackingMiddleware } from './shared/middleware/ip-tracking.middleware';
+import { IpTrackingInterceptor } from './shared/interceptors/ip-tracking.interceptor';
 import { validationExceptionFactory } from './shared/pipes/validation-exception.factory';
+import { RedisService } from './shared/redis/redis.service';
 
 async function bootstrap() {
   // CORS is handled by CorsTrustMiddleware
@@ -30,6 +33,12 @@ async function bootstrap() {
   // Apply API throttle middleware
   const apiThrottleMiddleware = new ApiThrottleMiddleware(loggerService);
   app.use((req, res, next) => apiThrottleMiddleware.use(req, res, next));
+
+  // Apply IP tracking middleware (after throttle, before validation)
+  const redisService = app.get(RedisService);
+  const ipTrackingMiddleware = new IpTrackingMiddleware(redisService, loggerService);
+  app.use((req, res, next) => ipTrackingMiddleware.use(req, res, next));
+
   // Enable validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -43,6 +52,10 @@ async function bootstrap() {
 
   // Enable ClassSerializerInterceptor to respect @Exclude() decorators
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  // Enable IP tracking interceptor (runs AFTER guards, so req.user is available)
+  const ipTrackingInterceptor = new IpTrackingInterceptor(redisService, loggerService);
+  app.useGlobalInterceptors(ipTrackingInterceptor);
 
 const port = process.env.PORT || 3008;
   await app.listen(port);

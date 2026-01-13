@@ -45,6 +45,11 @@ import { IPostRepository } from '../../../../post/infrastructure/persistence/rep
 import { IPostCommentRepository } from '../../../../post/infrastructure/persistence/repositories/post-comment.repository';
 import { PostComment } from '../../../../post/domain/entities/post-comment.entity';
 import { CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
+import { IUserIpRepository } from '../../../infrastructure/persistence/repositories/user-ip.repository.interface';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { BlockUserIpDto } from '../dto/block-user-ip.dto';
+import { UnblockUserIpDto } from '../dto/unblock-user-ip.dto';
+import { ListUserIpsQueryDto } from '../dto/list-user-ips-query.dto';
 
 @Controller('admin/users')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -73,6 +78,9 @@ export class AdminUserController {
     private readonly postCommentRepository: IPostCommentRepository,
     @InjectRepository(PostComment)
     private readonly postCommentEntityRepository: Repository<PostComment>,
+    @Inject('IUserIpRepository')
+    private readonly userIpRepository: IUserIpRepository,
+    private readonly redisService: RedisService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
     this.adminFrontendUrl =
@@ -769,5 +777,123 @@ export class AdminUserController {
     });
 
     return ApiResponseUtil.success(null, MessageKeys.USER_DELETED_SUCCESS);
+  }
+
+  @Get(':id/ips')
+  @RequirePermission('users.read')
+  @HttpCode(HttpStatus.OK)
+  async listUserIps(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Query() query: ListUserIpsQueryDto,
+  ): Promise<ApiResponse<any>> {
+    const userIps = await this.userIpRepository.findByUserId(userId);
+
+    return ApiResponseUtil.success({
+      userId,
+      ips: userIps.map((ui) => ({
+        id: ui.id,
+        ip: ui.ip,
+        isBlocked: ui.isBlocked,
+        createdAt: ui.createdAt,
+        updatedAt: ui.updatedAt,
+      })),
+      total: userIps.length,
+    });
+  }
+
+  @Post(':id/ips/block')
+  @RequirePermission('users.update')
+  @HttpCode(HttpStatus.OK)
+  async blockUserIp(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Body() dto: BlockUserIpDto,
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    const userIp = await this.userIpRepository.updateBlockStatus(userId, dto.ip, true);
+
+    if (!userIp) {
+      throw notFound(MessageKeys.USER_NOT_FOUND);
+    }
+
+    // Clear blocked IPs cache
+    await this.redisService.clearBlockedIpsCache();
+
+    return ApiResponseUtil.success(
+      {
+        userId: userIp.userId,
+        ip: userIp.ip,
+        isBlocked: userIp.isBlocked,
+      },
+      MessageKeys.BADGE_ASSIGNED_SUCCESS,
+    );
+  }
+
+  @Post(':id/ips/unblock')
+  @RequirePermission('users.update')
+  @HttpCode(HttpStatus.OK)
+  async unblockUserIp(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Body() dto: UnblockUserIpDto,
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    const userIp = await this.userIpRepository.updateBlockStatus(userId, dto.ip, false);
+
+    if (!userIp) {
+      throw notFound(MessageKeys.USER_NOT_FOUND);
+    }
+
+    // Clear blocked IPs cache
+    await this.redisService.clearBlockedIpsCache();
+
+    return ApiResponseUtil.success(
+      {
+        userId: userIp.userId,
+        ip: userIp.ip,
+        isBlocked: userIp.isBlocked,
+      },
+      MessageKeys.BADGE_ASSIGNED_SUCCESS,
+    );
+  }
+
+  @Post('ips/block')
+  @RequirePermission('users.update')
+  @HttpCode(HttpStatus.OK)
+  async blockIp(
+    @Body() dto: { ip: string },
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    await this.userIpRepository.updateBlockStatusByIp(dto.ip, true);
+
+    // Clear blocked IPs cache
+    await this.redisService.clearBlockedIpsCache();
+
+    return ApiResponseUtil.success(
+      {
+        ip: dto.ip,
+        isBlocked: true,
+      },
+      MessageKeys.BADGE_ASSIGNED_SUCCESS,
+    );
+  }
+
+  @Post('ips/unblock')
+  @RequirePermission('users.update')
+  @HttpCode(HttpStatus.OK)
+  async unblockIp(
+    @Body() dto: { ip: string },
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    await this.userIpRepository.updateBlockStatusByIp(dto.ip, false);
+
+    // Clear blocked IPs cache
+    await this.redisService.clearBlockedIpsCache();
+
+    return ApiResponseUtil.success(
+      {
+        ip: dto.ip,
+        isBlocked: false,
+      },
+      MessageKeys.BADGE_ASSIGNED_SUCCESS,
+    );
   }
 }

@@ -3,7 +3,6 @@ import { Injectable } from '@nestjs/common';
 import { ICommand } from './base-command.interface';
 import { SyncUserPostsCommand } from './commands/sync-user-posts.command';
 import { SyncUserCommentsCommand } from './commands/sync-user-comments.command';
-import { AttendanceStatisticsCommand } from './commands/attendance-statistics.command';
 
 interface CliCommandOptions {
   userId?: string;
@@ -25,7 +24,6 @@ export class CliCommand extends CommandRunner {
   constructor(
     private readonly syncUserPostsCommand: SyncUserPostsCommand,
     private readonly syncUserCommentsCommand: SyncUserCommentsCommand,
-    private readonly attendanceStatisticsCommand: AttendanceStatisticsCommand,
   ) {
     super();
     this.registerCommands();
@@ -35,7 +33,6 @@ export class CliCommand extends CommandRunner {
     // Register all available commands
     this.commands.set('sync-user-posts', this.syncUserPostsCommand);
     this.commands.set('sync-user-comments', this.syncUserCommentsCommand);
-    this.commands.set('attendance-statistics', this.attendanceStatisticsCommand);
   }
 
   async run(passedParams: string[], options?: CliCommandOptions): Promise<void> {
@@ -94,6 +91,5 @@ export class CliCommand extends CommandRunner {
     console.log('\nExamples:');
     console.log('  npm run cli:dev -- sync-user-posts --userId=xxx');
     console.log('  npm run cli:dev -- sync-user-comments --userId=xxx');
-    console.log('  npm run cli:dev -- attendance-statistics');
   }
 }

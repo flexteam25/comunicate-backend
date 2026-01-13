@@ -8,6 +8,7 @@ import { UserHistorySite } from './domain/entities/user-history-site.entity';
 import { UserSearchSite } from './domain/entities/user-search-site.entity';
 import { UserComment } from './domain/entities/user-comment.entity';
 import { UserPost } from './domain/entities/user-post.entity';
+import { UserIp } from './domain/entities/user-ip.entity';
 import { Badge } from '../badge/domain/entities/badge.entity';
 import { UserRepository } from './infrastructure/persistence/typeorm/user.repository';
 import { UserOldPasswordRepository } from './infrastructure/persistence/typeorm/user-old-password.repository';
@@ -41,6 +42,8 @@ import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { SiteModule } from '../site/site.module';
 import { BadgeModule } from '../badge/badge.module';
 import { PostPersistenceModule } from '../post/post-persistence.module';
+import { UserIpRepository } from './infrastructure/persistence/repositories/user-ip.repository';
+import { RedisModule } from '../../shared/redis/redis.module';
 
 @Module({
   imports: [
@@ -53,6 +56,7 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
       UserSearchSite,
       UserComment,
       UserPost,
+      UserIp,
       Badge,
       PointTransaction,
     ]),
@@ -65,6 +69,7 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
     UserHistorySitePersistenceModule,
     UserSearchSitePersistenceModule,
     PostPersistenceModule,
+    RedisModule,
   ],
   controllers: [UserController, AdminUserController],
   providers: [
@@ -88,11 +93,16 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
       provide: 'IUserHistorySiteRepository',
       useClass: UserHistorySiteRepository,
     },
+    {
+      provide: 'IUserIpRepository',
+      useClass: UserIpRepository,
+    },
     UserRepository,
     UserOldPasswordRepository,
     UserBadgeRepository,
     UserFavoriteSiteRepository,
     UserHistorySiteRepository,
+    UserIpRepository,
     ChangePasswordUseCase,
     UpdateProfileUseCase,
     AddFavoriteSiteUseCase,
@@ -119,6 +129,8 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
     'IUserBadgeRepository',
     UserFavoriteSiteRepository,
     'IUserFavoriteSiteRepository',
+    UserIpRepository,
+    'IUserIpRepository',
     AssignBadgeUseCase,
     RemoveBadgeUseCase,
   ],

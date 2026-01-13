@@ -9,8 +9,6 @@ import { LoggerModule } from '../logger/logger.module';
 import { RedisModule } from '../redis/redis.module';
 import { QueueService } from './queue.service';
 import { EmailModule } from '../services/email/email.module';
-import { AttendanceModule } from '../../modules/attendance/attendance.module';
-import { AttendanceStatisticsProcessor } from '../../modules/attendance/infrastructure/queue/attendance-statistics.processor';
 import { User } from '../../modules/user/domain/entities/user.entity';
 import { UserOldPassword } from '../../modules/user/domain/entities/user-old-password.entity';
 import { UserToken } from '../../modules/auth/domain/entities/user-token.entity';
@@ -170,7 +168,6 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
       logging: false,
     }),
     EmailModule.forRoot(),
-    AttendanceModule, // Import for AttendanceStatisticsProcessor
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
@@ -187,24 +184,15 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
       },
       inject: [ConfigService],
     }),
-    BullModule.registerQueue(
-      {
-        name: 'email',
-        defaultJobOptions: {
-          removeOnComplete: 10,
-          removeOnFail: 20,
-        },
+    BullModule.registerQueue({
+      name: 'email',
+      defaultJobOptions: {
+        removeOnComplete: 10,
+        removeOnFail: 20,
       },
-      {
-        name: 'attendance-statistics',
-        defaultJobOptions: {
-          removeOnComplete: 10,
-          removeOnFail: 20,
-        },
-      },
-    ),
+    }),
   ],
-  providers: [EmailProcessor, AttendanceStatisticsProcessor, QueueService],
-  exports: [BullModule, EmailProcessor, AttendanceStatisticsProcessor, QueueService],
+  providers: [EmailProcessor, QueueService],
+  exports: [BullModule, EmailProcessor, QueueService],
 })
 export class QueueWorkerModule {}

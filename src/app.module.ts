@@ -42,6 +42,7 @@ import { SiteDomain } from './modules/site/domain/entities/site-domain.entity';
 import { SiteView } from './modules/site/domain/entities/site-view.entity';
 import { Tier } from './modules/tier/domain/entities/tier.entity';
 import { UserProfile } from './modules/user/domain/entities/user-profile.entity';
+import { UserIp } from './modules/user/domain/entities/user-ip.entity';
 import { Inquiry } from './modules/support/domain/entities/inquiry.entity';
 import { Attendance } from './modules/attendance/domain/entities/attendance.entity';
 import { AttendanceStatistic } from './modules/attendance/domain/entities/attendance-statistic.entity';
@@ -126,6 +127,7 @@ import { SiteEventView } from './modules/site-event/domain/entities/site-event-v
         SiteView,
         Tier,
         UserProfile,
+        UserIp,
         Inquiry,
         Attendance,
         AttendanceStatistic,

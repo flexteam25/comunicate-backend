@@ -32,6 +32,7 @@ import { SiteDomain } from '../../modules/site/domain/entities/site-domain.entit
 import { SiteView } from '../../modules/site/domain/entities/site-view.entity';
 import { Tier } from '../../modules/tier/domain/entities/tier.entity';
 import { UserProfile } from '../../modules/user/domain/entities/user-profile.entity';
+import { UserIp } from '../../modules/user/domain/entities/user-ip.entity';
 import { Inquiry } from '../../modules/support/domain/entities/inquiry.entity';
 import { Attendance } from '../../modules/attendance/domain/entities/attendance.entity';
 import { AttendanceStatistic } from '../../modules/attendance/domain/entities/attendance-statistic.entity';
@@ -63,6 +64,10 @@ import { PartnerRequest } from '../../modules/partner/domain/entities/partner-re
 import { SiteEvent } from '../../modules/site-event/domain/entities/site-event.entity';
 import { SiteEventBanner } from '../../modules/site-event/domain/entities/site-event-banner.entity';
 import { SiteEventView } from '../../modules/site-event/domain/entities/site-event-view.entity';
+import { UserIpSyncService } from './user-ip-sync.service';
+import { UserIpRepository } from '../../modules/user/infrastructure/persistence/repositories/user-ip.repository';
+import { RedisModule } from '../../shared/redis/redis.module';
+import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
 
 @Module({
   imports: [
@@ -130,6 +135,7 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
         SiteView,
         Tier,
         UserProfile,
+        UserIp,
         Inquiry,
         Attendance,
         AttendanceStatistic,
@@ -161,6 +167,7 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
         SiteEvent,
         SiteEventBanner,
         SiteEventView,
+        SiteReviewCommentImage,
       ],
       synchronize: false,
       logging: false,
@@ -182,7 +189,17 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
       },
       inject: [ConfigService],
     }),
+    RedisModule,
+    TypeOrmModule.forFeature([UserIp]),
   ],
-  providers: [SchedulerCommand],
+  providers: [
+    SchedulerCommand,
+    UserIpSyncService,
+    {
+      provide: 'IUserIpRepository',
+      useClass: UserIpRepository,
+    },
+    UserIpRepository,
+  ],
 })
 export class SchedulerCommandModule {}

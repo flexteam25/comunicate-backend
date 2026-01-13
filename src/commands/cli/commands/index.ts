@@ -4,4 +4,3 @@
  */
 export { SyncUserPostsCommand } from './sync-user-posts.command';
 export { SyncUserCommentsCommand } from './sync-user-comments.command';
-export { AttendanceStatisticsCommand } from './attendance-statistics.command';

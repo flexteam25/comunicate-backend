@@ -1,6 +1,7 @@
 import { Command, CommandRunner } from 'nest-commander';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { LoggerService } from '../../shared/logger/logger.service';
+import { UserIpSyncService } from './user-ip-sync.service';
 
 @Command({
   name: 'scheduler',
@@ -11,12 +12,16 @@ export class SchedulerCommand extends CommandRunner implements OnModuleInit {
   private isShuttingDown: boolean = false;
   private resolve?: (value: void) => void;
 
-  constructor(private readonly logger: LoggerService) {
+  constructor(
+    private readonly logger: LoggerService,
+    private readonly userIpSyncService: UserIpSyncService, // Inject to ensure service is instantiated
+  ) {
     super();
   }
 
   async onModuleInit() {
     this.setupSignalHandlers();
+    this.logger.info('Scheduler initialized with UserIpSyncService', {}, 'scheduler');
   }
 
   async run(): Promise<void> {
