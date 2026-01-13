@@ -37,6 +37,7 @@ import { ScamReportResponseDto } from '../dto/scam-report-response.dto';
 import { AdminCreateScamReportDto } from '../dto/admin-create-scam-report.dto';
 import { AdminUpdateScamReportDto } from '../dto/admin-update-scam-report.dto';
 import { ApproveScamReportDto } from '../dto/approve-scam-report.dto';
+import { RejectScamReportDto } from '../dto/reject-scam-report.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import {
@@ -208,11 +209,13 @@ export class AdminScamReportController {
   @RequirePermission('scam-reports.moderate')
   async rejectScamReport(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: RejectScamReportDto,
     @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ApiResponse<ScamReportResponseDto>> {
     const fullReport = await this.rejectScamReportUseCase.execute({
       reportId: id,
       adminId: admin.adminId,
+      title: dto.title,
     });
 
     return ApiResponseUtil.success(
@@ -353,9 +356,6 @@ export class AdminScamReportController {
       reportId: id,
     });
 
-    return ApiResponseUtil.success(
-      null,
-      MessageKeys.SCAM_REPORT_DELETED_SUCCESS,
-    );
+    return ApiResponseUtil.success(null, MessageKeys.SCAM_REPORT_DELETED_SUCCESS);
   }
 }

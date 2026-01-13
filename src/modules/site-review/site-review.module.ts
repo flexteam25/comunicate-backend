@@ -13,6 +13,7 @@ import { GetSiteReviewStatisticsUseCase } from './application/handlers/get-site-
 import { ListMySiteReviewsUseCase } from './application/handlers/list-my-site-reviews.use-case';
 import { ReactToSiteReviewUseCase } from './application/handlers/react-to-site-review.use-case';
 import { AddCommentUseCase } from './application/handlers/add-comment.use-case';
+import { UpdateCommentUseCase } from './application/handlers/update-comment.use-case';
 import { DeleteCommentUseCase } from './application/handlers/delete-comment.use-case';
 import { ListCommentsUseCase } from './application/handlers/list-comments.use-case';
 import { ApproveSiteReviewUseCase } from './application/handlers/admin/approve-site-review.use-case';
@@ -42,6 +43,7 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
     ListMySiteReviewsUseCase,
     ReactToSiteReviewUseCase,
     AddCommentUseCase,
+    UpdateCommentUseCase,
     DeleteCommentUseCase,
     ListCommentsUseCase,
     ApproveSiteReviewUseCase,

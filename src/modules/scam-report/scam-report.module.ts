@@ -9,6 +9,7 @@ import { DeleteScamReportUseCase } from './application/handlers/delete-scam-repo
 import { ApproveScamReportUseCase } from './application/handlers/approve-scam-report.use-case';
 import { RejectScamReportUseCase } from './application/handlers/reject-scam-report.use-case';
 import { AddCommentUseCase } from './application/handlers/add-comment.use-case';
+import { UpdateCommentUseCase } from './application/handlers/update-comment.use-case';
 import { DeleteCommentUseCase } from './application/handlers/delete-comment.use-case';
 import { ListScamReportCommentsUseCase } from './application/handlers/list-scam-report-comments.use-case';
 import { ReactToScamReportUseCase } from './application/handlers/react-to-scam-report.use-case';
@@ -40,6 +41,7 @@ import { AuthPersistenceModule } from '../auth/auth-persistence.module';
     ApproveScamReportUseCase,
     RejectScamReportUseCase,
     AddCommentUseCase,
+    UpdateCommentUseCase,
     DeleteCommentUseCase,
     ListScamReportCommentsUseCase,
     ReactToScamReportUseCase,

@@ -27,6 +27,7 @@ import { GetPostUseCase as GetPublicPostUseCase } from '../../../application/han
 import { ListCategoriesUseCase } from '../../../application/handlers/user/list-categories.use-case';
 import { ReactToPostUseCase } from '../../../application/handlers/user/react-to-post.use-case';
 import { AddCommentUseCase } from '../../../application/handlers/user/add-comment.use-case';
+import { UpdateCommentUseCase } from '../../../application/handlers/user/update-comment.use-case';
 import { ListCommentsUseCase } from '../../../application/handlers/user/list-comments.use-case';
 import { DeleteReactionUseCase } from '../../../application/handlers/user/delete-reaction.use-case';
 import { DeleteCommentUseCase } from '../../../application/handlers/user/delete-comment.use-case';
@@ -37,6 +38,7 @@ import { ListCommentsQueryDto } from '../dto/list-comments-query.dto';
 import { ReactToPostDto } from '../dto/react-to-post.dto';
 import { ReactToCommentDto } from '../dto/react-to-comment.dto';
 import { AddCommentDto } from '../dto/add-comment.dto';
+import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { ConfigService } from '@nestjs/config';
@@ -65,6 +67,7 @@ export class PostController {
     private readonly deletePostUseCase: DeletePostUseCase,
     private readonly reactToPostUseCase: ReactToPostUseCase,
     private readonly addCommentUseCase: AddCommentUseCase,
+    private readonly updateCommentUseCase: UpdateCommentUseCase,
     private readonly listCommentsUseCase: ListCommentsUseCase,
     private readonly deleteReactionUseCase: DeleteReactionUseCase,
     private readonly deleteCommentUseCase: DeleteCommentUseCase,
@@ -268,6 +271,34 @@ export class PostController {
     return ApiResponseUtil.success(
       this.mapCommentToResponse(comment),
       'Comment added successfully',
+    );
+  }
+
+  @Put(':id/comments/:commentId')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
+  async updateComment(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('commentId', new ParseUUIDPipe()) commentId: string,
+    @Body() dto: UpdateCommentDto,
+    @CurrentUser() user: CurrentUserPayload,
+    @UploadedFiles()
+    files?: {
+      images?: MulterFile[];
+    },
+  ): Promise<ApiResponse<any>> {
+    const comment = await this.updateCommentUseCase.execute({
+      commentId,
+      userId: user.userId,
+      content: dto.content,
+      deleteImageIds: dto.deleteImageIds,
+      images: files?.images,
+    });
+
+    return ApiResponseUtil.success(
+      this.mapCommentToResponse(comment),
+      MessageKeys.COMMENT_UPDATED_SUCCESS,
     );
   }
 

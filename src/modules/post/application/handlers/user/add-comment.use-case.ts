@@ -39,8 +39,13 @@ export class AddCommentUseCase {
 
   async execute(command: AddCommentCommand): Promise<PostComment> {
     const post = await this.postRepository.findById(command.postId);
-    if (!post || !post.isPublished) {
+    if (!post) {
       throw notFound(MessageKeys.POST_NOT_FOUND);
+    }
+
+    // Only allow comments on published posts
+    if (!post.isPublished) {
+      throw badRequest(MessageKeys.CAN_ONLY_COMMENT_ON_PUBLISHED_POSTS);
     }
 
     // Validate images
@@ -48,17 +53,12 @@ export class AddCommentUseCase {
     const allowedTypes = /(jpg|jpeg|png|webp)$/i;
     if (command.images) {
       if (command.images.length > 5) {
-        throw badRequest(MessageKeys.MAX_IMAGES_PER_COMMENT_EXCEEDED, {
-          maxImages: 5,
-        });
+        throw badRequest(MessageKeys.MAX_IMAGES_PER_COMMENT_EXCEEDED, { maxImages: 5 });
       }
       for (let i = 0; i < command.images.length; i++) {
         const image = command.images[i];
         if (image.size > maxSize) {
-          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
-            fileType: `image ${i + 1}`,
-            maxSize: '20MB',
-          });
+          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, { maxSize: '20MB' });
         }
         if (!allowedTypes.test(image.mimetype)) {
           throw badRequest(MessageKeys.INVALID_FILE_TYPE, {

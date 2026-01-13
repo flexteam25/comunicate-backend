@@ -22,6 +22,7 @@ import { GetPostUseCase } from './application/handlers/admin/get-post.use-case';
 import { ReactToPostUseCase } from './application/handlers/user/react-to-post.use-case';
 import { DeleteReactionUseCase } from './application/handlers/user/delete-reaction.use-case';
 import { AddCommentUseCase } from './application/handlers/user/add-comment.use-case';
+import { UpdateCommentUseCase } from './application/handlers/user/update-comment.use-case';
 import { DeleteCommentUseCase } from './application/handlers/user/delete-comment.use-case';
 import { ListCommentsUseCase } from './application/handlers/user/list-comments.use-case';
 import { ReactToCommentUseCase } from './application/handlers/user/react-to-comment.use-case';
@@ -59,6 +60,7 @@ import { PostController } from './interface/rest/user/post.controller';
     GetPublicPostUseCase,
     ReactToPostUseCase,
     AddCommentUseCase,
+    UpdateCommentUseCase,
     DeleteReactionUseCase,
     DeleteCommentUseCase,
     ListCommentsUseCase,

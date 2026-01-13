@@ -27,12 +27,14 @@ import { GetScamReportUseCase } from '../../../application/handlers/get-scam-rep
 import { UpdateScamReportUseCase } from '../../../application/handlers/update-scam-report.use-case';
 import { DeleteScamReportUseCase } from '../../../application/handlers/delete-scam-report.use-case';
 import { AddCommentUseCase } from '../../../application/handlers/add-comment.use-case';
+import { UpdateCommentUseCase } from '../../../application/handlers/update-comment.use-case';
 import { DeleteCommentUseCase } from '../../../application/handlers/delete-comment.use-case';
 import { ListScamReportCommentsUseCase } from '../../../application/handlers/list-scam-report-comments.use-case';
 import { ReactToScamReportUseCase } from '../../../application/handlers/react-to-scam-report.use-case';
 import { CreateScamReportDto } from '../dto/create-scam-report.dto';
 import { UpdateScamReportDto } from '../dto/update-scam-report.dto';
 import { AddCommentDto } from '../dto/add-comment.dto';
+import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { ReactToScamReportDto } from '../dto/react-to-scam-report.dto';
 import {
   ScamReportResponseDto,
@@ -64,6 +66,7 @@ export class ScamReportController {
     private readonly updateScamReportUseCase: UpdateScamReportUseCase,
     private readonly deleteScamReportUseCase: DeleteScamReportUseCase,
     private readonly addCommentUseCase: AddCommentUseCase,
+    private readonly updateCommentUseCase: UpdateCommentUseCase,
     private readonly deleteCommentUseCase: DeleteCommentUseCase,
     private readonly listScamReportCommentsUseCase: ListScamReportCommentsUseCase,
     private readonly reactToScamReportUseCase: ReactToScamReportUseCase,
@@ -369,7 +372,7 @@ export class ScamReportController {
 
   @Post(':id/comments')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
   @HttpCode(HttpStatus.CREATED)
   async addComment(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -384,13 +387,13 @@ export class ScamReportController {
 
     // Upload images if provided
     if (files?.images && files.images.length > 0) {
+      if (files.images.length > 5) {
+        throw badRequest(MessageKeys.MAX_IMAGES_PER_COMMENT_EXCEEDED, { maxImages: 5 });
+      }
       for (const file of files.images) {
         // Validate file
         if (file.size > 20 * 1024 * 1024) {
-          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, {
-            fileType: 'image',
-            maxSize: '20MB',
-          });
+          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, { maxSize: '20MB' });
         }
         if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
           throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
@@ -446,6 +449,89 @@ export class ScamReportController {
         updatedAt: comment.updatedAt,
       },
       'Comment added successfully',
+    );
+  }
+
+  @Put(':id/comments/:commentId')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
+  @HttpCode(HttpStatus.OK)
+  async updateComment(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('commentId', new ParseUUIDPipe()) commentId: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdateCommentDto,
+    @UploadedFiles()
+    files?: {
+      images?: MulterFile[];
+    },
+  ): Promise<ApiResponse<ScamReportCommentResponseDto>> {
+    const imageUrls: string[] = [];
+
+    // Upload images if provided
+    if (files?.images && files.images.length > 0) {
+      if (files.images.length > 5) {
+        throw badRequest(MessageKeys.MAX_IMAGES_PER_COMMENT_EXCEEDED, { maxImages: 5 });
+      }
+      for (const file of files.images) {
+        // Validate file
+        if (file.size > 20 * 1024 * 1024) {
+          throw badRequest(MessageKeys.FILE_SIZE_EXCEEDS_LIMIT, { maxSize: '20MB' });
+        }
+        if (!/(jpg|jpeg|png|webp)$/i.test(file.mimetype)) {
+          throw badRequest(MessageKeys.INVALID_FILE_TYPE, {
+            allowedTypes: 'jpg, jpeg, png, webp',
+          });
+        }
+        const uploadResult = await this.uploadService.uploadImage(file, {
+          folder: 'scam-reports/comments',
+        });
+        imageUrls.push(uploadResult.relativePath);
+      }
+    }
+
+    const comment = await this.updateCommentUseCase.execute({
+      commentId,
+      userId: user.userId,
+      content: dto.content,
+      deleteImageIds: dto.deleteImageIds,
+      imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+    });
+
+    return ApiResponseUtil.success(
+      {
+        id: comment.id,
+        content: comment.content,
+        images: (comment.images || []).map((img: any) => ({
+          id: img.id,
+          imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl),
+          order: img.order,
+        })),
+        userId: comment.userId,
+        userName: comment.user?.displayName || null,
+        userEmail: comment.user?.email || null,
+        userAvatarUrl: buildFullUrl(this.apiServiceUrl, comment.user?.avatarUrl || null),
+        userBadge: (() => {
+          const activeBadge = comment.user?.userBadges?.find(
+            (ub) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
+          );
+          if (!activeBadge) return null;
+          return {
+            name: activeBadge.badge.name,
+            iconUrl:
+              buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
+            color: activeBadge.badge.color || null,
+            earnedAt: activeBadge.earnedAt,
+            description: activeBadge.badge.description || null,
+            obtain: activeBadge.badge.obtain || null,
+          };
+        })(),
+        parentCommentId: comment.parentCommentId || null,
+        hasChild: comment.hasChild || false,
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+      },
+      MessageKeys.COMMENT_UPDATED_SUCCESS,
     );
   }
 

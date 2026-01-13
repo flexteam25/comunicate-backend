@@ -2,6 +2,7 @@ import { Entity, Column, ManyToOne, OneToMany, JoinColumn, Index } from 'typeorm
 import { BaseEntity } from '../../../../shared/domain/base-entity';
 import { SiteReview } from './site-review.entity';
 import { User } from '../../../user/domain/entities/user.entity';
+import { SiteReviewCommentImage } from './site-review-comment-image.entity';
 
 @Entity('site_review_comments')
 @Index('IDX_site_review_comments_review_id', ['siteReviewId'])
@@ -42,4 +43,7 @@ export class SiteReviewComment extends BaseEntity {
 
   @OneToMany(() => SiteReviewComment, (comment) => comment.parentComment)
   replies: SiteReviewComment[];
+
+  @OneToMany(() => SiteReviewCommentImage, (image) => image.comment, { cascade: true })
+  images: SiteReviewCommentImage[];
 }

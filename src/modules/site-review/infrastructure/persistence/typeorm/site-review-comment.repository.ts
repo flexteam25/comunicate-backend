@@ -35,6 +35,7 @@ export class SiteReviewCommentRepository implements ISiteReviewCommentRepository
       .leftJoinAndSelect('comment.user', 'user')
       .leftJoinAndSelect('user.userBadges', 'userBadges')
       .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
+      .leftJoinAndSelect('comment.images', 'images')
       .where('comment.siteReviewId = :reviewId', { reviewId })
       .andWhere('comment.deletedAt IS NULL');
 

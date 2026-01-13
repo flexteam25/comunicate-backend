@@ -1,3 +1,10 @@
+export class SiteReviewCommentImageResponseDto {
+  id: string;
+  imageUrl: string;
+  order: number;
+  createdAt: Date;
+}
+
 export class SiteReviewCommentResponseDto {
   id: string;
   content: string;
@@ -13,6 +20,7 @@ export class SiteReviewCommentResponseDto {
   } | null;
   parentCommentId?: string;
   hasChild: boolean;
+  images: SiteReviewCommentImageResponseDto[];
   createdAt: Date;
   updatedAt: Date;
 }

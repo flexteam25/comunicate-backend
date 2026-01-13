@@ -46,6 +46,7 @@ import { PostCommentImage } from '../src/modules/post/domain/entities/post-comme
 import { PostReaction } from '../src/modules/post/domain/entities/post-reaction.entity';
 import { PostView } from '../src/modules/post/domain/entities/post-view.entity';
 import { SiteReviewImage } from '../src/modules/site-review/domain/entities/site-review-image.entity';
+import { SiteReviewCommentImage } from '../src/modules/site-review/domain/entities/site-review-comment-image.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -155,6 +156,7 @@ function buildDataSource() {
       PostReaction,
       PostView,
       SiteReviewImage,
+      SiteReviewCommentImage,
     ],
     migrations: [path.join(__dirname, '../src/migrations/*.{ts,js}')],
     migrationsTableName: 'migrations',

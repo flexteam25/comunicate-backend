@@ -13,12 +13,13 @@ import {
   ParseUUIDPipe,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import {
   badRequest,
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 import {
   CurrentUser,
@@ -34,12 +35,14 @@ import { GetSiteReviewStatisticsUseCase } from '../../../application/handlers/ge
 import { ListMySiteReviewsUseCase } from '../../../application/handlers/list-my-site-reviews.use-case';
 import { ReactToSiteReviewUseCase } from '../../../application/handlers/react-to-site-review.use-case';
 import { AddCommentUseCase } from '../../../application/handlers/add-comment.use-case';
+import { UpdateCommentUseCase } from '../../../application/handlers/update-comment.use-case';
 import { DeleteCommentUseCase } from '../../../application/handlers/delete-comment.use-case';
 import { ListCommentsUseCase } from '../../../application/handlers/list-comments.use-case';
 import { CreateSiteReviewDto } from '../dto/create-site-review.dto';
 import { UpdateSiteReviewDto } from '../dto/update-site-review.dto';
 import { ReactToSiteReviewDto } from '../dto/react-to-site-review.dto';
 import { AddCommentDto } from '../dto/add-comment.dto';
+import { UpdateCommentDto } from '../dto/update-comment.dto';
 import {
   SiteReviewResponseDto,
   SiteReviewCommentResponseDto,
@@ -64,6 +67,7 @@ export class SiteReviewController {
     private readonly listMySiteReviewsUseCase: ListMySiteReviewsUseCase,
     private readonly reactToSiteReviewUseCase: ReactToSiteReviewUseCase,
     private readonly addCommentUseCase: AddCommentUseCase,
+    private readonly updateCommentUseCase: UpdateCommentUseCase,
     private readonly deleteCommentUseCase: DeleteCommentUseCase,
     private readonly listCommentsUseCase: ListCommentsUseCase,
     private readonly configService: ConfigService,
@@ -145,6 +149,12 @@ export class SiteReviewController {
       })(),
       parentCommentId: comment.parentCommentId || null,
       hasChild: comment.hasChild || false,
+      images: (comment.images || []).map((img: any) => ({
+        id: img.id,
+        imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl),
+        order: img.order,
+        createdAt: img.createdAt,
+      })),
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
     };
@@ -390,22 +400,56 @@ export class SiteReviewController {
 
   @Post(':id/comments')
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
   @HttpCode(HttpStatus.CREATED)
   async addComment(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: AddCommentDto,
+    @UploadedFiles()
+    files?: {
+      images?: MulterFile[];
+    },
   ): Promise<ApiResponse<SiteReviewCommentResponseDto>> {
     const comment = await this.addCommentUseCase.execute({
       reviewId: id,
       userId: user.userId,
       content: dto.content,
       parentCommentId: dto.parentCommentId,
+      images: files?.images,
     });
 
     return ApiResponseUtil.success(
       this.mapCommentToResponse(comment),
-      'Comment added successfully',
+      MessageKeys.COMMENT_ADDED_SUCCESS,
+    );
+  }
+
+  @Put(':id/comments/:commentId')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
+  @HttpCode(HttpStatus.OK)
+  async updateComment(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('commentId', new ParseUUIDPipe()) commentId: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdateCommentDto,
+    @UploadedFiles()
+    files?: {
+      images?: MulterFile[];
+    },
+  ): Promise<ApiResponse<SiteReviewCommentResponseDto>> {
+    const comment = await this.updateCommentUseCase.execute({
+      commentId,
+      userId: user.userId,
+      content: dto.content,
+      deleteImageIds: dto.deleteImageIds,
+      images: files?.images,
+    });
+
+    return ApiResponseUtil.success(
+      this.mapCommentToResponse(comment),
+      MessageKeys.COMMENT_UPDATED_SUCCESS,
     );
   }
 
