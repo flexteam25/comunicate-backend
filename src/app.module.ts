@@ -40,6 +40,7 @@ import { SiteCategory } from './modules/site/domain/entities/site-category.entit
 import { SiteBadge } from './modules/site/domain/entities/site-badge.entity';
 import { SiteDomain } from './modules/site/domain/entities/site-domain.entity';
 import { SiteView } from './modules/site/domain/entities/site-view.entity';
+import { SiteBadgeRequest } from './modules/site/domain/entities/site-badge-request.entity';
 import { Tier } from './modules/tier/domain/entities/tier.entity';
 import { UserProfile } from './modules/user/domain/entities/user-profile.entity';
 import { Inquiry } from './modules/support/domain/entities/inquiry.entity';
@@ -124,6 +125,7 @@ import { SiteEventView } from './modules/site-event/domain/entities/site-event-v
         SiteBadge,
         SiteDomain,
         SiteView,
+        SiteBadgeRequest,
         Tier,
         UserProfile,
         Inquiry,

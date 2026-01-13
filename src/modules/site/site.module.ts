@@ -22,6 +22,13 @@ import { AddSiteDomainUseCase } from './application/handlers/admin/add-site-doma
 import { UpdateSiteDomainUseCase } from './application/handlers/admin/update-site-domain.use-case';
 import { DeleteSiteDomainUseCase } from './application/handlers/admin/delete-site-domain.use-case';
 import { CreatePartnerSiteUseCase } from './application/handlers/partner/create-partner-site.use-case';
+import { CreateBadgeRequestUseCase } from './application/handlers/user/create-badge-request.use-case';
+import { ListBadgeRequestsUseCase } from './application/handlers/user/list-badge-requests.use-case';
+import { CancelBadgeRequestUseCase } from './application/handlers/user/cancel-badge-request.use-case';
+import { ListAllBadgeRequestsUseCase } from './application/handlers/admin/list-all-badge-requests.use-case';
+import { ApproveBadgeRequestUseCase } from './application/handlers/admin/approve-badge-request.use-case';
+import { RejectBadgeRequestUseCase } from './application/handlers/admin/reject-badge-request.use-case';
+import { BadgeRequestController } from './interface/rest/user/badge-request.controller';
 import { Module } from '@nestjs/common';
 import { TierModule } from '../tier/tier.module';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
@@ -38,6 +45,7 @@ import { PartnerSiteController } from './interface/rest/partner/partner-site.con
 import { RedisModule } from '../../shared/redis/redis.module';
 import { LoggerModule } from '../../shared/logger/logger.module';
 import { ConfigModule } from '@nestjs/config';
+import { BadgeModule } from '../badge/badge.module';
 
 @Module({
   imports: [
@@ -55,6 +63,7 @@ import { ConfigModule } from '@nestjs/config';
     RedisModule,
     LoggerModule,
     ConfigModule,
+    BadgeModule,
   ],
   providers: [
     CreateSiteUseCase,
@@ -77,6 +86,12 @@ import { ConfigModule } from '@nestjs/config';
     RestoreCategoryUseCase,
     RestoreSiteUseCase,
     CreatePartnerSiteUseCase,
+    CreateBadgeRequestUseCase,
+    ListBadgeRequestsUseCase,
+    CancelBadgeRequestUseCase,
+    ListAllBadgeRequestsUseCase,
+    ApproveBadgeRequestUseCase,
+    RejectBadgeRequestUseCase,
     OptionalJwtAuthGuard,
   ],
   controllers: [
@@ -84,6 +99,7 @@ import { ConfigModule } from '@nestjs/config';
     AdminCategoryController,
     UserSiteController,
     PartnerSiteController,
+    BadgeRequestController,
   ],
   exports: [SitePersistenceModule],
 })

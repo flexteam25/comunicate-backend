@@ -324,6 +324,48 @@ export class SocketGateway
         },
       );
 
+      // Subscribe to site-badge-request:created (event for all admins)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SITE_BADGE_REQUEST_CREATED,
+        (data) => {
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SITE_BADGE_REQUEST_CREATED, data);
+        },
+      );
+
+      // Subscribe to site-badge-request:approved (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SITE_BADGE_REQUEST_APPROVED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.SITE_BADGE_REQUEST_APPROVED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SITE_BADGE_REQUEST_APPROVED, data);
+        },
+      );
+
+      // Subscribe to site-badge-request:rejected (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SITE_BADGE_REQUEST_REJECTED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.SITE_BADGE_REQUEST_REJECTED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SITE_BADGE_REQUEST_REJECTED, data);
+        },
+      );
+
+      // Subscribe to site-badge-request:cancelled (event for all admins)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SITE_BADGE_REQUEST_CANCELLED,
+        (data) => {
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SITE_BADGE_REQUEST_CANCELLED, data);
+        },
+      );
+
       this.logger.info('Redis subscriptions setup completed', {}, 'socket');
     } catch (error) {
       this.logger.error(

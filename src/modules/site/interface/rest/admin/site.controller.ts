@@ -4,6 +4,7 @@ import {
   Get,
   Put,
   Delete,
+  Patch,
   Body,
   Param,
   Query,
@@ -34,6 +35,10 @@ import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers'
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/admin-permission.guard';
 import { RequirePermission } from '../../../../admin/infrastructure/decorators/require-permission.decorator';
+import {
+  CurrentAdmin,
+  CurrentAdminPayload,
+} from '../../../../admin/infrastructure/decorators/current-admin.decorator';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -46,6 +51,15 @@ import { RestoreSiteUseCase } from '../../../application/handlers/admin/restore-
 import { AddSiteDomainUseCase } from '../../../application/handlers/admin/add-site-domain.use-case';
 import { UpdateSiteDomainUseCase } from '../../../application/handlers/admin/update-site-domain.use-case';
 import { DeleteSiteDomainUseCase } from '../../../application/handlers/admin/delete-site-domain.use-case';
+import { ListAllBadgeRequestsUseCase } from '../../../application/handlers/admin/list-all-badge-requests.use-case';
+import { ApproveBadgeRequestUseCase } from '../../../application/handlers/admin/approve-badge-request.use-case';
+import { RejectBadgeRequestUseCase } from '../../../application/handlers/admin/reject-badge-request.use-case';
+import { ListAllBadgeRequestsQueryDto } from '../dto/list-all-badge-requests-query.dto';
+import { RejectBadgeRequestDto } from '../dto/reject-badge-request.dto';
+import { SiteBadgeRequest } from '../../../domain/entities/site-badge-request.entity';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 @Controller('admin/sites')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -65,6 +79,11 @@ export class AdminSiteController {
     private readonly addSiteDomainUseCase: AddSiteDomainUseCase,
     private readonly updateSiteDomainUseCase: UpdateSiteDomainUseCase,
     private readonly deleteSiteDomainUseCase: DeleteSiteDomainUseCase,
+    private readonly listAllBadgeRequestsUseCase: ListAllBadgeRequestsUseCase,
+    private readonly approveBadgeRequestUseCase: ApproveBadgeRequestUseCase,
+    private readonly rejectBadgeRequestUseCase: RejectBadgeRequestUseCase,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -409,5 +428,140 @@ export class AdminSiteController {
   ): Promise<ApiResponse<{ message: string }>> {
     await this.removeBadgeUseCase.execute({ siteId: id, badgeId });
     return ApiResponseUtil.success(null, MessageKeys.SITE_BADGE_REMOVED_SUCCESS);
+  }
+
+  private mapBadgeRequestToResponse(request: SiteBadgeRequest): any {
+    return {
+      id: request.id,
+      siteId: request.siteId,
+      badgeId: request.badgeId,
+      userId: request.userId,
+      adminId: request.adminId || null,
+      status: request.status,
+      note: request.note || null,
+      site: request.site
+        ? {
+            id: request.site.id,
+            name: request.site.name,
+            slug: request.site.slug,
+          }
+        : null,
+      badge: request.badge
+        ? {
+            id: request.badge.id,
+            name: request.badge.name,
+            description: request.badge.description || null,
+            iconUrl: buildFullUrl(this.apiServiceUrl, request.badge.iconUrl || null) || null,
+            iconName: request.badge.iconName || null,
+          }
+        : null,
+      user: request.user
+        ? {
+            id: request.user.id,
+            email: request.user.email,
+            displayName: request.user.displayName || null,
+          }
+        : null,
+      admin: request.admin
+        ? {
+            id: request.admin.id,
+            email: request.admin.email,
+            displayName: request.admin.displayName || null,
+          }
+        : null,
+      createdAt: request.createdAt,
+      updatedAt: request.updatedAt,
+    };
+  }
+
+  @Get('badge-requests')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('site.update')
+  async listAllBadgeRequests(
+    @Query() query: ListAllBadgeRequestsQueryDto,
+  ): Promise<ApiResponse<any>> {
+    const result = await this.listAllBadgeRequestsUseCase.execute({
+      siteName: query.siteName,
+      badgeName: query.badgeName,
+      status: query.status,
+      cursor: query.cursor,
+      limit: query.limit,
+    });
+
+    return ApiResponseUtil.success({
+      data: result.data.map((request) => this.mapBadgeRequestToResponse(request)),
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    });
+  }
+
+  @Patch('badge-requests/:requestId/approve')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('site.update')
+  async approveBadgeRequest(
+    @Param('requestId', new ParseUUIDPipe()) requestId: string,
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    const request = await this.approveBadgeRequestUseCase.execute({
+      requestId,
+      adminId: admin.adminId,
+    });
+
+    const response = this.mapBadgeRequestToResponse(request);
+
+    // Publish event to user room and admin room (fire and forget)
+    setImmediate(() => {
+      this.redisService
+        .publishEvent(RedisChannel.SITE_BADGE_REQUEST_APPROVED as string, response)
+        .catch((error) => {
+          this.logger.error(
+            'Failed to publish site-badge-request:approved event',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              requestId: request.id,
+              userId: request.userId,
+            },
+            'site',
+          );
+        });
+    });
+
+    return ApiResponseUtil.success(response);
+  }
+
+  @Patch('badge-requests/:requestId/reject')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('site.update')
+  async rejectBadgeRequest(
+    @Param('requestId', new ParseUUIDPipe()) requestId: string,
+    @CurrentAdmin() admin: CurrentAdminPayload,
+    @Body() dto: RejectBadgeRequestDto,
+  ): Promise<ApiResponse<any>> {
+    const request = await this.rejectBadgeRequestUseCase.execute({
+      requestId,
+      adminId: admin.adminId,
+      note: dto.note,
+    });
+
+    const response = this.mapBadgeRequestToResponse(request);
+
+    // Publish event to user room and admin room (fire and forget)
+    setImmediate(() => {
+      this.redisService
+        .publishEvent(RedisChannel.SITE_BADGE_REQUEST_REJECTED as string, response)
+        .catch((error) => {
+          this.logger.error(
+            'Failed to publish site-badge-request:rejected event',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              requestId: request.id,
+              userId: request.userId,
+            },
+            'site',
+          );
+        });
+    });
+
+    return ApiResponseUtil.success(response);
   }
 }

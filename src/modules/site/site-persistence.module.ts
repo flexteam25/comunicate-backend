@@ -5,12 +5,14 @@ import { SiteCategory } from './domain/entities/site-category.entity';
 import { SiteBadge } from './domain/entities/site-badge.entity';
 import { SiteDomain } from './domain/entities/site-domain.entity';
 import { SiteView } from './domain/entities/site-view.entity';
+import { SiteBadgeRequest } from './domain/entities/site-badge-request.entity';
 import { Badge } from '../badge/domain/entities/badge.entity';
 import { SiteRepository } from './infrastructure/persistence/typeorm/site.repository';
 import { SiteCategoryRepository } from './infrastructure/persistence/typeorm/site-category.repository';
 import { SiteBadgeRepository } from './infrastructure/persistence/typeorm/site-badge.repository';
 import { SiteDomainRepository } from './infrastructure/persistence/typeorm/site-domain.repository';
 import { SiteViewRepository } from './infrastructure/persistence/typeorm/site-view.repository';
+import { SiteBadgeRequestRepository } from './infrastructure/persistence/typeorm/site-badge-request.repository';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { SiteViewRepository } from './infrastructure/persistence/typeorm/site-vi
       SiteBadge,
       SiteDomain,
       SiteView,
+      SiteBadgeRequest,
       Badge,
     ]),
   ],
@@ -44,11 +47,16 @@ import { SiteViewRepository } from './infrastructure/persistence/typeorm/site-vi
       provide: 'ISiteViewRepository',
       useClass: SiteViewRepository,
     },
+    {
+      provide: 'ISiteBadgeRequestRepository',
+      useClass: SiteBadgeRequestRepository,
+    },
     SiteRepository,
     SiteCategoryRepository,
     SiteBadgeRepository,
     SiteDomainRepository,
     SiteViewRepository,
+    SiteBadgeRequestRepository,
   ],
   exports: [
     TypeOrmModule,
@@ -57,11 +65,13 @@ import { SiteViewRepository } from './infrastructure/persistence/typeorm/site-vi
     'ISiteBadgeRepository',
     'ISiteDomainRepository',
     'ISiteViewRepository',
+    'ISiteBadgeRequestRepository',
     SiteRepository,
     SiteCategoryRepository,
     SiteBadgeRepository,
     SiteDomainRepository,
     SiteViewRepository,
+    SiteBadgeRequestRepository,
   ],
 })
 export class SitePersistenceModule {}
