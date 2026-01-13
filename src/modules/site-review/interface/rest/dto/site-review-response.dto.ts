@@ -8,6 +8,8 @@ export class SiteReviewCommentResponseDto {
     name: string;
     iconUrl: string;
     earnedAt?: Date;
+    description?: string;
+    obtain?: string;
   } | null;
   parentCommentId?: string;
   hasChild: boolean;
@@ -34,6 +36,8 @@ export class SiteReviewResponseDto {
     name: string;
     iconUrl: string;
     earnedAt?: Date;
+    description?: string;
+    obtain?: string;
   } | null;
   rating: number;
   odds: number;

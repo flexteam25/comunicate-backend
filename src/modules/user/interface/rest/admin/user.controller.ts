@@ -322,6 +322,8 @@ export class AdminUserController {
                 null,
               iconName: activeBadge.badge.iconName || null,
               color: activeBadge.badge.color || null,
+              description: activeBadge.badge.description || null,
+              obtain: activeBadge.badge.obtain || null,
             };
           })(),
           createdAt: user.createdAt,
@@ -402,6 +404,8 @@ export class AdminUserController {
             buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
           iconName: activeBadge.badge.iconName || null,
           color: activeBadge.badge.color || null,
+          description: activeBadge.badge.description || null,
+          obtain: activeBadge.badge.obtain || null,
         };
       })(),
       postCount,

@@ -5,6 +5,7 @@ export interface UserBadgeSummary {
   color?: string;
   earnedAt?: Date;
   description?: string;
+  obtain?: string;
 }
 
 export interface AuthResponse {

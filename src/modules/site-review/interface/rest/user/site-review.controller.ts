@@ -93,6 +93,8 @@ export class SiteReviewController {
           iconName: activeBadge.badge.iconName || null,
           color: activeBadge.badge.color || null,
           earnedAt: activeBadge.earnedAt,
+          description: activeBadge.badge.description || null,
+          obtain: activeBadge.badge.obtain || null,
         };
       })(),
       rating: review.rating ?? 0,
@@ -137,6 +139,8 @@ export class SiteReviewController {
           iconName: activeBadge.badge.iconName || null,
           color: activeBadge.badge.color || null,
           earnedAt: activeBadge.earnedAt,
+          description: activeBadge.badge.description || null,
+          obtain: activeBadge.badge.obtain || null,
         };
       })(),
       parentCommentId: comment.parentCommentId || null,

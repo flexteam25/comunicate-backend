@@ -162,6 +162,8 @@ export class CreateScamReportUseCase {
           iconName: activeBadge.badge.iconName || null,
           color: activeBadge.badge.color || null,
           earnedAt: activeBadge.earnedAt,
+          description: activeBadge.badge.description || null,
+          obtain: activeBadge.badge.obtain || null,
         };
       })(),
       description: report.description,

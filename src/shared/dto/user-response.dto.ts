@@ -4,6 +4,8 @@ export interface UserBadgeSummary {
   iconName?: string;
   color?: string;
   earnedAt?: Date;
+  description?: string;
+  obtain?: string;
 }
 
 export interface UserResponse {

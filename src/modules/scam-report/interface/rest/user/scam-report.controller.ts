@@ -104,6 +104,8 @@ export class ScamReportController {
           iconName: activeBadge.badge.iconName || null,
           color: activeBadge.badge.color || null,
           earnedAt: activeBadge.earnedAt,
+          description: activeBadge.badge.description || null,
+          obtain: activeBadge.badge.obtain || null,
         };
       })(),
       userEmail: report.user?.email || null,
@@ -351,6 +353,8 @@ export class ScamReportController {
               buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
             color: activeBadge.badge.color || null,
             earnedAt: activeBadge.earnedAt,
+            description: activeBadge.badge.description || null,
+            obtain: activeBadge.badge.obtain || null,
           };
         })(),
         parentCommentId: comment.parentCommentId || null,
@@ -432,6 +436,8 @@ export class ScamReportController {
               buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) || null,
             color: activeBadge.badge.color || null,
             earnedAt: activeBadge.earnedAt,
+            description: activeBadge.badge.description || null,
+            obtain: activeBadge.badge.obtain || null,
           };
         })(),
         parentCommentId: comment.parentCommentId || null,

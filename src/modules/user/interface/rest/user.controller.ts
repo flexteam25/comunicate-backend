@@ -214,10 +214,7 @@ export class UserController {
       logoutAll: dto.logoutAll,
     });
 
-    return ApiResponseUtil.success(
-      null,
-      MessageKeys.PASSWORD_CHANGED_SUCCESS,
-    );
+    return ApiResponseUtil.success(null, MessageKeys.PASSWORD_CHANGED_SUCCESS);
   }
 
   @Put('me')
@@ -309,6 +306,8 @@ export class UserController {
       iconName?: string;
       color?: string;
       earnedAt?: Date;
+      description?: string;
+      obtain?: string;
     } | null = null;
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
@@ -320,6 +319,8 @@ export class UserController {
             iconName: badge.iconName || null,
             color: badge.color || null,
             earnedAt: userBadge.earnedAt,
+            description: badge.description || null,
+            obtain: badge.obtain || null,
           };
           break;
         }
@@ -379,6 +380,7 @@ export class UserController {
       color?: string;
       earnedAt?: Date;
       description?: string;
+      obtain?: string;
     } | null = null;
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
@@ -391,6 +393,7 @@ export class UserController {
             color: badge.color || null,
             earnedAt: userBadge.earnedAt,
             description: badge.description || null,
+            obtain: badge.obtain || null,
           };
           break;
         }
@@ -461,9 +464,7 @@ export class UserController {
 
   @Get('activity')
   @HttpCode(HttpStatus.OK)
-  async getActivity(
-    @CurrentUser() user: CurrentUserPayload,
-  ): Promise<
+  async getActivity(@CurrentUser() user: CurrentUserPayload): Promise<
     ApiResponse<{
       favorite: SiteResponse[];
       recent: SiteResponse[];

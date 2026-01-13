@@ -154,6 +154,8 @@ export class PartnerSiteController {
                 buildFullUrl(this.apiServiceUrl, activeBadge.badge.iconUrl || null) ||
                 null,
               earnedAt: activeBadge.earnedAt,
+              description: activeBadge.badge.description || null,
+              obtain: activeBadge.badge.obtain || null,
             };
           })(),
         })),

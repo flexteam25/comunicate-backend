@@ -24,6 +24,8 @@ export class ScamReportCommentResponseDto {
     name: string;
     iconUrl: string;
     earnedAt?: Date;
+    description?: string;
+    obtain?: string;
   } | null;
   parentCommentId?: string;
   hasChild: boolean;
@@ -48,6 +50,8 @@ export class ScamReportResponseDto {
     name: string;
     iconUrl: string;
     earnedAt?: Date;
+    description?: string;
+    obtain?: string;
   } | null;
   userEmail?: string;
   description: string;

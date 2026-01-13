@@ -115,6 +115,7 @@ export class AuthController {
       color?: string;
       earnedAt?: Date;
       description?: string;
+      obtain?: string;
     } | null = null;
     if (dbUser?.userBadges) {
       for (const userBadge of dbUser.userBadges) {
@@ -127,6 +128,7 @@ export class AuthController {
             color: badge.color || null,
             earnedAt: userBadge.earnedAt,
             description: badge.description || null,
+            obtain: badge.obtain || null,
           };
           break;
         }
@@ -186,6 +188,7 @@ export class AuthController {
       color?: string;
       earnedAt?: Date;
       description?: string;
+      obtain?: string;
     } | null = null;
     if (dbUser?.userBadges) {
       for (const userBadge of dbUser.userBadges) {
@@ -198,6 +201,7 @@ export class AuthController {
             color: badge.color || null,
             earnedAt: userBadge.earnedAt,
             description: badge.description || null,
+            obtain: badge.obtain || null,
           };
           break;
         }
@@ -260,6 +264,7 @@ export class AuthController {
       color?: string;
       earnedAt?: Date;
       description?: string;
+      obtain?: string;
     } | null = null;
     if (dbUser?.userBadges) {
       for (const userBadge of dbUser.userBadges) {
@@ -272,6 +277,7 @@ export class AuthController {
             color: badge.color || null,
             earnedAt: userBadge.earnedAt,
             description: badge.description || null,
+            obtain: badge.obtain || null,
           };
           break;
         }
