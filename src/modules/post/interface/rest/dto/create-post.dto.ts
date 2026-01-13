@@ -9,26 +9,26 @@ import {
 import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export class CreatePostDto {
-  @IsUUID()
-  @IsNotEmpty({ message: 'Category ID is required' })
+  @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
+  @IsNotEmpty({ message: 'CATEGORYID_REQUIRED' })
   categoryId: string;
 
-  @IsString({ message: 'Title must be a string' })
-  @IsNotEmpty({ message: 'Title is required' })
-  @MaxLength(255, { message: 'Title must not exceed 255 characters' })
+  @IsString({ message: 'TITLE_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'TITLE_REQUIRED' })
+  @MaxLength(255, { message: 'TITLE_MAX_LENGTH' })
   title: string;
 
-  @IsString({ message: 'Content must be a string' })
-  @IsNotEmpty({ message: 'Content is required' })
+  @IsString({ message: 'CONTENT_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'CONTENT_REQUIRED' })
   content: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'ISPINNED_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean({ message: 'Is pinned must be a boolean' })
+  @IsBoolean({ message: 'ISPINNED_MUST_BE_BOOLEAN' })
   isPinned?: boolean;
 
-  @IsOptional()
+  @IsOptional({ message: 'ISPUBLISHED_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean({ message: 'Is published must be a boolean' })
+  @IsBoolean({ message: 'ISPUBLISHED_MUST_BE_BOOLEAN' })
   isPublished?: boolean;
 }

@@ -4,34 +4,34 @@ import { Type } from 'class-transformer';
 
 export class ListSiteEventsQueryDto {
   // For user API - filter by siteId (UUID or slug)
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'SITEID_OPTIONAL' })
+  @IsString({ message: 'SITEID_MUST_BE_STRING' })
   siteId?: string;
 
   // For admin API - filter by names (LIKE search)
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'SITENAME_OPTIONAL' })
+  @IsString({ message: 'SITENAME_MUST_BE_STRING' })
   siteName?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'USERNAME_OPTIONAL' })
+  @IsString({ message: 'USERNAME_MUST_BE_STRING' })
   userName?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'ADMINNAME_OPTIONAL' })
+  @IsString({ message: 'ADMINNAME_MUST_BE_STRING' })
   adminName?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'ISACTIVE_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean()
+  @IsBoolean({ message: 'ISACTIVE_MUST_BE_BOOLEAN' })
   isActive?: boolean;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'SEARCH_OPTIONAL' })
+  @IsString({ message: 'SEARCH_MUST_BE_STRING' })
   search?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'SORTBY_OPTIONAL' })
+  @IsString({ message: 'SORTBY_MUST_BE_STRING' })
   @IsIn(['startDate', 'endDate', 'createdAt', 'updatedAt'], {
     message: 'sortBy must be one of: startDate, endDate, createdAt, updatedAt',
   })
@@ -42,11 +42,11 @@ export class ListSiteEventsQueryDto {
   @IsIn(['ASC', 'DESC'], { message: 'sortOrder must be ASC or DESC' })
   sortOrder?: 'ASC' | 'DESC';
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'CURSOR_OPTIONAL' })
+  @IsString({ message: 'CURSOR_MUST_BE_STRING' })
   cursor?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LIMIT_OPTIONAL' })
   @Type(() => Number)
   limit?: number;
 }

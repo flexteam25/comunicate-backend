@@ -12,52 +12,52 @@ import { Type } from 'class-transformer';
 import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
 
 export class UpdateManagedSiteDto {
-  @IsOptional()
-  @IsString()
-  @MaxLength(255, { message: 'Name must not exceed 255 characters' })
+  @IsOptional({ message: 'NAME_OPTIONAL' })
+  @IsString({ message: 'NAME_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'NAME_MAX_LENGTH' })
   name?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
+  @IsOptional({ message: 'SLUG_OPTIONAL' })
+  @IsString({ message: 'SLUG_MUST_BE_STRING' })
+  @MaxLength(50, { message: 'SLUG_MAX_LENGTH' })
   @IsSlug()
   slug?: string;
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'CATEGORYID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
   categoryId?: string;
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'TIERID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'TIERID_MUST_BE_UUID' })
   tierId?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(500, { message: 'Permanent URL must not exceed 500 characters' })
+  @IsOptional({ message: 'PERMANENTURL_OPTIONAL' })
+  @IsString({ message: 'PERMANENTURL_MUST_BE_STRING' })
+  @MaxLength(500, { message: 'PERMANENTURL_MAX_LENGTH' })
   permanentUrl?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'DESCRIPTION_OPTIONAL' })
+  @IsString({ message: 'DESCRIPTION_MUST_BE_STRING' })
   description?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'FIRSTCHARGE_OPTIONAL' })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0, { message: 'First charge must be at least 0' })
-  @Max(100, { message: 'First charge must be at most 100' })
+  @Min(0, { message: 'FIRSTCHARGE_MIN_VALUE' })
+  @Max(100, { message: 'FIRSTCHARGE_MAX_VALUE' })
   firstCharge?: number;
 
-  @IsOptional()
+  @IsOptional({ message: 'RECHARGE_OPTIONAL' })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0, { message: 'Recharge must be at least 0' })
-  @Max(100, { message: 'Recharge must be at most 100' })
+  @Min(0, { message: 'RECHARGE_MIN_VALUE' })
+  @Max(100, { message: 'RECHARGE_MAX_VALUE' })
   recharge?: number;
 
-  @IsOptional()
+  @IsOptional({ message: 'EXPERIENCE_OPTIONAL' })
   @Type(() => Number)
   @IsNumber({}, { message: 'Experience must be a number' })
-  @Min(0, { message: 'Experience must be at least 0' })
+  @Min(0, { message: 'EXPERIENCE_MIN_VALUE' })
   experience?: number;
 
   @IsOptional()

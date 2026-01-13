@@ -28,7 +28,13 @@ export class MaxKoreanCharsConstraint implements ValidatorConstraintInterface {
   }
 
   defaultMessage(args: ValidationArguments) {
+    // If messageKey is provided in validationOptions, use it
+    // Otherwise, return default message
     const maxChars = args.constraints[0] as number;
+    const options = args.constraints[1] as ValidationOptions | undefined;
+    if (options?.message && typeof options.message === 'string') {
+      return options.message;
+    }
     return `${args.property} must have at most ${maxChars} Korean character(s)`;
   }
 }

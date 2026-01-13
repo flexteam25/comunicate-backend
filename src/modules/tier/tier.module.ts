@@ -13,6 +13,8 @@ import { UserTierController } from './interface/rest/user/tier.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { SitePersistenceModule } from '../site/site-persistence.module';
 import { ServicesModule } from '../../shared/services/services.module';
+import { UploadModule } from '../../shared/services/upload';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { ServicesModule } from '../../shared/services/services.module';
     AdminGuardsModule,
     SitePersistenceModule,
     ServicesModule,
+    UploadModule.register({ storageType: 'local' }),
+    ConfigModule,
   ],
   providers: [
     {

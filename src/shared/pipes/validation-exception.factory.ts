@@ -5,6 +5,14 @@ import { propertyNameToNaturalLanguage } from '../utils/property-name.util';
 
 /**
  * Maps validation error constraint to messageKey and params
+ *
+ * IMPORTANT: This function now requires messageKey to be explicitly specified
+ * in the validation decorator's message option. It will NOT auto-generate keys.
+ *
+ * Usage in DTOs:
+ * @IsEmail({}, { message: 'EMAIL_MUST_BE_EMAIL' })
+ * @MinLength(8, { message: 'PASSWORD_MIN_LENGTH' })
+ * @IsNotEmpty({ message: 'EMAIL_REQUIRED' })
  */
 function mapValidationErrorToMessageKey(error: ValidationError): {
   messageKey: string;
@@ -31,105 +39,105 @@ function mapValidationErrorToMessageKey(error: ValidationError): {
     property: propertyNameToNaturalLanguage(property),
   };
 
-  // Map common validation constraints to message keys
-  switch (constraintKey) {
-    case 'isNotEmpty':
-      return { messageKey: `${property.toUpperCase()}_REQUIRED`, params };
-    case 'isString':
-      return { messageKey: `${property.toUpperCase()}_MUST_BE_STRING`, params };
-    case 'isEmail':
-      return { messageKey: `${property.toUpperCase()}_MUST_BE_EMAIL`, params };
-    case 'isInt':
-      return { messageKey: `${property.toUpperCase()}_MUST_BE_INTEGER`, params };
-    case 'isBoolean':
-      return { messageKey: `${property.toUpperCase()}_MUST_BE_BOOLEAN`, params };
-    case 'isEnum':
-      return { messageKey: `${property.toUpperCase()}_INVALID_ENUM`, params };
-    case 'isUUID':
-      return { messageKey: `${property.toUpperCase()}_MUST_BE_UUID`, params };
-    case 'isDate':
-      return { messageKey: `${property.toUpperCase()}_MUST_BE_DATE`, params };
-    case 'isDateString':
-      return { messageKey: `${property.toUpperCase()}_MUST_BE_DATE_STRING`, params };
-    case 'minLength': {
-      // Extract number from message: "password must be longer than or equal to 8 characters"
-      // or "password should not be shorter than 8 characters"
-      const match = constraintValue.match(
-        /(?:longer than or equal to|shorter than|length is) (\d+)/i,
-      );
-      const length = match ? parseInt(match[1], 10) : 8; // Default fallback
-      return {
-        messageKey: `${property.toUpperCase()}_MIN_LENGTH`,
-        params: { ...params, length },
-      };
-    }
-    case 'maxLength': {
-      // Extract number from message: "password must not be longer than 100 characters"
-      // or "password must not exceed 100 characters"
-      const match = constraintValue.match(
-        /(?:not be longer than|not exceed|must not exceed) (\d+)/i,
-      );
-      const length = match ? parseInt(match[1], 10) : 0;
-      return {
-        messageKey: `${property.toUpperCase()}_MAX_LENGTH`,
-        params: { ...params, length },
-      };
-    }
-    case 'min': {
-      // Extract number from message: "points must not be less than 0"
-      const match = constraintValue.match(
-        /(?:not be less than|must not be less than|must be greater than or equal to) (\d+)/i,
-      );
-      const min = match ? parseInt(match[1], 10) : 0;
-      return {
-        messageKey: `${property.toUpperCase()}_MIN_VALUE`,
-        params: { ...params, min },
-      };
-    }
-    case 'max': {
-      // Extract number from message: "points must not be greater than 50000"
-      const match = constraintValue.match(
-        /(?:not be greater than|must not be greater than|must be less than or equal to) (\d+)/i,
-      );
-      const max = match ? parseInt(match[1], 10) : 0;
-      return {
-        messageKey: `${property.toUpperCase()}_MAX_VALUE`,
-        params: { ...params, max },
-      };
-    }
-    case 'isOptional':
-      return { messageKey: `${property.toUpperCase()}_OPTIONAL`, params };
-    default:
-      // Check if it's a custom constraint class name (ends with Constraint) or named maxKoreanChars
-      if (
-        constraintKey.endsWith('Constraint') ||
-        constraintKey === 'maxKoreanChars' ||
-        constraintKey === 'MaxKoreanCharsConstraint'
-      ) {
-        // For MaxKoreanChars validator, extract maxChars from message
-        // Example: "displayName must have at most 6 Korean character(s)"
-        const maxMatch = constraintValue.match(/at most (\d+)/i);
-        if (maxMatch) {
-          const maxChars = parseInt(maxMatch[1], 10);
-          return {
-            messageKey: `${property.toUpperCase()}_MAX_KOREAN_CHARS`,
-            params: { ...params, maxChars },
-          };
-        }
+  // PRIORITY 1: Check if constraintValue is a messageKey (format: MESSAGE_KEY)
+  // This happens when messageKey is explicitly specified in decorator: { message: 'MESSAGE_KEY' }
+  if (
+    typeof constraintValue === 'string' &&
+    constraintValue.match(/^[A-Z_][A-Z0-9_]*$/)
+  ) {
+    // Extract numeric params from constraint arguments
+    // In class-validator, constraint arguments are stored in error.contexts
+    const constraintContext = error.contexts?.[constraintKey] as
+      | Record<string, unknown>
+      | undefined;
+
+    // Try to extract params from constraint context or error metadata
+    if (constraintKey === 'minLength' || constraintKey === 'maxLength') {
+      // For MinLength/MaxLength, the value is the first argument
+      // It's stored in constraint context or we can try to get from error
+      const length =
+        (constraintContext?.value as number | undefined) ||
+        (constraintContext?.min as number | undefined) ||
+        (constraintContext?.max as number | undefined) ||
+        (constraintContext?.length as number | undefined);
+      if (length !== undefined && typeof length === 'number') {
+        params.length = length;
       }
-      // Try to extract messageKey from custom validator if it's in the format "MESSAGE_KEY"
-      if (constraintValue.match(/^[A-Z_]+$/)) {
-        return { messageKey: constraintValue, params };
+    } else if (constraintKey === 'min' || constraintKey === 'max') {
+      const value =
+        (constraintContext?.value as number | undefined) ||
+        (constraintContext?.min as number | undefined) ||
+        (constraintContext?.max as number | undefined);
+      if (value !== undefined && typeof value === 'number') {
+        params[constraintKey === 'min' ? 'min' : 'max'] = value;
       }
-      // Fallback: use generic validation error
-      return {
-        messageKey: 'VALIDATION_FAILED',
-        params: {
-          property: propertyNameToNaturalLanguage(property),
-          constraint: constraintKey,
-        },
-      };
+    } else if (
+      constraintKey.endsWith('Constraint') ||
+      constraintKey === 'maxKoreanChars' ||
+      constraintKey === 'MaxKoreanCharsConstraint'
+    ) {
+      // For MaxKoreanChars, try to extract maxChars from constraint context
+      const maxChars =
+        (constraintContext?.maxChars as number | undefined) ||
+        (constraintContext?.value as number | undefined);
+      if (maxChars !== undefined && typeof maxChars === 'number') {
+        params.maxChars = maxChars;
+      }
+    }
+
+    return { messageKey: constraintValue, params };
   }
+
+  // PRIORITY 2: For custom validators that return messageKey directly
+  // Check if it's a custom constraint that might have messageKey in its context
+  if (
+    constraintKey.endsWith('Constraint') ||
+    constraintKey === 'maxKoreanChars' ||
+    constraintKey === 'MaxKoreanCharsConstraint'
+  ) {
+    // Try to extract messageKey from constraint value if it's in MESSAGE_KEY format
+    if (
+      typeof constraintValue === 'string' &&
+      constraintValue.match(/^[A-Z_][A-Z0-9_]*$/)
+    ) {
+      const maxChars = extractNumberFromMessage(constraintValue, 'maxKoreanChars');
+      if (maxChars !== undefined) {
+        params.maxChars = maxChars;
+      }
+      return { messageKey: constraintValue, params };
+    }
+  }
+
+  // FALLBACK: If no explicit messageKey is found, use VALIDATION_FAILED
+  // This ensures we don't auto-generate keys and forces developers to specify them
+  return {
+    messageKey: 'VALIDATION_FAILED',
+    params: {
+      property: propertyNameToNaturalLanguage(property),
+      constraint: constraintKey,
+      message: constraintValue,
+    },
+  };
+}
+
+/**
+ * Helper to extract numeric values from error metadata or fallback parsing
+ */
+function extractNumberFromMessage(message: string, type: string): number | undefined {
+  // Try to extract from common patterns (fallback only)
+  if (type === 'minLength' || type === 'maxLength') {
+    const match = message.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : undefined;
+  }
+  if (type === 'min' || type === 'max') {
+    const match = message.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : undefined;
+  }
+  if (type === 'maxKoreanChars') {
+    const match = message.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : undefined;
+  }
+  return undefined;
 }
 
 /**

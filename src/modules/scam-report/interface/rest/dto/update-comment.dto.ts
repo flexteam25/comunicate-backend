@@ -1,13 +1,13 @@
 import { IsString, IsOptional, IsArray, IsUUID, MaxLength } from 'class-validator';
 
 export class UpdateCommentDto {
-  @IsOptional()
-  @IsString({ message: 'Content must be a string' })
-  @MaxLength(5000, { message: 'Content must not exceed 5000 characters' })
+  @IsOptional({ message: 'CONTENT_OPTIONAL' })
+  @IsString({ message: 'CONTENT_MUST_BE_STRING' })
+  @MaxLength(5000, { message: 'CONTENT_MAX_LENGTH' })
   content?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'DELETEIMAGEIDS_OPTIONAL' })
   @IsArray()
-  @IsUUID(undefined, { each: true, message: 'Each deleteImageId must be a valid UUID' })
+  @IsUUID(undefined, { each: true, message: 'DELETEIMAGEIDS_MUST_BE_UUID' })
   deleteImageIds?: string[];
 }

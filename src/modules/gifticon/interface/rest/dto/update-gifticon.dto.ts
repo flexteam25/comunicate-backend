@@ -11,51 +11,51 @@ import { Type } from 'class-transformer';
 import { GifticonStatus } from '../../../domain/entities/gifticon.entity';
 
 export class UpdateGifticonDto {
-  @IsOptional()
-  @IsString({ message: 'Title must be a string' })
-  @MaxLength(255, { message: 'Title must not exceed 255 characters' })
+  @IsOptional({ message: 'TITLE_OPTIONAL' })
+  @IsString({ message: 'TITLE_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'TITLE_MAX_LENGTH' })
   title?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Slug must be a string' })
-  @MaxLength(255, { message: 'Slug must not exceed 255 characters' })
+  @IsOptional({ message: 'SLUG_OPTIONAL' })
+  @IsString({ message: 'SLUG_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'SLUG_MAX_LENGTH' })
   slug?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Summary must be a string' })
-  @MaxLength(500, { message: 'Summary must not exceed 500 characters' })
+  @IsOptional({ message: 'SUMMARY_OPTIONAL' })
+  @IsString({ message: 'SUMMARY_MUST_BE_STRING' })
+  @MaxLength(500, { message: 'SUMMARY_MAX_LENGTH' })
   summary?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Content must be a string' })
+  @IsOptional({ message: 'CONTENT_OPTIONAL' })
+  @IsString({ message: 'CONTENT_MUST_BE_STRING' })
   content?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
   @IsEnum(GifticonStatus, {
     message: 'Status must be one of: draft, published, archived',
   })
   status?: GifticonStatus;
 
-  @IsOptional()
-  @IsDateString({}, { message: 'Start date must be a valid ISO date string' })
+  @IsOptional({ message: 'STARTSAT_OPTIONAL' })
+  @IsDateString({}, { message: 'STARTSAT_MUST_BE_DATE_STRING' })
   startsAt?: string;
 
-  @IsOptional()
-  @IsDateString({}, { message: 'End date must be a valid ISO date string' })
+  @IsOptional({ message: 'ENDSAT_OPTIONAL' })
+  @IsDateString({}, { message: 'ENDSAT_MUST_BE_DATE_STRING' })
   endsAt?: string;
 
-  @IsOptional()
-  @IsInt({ message: 'Amount must be an integer' })
-  @Min(0, { message: 'Amount must be at least 0' })
+  @IsOptional({ message: 'AMOUNT_OPTIONAL' })
+  @IsInt({ message: 'AMOUNT_MUST_BE_INTEGER' })
+  @Min(0, { message: 'AMOUNT_MIN_VALUE' })
   @Type(() => Number)
   amount?: number;
 
-  @IsOptional()
-  @IsString({ message: 'Delete image must be a string' })
+  @IsOptional({ message: 'DELETEIMAGE_OPTIONAL' })
+  @IsString({ message: 'DELETEIMAGE_MUST_BE_STRING' })
   deleteImage?: string; // "true" to delete image
 
-  @IsOptional()
-  @IsString({ message: 'Type color must be a string' })
-  @MaxLength(50, { message: 'Type color must not exceed 50 characters' })
+  @IsOptional({ message: 'TYPECOLOR_OPTIONAL' })
+  @IsString({ message: 'TYPECOLOR_MUST_BE_STRING' })
+  @MaxLength(50, { message: 'TYPECOLOR_MAX_LENGTH' })
   typeColor?: string;
 }

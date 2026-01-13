@@ -66,6 +66,10 @@ export enum SocketEvent {
   REDEMPTION_REJECTED = 'redemption:rejected',
   REDEMPTION_CREATED = 'redemption:created',
   REDEMPTION_CANCELLED = 'redemption:cancelled',
+  SITE_REQUEST_CREATED = 'site-request:created',
+  SITE_REQUEST_APPROVED = 'site-request:approved',
+  SITE_REQUEST_REJECTED = 'site-request:rejected',
+  SITE_REQUEST_CANCELLED = 'site-request:cancelled',
 }
 
 /**

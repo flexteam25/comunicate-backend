@@ -5,6 +5,6 @@ export class ReactToPostDto {
   @IsEnum(ReactionType, {
     message: 'Reaction type must be either "like" or "dislike"',
   })
-  @IsNotEmpty({ message: 'Reaction type is required' })
+  @IsNotEmpty({ message: 'REACTIONTYPE_REQUIRED' })
   reactionType: ReactionType;
 }

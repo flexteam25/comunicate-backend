@@ -9,27 +9,27 @@ import {
 import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export class UpdatePostDto {
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'CATEGORYID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
   categoryId?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Title must be a string' })
-  @MaxLength(255, { message: 'Title must not exceed 255 characters' })
+  @IsOptional({ message: 'TITLE_OPTIONAL' })
+  @IsString({ message: 'TITLE_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'TITLE_MAX_LENGTH' })
   title?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Content must be a string' })
+  @IsOptional({ message: 'CONTENT_OPTIONAL' })
+  @IsString({ message: 'CONTENT_MUST_BE_STRING' })
   content?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'ISPUBLISHED_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean({ message: 'Is published must be a boolean' })
+  @IsBoolean({ message: 'ISPUBLISHED_MUST_BE_BOOLEAN' })
   isPublished?: boolean;
 
-  @IsOptional()
+  @IsOptional({ message: 'ISPINNED_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean({ message: 'Is pinned must be a boolean' })
+  @IsBoolean({ message: 'ISPINNED_MUST_BE_BOOLEAN' })
   isPinned?: boolean;
 
   @IsOptional()

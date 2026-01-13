@@ -14,67 +14,67 @@ import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
 import { TetherDepositWithdrawalStatus } from '../../../domain/entities/site.entity';
 
 export class CreateSiteDto {
-  @IsString()
-  @MaxLength(255)
+  @IsString({ message: 'NAME_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'NAME_MAX_LENGTH' })
   name: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
+  @IsString({ message: 'SLUG_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'SLUG_REQUIRED' })
+  @MaxLength(50, { message: 'SLUG_MAX_LENGTH' })
   @IsSlug()
   slug: string;
 
-  @IsUUID()
+  @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
   categoryId: string;
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'TIERID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'TIERID_MUST_BE_UUID' })
   tierId?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
+  @IsOptional({ message: 'PERMANENTURL_OPTIONAL' })
+  @IsString({ message: 'PERMANENTURL_MUST_BE_STRING' })
+  @MaxLength(500, { message: 'PERMANENTURL_MAX_LENGTH' })
   permanentUrl?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
+  @IsOptional({ message: 'MAINIMAGEURL_OPTIONAL' })
+  @IsString({ message: 'MAINIMAGEURL_MUST_BE_STRING' })
+  @MaxLength(500, { message: 'MAINIMAGEURL_MAX_LENGTH' })
   mainImageUrl?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
+  @IsOptional({ message: 'SITEIMAGEURL_OPTIONAL' })
+  @IsString({ message: 'SITEIMAGEURL_MUST_BE_STRING' })
+  @MaxLength(500, { message: 'SITEIMAGEURL_MAX_LENGTH' })
   siteImageUrl?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'DESCRIPTION_OPTIONAL' })
+  @IsString({ message: 'DESCRIPTION_MUST_BE_STRING' })
   description?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'FIRSTCHARGE_OPTIONAL' })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  @Max(100)
+  @Min(0, { message: 'FIRSTCHARGE_MIN_VALUE' })
+  @Max(100, { message: 'FIRSTCHARGE_MAX_VALUE' })
   firstCharge?: number;
 
-  @IsOptional()
+  @IsOptional({ message: 'RECHARGE_OPTIONAL' })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  @Max(100)
+  @Min(0, { message: 'RECHARGE_MIN_VALUE' })
+  @Max(100, { message: 'RECHARGE_MAX_VALUE' })
   recharge?: number;
 
-  @IsOptional()
+  @IsOptional({ message: 'EXPERIENCE_OPTIONAL' })
   @Type(() => Number)
   @IsNumber()
-  @Min(0)
+  @Min(0, { message: 'EXPERIENCE_MIN_VALUE' })
   experience?: number;
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'PARTNERUID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'PARTNERUID_MUST_BE_UUID' })
   partnerUid?: string;
 
-  @IsOptional()
-  @IsEnum(TetherDepositWithdrawalStatus)
+  @IsOptional({ message: 'TETHERDEPOSITWITHDRAWALSTATUS_OPTIONAL' })
+  @IsEnum(TetherDepositWithdrawalStatus, { message: 'TETHERDEPOSITWITHDRAWALSTATUS_INVALID_ENUM' })
   tetherDepositWithdrawalStatus?: TetherDepositWithdrawalStatus;
 }

@@ -3,24 +3,24 @@ import { Type } from 'class-transformer';
 import { PartnerRequestStatus } from '../../../domain/entities/partner-request.entity';
 
 export class ListPartnerRequestsQueryDto {
-  @IsOptional()
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
   @IsEnum(PartnerRequestStatus, {
     message: 'Status must be one of: pending, approved, rejected',
   })
   status?: PartnerRequestStatus;
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'USERID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'USERID_MUST_BE_UUID' })
   userId?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Cursor must be a string' })
+  @IsOptional({ message: 'CURSOR_OPTIONAL' })
+  @IsString({ message: 'CURSOR_MUST_BE_STRING' })
   cursor?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LIMIT_OPTIONAL' })
   @Type(() => Number)
-  @IsInt({ message: 'Limit must be an integer' })
-  @Min(1, { message: 'Limit must be at least 1' })
-  @Max(100, { message: 'Limit must be at most 100' })
+  @IsInt({ message: 'LIMIT_MUST_BE_INTEGER' })
+  @Min(1, { message: 'LIMIT_MIN_VALUE' })
+  @Max(100, { message: 'LIMIT_MAX_VALUE' })
   limit?: number;
 }

@@ -13,43 +13,43 @@ import { BadgeType } from '../../../../domain/entities/badge.entity';
 import { TransformToBoolean } from '../../../../../../shared/utils/transform-boolean.util';
 
 export class CreateBadgeDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'NAME_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'NAME_REQUIRED' })
   name: string;
 
-  @IsString()
-  @IsOptional()
+  @IsString({ message: 'DESCRIPTION_MUST_BE_STRING' })
+  @IsOptional({ message: 'DESCRIPTION_OPTIONAL' })
   description?: string;
 
-  @IsString()
-  @IsOptional()
+  @IsString({ message: 'ICONURL_MUST_BE_STRING' })
+  @IsOptional({ message: 'ICONURL_OPTIONAL' })
   iconUrl?: string;
 
-  @IsString()
-  @IsOptional()
+  @IsString({ message: 'ICONNAME_MUST_BE_STRING' })
+  @IsOptional({ message: 'ICONNAME_OPTIONAL' })
   iconName?: string;
 
-  @IsEnum(BadgeType)
-  @IsNotEmpty()
+  @IsEnum(BadgeType, { message: 'BADGETYPE_INVALID_ENUM' })
+  @IsNotEmpty({ message: 'BADGETYPE_REQUIRED' })
   badgeType: BadgeType;
 
-  @IsOptional()
+  @IsOptional({ message: 'ISACTIVE_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean()
+  @IsBoolean({ message: 'ISACTIVE_MUST_BE_BOOLEAN' })
   isActive?: boolean;
 
-  @IsString()
-  @IsOptional()
+  @IsString({ message: 'OBTAIN_MUST_BE_STRING' })
+  @IsOptional({ message: 'OBTAIN_OPTIONAL' })
   obtain?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'POINT_OPTIONAL' })
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  @Max(50000)
+  @IsInt({ message: 'POINT_MUST_BE_INTEGER' })
+  @Min(0, { message: 'POINT_MIN_VALUE' })
+  @Max(50000, { message: 'POINT_MAX_VALUE' })
   point?: number;
 
-  @IsString()
-  @IsOptional()
+  @IsString({ message: 'COLOR_MUST_BE_STRING' })
+  @IsOptional({ message: 'COLOR_OPTIONAL' })
   color?: string;
 }

@@ -1,15 +1,15 @@
 import { IsUUID, IsInt, Min, IsString, IsNotEmpty } from 'class-validator';
 
 export class RequestPointExchangeDto {
-  @IsUUID()
-  @IsNotEmpty({ message: 'Site ID is required' })
+  @IsUUID(undefined, { message: 'SITEID_MUST_BE_UUID' })
+  @IsNotEmpty({ message: 'SITEID_REQUIRED' })
   siteId: string;
 
-  @IsInt({ message: 'Points amount must be an integer' })
-  @Min(10000, { message: 'Minimum exchange amount is 10,000 points' })
+  @IsInt({ message: 'POINTSAMOUNT_MUST_BE_INTEGER' })
+  @Min(10000, { message: 'POINTSAMOUNT_MIN_VALUE' })
   pointsAmount: number;
 
-  @IsString()
-  @IsNotEmpty({ message: 'Site user ID is required' })
+  @IsString({ message: 'SITEUSERID_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'SITEUSERID_REQUIRED' })
   siteUserId: string;
 }

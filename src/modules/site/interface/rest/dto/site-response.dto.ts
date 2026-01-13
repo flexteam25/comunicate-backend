@@ -16,7 +16,8 @@ export class TierResponse {
   name: string;
   description?: string;
   order: number;
-  color?: string;
+  iconUrl?: string;
+  iconName?: string;
 }
 
 export class BadgeResponse {

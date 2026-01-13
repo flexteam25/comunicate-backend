@@ -9,30 +9,30 @@ import {
 } from 'class-validator';
 
 export class UpdateSiteEventUserDto {
-  @IsOptional()
-  @IsString({ message: 'Title must be a string' })
-  @MaxLength(255, { message: 'Title must not exceed 255 characters' })
+  @IsOptional({ message: 'TITLE_OPTIONAL' })
+  @IsString({ message: 'TITLE_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'TITLE_MAX_LENGTH' })
   title?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Description must be a string' })
+  @IsOptional({ message: 'DESCRIPTION_OPTIONAL' })
+  @IsString({ message: 'DESCRIPTION_MUST_BE_STRING' })
   description?: string;
 
-  @IsOptional()
-  @IsDateString({}, { message: 'Start date must be a valid ISO 8601 date string' })
+  @IsOptional({ message: 'STARTDATE_OPTIONAL' })
+  @IsDateString({}, { message: 'STARTDATE_MUST_BE_DATE_STRING' })
   startDate?: string;
 
-  @IsOptional()
-  @IsDateString({}, { message: 'End date must be a valid ISO 8601 date string' })
+  @IsOptional({ message: 'ENDDATE_OPTIONAL' })
+  @IsDateString({}, { message: 'ENDDATE_MUST_BE_DATE_STRING' })
   endDate?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LINKURLS_OPTIONAL' })
   @IsArray({ message: 'Link URLs must be an array' })
   @IsUrl({}, { each: true, message: 'Each link URL must be a valid URL' })
   linkUrls?: string[];
 
-  @IsOptional()
+  @IsOptional({ message: 'DELETEBANNERS_OPTIONAL' })
   @IsArray({ message: 'Delete banners must be an array' })
-  @IsUUID('4', { each: true, message: 'Each delete banner ID must be a valid UUID' })
+  @IsUUID('4', { each: true, message: 'DELETEBANNERS_MUST_BE_UUID' })
   deleteBanners?: string[];
 }

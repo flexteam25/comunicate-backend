@@ -525,7 +525,8 @@ export class UpdateSiteUseCase {
             name: site.tier.name,
             description: site.tier.description || null,
             order: site.tier.order,
-            color: site.tier.color || null,
+            iconUrl: buildFullUrl(this.apiServiceUrl, site.tier.iconUrl || null) || null,
+            iconName: site.tier.iconName || null,
           }
         : null,
       permanentUrl: site.permanentUrl || null,

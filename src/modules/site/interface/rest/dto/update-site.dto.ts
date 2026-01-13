@@ -17,81 +17,81 @@ import {
 import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
 
 export class UpdateSiteDto {
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
+  @IsOptional({ message: 'NAME_OPTIONAL' })
+  @IsString({ message: 'NAME_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'NAME_MAX_LENGTH' })
   name?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(50)
+  @IsOptional({ message: 'SLUG_OPTIONAL' })
+  @IsString({ message: 'SLUG_MUST_BE_STRING' })
+  @MaxLength(50, { message: 'SLUG_MAX_LENGTH' })
   @IsSlug()
   slug?: string;
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'CATEGORYID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
   categoryId?: string;
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'TIERID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'TIERID_MUST_BE_UUID' })
   tierId?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
+  @IsOptional({ message: 'PERMANENTURL_OPTIONAL' })
+  @IsString({ message: 'PERMANENTURL_MUST_BE_STRING' })
+  @MaxLength(500, { message: 'PERMANENTURL_MAX_LENGTH' })
   permanentUrl?: string;
 
-  @IsOptional()
-  @IsEnum(SiteStatus)
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
+  @IsEnum(SiteStatus, { message: 'STATUS_INVALID_ENUM' })
   status?: SiteStatus;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'DESCRIPTION_OPTIONAL' })
+  @IsString({ message: 'DESCRIPTION_MUST_BE_STRING' })
   description?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'FIRSTCHARGE_OPTIONAL' })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  @Max(100)
+  @Min(0, { message: 'FIRSTCHARGE_MIN_VALUE' })
+  @Max(100, { message: 'FIRSTCHARGE_MAX_VALUE' })
   firstCharge?: number;
 
-  @IsOptional()
+  @IsOptional({ message: 'RECHARGE_OPTIONAL' })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  @Max(100)
+  @Min(0, { message: 'RECHARGE_MIN_VALUE' })
+  @Max(100, { message: 'RECHARGE_MAX_VALUE' })
   recharge?: number;
 
-  @IsOptional()
+  @IsOptional({ message: 'EXPERIENCE_OPTIONAL' })
   @Type(() => Number)
   @IsNumber()
-  @Min(0)
+  @Min(0, { message: 'EXPERIENCE_MIN_VALUE' })
   experience?: number;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'DELETELOGO_OPTIONAL' })
+  @IsString({ message: 'DELETELOGO_MUST_BE_STRING' })
   deleteLogo?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'DELETEMAINIMAGE_OPTIONAL' })
+  @IsString({ message: 'DELETEMAINIMAGE_MUST_BE_STRING' })
   deleteMainImage?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'DELETESITEIMAGE_OPTIONAL' })
+  @IsString({ message: 'DELETESITEIMAGE_MUST_BE_STRING' })
   deleteSiteImage?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'PARTNERUID_OPTIONAL' })
   @IsArray({ message: 'Partner UIDs must be an array' })
-  @IsUUID('4', { each: true, message: 'Each partner UID must be a valid UUID' })
+  @IsUUID('4', { each: true, message: 'PARTNERUID_MUST_BE_UUID' })
   partnerUid?: string[];
 
-  @IsOptional()
+  @IsOptional({ message: 'REMOVEPARTNERUID_OPTIONAL' })
   @IsArray({ message: 'Remove partner UIDs must be an array' })
-  @IsUUID('4', { each: true, message: 'Each remove partner UID must be a valid UUID' })
+  @IsUUID('4', { each: true, message: 'REMOVEPARTNERUID_MUST_BE_UUID' })
   removePartnerUid?: string[];
 
-  @IsOptional()
-  @IsEnum(TetherDepositWithdrawalStatus)
+  @IsOptional({ message: 'TETHERDEPOSITWITHDRAWALSTATUS_OPTIONAL' })
+  @IsEnum(TetherDepositWithdrawalStatus, { message: 'TETHERDEPOSITWITHDRAWALSTATUS_INVALID_ENUM' })
   tetherDepositWithdrawalStatus?: TetherDepositWithdrawalStatus;
 }

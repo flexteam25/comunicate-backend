@@ -13,8 +13,11 @@ export class Tier extends BaseEntity {
   @Column({ type: 'integer', default: 0 })
   order: number;
 
-  @Column({ type: 'varchar', length: 20, nullable: true })
-  color?: string;
+  @Column({ name: 'icon_url', type: 'varchar', length: 500, nullable: true })
+  iconUrl?: string;
+
+  @Column({ name: 'icon_name', type: 'varchar', length: 255, nullable: true })
+  iconName?: string;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;

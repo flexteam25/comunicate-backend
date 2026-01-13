@@ -3,40 +3,40 @@ import { Type } from 'class-transformer';
 import { MaxKoreanChars } from '../../../../../shared/validators/max-korean-chars.validator';
 
 export class UpdateProfileDto {
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  @MaxKoreanChars(6)
+  @IsOptional({ message: 'DISPLAYNAME_OPTIONAL' })
+  @IsString({ message: 'DISPLAYNAME_MUST_BE_STRING' })
+  @MaxLength(100, { message: 'DISPLAYNAME_MAX_LENGTH' })
+  @MaxKoreanChars(6, { message: 'DISPLAYNAME_MAX_KOREAN_CHARS' })
   displayName?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'PHONE_OPTIONAL' })
+  @IsString({ message: 'PHONE_MUST_BE_STRING' })
   @MaxLength(16, {
     message: 'Phone number must not exceed 16 characters (E.164 format)',
   })
   phone?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(64)
+  @IsOptional({ message: 'TOKEN_OPTIONAL' })
+  @IsString({ message: 'TOKEN_MUST_BE_STRING' })
+  @MaxLength(64, { message: 'TOKEN_MAX_LENGTH' })
   token?: string;
 
-  @IsOptional()
-  @IsDate()
+  @IsOptional({ message: 'BIRTHDATE_OPTIONAL' })
+  @IsDate({ message: 'BIRTHDATE_MUST_BE_DATE' })
   @Type(() => Date)
   birthDate?: Date;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(10)
+  @IsOptional({ message: 'GENDER_OPTIONAL' })
+  @IsString({ message: 'GENDER_MUST_BE_STRING' })
+  @MaxLength(10, { message: 'GENDER_MAX_LENGTH' })
   gender?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
+  @IsOptional({ message: 'BIO_OPTIONAL' })
+  @IsString({ message: 'BIO_MUST_BE_STRING' })
+  @MaxLength(500, { message: 'BIO_MAX_LENGTH' })
   bio?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'ACTIVEBADGE_OPTIONAL' })
+  @IsString({ message: 'ACTIVEBADGE_MUST_BE_STRING' })
   activeBadge?: string | null;
 }

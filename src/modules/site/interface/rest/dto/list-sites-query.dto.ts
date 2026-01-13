@@ -6,23 +6,23 @@ const emptyToUndefined = ({ value }: { value: unknown }) =>
 
 export class ListSitesQueryDto {
   @Transform(emptyToUndefined)
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'CATEGORYID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
   categoryId?: string;
 
   @Transform(emptyToUndefined)
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'TIERID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'TIERID_MUST_BE_UUID' })
   tierId?: string;
 
   @Transform(emptyToUndefined)
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
+  @IsString({ message: 'STATUS_MUST_BE_STRING' })
   status?: string; // Admin only
 
   @Transform(emptyToUndefined)
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'SEARCH_OPTIONAL' })
+  @IsString({ message: 'SEARCH_MUST_BE_STRING' })
   search?: string;
 
   @Transform(emptyToUndefined)
@@ -39,16 +39,16 @@ export class ListSitesQueryDto {
   filterBy?: 'reviewCount' | 'firstCharge' | 'recharge' | 'experience'; // Filter by specific field (highest)
 
   @Transform(emptyToUndefined)
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'CURSOR_OPTIONAL' })
+  @IsString({ message: 'CURSOR_MUST_BE_STRING' })
   cursor?: string;
 
   @Transform(emptyToUndefined)
-  @IsOptional()
+  @IsOptional({ message: 'LIMIT_OPTIONAL' })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
+  @IsInt({ message: 'LIMIT_MUST_BE_INTEGER' })
+  @Min(1, { message: 'LIMIT_MIN_VALUE' })
+  @Max(100, { message: 'LIMIT_MAX_VALUE' })
   limit?: number;
 
   @Transform(emptyToUndefined)

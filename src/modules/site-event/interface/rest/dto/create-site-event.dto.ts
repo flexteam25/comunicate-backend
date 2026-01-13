@@ -10,28 +10,28 @@ import {
 } from 'class-validator';
 
 export class CreateSiteEventDto {
-  @IsUUID()
-  @IsNotEmpty({ message: 'Site ID is required' })
+  @IsUUID(undefined, { message: 'SITEID_MUST_BE_UUID' })
+  @IsNotEmpty({ message: 'SITEID_REQUIRED' })
   siteId: string;
 
-  @IsString({ message: 'Title must be a string' })
-  @IsNotEmpty({ message: 'Title is required' })
-  @MaxLength(255, { message: 'Title must not exceed 255 characters' })
+  @IsString({ message: 'TITLE_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'TITLE_REQUIRED' })
+  @MaxLength(255, { message: 'TITLE_MAX_LENGTH' })
   title: string;
 
-  @IsOptional()
-  @IsString({ message: 'Description must be a string' })
+  @IsOptional({ message: 'DESCRIPTION_OPTIONAL' })
+  @IsString({ message: 'DESCRIPTION_MUST_BE_STRING' })
   description?: string;
 
-  @IsDateString({}, { message: 'Start date must be a valid ISO 8601 date string' })
-  @IsNotEmpty({ message: 'Start date is required' })
+  @IsDateString({}, { message: 'STARTDATE_MUST_BE_DATE_STRING' })
+  @IsNotEmpty({ message: 'STARTDATE_REQUIRED' })
   startDate: string;
 
-  @IsDateString({}, { message: 'End date must be a valid ISO 8601 date string' })
-  @IsNotEmpty({ message: 'End date is required' })
+  @IsDateString({}, { message: 'ENDDATE_MUST_BE_DATE_STRING' })
+  @IsNotEmpty({ message: 'ENDDATE_REQUIRED' })
   endDate: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LINKURLS_OPTIONAL' })
   @IsArray({ message: 'Link URLs must be an array' })
   @IsUrl({}, { each: true, message: 'Each link URL must be a valid URL' })
   linkUrls?: string[];

@@ -12,7 +12,8 @@ export interface CreateTierCommand {
   name: string;
   description?: string;
   order?: number;
-  color?: string;
+  iconUrl?: string;
+  iconName?: string;
 }
 
 @Injectable()
@@ -41,7 +42,8 @@ export class CreateTierUseCase {
           name: command.name,
           description: command.description,
           order: command.order ?? 0,
-          color: command.color,
+          iconUrl: command.iconUrl,
+          iconName: command.iconName,
         });
         return tierRepo.save(tier);
       },

@@ -3,24 +3,24 @@ import { Type } from 'class-transformer';
 import { PocaEventStatus } from '../../../domain/entities/poca-event.entity';
 
 export class ListAdminPocaEventsQueryDto {
-  @IsOptional()
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
   @IsEnum(PocaEventStatus, {
     message: 'Status must be one of: draft, published, archived',
   })
   status?: PocaEventStatus;
 
-  @IsOptional()
-  @IsString({ message: 'Search must be a string' })
+  @IsOptional({ message: 'SEARCH_OPTIONAL' })
+  @IsString({ message: 'SEARCH_MUST_BE_STRING' })
   search?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Cursor must be a string' })
+  @IsOptional({ message: 'CURSOR_OPTIONAL' })
+  @IsString({ message: 'CURSOR_MUST_BE_STRING' })
   cursor?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LIMIT_OPTIONAL' })
   @Type(() => Number)
-  @IsInt({ message: 'Limit must be an integer' })
-  @Min(1, { message: 'Limit must be at least 1' })
-  @Max(100, { message: 'Limit must be at most 100' })
+  @IsInt({ message: 'LIMIT_MUST_BE_INTEGER' })
+  @Min(1, { message: 'LIMIT_MIN_VALUE' })
+  @Max(100, { message: 'LIMIT_MAX_VALUE' })
   limit?: number;
 }

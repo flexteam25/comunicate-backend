@@ -2,12 +2,12 @@ import { IsString, IsNotEmpty, IsOptional, IsEnum, MaxLength } from 'class-valid
 import { InquiryStatus } from '../../../domain/entities/inquiry.entity';
 
 export class ReplyInquiryDto {
-  @IsString({ message: 'reply must be a string' })
-  @IsNotEmpty({ message: 'reply is required' })
-  @MaxLength(5000, { message: 'reply must not exceed 5000 characters' })
+  @IsString({ message: 'REPLY_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'REPLY_REQUIRED' })
+  @MaxLength(5000, { message: 'REPLY_MAX_LENGTH' })
   reply: string;
 
-  @IsOptional()
-  @IsEnum(InquiryStatus, { message: 'status must be a valid inquiry status' })
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
+  @IsEnum(InquiryStatus, { message: 'STATUS_INVALID_ENUM' })
   status?: InquiryStatus;
 }

@@ -2,22 +2,27 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength } from 'class-validato
 import { Type } from 'class-transformer';
 
 export class CreateTierDto {
-  @IsString()
-  @MaxLength(10)
+  @IsString({ message: 'NAME_MUST_BE_STRING' })
+  @MaxLength(10, { message: 'NAME_MAX_LENGTH' })
   name: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'DESCRIPTION_OPTIONAL' })
+  @IsString({ message: 'DESCRIPTION_MUST_BE_STRING' })
   description?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'ORDER_OPTIONAL' })
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'ORDER_MUST_BE_INTEGER' })
+  @Min(0, { message: 'ORDER_MIN_VALUE' })
   order?: number;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  color?: string;
+  @IsOptional({ message: 'ICONURL_OPTIONAL' })
+  @IsString({ message: 'ICONURL_MUST_BE_STRING' })
+  @MaxLength(500, { message: 'ICONURL_MAX_LENGTH' })
+  iconUrl?: string;
+
+  @IsOptional({ message: 'ICONNAME_OPTIONAL' })
+  @IsString({ message: 'ICONNAME_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'ICONNAME_MAX_LENGTH' })
+  iconName?: string;
 }

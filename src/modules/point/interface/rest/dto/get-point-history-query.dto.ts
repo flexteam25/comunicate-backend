@@ -14,22 +14,22 @@ export class GetPointHistoryQueryDto {
   @IsIn(['all', 'earn', 'spend', 'refund'])
   type?: 'all' | 'earn' | 'spend' | 'refund';
 
-  @IsOptional()
-  @IsDateString({}, { message: 'startDate must be a valid ISO 8601 date string' })
+  @IsOptional({ message: 'STARTDATE_OPTIONAL' })
+  @IsDateString({}, { message: 'STARTDATE_MUST_BE_DATE_STRING' })
   startDate?: string; // UTC date string from FE
 
-  @IsOptional()
-  @IsDateString({}, { message: 'endDate must be a valid ISO 8601 date string' })
+  @IsOptional({ message: 'ENDDATE_OPTIONAL' })
+  @IsDateString({}, { message: 'ENDDATE_MUST_BE_DATE_STRING' })
   endDate?: string; // UTC date string from FE
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'CURSOR_OPTIONAL' })
+  @IsString({ message: 'CURSOR_MUST_BE_STRING' })
   cursor?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LIMIT_OPTIONAL' })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(50)
+  @IsInt({ message: 'LIMIT_MUST_BE_INTEGER' })
+  @Min(1, { message: 'LIMIT_MIN_VALUE' })
+  @Max(50, { message: 'LIMIT_MAX_VALUE' })
   limit?: number;
 }

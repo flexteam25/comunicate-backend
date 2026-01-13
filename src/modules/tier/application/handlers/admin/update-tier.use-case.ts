@@ -14,7 +14,8 @@ export interface UpdateTierCommand {
   name?: string;
   description?: string;
   order?: number;
-  color?: string;
+  iconUrl?: string;
+  iconName?: string;
   isActive?: boolean;
 }
 
@@ -56,7 +57,8 @@ export class UpdateTierUseCase {
         if (command.description !== undefined)
           updateData.description = command.description || null;
         if (command.order !== undefined) updateData.order = command.order;
-        if (command.color !== undefined) updateData.color = command.color || null;
+        if (command.iconUrl !== undefined) updateData.iconUrl = command.iconUrl || null;
+        if (command.iconName !== undefined) updateData.iconName = command.iconName || null;
         if (command.isActive !== undefined) updateData.isActive = command.isActive;
 
         await tierRepo.update(command.tierId, updateData);

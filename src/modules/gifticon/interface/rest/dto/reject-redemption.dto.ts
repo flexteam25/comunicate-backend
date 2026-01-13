@@ -1,8 +1,8 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class RejectRedemptionDto {
-  @IsOptional()
-  @IsString({ message: 'Reason must be a string' })
-  @MaxLength(1000, { message: 'Reason must not exceed 1000 characters' })
+  @IsOptional({ message: 'REASON_OPTIONAL' })
+  @IsString({ message: 'REASON_MUST_BE_STRING' })
+  @MaxLength(1000, { message: 'REASON_MAX_LENGTH' })
   reason?: string;
 }

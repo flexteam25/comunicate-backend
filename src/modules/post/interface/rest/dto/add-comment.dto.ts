@@ -1,12 +1,12 @@
 import { IsString, IsNotEmpty, IsOptional, IsUUID, MaxLength } from 'class-validator';
 
 export class AddCommentDto {
-  @IsString({ message: 'Content must be a string' })
-  @IsNotEmpty({ message: 'Content is required' })
-  @MaxLength(5000, { message: 'Content must not exceed 5000 characters' })
+  @IsString({ message: 'CONTENT_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'CONTENT_REQUIRED' })
+  @MaxLength(5000, { message: 'CONTENT_MAX_LENGTH' })
   content: string;
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'PARENTCOMMENTID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'PARENTCOMMENTID_MUST_BE_UUID' })
   parentCommentId?: string;
 }

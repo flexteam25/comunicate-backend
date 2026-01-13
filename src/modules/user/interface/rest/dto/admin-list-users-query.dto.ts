@@ -23,45 +23,45 @@ export enum SortDir {
 }
 
 export class AdminListUsersQueryDto {
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'SEARCH_OPTIONAL' })
+  @IsString({ message: 'SEARCH_MUST_BE_STRING' })
   search?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'EMAIL_OPTIONAL' })
+  @IsString({ message: 'EMAIL_MUST_BE_STRING' })
   email?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'DISPLAYNAME_OPTIONAL' })
+  @IsString({ message: 'DISPLAYNAME_MUST_BE_STRING' })
   displayName?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
+  @IsString({ message: 'STATUS_MUST_BE_STRING' })
   status?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'ISACTIVE_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean()
+  @IsBoolean({ message: 'ISACTIVE_MUST_BE_BOOLEAN' })
   isActive?: boolean;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'CURSOR_OPTIONAL' })
+  @IsString({ message: 'CURSOR_MUST_BE_STRING' })
   cursor?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LIMIT_OPTIONAL' })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(50)
+  @IsInt({ message: 'LIMIT_MUST_BE_INTEGER' })
+  @Min(1, { message: 'LIMIT_MIN_VALUE' })
+  @Max(50, { message: 'LIMIT_MAX_VALUE' })
   limit?: number;
 
-  @IsOptional()
+  @IsOptional({ message: 'SORTBY_OPTIONAL' })
   @IsEnum(UserSortBy, {
     message: 'sortBy must be one of: createdAt, points, email, displayName',
   })
   sortBy?: UserSortBy;
 
-  @IsOptional()
-  @IsEnum(SortDir, { message: 'sortDir must be asc or desc' })
+  @IsOptional({ message: 'SORTDIR_OPTIONAL' })
+  @IsEnum(SortDir, { message: 'SORTDIR_INVALID_ENUM' })
   sortDir?: SortDir;
 }

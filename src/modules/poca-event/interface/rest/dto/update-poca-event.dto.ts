@@ -2,48 +2,48 @@ import { IsString, IsOptional, IsEnum, IsDateString, MaxLength } from 'class-val
 import { PocaEventStatus } from '../../../domain/entities/poca-event.entity';
 
 export class UpdatePocaEventDto {
-  @IsOptional()
-  @IsString({ message: 'Title must be a string' })
-  @MaxLength(255, { message: 'Title must not exceed 255 characters' })
+  @IsOptional({ message: 'TITLE_OPTIONAL' })
+  @IsString({ message: 'TITLE_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'TITLE_MAX_LENGTH' })
   title?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Slug must be a string' })
-  @MaxLength(255, { message: 'Slug must not exceed 255 characters' })
+  @IsOptional({ message: 'SLUG_OPTIONAL' })
+  @IsString({ message: 'SLUG_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'SLUG_MAX_LENGTH' })
   slug?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Summary must be a string' })
-  @MaxLength(500, { message: 'Summary must not exceed 500 characters' })
+  @IsOptional({ message: 'SUMMARY_OPTIONAL' })
+  @IsString({ message: 'SUMMARY_MUST_BE_STRING' })
+  @MaxLength(500, { message: 'SUMMARY_MAX_LENGTH' })
   summary?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Content must be a string' })
+  @IsOptional({ message: 'CONTENT_OPTIONAL' })
+  @IsString({ message: 'CONTENT_MUST_BE_STRING' })
   content?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
   @IsEnum(PocaEventStatus, {
     message: 'Status must be one of: draft, published, archived',
   })
   status?: PocaEventStatus;
 
-  @IsOptional()
-  @IsDateString({}, { message: 'Start date must be a valid ISO date string' })
+  @IsOptional({ message: 'STARTSAT_OPTIONAL' })
+  @IsDateString({}, { message: 'STARTSAT_MUST_BE_DATE_STRING' })
   startsAt?: string;
 
-  @IsOptional()
-  @IsDateString({}, { message: 'End date must be a valid ISO date string' })
+  @IsOptional({ message: 'ENDSAT_OPTIONAL' })
+  @IsDateString({}, { message: 'ENDSAT_MUST_BE_DATE_STRING' })
   endsAt?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Banners order must be a JSON string array' })
+  @IsOptional({ message: 'BANNERSORDER_OPTIONAL' })
+  @IsString({ message: 'BANNERSORDER_MUST_BE_STRING' })
   bannersOrder?: string; // JSON string array of numbers: "[0, 1, 2]"
 
-  @IsOptional()
-  @IsString({ message: 'Delete primary banner must be a string' })
+  @IsOptional({ message: 'DELETEPRIMARYBANNER_OPTIONAL' })
+  @IsString({ message: 'DELETEPRIMARYBANNER_MUST_BE_STRING' })
   deletePrimaryBanner?: string; // "true" to delete primary banner
 
-  @IsOptional()
-  @IsString({ message: 'Delete banners must be a string' })
+  @IsOptional({ message: 'DELETEBANNERS_OPTIONAL' })
+  @IsString({ message: 'DELETEBANNERS_MUST_BE_STRING' })
   deleteBanners?: string; // "true" to delete all banners
 }

@@ -3,23 +3,23 @@ import { TransformToBoolean } from '../../../../../shared/utils/transform-boolea
 import { Type } from 'class-transformer';
 
 export class AdminUpdateUserDto {
-  @IsOptional()
+  @IsOptional({ message: 'ISACTIVE_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean()
+  @IsBoolean({ message: 'ISACTIVE_MUST_BE_BOOLEAN' })
   isActive?: boolean;
 
-  @IsOptional()
+  @IsOptional({ message: 'POINTS_OPTIONAL' })
   @Type(() => Number)
-  @IsInt()
-  @Min(0, { message: 'Points must be greater than or equal to 0' })
+  @IsInt({ message: 'POINTS_MUST_BE_INTEGER' })
+  @Min(0, { message: 'POINTS_MIN_VALUE' })
   points?: number;
 
-  @IsOptional()
+  @IsOptional({ message: 'PARTNER_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean()
+  @IsBoolean({ message: 'PARTNER_MUST_BE_BOOLEAN' })
   partner?: boolean;
 
-  @IsOptional()
-  @IsString({ message: 'Bio must be a string' })
+  @IsOptional({ message: 'BIO_OPTIONAL' })
+  @IsString({ message: 'BIO_MUST_BE_STRING' })
   bio?: string;
 }

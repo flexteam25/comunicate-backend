@@ -2,19 +2,19 @@ import { IsString, MinLength, IsOptional, IsBoolean } from 'class-validator';
 import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export class AdminChangePasswordDto {
-  @IsString()
+  @IsString({ message: 'CURRENTPASSWORD_MUST_BE_STRING' })
   currentPassword: string;
 
-  @IsString()
-  @MinLength(8)
+  @IsString({ message: 'NEWPASSWORD_MUST_BE_STRING' })
+  @MinLength(8, { message: 'NEWPASSWORD_MIN_LENGTH' })
   newPassword: string;
 
-  @IsString()
-  @MinLength(8)
+  @IsString({ message: 'PASSWORDCONFIRMATION_MUST_BE_STRING' })
+  @MinLength(8, { message: 'PASSWORDCONFIRMATION_MIN_LENGTH' })
   passwordConfirmation: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LOGOUTALL_OPTIONAL' })
   @TransformToBoolean
-  @IsBoolean()
+  @IsBoolean({ message: 'LOGOUTALL_MUST_BE_BOOLEAN' })
   logoutAll?: boolean;
 }

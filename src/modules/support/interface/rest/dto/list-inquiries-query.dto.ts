@@ -3,37 +3,37 @@ import { Type } from 'class-transformer';
 import { InquiryStatus, InquiryCategory } from '../../../domain/entities/inquiry.entity';
 
 export class ListInquiriesQueryDto {
-  @IsOptional()
-  @IsString({ message: 'userName must be a string' })
+  @IsOptional({ message: 'USERNAME_OPTIONAL' })
+  @IsString({ message: 'USERNAME_MUST_BE_STRING' })
   userName?: string;
 
-  @IsOptional()
-  @IsEnum(InquiryStatus, { message: 'status must be a valid inquiry status' })
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
+  @IsEnum(InquiryStatus, { message: 'STATUS_INVALID_ENUM' })
   status?: InquiryStatus;
 
-  @IsOptional()
+  @IsOptional({ message: 'CATEGORY_OPTIONAL' })
   @IsEnum(InquiryCategory, {
     message: 'category must be one of: inquiry, feedback, bug, advertisement',
   })
   category?: InquiryCategory;
 
-  @IsOptional()
-  @IsString({ message: 'adminName must be a string' })
+  @IsOptional({ message: 'ADMINNAME_OPTIONAL' })
+  @IsString({ message: 'ADMINNAME_MUST_BE_STRING' })
   adminName?: string;
 
-  @IsOptional()
-  @IsString({ message: 'cursor must be a string' })
+  @IsOptional({ message: 'CURSOR_OPTIONAL' })
+  @IsString({ message: 'CURSOR_MUST_BE_STRING' })
   cursor?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LIMIT_OPTIONAL' })
   @Type(() => Number)
-  @IsInt({ message: 'limit must be an integer' })
-  @Min(1, { message: 'limit must be at least 1' })
-  @Max(100, { message: 'limit must be at most 100' })
+  @IsInt({ message: 'LIMIT_MUST_BE_INTEGER' })
+  @Min(1, { message: 'LIMIT_MIN_VALUE' })
+  @Max(100, { message: 'LIMIT_MAX_VALUE' })
   limit?: number;
 
-  @IsOptional()
-  @IsString({ message: 'sortBy must be a string' })
+  @IsOptional({ message: 'SORTBY_OPTIONAL' })
+  @IsString({ message: 'SORTBY_MUST_BE_STRING' })
   sortBy?: string;
 
   @IsOptional()

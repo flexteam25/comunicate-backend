@@ -13,32 +13,32 @@ export enum SortOrder {
 }
 
 export class ListPostsQueryDto {
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'CATEGORYID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
   categoryId?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Search must be a string' })
+  @IsOptional({ message: 'SEARCH_OPTIONAL' })
+  @IsString({ message: 'SEARCH_MUST_BE_STRING' })
   search?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'SORTBY_OPTIONAL' })
   @IsEnum(PostSortBy, {
     message: 'Sort by must be one of: createdAt, publishedAt, likeCount',
   })
   sortBy?: PostSortBy;
 
-  @IsOptional()
-  @IsEnum(SortOrder, { message: 'Sort order must be ASC or DESC' })
+  @IsOptional({ message: 'SORTORDER_OPTIONAL' })
+  @IsEnum(SortOrder, { message: 'SORTORDER_INVALID_ENUM' })
   sortOrder?: SortOrder;
 
-  @IsOptional()
-  @IsString({ message: 'Cursor must be a string' })
+  @IsOptional({ message: 'CURSOR_OPTIONAL' })
+  @IsString({ message: 'CURSOR_MUST_BE_STRING' })
   cursor?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LIMIT_OPTIONAL' })
   @Type(() => Number)
-  @IsInt({ message: 'Limit must be an integer' })
-  @Min(1, { message: 'Limit must be at least 1' })
-  @Max(50, { message: 'Limit must be at most 50' })
+  @IsInt({ message: 'LIMIT_MUST_BE_INTEGER' })
+  @Min(1, { message: 'LIMIT_MIN_VALUE' })
+  @Max(50, { message: 'LIMIT_MAX_VALUE' })
   limit?: number;
 }

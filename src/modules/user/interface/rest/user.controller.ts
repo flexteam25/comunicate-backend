@@ -158,7 +158,8 @@ export class UserController {
             id: site.tier.id,
             name: site.tier.name,
             order: site.tier.order,
-            color: site.tier.color || null,
+            iconUrl: buildFullUrl(this.apiServiceUrl, site.tier.iconUrl || null) || null,
+            iconName: site.tier.iconName || null,
           }
         : null,
       permanentUrl: site.permanentUrl || null,
@@ -497,7 +498,8 @@ export class UserController {
             id: site.tier.id,
             name: site.tier.name,
             order: site.tier.order,
-            color: site.tier.color || undefined,
+            iconUrl: buildFullUrl(this.apiServiceUrl, site.tier.iconUrl || null) || null,
+            iconName: site.tier.iconName || null,
           }
         : undefined,
       permanentUrl: site.permanentUrl || undefined,

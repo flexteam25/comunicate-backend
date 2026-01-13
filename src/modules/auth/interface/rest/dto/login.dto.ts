@@ -1,13 +1,13 @@
 import { IsEmail, IsString, IsOptional } from 'class-validator';
 
 export class LoginDto {
-  @IsEmail()
+  @IsEmail({}, { message: 'EMAIL_MUST_BE_EMAIL' })
   email: string;
 
-  @IsString()
+  @IsString({ message: 'PASSWORD_MUST_BE_STRING' })
   password: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'DEVICEINFO_OPTIONAL' })
+  @IsString({ message: 'DEVICEINFO_MUST_BE_STRING' })
   deviceInfo?: string;
 }

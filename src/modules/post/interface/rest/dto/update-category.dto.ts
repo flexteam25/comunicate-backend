@@ -11,37 +11,37 @@ import {
 import { Type } from 'class-transformer';
 
 export class UpdateCategoryDto {
-  @IsOptional()
-  @IsString({ message: 'Name must be a string' })
-  @MaxLength(50, { message: 'Name must not exceed 50 characters' })
+  @IsOptional({ message: 'NAME_OPTIONAL' })
+  @IsString({ message: 'NAME_MUST_BE_STRING' })
+  @MaxLength(50, { message: 'NAME_MAX_LENGTH' })
   name?: string;
 
-  @IsOptional()
-  @IsString({ message: 'nameKo must be a string' })
-  @MaxLength(50, { message: 'nameKo must not exceed 50 characters' })
+  @IsOptional({ message: 'NAMEKO_OPTIONAL' })
+  @IsString({ message: 'NAMEKO_MUST_BE_STRING' })
+  @MaxLength(50, { message: 'NAMEKO_MAX_LENGTH' })
   nameKo?: string;
 
-  @IsOptional()
-  @IsString({ message: 'Description must be a string' })
+  @IsOptional({ message: 'DESCRIPTION_OPTIONAL' })
+  @IsString({ message: 'DESCRIPTION_MUST_BE_STRING' })
   description?: string;
 
-  @IsOptional()
-  @IsBoolean({ message: 'showMain must be a boolean' })
+  @IsOptional({ message: 'SHOWMAIN_OPTIONAL' })
+  @IsBoolean({ message: 'SHOWMAIN_MUST_BE_BOOLEAN' })
   showMain?: boolean;
 
-  @IsOptional()
+  @IsOptional({ message: 'SPECIALKEY_OPTIONAL' })
   @ValidateIf((o) => o.specialKey !== null)
-  @IsString({ message: 'specialKey must be a string' })
+  @IsString({ message: 'SPECIALKEY_MUST_BE_STRING' })
   specialKey?: string | null;
 
-  @IsOptional()
+  @IsOptional({ message: 'ORDER_OPTIONAL' })
   @Type(() => Number)
-  @IsInt({ message: 'Order must be an integer' })
-  @Min(1, { message: 'Order must be at least 1' })
+  @IsInt({ message: 'ORDER_MUST_BE_INTEGER' })
+  @Min(1, { message: 'ORDER_MIN_VALUE' })
   order?: number;
 
-  @IsNotEmpty({ message: 'adminCreateOnly is required' })
+  @IsNotEmpty({ message: 'ADMINCREATEONLY_REQUIRED' })
   @Type(() => Boolean)
-  @IsBoolean({ message: 'adminCreateOnly must be a boolean' })
+  @IsBoolean({ message: 'ADMINCREATEONLY_MUST_BE_BOOLEAN' })
   adminCreateOnly: boolean;
 }
