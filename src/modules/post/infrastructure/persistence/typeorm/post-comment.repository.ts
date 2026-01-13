@@ -101,18 +101,48 @@ export class PostCommentRepository implements IPostCommentRepository {
     const hasMore = result.entities.length > realLimit;
     const data = result.entities.slice(0, realLimit);
 
+    // Create a map of comment.id -> raw data to handle cases where joins create multiple rows per comment
+    // TypeORM may return column names in different formats (snake_case, camelCase, or with table prefix)
+    const rawDataMap = new Map<string, Record<string, unknown>>();
+    result.raw.forEach((raw: Record<string, unknown>) => {
+      const commentId =
+        (raw.comment_id as string) ||
+        (raw.commentId as string) ||
+        (raw['comment_id'] as string) ||
+        (raw['commentId'] as string);
+      if (commentId && !rawDataMap.has(commentId)) {
+        rawDataMap.set(commentId, raw);
+      }
+    });
+
     // Map likeCount, dislikeCount, and reacted from raw data to entities
-    data.forEach((comment, index) => {
-      const rawData = result.raw[index];
-      (comment as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
-      (comment as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
-      // Map user reaction if userId is provided
-      if (userId) {
-        const userReactionType = (rawData?.userReactionType ||
-          rawData?.userreactiontype ||
-          rawData?.['userReactionType'] ||
-          rawData?.['userreactiontype']) as string | null;
-        (comment as any).reacted = userReactionType || null;
+    data.forEach((comment) => {
+      const rawData = rawDataMap.get(comment.id);
+      if (rawData) {
+        (comment as any).likeCount = parseInt(
+          String(rawData.likeCount || rawData.likeCount || '0'),
+          10,
+        );
+        (comment as any).dislikeCount = parseInt(
+          String(rawData.dislikeCount || rawData.dislikeCount || '0'),
+          10,
+        );
+        // Map user reaction if userId is provided
+        if (userId) {
+          // PostgreSQL may return column names in lowercase when using raw queries
+          const userReactionType = (rawData.userReactionType ||
+            rawData.userreactiontype ||
+            rawData['userReactionType'] ||
+            rawData['userreactiontype']) as string | null;
+          (comment as any).reacted = userReactionType || null;
+        }
+      } else {
+        // Fallback if raw data not found
+        (comment as any).likeCount = 0;
+        (comment as any).dislikeCount = 0;
+        if (userId) {
+          (comment as any).reacted = null;
+        }
       }
     });
 

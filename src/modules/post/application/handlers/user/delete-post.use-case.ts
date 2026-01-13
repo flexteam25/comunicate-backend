@@ -5,6 +5,9 @@ import {
   forbidden,
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
+import { TransactionService } from '../../../../../shared/services/transaction.service';
+import { EntityManager } from 'typeorm';
+import { UserPost } from '../../../../user/domain/entities/user-post.entity';
 
 export interface DeletePostCommand {
   postId: string;
@@ -16,6 +19,7 @@ export class DeletePostUseCase {
   constructor(
     @Inject('IPostRepository')
     private readonly postRepository: IPostRepository,
+    private readonly transactionService: TransactionService,
   ) {}
 
   async execute(command: DeletePostCommand): Promise<void> {
@@ -35,7 +39,17 @@ export class DeletePostUseCase {
       throw forbidden(MessageKeys.CAN_ONLY_DELETE_POSTS_WITHIN_ONE_HOUR);
     }
 
-    // Soft delete
-    await this.postRepository.delete(command.postId);
+    // Soft delete post and user_posts in transaction
+    await this.transactionService.executeInTransaction(async (manager: EntityManager) => {
+      // Soft delete post
+      await this.postRepository.delete(command.postId);
+
+      // Soft delete user_posts
+      const userPostRepo = manager.getRepository(UserPost);
+      await userPostRepo.softDelete({
+        userId: command.userId,
+        postId: command.postId,
+      });
+    });
   }
 }

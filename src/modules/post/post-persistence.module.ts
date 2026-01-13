@@ -7,6 +7,7 @@ import { PostCommentImage } from './domain/entities/post-comment-image.entity';
 import { PostReaction } from './domain/entities/post-reaction.entity';
 import { PostCommentReaction } from './domain/entities/post-comment-reaction.entity';
 import { PostView } from './domain/entities/post-view.entity';
+import { UserPost } from '../user/domain/entities/user-post.entity';
 import { PostRepository } from './infrastructure/persistence/typeorm/post.repository';
 import { PostCategoryRepository } from './infrastructure/persistence/typeorm/post-category.repository';
 import { PostCommentRepository } from './infrastructure/persistence/typeorm/post-comment.repository';
@@ -24,6 +25,7 @@ import { PostViewRepository } from './infrastructure/persistence/typeorm/post-vi
       PostReaction,
       PostCommentReaction,
       PostView,
+      UserPost,
     ]),
   ],
   exports: [

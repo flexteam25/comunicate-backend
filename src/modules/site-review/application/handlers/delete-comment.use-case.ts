@@ -9,6 +9,12 @@ import {
   forbidden,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
+import { TransactionService } from '../../../../shared/services/transaction.service';
+import { EntityManager } from 'typeorm';
+import {
+  UserComment,
+  CommentType as UserCommentType,
+} from '../../../user/domain/entities/user-comment.entity';
 
 export interface DeleteCommentCommand {
   commentId: string;
@@ -21,6 +27,7 @@ export class DeleteCommentUseCase {
     @Inject('ISiteReviewCommentRepository')
     private readonly commentRepository: ISiteReviewCommentRepository,
     private readonly commentHasChildService: CommentHasChildService,
+    private readonly transactionService: TransactionService,
   ) {}
 
   async execute(command: DeleteCommentCommand): Promise<void> {
@@ -37,7 +44,21 @@ export class DeleteCommentUseCase {
     // Store parentCommentId before deletion for async update
     const parentCommentId = comment.parentCommentId;
 
-    await this.commentRepository.delete(command.commentId);
+    // Soft delete comment and corresponding UserComment in transaction
+    await this.transactionService.executeInTransaction(async (manager: EntityManager) => {
+      await this.commentRepository.delete(command.commentId);
+
+      // Soft delete corresponding UserComment record
+      const userCommentRepo = manager.getRepository(UserComment);
+      await userCommentRepo
+        .createQueryBuilder()
+        .softDelete()
+        .where('commentId = :commentId', { commentId: command.commentId })
+        .andWhere('commentType = :commentType', {
+          commentType: UserCommentType.SITE_REVIEW_COMMENT,
+        })
+        .execute();
+    });
 
     // Update has_child for parent comment asynchronously
     if (parentCommentId) {

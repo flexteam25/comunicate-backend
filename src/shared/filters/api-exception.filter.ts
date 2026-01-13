@@ -88,7 +88,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
       stackTrace = exception.stack.split('\n').map((line) => line.trim());
     }
 
-    const logData = {
+    // Extract messageKey and params if it's ApiExceptionWithKey
+    let logMessageKey: string | undefined = undefined;
+    let logParams: Record<string, string | number> | undefined = undefined;
+    if (exception instanceof ApiExceptionWithKey) {
+      logMessageKey = exception.getMessageKey();
+      logParams = exception.getParams();
+    } else if (messageKey) {
+      logMessageKey = messageKey;
+      logParams = params;
+    }
+
+    const logData: Record<string, any> = {
       status,
       message,
       path: request.url,
@@ -96,6 +107,14 @@ export class ApiExceptionFilter implements ExceptionFilter {
       ip: request.ip,
       stack: stackTrace,
     };
+
+    // Add messageKey and params to log if available
+    if (logMessageKey) {
+      logData.messageKey = logMessageKey;
+    }
+    if (logParams && Object.keys(logParams).length > 0) {
+      logData.params = logParams;
+    }
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error('Server error', logData, 'error');

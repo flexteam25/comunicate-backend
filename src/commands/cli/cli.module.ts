@@ -1,10 +1,21 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { BullModule } from '@nestjs/bullmq';
-import { TriggerCommand } from './trigger.command';
+import { CliCommand } from './cli.command';
+import { SyncUserPostsCommand } from './commands/sync-user-posts.command';
+import { SyncUserCommentsCommand } from './commands/sync-user-comments.command';
+import { AttendanceStatisticsCommand } from './commands/attendance-statistics.command';
 import { LoggerModule } from '../../shared/logger/logger.module';
+import { ALL_ENTITIES } from './entities';
+import { UserPost } from '../../modules/user/domain/entities/user-post.entity';
+import { Post } from '../../modules/post/domain/entities/post.entity';
+import { UserComment } from '../../modules/user/domain/entities/user-comment.entity';
+import { PostComment } from '../../modules/post/domain/entities/post-comment.entity';
+import { SiteReviewComment } from '../../modules/site-review/domain/entities/site-review-comment.entity';
+import { ScamReportComment } from '../../modules/scam-report/domain/entities/scam-report-comment.entity';
 
 @Module({
   imports: [
@@ -30,7 +41,7 @@ import { LoggerModule } from '../../shared/logger/logger.module';
           ),
         }),
         new winston.transports.File({
-          filename: 'logs/trigger-cli.log',
+          filename: 'logs/cli.log',
           format: winston.format.combine(
             winston.format.timestamp(),
             winston.format.json(),
@@ -39,6 +50,25 @@ import { LoggerModule } from '../../shared/logger/logger.module';
       ],
     }),
     LoggerModule,
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      database: process.env.DB_DATABASE || 'poca_db',
+      entities: ALL_ENTITIES,
+      synchronize: false,
+      logging: false,
+    }),
+    TypeOrmModule.forFeature([
+      UserPost,
+      Post,
+      UserComment,
+      PostComment,
+      SiteReviewComment,
+      ScamReportComment,
+    ]),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
@@ -62,15 +92,12 @@ import { LoggerModule } from '../../shared/logger/logger.module';
         removeOnFail: 20,
       },
     }),
-    // Add more queues here as needed
-    // BullModule.registerQueue({
-    //   name: 'another-queue',
-    //   defaultJobOptions: {
-    //     removeOnComplete: 10,
-    //     removeOnFail: 20,
-    //   },
-    // }),
   ],
-  providers: [TriggerCommand],
+  providers: [
+    CliCommand,
+    SyncUserPostsCommand,
+    SyncUserCommentsCommand,
+    AttendanceStatisticsCommand,
+  ],
 })
-export class TriggerCommandModule {}
+export class CliCommandModule {}

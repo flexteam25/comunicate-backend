@@ -6,7 +6,12 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { EntityManager } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { randomUUID } from 'crypto';
-import { badRequest, notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import {
+  badRequest,
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
+import { UserPost } from '../../../../user/domain/entities/user-post.entity';
 
 export interface CreatePostCommand {
   userId: string; // User's ID
@@ -101,6 +106,16 @@ export class CreatePostUseCase {
           });
 
           const savedPost = await postRepo.save(post);
+
+          // Save to user_posts for statistics
+          const userPostRepo = manager.getRepository(UserPost);
+          const userPost = userPostRepo.create({
+            userId: command.userId,
+            postId: savedPost.id,
+            createdAt: savedPost.createdAt,
+            updatedAt: savedPost.updatedAt,
+          });
+          await userPostRepo.save(userPost);
 
           const reloaded = await postRepo.findOne({
             where: { id: savedPost.id },

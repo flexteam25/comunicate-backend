@@ -37,13 +37,20 @@ import { Inject } from '@nestjs/common';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { PointTransaction } from '../../../../point/domain/entities/point-transaction.entity';
+import { UserPost } from '../../../domain/entities/user-post.entity';
+import { UserComment, CommentType } from '../../../domain/entities/user-comment.entity';
+import { IPostRepository } from '../../../../post/infrastructure/persistence/repositories/post.repository';
+import { IPostCommentRepository } from '../../../../post/infrastructure/persistence/repositories/post-comment.repository';
+import { PostComment } from '../../../../post/domain/entities/post-comment.entity';
+import { CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
 
 @Controller('admin/users')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
 export class AdminUserController {
   private readonly apiServiceUrl: string;
+  private readonly adminFrontendUrl: string;
 
   constructor(
     private readonly listUsersUseCase: ListUsersUseCase,
@@ -56,8 +63,23 @@ export class AdminUserController {
     private readonly configService: ConfigService,
     @InjectRepository(PointTransaction)
     private readonly pointTransactionRepository: Repository<PointTransaction>,
+    @InjectRepository(UserPost)
+    private readonly userPostRepository: Repository<UserPost>,
+    @InjectRepository(UserComment)
+    private readonly userCommentRepository: Repository<UserComment>,
+    @Inject('IPostRepository')
+    private readonly postRepository: IPostRepository,
+    @Inject('IPostCommentRepository')
+    private readonly postCommentRepository: IPostCommentRepository,
+    @InjectRepository(PostComment)
+    private readonly postCommentEntityRepository: Repository<PostComment>,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+    this.adminFrontendUrl =
+      this.configService.get<string>('ADMIN_FRONTEND_URL') ||
+      this.configService.get<string>('FRONTEND_URL') ||
+      this.apiServiceUrl ||
+      '';
   }
 
   private mapUserRoles(user: { userRoles?: Array<{ role?: { name: string } }> }): string {
@@ -319,6 +341,39 @@ export class AdminUserController {
   ): Promise<ApiResponse<any>> {
     const user = await this.getUserDetailUseCase.execute({ userId: id });
 
+    // Count posts from user_posts table
+    const [postCount, postDeletedCount] = await Promise.all([
+      this.userPostRepository.count({
+        where: { userId: id, deletedAt: null },
+      }),
+      this.userPostRepository
+        .createQueryBuilder('userPost')
+        .withDeleted()
+        .where('userPost.userId = :userId', { userId: id })
+        .andWhere('userPost.deletedAt IS NOT NULL')
+        .getCount(),
+    ]);
+
+    // Count comments from user_comments table (only post_comment type)
+    const [commentCount, commentDeletedCount] = await Promise.all([
+      this.userCommentRepository.count({
+        where: {
+          userId: id,
+          commentType: CommentType.POST_COMMENT,
+          deletedAt: null,
+        },
+      }),
+      this.userCommentRepository
+        .createQueryBuilder('userComment')
+        .withDeleted()
+        .where('userComment.userId = :userId', { userId: id })
+        .andWhere('userComment.commentType = :commentType', {
+          commentType: CommentType.POST_COMMENT,
+        })
+        .andWhere('userComment.deletedAt IS NOT NULL')
+        .getCount(),
+    ]);
+
     return ApiResponseUtil.success({
       id: user.id,
       email: user.email,
@@ -349,8 +404,273 @@ export class AdminUserController {
           color: activeBadge.badge.color || null,
         };
       })(),
+      postCount,
+      postDeletedCount,
+      commentCount,
+      commentDeletedCount,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+    });
+  }
+
+  @Get(':id/posts')
+  @RequirePermission('users.read')
+  @HttpCode(HttpStatus.OK)
+  async getUserPosts(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ): Promise<ApiResponse<any>> {
+    const realLimit = limit ? Math.min(parseInt(limit, 10), 50) : 20;
+
+    // Get user_posts with posts joined (including aggregates)
+    const userPostsQuery = this.userPostRepository
+      .createQueryBuilder('userPost')
+      .withDeleted()
+      .leftJoinAndSelect('userPost.post', 'post')
+      .leftJoinAndSelect('post.category', 'category')
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(reaction.id)', 'likeCount')
+            .from('post_reactions', 'reaction')
+            .where('reaction.post_id = post.id')
+            .andWhere("reaction.reaction_type = 'like'"),
+        'likeCount',
+      )
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(reaction.id)', 'dislikeCount')
+            .from('post_reactions', 'reaction')
+            .where('reaction.post_id = post.id')
+            .andWhere("reaction.reaction_type = 'dislike'"),
+        'dislikeCount',
+      )
+      .addSelect(
+        `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id AND deleted_at IS NULL)`,
+        'commentCount',
+      )
+      .addSelect(
+        `(SELECT COUNT(DISTINCT user_id) FROM post_views WHERE post_id = post.id AND user_id IS NOT NULL)`,
+        'viewCount',
+      )
+      .where('userPost.userId = :userId', { userId: id })
+      .orderBy('userPost.createdAt', 'DESC')
+      .addOrderBy('userPost.id', 'DESC');
+
+    if (cursor) {
+      try {
+        const { id: cursorId, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
+        if (sortValue) {
+          userPostsQuery.andWhere(
+            `(userPost.createdAt < :sortValue OR (userPost.createdAt = :sortValue AND userPost.id < :cursorId))`,
+            { sortValue: new Date(sortValue), cursorId },
+          );
+        } else {
+          userPostsQuery.andWhere('userPost.id < :cursorId', { cursorId });
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
+    userPostsQuery.take(realLimit + 1);
+
+    const result = await userPostsQuery.getRawAndEntities();
+    const hasMore = result.entities.length > realLimit;
+    const userPostsData = result.entities.slice(0, realLimit);
+    const rawData = result.raw.slice(0, realLimit);
+
+    if (userPostsData.length === 0) {
+      return ApiResponseUtil.success({
+        data: [],
+        nextCursor: null,
+        hasMore: false,
+      });
+    }
+
+    // Map posts in the same order as userPostsData
+    const data = userPostsData
+      .map((userPost, index) => {
+        const post = userPost.post;
+        if (!post) return null;
+
+        const raw = rawData[index] as
+          | {
+              likeCount?: string;
+              dislikeCount?: string;
+              commentCount?: string;
+              viewCount?: string;
+            }
+          | undefined;
+        const likeCount = parseInt(raw?.likeCount || '0', 10);
+        const dislikeCount = parseInt(raw?.dislikeCount || '0', 10);
+        const commentCount = parseInt(raw?.commentCount || '0', 10);
+        const viewCount = parseInt(raw?.viewCount || '0', 10);
+
+        // Determine status (same as admin list posts API)
+        let status: string;
+        if (post.deletedAt) {
+          status = 'deleted';
+        } else if (post.isPublished) {
+          status = 'published';
+        } else {
+          status = 'draft';
+        }
+
+        return {
+          id: post.id,
+          title: post.title,
+          type: post.category?.name || null,
+          categoryId: post.categoryId,
+          categoryNameKo: post.category?.nameKo || null,
+          thumbnailUrl: post.thumbnailUrl
+            ? buildFullUrl(this.apiServiceUrl, post.thumbnailUrl)
+            : null,
+          isPinned: post.isPinned || false,
+          isPublished: post.isPublished || false,
+          publishedAt: post.publishedAt || null,
+          likeCount,
+          dislikeCount,
+          commentCount,
+          viewCount,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+          deletedAt: post.deletedAt || null,
+          status,
+        };
+      })
+      .filter((item) => item !== null);
+
+    let nextCursor: string | null = null;
+    if (hasMore && userPostsData.length > 0) {
+      const lastUserPost = userPostsData[userPostsData.length - 1];
+      nextCursor = CursorPaginationUtil.encodeCursor(
+        lastUserPost.id,
+        lastUserPost.createdAt,
+      );
+    }
+
+    return ApiResponseUtil.success({
+      data,
+      nextCursor,
+      hasMore,
+    });
+  }
+
+  @Get(':id/comments')
+  @RequirePermission('users.read')
+  @HttpCode(HttpStatus.OK)
+  async getUserComments(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ): Promise<ApiResponse<any>> {
+    const realLimit = limit ? Math.min(parseInt(limit, 10), 50) : 20;
+
+    // Get user_comments with post_comments joined (only post_comment type)
+    // Note: user_comments doesn't have direct relation to PostComment, so we need to query separately
+    const userCommentsQuery = this.userCommentRepository
+      .createQueryBuilder('userComment')
+      .where('userComment.userId = :userId', { userId: id })
+      .andWhere('userComment.commentType = :commentType', {
+        commentType: CommentType.POST_COMMENT,
+      })
+      .orderBy('userComment.createdAt', 'DESC')
+      .addOrderBy('userComment.id', 'DESC')
+      .select('userComment.commentId', 'commentId')
+      .addSelect('userComment.id', 'userCommentId')
+      .addSelect('userComment.createdAt', 'userCommentCreatedAt');
+
+    if (cursor) {
+      try {
+        const { id: cursorId, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
+        if (sortValue) {
+          userCommentsQuery.andWhere(
+            `(userComment.createdAt < :sortValue OR (userComment.createdAt = :sortValue AND userComment.id < :cursorId))`,
+            { sortValue: new Date(sortValue), cursorId },
+          );
+        } else {
+          userCommentsQuery.andWhere('userComment.id < :cursorId', { cursorId });
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
+    userCommentsQuery.take(realLimit + 1);
+
+    const userCommentsRaw = await userCommentsQuery.getRawMany();
+    const hasMore = userCommentsRaw.length > realLimit;
+    const userCommentsData = userCommentsRaw.slice(0, realLimit);
+
+    if (userCommentsData.length === 0) {
+      return ApiResponseUtil.success({
+        data: [],
+        nextCursor: null,
+        hasMore: false,
+      });
+    }
+
+    interface UserCommentRaw {
+      commentId: string;
+      userCommentId: string;
+      userCommentCreatedAt: Date;
+    }
+
+    const commentIds = (userCommentsData as UserCommentRaw[]).map((uc) => uc.commentId);
+
+    // Get comments with relations
+    const comments = await this.postCommentEntityRepository.find({
+      where: { id: In(commentIds) },
+      relations: ['post', 'user'],
+    });
+
+    // Create a map for quick lookup
+    const commentMap = new Map(comments.map((c) => [c.id, c]));
+
+    // Map comments in the same order as userCommentsData
+    const data = (userCommentsData as UserCommentRaw[])
+      .map((uc) => {
+        const comment = commentMap.get(uc.commentId);
+        if (!comment) return null;
+
+        // Determine status (same as list comments API - active if not deleted)
+        const status = comment.deletedAt ? 'deleted' : 'active';
+
+        // Build post URL (admin post detail page) - full path
+        const postUrl = buildFullUrl(
+          this.adminFrontendUrl,
+          `/admin/posts/${comment.postId}`,
+        );
+
+        return {
+          id: comment.id,
+          postId: comment.postId,
+          postUrl,
+          content: comment.content,
+          createdAt: comment.createdAt,
+          status,
+        };
+      })
+      .filter((item) => item !== null);
+
+    let nextCursor: string | null = null;
+    if (hasMore && userCommentsData.length > 0) {
+      const lastUserComment = userCommentsData[
+        userCommentsData.length - 1
+      ] as UserCommentRaw;
+      nextCursor = CursorPaginationUtil.encodeCursor(
+        lastUserComment.userCommentId,
+        lastUserComment.userCommentCreatedAt,
+      );
+    }
+
+    return ApiResponseUtil.success({
+      data,
+      nextCursor,
+      hasMore,
     });
   }
 
@@ -431,9 +751,6 @@ export class AdminUserController {
       adminId: admin.adminId,
     });
 
-    return ApiResponseUtil.success(
-      null,
-      MessageKeys.USER_DELETED_SUCCESS,
-    );
+    return ApiResponseUtil.success(null, MessageKeys.USER_DELETED_SUCCESS);
   }
 }

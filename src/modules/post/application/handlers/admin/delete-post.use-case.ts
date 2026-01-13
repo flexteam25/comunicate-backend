@@ -1,6 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import { TransactionService } from '../../../../../shared/services/transaction.service';
+import { EntityManager } from 'typeorm';
+import { UserPost } from '../../../../user/domain/entities/user-post.entity';
 
 export interface DeletePostCommand {
   postId: string;
@@ -11,6 +14,7 @@ export class DeletePostUseCase {
   constructor(
     @Inject('IPostRepository')
     private readonly postRepository: IPostRepository,
+    private readonly transactionService: TransactionService,
   ) {}
 
   async execute(command: DeletePostCommand): Promise<void> {
@@ -19,6 +23,19 @@ export class DeletePostUseCase {
       throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
-    await this.postRepository.delete(command.postId);
+    // Soft delete post and user_posts in transaction
+    await this.transactionService.executeInTransaction(async (manager: EntityManager) => {
+      // Soft delete post
+      await this.postRepository.delete(command.postId);
+
+      // Soft delete user_posts if post was created by a user
+      if (post.userId) {
+        const userPostRepo = manager.getRepository(UserPost);
+        await userPostRepo.softDelete({
+          userId: post.userId,
+          postId: command.postId,
+        });
+      }
+    });
   }
 }

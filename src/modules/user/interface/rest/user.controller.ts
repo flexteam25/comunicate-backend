@@ -327,6 +327,7 @@ export class UserController {
     }
 
     const userResponse: UserResponse = {
+      id: dbUser.id,
       email: dbUser.email,
       displayName: dbUser.displayName || undefined,
       avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser.avatarUrl),
@@ -397,6 +398,7 @@ export class UserController {
     }
 
     const userResponse: UserResponse = {
+      id: dbUser.id,
       email: dbUser.email,
       displayName: dbUser.displayName || undefined,
       avatarUrl: buildFullUrl(this.apiServiceUrl, dbUser.avatarUrl),

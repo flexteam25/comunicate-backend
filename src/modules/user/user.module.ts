@@ -7,6 +7,7 @@ import { UserFavoriteSite } from './domain/entities/user-favorite-site.entity';
 import { UserHistorySite } from './domain/entities/user-history-site.entity';
 import { UserSearchSite } from './domain/entities/user-search-site.entity';
 import { UserComment } from './domain/entities/user-comment.entity';
+import { UserPost } from './domain/entities/user-post.entity';
 import { Badge } from '../badge/domain/entities/badge.entity';
 import { UserRepository } from './infrastructure/persistence/typeorm/user.repository';
 import { UserOldPasswordRepository } from './infrastructure/persistence/typeorm/user-old-password.repository';
@@ -39,6 +40,7 @@ import { UploadModule } from '../../shared/services/upload';
 import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { SiteModule } from '../site/site.module';
 import { BadgeModule } from '../badge/badge.module';
+import { PostPersistenceModule } from '../post/post-persistence.module';
 
 @Module({
   imports: [
@@ -50,9 +52,11 @@ import { BadgeModule } from '../badge/badge.module';
       UserHistorySite,
       UserSearchSite,
       UserComment,
+      UserPost,
       Badge,
       PointTransaction,
     ]),
+    PostPersistenceModule,
     UploadModule.register({ storageType: 'local' }),
     AuthPersistenceModule,
     SiteModule,
@@ -60,6 +64,7 @@ import { BadgeModule } from '../badge/badge.module';
     AdminGuardsModule,
     UserHistorySitePersistenceModule,
     UserSearchSitePersistenceModule,
+    PostPersistenceModule,
   ],
   controllers: [UserController, AdminUserController],
   providers: [

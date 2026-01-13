@@ -98,12 +98,40 @@ export class AuthController {
       ipAddress,
     });
 
-    // Reload user with roles for response
+    // Reload user with roles and badges for response
     const dbUser = await this.userRepository.findById(result.user.id, [
       'userRoles',
       'userRoles.role',
+      'userBadges',
+      'userBadges.badge',
       'userProfile',
     ]);
+
+    // Map single active badge (filter out soft-deleted badges) - same as GET /api/me
+    let badgeSummary: {
+      name: string;
+      iconUrl?: string;
+      iconName?: string;
+      color?: string;
+      earnedAt?: Date;
+      description?: string;
+    } | null = null;
+    if (dbUser?.userBadges) {
+      for (const userBadge of dbUser.userBadges) {
+        if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
+          const badge = userBadge.badge;
+          badgeSummary = {
+            name: badge.name,
+            iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || null,
+            iconName: badge.iconName || null,
+            color: badge.color || null,
+            earnedAt: userBadge.earnedAt,
+            description: badge.description || null,
+          };
+          break;
+        }
+      }
+    }
 
     const authResponse: AuthResponse = {
       user: {
@@ -116,6 +144,8 @@ export class AuthController {
         phone: dbUser?.userProfile?.phone || undefined,
         birthDate: dbUser?.userProfile?.birthDate || undefined,
         gender: dbUser?.userProfile?.gender || undefined,
+        points: dbUser?.userProfile?.points || 0,
+        badge: badgeSummary,
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -139,12 +169,40 @@ export class AuthController {
       ipAddress,
     });
 
-    // Reload user with roles for response
+    // Reload user with roles and badges for response
     const dbUser = await this.userRepository.findById(result.user.id, [
       'userRoles',
       'userRoles.role',
+      'userBadges',
+      'userBadges.badge',
       'userProfile',
     ]);
+
+    // Map single active badge (filter out soft-deleted badges) - same as GET /api/me
+    let badgeSummary: {
+      name: string;
+      iconUrl?: string;
+      iconName?: string;
+      color?: string;
+      earnedAt?: Date;
+      description?: string;
+    } | null = null;
+    if (dbUser?.userBadges) {
+      for (const userBadge of dbUser.userBadges) {
+        if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
+          const badge = userBadge.badge;
+          badgeSummary = {
+            name: badge.name,
+            iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || null,
+            iconName: badge.iconName || null,
+            color: badge.color || null,
+            earnedAt: userBadge.earnedAt,
+            description: badge.description || null,
+          };
+          break;
+        }
+      }
+    }
 
     const authResponse: AuthResponse = {
       user: {
@@ -158,6 +216,7 @@ export class AuthController {
         birthDate: dbUser?.userProfile?.birthDate || undefined,
         gender: dbUser?.userProfile?.gender || undefined,
         points: dbUser?.userProfile?.points || 0,
+        badge: badgeSummary,
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
@@ -184,12 +243,40 @@ export class AuthController {
       refreshToken: dto.refreshToken,
     });
 
-    // Reload user with roles for response
+    // Reload user with roles and badges for response
     const dbUser = await this.userRepository.findById(result.user.id, [
       'userRoles',
       'userRoles.role',
+      'userBadges',
+      'userBadges.badge',
       'userProfile',
     ]);
+
+    // Map single active badge (filter out soft-deleted badges) - same as GET /api/me
+    let badgeSummary: {
+      name: string;
+      iconUrl?: string;
+      iconName?: string;
+      color?: string;
+      earnedAt?: Date;
+      description?: string;
+    } | null = null;
+    if (dbUser?.userBadges) {
+      for (const userBadge of dbUser.userBadges) {
+        if (userBadge?.badge && !userBadge.badge.deletedAt && userBadge.active) {
+          const badge = userBadge.badge;
+          badgeSummary = {
+            name: badge.name,
+            iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || null,
+            iconName: badge.iconName || null,
+            color: badge.color || null,
+            earnedAt: userBadge.earnedAt,
+            description: badge.description || null,
+          };
+          break;
+        }
+      }
+    }
 
     const authResponse: AuthResponse = {
       user: {
@@ -203,6 +290,7 @@ export class AuthController {
         birthDate: dbUser?.userProfile?.birthDate || undefined,
         gender: dbUser?.userProfile?.gender || undefined,
         points: dbUser?.userProfile?.points || 0,
+        badge: badgeSummary,
       },
       accessToken: result.tokens.accessToken,
       refreshToken: result.tokens.refreshToken,
