@@ -377,6 +377,7 @@ export class UserController {
       iconName?: string;
       color?: string;
       earnedAt?: Date;
+      description?: string;
     } | null = null;
     if (dbUser.userBadges) {
       for (const userBadge of dbUser.userBadges) {
@@ -388,6 +389,7 @@ export class UserController {
             iconName: badge.iconName || null,
             color: badge.color || null,
             earnedAt: userBadge.earnedAt,
+            description: badge.description || null,
           };
           break;
         }
