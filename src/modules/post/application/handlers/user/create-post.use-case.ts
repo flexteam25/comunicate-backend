@@ -19,6 +19,7 @@ export interface CreatePostCommand {
   title: string;
   content: string;
   thumbnail?: MulterFile;
+  isPublished?: boolean;
 }
 
 @Injectable()
@@ -100,9 +101,9 @@ export class CreatePostUseCase {
             title: command.title,
             content: command.content,
             thumbnailUrl,
-            isPublished: false, // User posts are always unpublished by default
+            isPublished: command.isPublished || false,
             isPinned: false, // User posts cannot be pinned
-            publishedAt: null,
+            publishedAt: command.isPublished ? new Date() : null,
           });
 
           const savedPost = await postRepo.save(post);

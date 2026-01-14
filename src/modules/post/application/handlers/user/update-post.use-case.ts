@@ -21,6 +21,7 @@ export interface UpdatePostCommand {
   thumbnail?: MulterFile;
   deleteThumbnail?: boolean | 'true' | 'false';
   isPinned?: boolean;
+  isPublished?: boolean;
 }
 
 @Injectable()
@@ -130,8 +131,12 @@ export class UpdatePostUseCase {
           ) {
             updateData.thumbnailUrl = thumbnailUrl;
           }
-          // Users cannot change isPublished or isPinned via user API
           if (command.isPinned !== undefined) updateData.isPinned = command.isPinned;
+          if (command.isPublished !== undefined) {
+            updateData.isPublished = command.isPublished;
+            // Set publishedAt when publishing, clear when unpublishing
+            updateData.publishedAt = command.isPublished ? new Date() : null;
+          }
 
           await postRepo.update(command.postId, updateData);
 

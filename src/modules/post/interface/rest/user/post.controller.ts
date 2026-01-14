@@ -415,6 +415,7 @@ export class PostController {
       title: dto.title,
       content: dto.content,
       thumbnail,
+      isPublished: dto.isPublished,
     });
 
     return ApiResponseUtil.success(
