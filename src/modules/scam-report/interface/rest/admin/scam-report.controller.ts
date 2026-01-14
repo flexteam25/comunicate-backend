@@ -38,12 +38,10 @@ import { AdminCreateScamReportDto } from '../dto/admin-create-scam-report.dto';
 import { AdminUpdateScamReportDto } from '../dto/admin-update-scam-report.dto';
 import { ApproveScamReportDto } from '../dto/approve-scam-report.dto';
 import { RejectScamReportDto } from '../dto/reject-scam-report.dto';
+import { ListAdminScamReportsQueryDto } from '../dto/list-admin-scam-reports-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
-import {
-  ScamReport,
-  ScamReportStatus,
-} from '../../../domain/entities/scam-report.entity';
+import { ScamReport } from '../../../domain/entities/scam-report.entity';
 import { ConfigService } from '@nestjs/config';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 
@@ -151,16 +149,13 @@ export class AdminScamReportController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('scam-reports.read')
   async listScamReports(
-    @Query('status') status?: string,
-    @Query('siteId') siteId?: string,
-    @Query('cursor') cursor?: string,
-    @Query('limit') limit?: string,
+    @Query() query: ListAdminScamReportsQueryDto,
   ): Promise<ApiResponse<any>> {
     const result = await this.listScamReportsUseCase.execute({
-      siteId,
-      status: status as ScamReportStatus | undefined,
-      cursor,
-      limit: limit ? parseInt(limit, 10) : 20,
+      siteName: query.search,
+      status: query.status,
+      cursor: query.cursor,
+      limit: query.limit || 20,
     });
 
     return ApiResponseUtil.success({

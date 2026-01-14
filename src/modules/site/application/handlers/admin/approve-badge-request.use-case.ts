@@ -14,6 +14,7 @@ import {
 export interface ApproveBadgeRequestCommand {
   requestId: string;
   adminId: string;
+  note?: string;
 }
 
 @Injectable()
@@ -63,6 +64,7 @@ export class ApproveBadgeRequestUseCase {
         // Update request
         request.status = SiteBadgeRequestStatus.APPROVED;
         request.adminId = command.adminId;
+        request.note = command.note || null;
         await requestRepo.save(request);
 
         // Assign badge to site

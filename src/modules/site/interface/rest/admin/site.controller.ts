@@ -56,6 +56,7 @@ import { ApproveBadgeRequestUseCase } from '../../../application/handlers/admin/
 import { RejectBadgeRequestUseCase } from '../../../application/handlers/admin/reject-badge-request.use-case';
 import { ListAllBadgeRequestsQueryDto } from '../dto/list-all-badge-requests-query.dto';
 import { RejectBadgeRequestDto } from '../dto/reject-badge-request.dto';
+import { ApproveBadgeRequestDto } from '../dto/approve-badge-request.dto';
 import { SiteBadgeRequest } from '../../../domain/entities/site-badge-request.entity';
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
@@ -275,6 +276,27 @@ export class AdminSiteController {
     return ApiResponseUtil.success(options);
   }
 
+  @Get('badge-requests')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('site.update')
+  async listAllBadgeRequests(
+    @Query() query: ListAllBadgeRequestsQueryDto,
+  ): Promise<ApiResponse<any>> {
+    const result = await this.listAllBadgeRequestsUseCase.execute({
+      siteName: query.siteName,
+      badgeName: query.badgeName,
+      status: query.status,
+      cursor: query.cursor,
+      limit: query.limit,
+    });
+
+    return ApiResponseUtil.success({
+      data: result.data.map((request) => this.mapBadgeRequestToResponse(request)),
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    });
+  }
+
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.view')
@@ -474,37 +496,18 @@ export class AdminSiteController {
     };
   }
 
-  @Get('badge-requests')
-  @HttpCode(HttpStatus.OK)
-  @RequirePermission('site.update')
-  async listAllBadgeRequests(
-    @Query() query: ListAllBadgeRequestsQueryDto,
-  ): Promise<ApiResponse<any>> {
-    const result = await this.listAllBadgeRequestsUseCase.execute({
-      siteName: query.siteName,
-      badgeName: query.badgeName,
-      status: query.status,
-      cursor: query.cursor,
-      limit: query.limit,
-    });
-
-    return ApiResponseUtil.success({
-      data: result.data.map((request) => this.mapBadgeRequestToResponse(request)),
-      nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
-    });
-  }
-
   @Patch('badge-requests/:requestId/approve')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('site.update')
   async approveBadgeRequest(
     @Param('requestId', new ParseUUIDPipe()) requestId: string,
     @CurrentAdmin() admin: CurrentAdminPayload,
+    @Body() dto: ApproveBadgeRequestDto,
   ): Promise<ApiResponse<any>> {
     const request = await this.approveBadgeRequestUseCase.execute({
       requestId,
       adminId: admin.adminId,
+      note: dto.note,
     });
 
     const response = this.mapBadgeRequestToResponse(request);
