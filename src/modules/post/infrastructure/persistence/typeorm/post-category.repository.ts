@@ -18,13 +18,27 @@ export class PostCategoryRepository implements IPostCategoryRepository {
     });
   }
 
-  async findAll(): Promise<PostCategory[]> {
-    return this.repository
+  async findAll(options?: {
+    sortBy?: 'order' | 'orderInMain';
+    sortDir?: 'ASC' | 'DESC';
+  }): Promise<PostCategory[]> {
+    const sortBy = options?.sortBy ?? 'order';
+    const sortDir = options?.sortDir ?? 'ASC';
+
+    const qb = this.repository
       .createQueryBuilder('category')
-      .where('category.deletedAt IS NULL')
-      .orderBy('category.order', 'ASC', 'NULLS LAST')
-      .addOrderBy('category.name', 'ASC')
-      .getMany();
+      .where('category.deletedAt IS NULL');
+
+    if (sortBy === 'orderInMain') {
+      qb.orderBy('category.orderInMain', sortDir, 'NULLS LAST');
+    } else {
+      qb.orderBy('category.order', sortDir, 'NULLS LAST');
+    }
+
+    // Secondary sort by name for stable ordering
+    qb.addOrderBy('category.name', 'ASC');
+
+    return qb.getMany();
   }
 
   async findByName(name: string): Promise<PostCategory | null> {

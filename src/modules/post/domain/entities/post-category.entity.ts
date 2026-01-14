@@ -20,6 +20,9 @@ export class PostCategory extends BaseEntity {
   @Column({ name: 'is_point_banner', type: 'boolean', default: false })
   isPointBanner: boolean;
 
+  @Column({ name: 'order_in_main', type: 'integer', nullable: true })
+  orderInMain?: number | null;
+
   @Column({ name: 'special_key', type: 'varchar', length: 50, nullable: true })
   specialKey?: string | null;
 

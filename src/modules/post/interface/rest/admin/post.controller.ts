@@ -34,6 +34,7 @@ import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { ListAdminPostsQueryDto } from '../dto/list-admin-posts-query.dto';
+import { ListPostCategoriesQueryDto } from '../dto/list-post-categories-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { ConfigService } from '@nestjs/config';
@@ -113,6 +114,7 @@ export class AdminPostController {
       description: category.description || null,
       showMain: category.showMain ?? false,
       isPointBanner: category.isPointBanner ?? false,
+      orderInMain: category.orderInMain ?? null,
       specialKey: category.specialKey || null,
       order: category.order || null,
       adminCreateOnly: category.adminCreateOnly ?? true,
@@ -125,8 +127,13 @@ export class AdminPostController {
   @Get('categories')
   @RequirePermission('posts.manage')
   @HttpCode(HttpStatus.OK)
-  async listCategories(): Promise<ApiResponse<any>> {
-    const categories = await this.listCategoriesUseCase.execute();
+  async listCategories(
+    @Query() query: ListPostCategoriesQueryDto,
+  ): Promise<ApiResponse<any>> {
+    const categories = await this.listCategoriesUseCase.execute({
+      sortBy: query.sortBy,
+      sortDir: query.sortDir,
+    });
     return ApiResponseUtil.success(
       categories.map((cat) => this.mapCategoryToResponse(cat)),
     );

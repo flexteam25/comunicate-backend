@@ -9,7 +9,10 @@ export class ListCategoriesUseCase {
     private readonly categoryRepository: IPostCategoryRepository,
   ) {}
 
-  async execute(): Promise<PostCategory[]> {
-    return this.categoryRepository.findAll();
+  async execute(options?: {
+    sortBy?: 'order' | 'orderInMain';
+    sortDir?: 'ASC' | 'DESC';
+  }): Promise<PostCategory[]> {
+    return this.categoryRepository.findAll(options);
   }
 }

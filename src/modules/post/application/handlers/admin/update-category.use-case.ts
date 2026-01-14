@@ -17,6 +17,7 @@ export interface UpdateCategoryCommand {
   isPointBanner?: boolean;
   specialKey?: string | null;
   order?: number;
+  orderInMain?: number;
   adminCreateOnly: boolean;
 }
 
@@ -65,6 +66,9 @@ export class UpdateCategoryUseCase {
     // Only update order if provided and not null/undefined
     if (command.order !== undefined && command.order !== null) {
       updateData.order = command.order;
+    }
+    if (command.orderInMain !== undefined && command.orderInMain !== null) {
+      updateData.orderInMain = command.orderInMain;
     }
     if (command.adminCreateOnly !== undefined) {
       updateData.adminCreateOnly = command.adminCreateOnly;
