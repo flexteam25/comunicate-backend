@@ -542,6 +542,7 @@ export class AdminUserController {
           type: post.category?.name || null,
           categoryId: post.categoryId,
           categoryNameKo: post.category?.nameKo || null,
+          categoryName: post.category?.name || null,
           thumbnailUrl: post.thumbnailUrl
             ? buildFullUrl(this.apiServiceUrl, post.thumbnailUrl)
             : null,
