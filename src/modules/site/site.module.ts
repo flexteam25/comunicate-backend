@@ -3,6 +3,7 @@ import { CreateSiteUseCase } from './application/handlers/admin/create-site.use-
 import { UpdateSiteUseCase } from './application/handlers/admin/update-site.use-case';
 import { DeleteSiteUseCase } from './application/handlers/admin/delete-site.use-case';
 import { ListSitesUseCase as AdminListSitesUseCase } from './application/handlers/admin/list-sites.use-case';
+import { ListTrashSitesUseCase } from './application/handlers/admin/list-trash-sites.use-case';
 import { GetSiteUseCase as AdminGetSiteUseCase } from './application/handlers/admin/get-site.use-case';
 import { AssignBadgeToSiteUseCase } from './application/handlers/admin/assign-badge.use-case';
 import { RemoveBadgeFromSiteUseCase } from './application/handlers/admin/remove-badge.use-case';
@@ -17,6 +18,7 @@ import { DeleteCategoryUseCase } from './application/handlers/admin/delete-categ
 import { ListCategoriesUseCase } from './application/handlers/admin/list-categories.use-case';
 import { ListCategoriesUseCase as UserListCategoriesUseCase } from './application/handlers/user/list-categories.use-case';
 import { RestoreCategoryUseCase } from './application/handlers/admin/restore-category.use-case';
+import { ListTrashCategoriesUseCase } from './application/handlers/admin/list-trash-categories.use-case';
 import { RestoreSiteUseCase } from './application/handlers/admin/restore-site.use-case';
 import { AddSiteDomainUseCase } from './application/handlers/admin/add-site-domain.use-case';
 import { UpdateSiteDomainUseCase } from './application/handlers/admin/update-site-domain.use-case';
@@ -71,6 +73,7 @@ import { BadgeModule } from '../badge/badge.module';
     DeleteSiteUseCase,
     AdminListSitesUseCase,
     AdminGetSiteUseCase,
+    ListTrashSitesUseCase,
     AssignBadgeToSiteUseCase,
     RemoveBadgeFromSiteUseCase,
     AddSiteDomainUseCase,
@@ -84,6 +87,7 @@ import { BadgeModule } from '../badge/badge.module';
     ListCategoriesUseCase,
     UserListCategoriesUseCase,
     RestoreCategoryUseCase,
+    ListTrashCategoriesUseCase,
     RestoreSiteUseCase,
     CreatePartnerSiteUseCase,
     CreateBadgeRequestUseCase,

@@ -314,6 +314,176 @@ export class SiteRepository implements ISiteRepository {
     };
   }
 
+  async findAllDeletedWithCursor(
+    filters?: SiteFilters,
+    cursor?: string,
+    limit: number = 20,
+    sortBy: string = 'createdAt',
+    sortOrder: 'ASC' | 'DESC' = 'DESC',
+  ): Promise<CursorPaginationResult<Site>> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('site')
+      .withDeleted()
+      .where('site.deleted_at IS NOT NULL');
+
+    // Load relations early for filtering
+    queryBuilder.leftJoinAndSelect('site.category', 'category');
+    queryBuilder.leftJoinAndSelect('site.tier', 'tier');
+    queryBuilder.leftJoinAndSelect('site.siteBadges', 'siteBadges');
+    queryBuilder.leftJoinAndSelect(
+      'siteBadges.badge',
+      'badge',
+      'badge.deletedAt IS NULL',
+    );
+    queryBuilder.leftJoinAndSelect('site.siteDomains', 'siteDomains');
+    queryBuilder.leftJoinAndSelect(
+      'site.siteManagers',
+      'siteManagers',
+      'siteManagers.isActive = :isActive',
+      { isActive: true },
+    );
+    queryBuilder.leftJoinAndSelect('siteManagers.user', 'managerUser');
+    queryBuilder.leftJoinAndSelect('managerUser.userBadges', 'managerUserBadges');
+    queryBuilder.leftJoinAndSelect(
+      'managerUserBadges.badge',
+      'userBadge',
+      'userBadge.deletedAt IS NULL',
+    );
+
+    queryBuilder.loadRelationCountAndMap(
+      'site.issueCount',
+      'site.scamReports',
+      'scamReport',
+      (qb) =>
+        qb
+          .where('scamReport.deletedAt IS NULL')
+          .andWhere("scamReport.status = 'published'"),
+    );
+
+    // Apply filters
+    if (filters?.categoryId) {
+      queryBuilder.andWhere('site.categoryId = :categoryId', {
+        categoryId: filters.categoryId,
+      });
+    }
+
+    if (filters?.tierId) {
+      queryBuilder.andWhere('site.tierId = :tierId', {
+        tierId: filters.tierId,
+      });
+    }
+
+    if (filters?.status) {
+      queryBuilder.andWhere('site.status = :status', {
+        status: filters.status,
+      });
+    }
+
+    if (filters?.search) {
+      queryBuilder.andWhere(
+        '(LOWER(site.name) LIKE LOWER(:search) OR LOWER(site.slug) LIKE LOWER(:search))',
+        { search: `%${filters.search}%` },
+      );
+    }
+
+    if (filters?.categoryType && filters.categoryType !== 'all') {
+      queryBuilder.andWhere('category.type = :categoryType', {
+        categoryType: filters.categoryType,
+      });
+    }
+
+    if (filters?.filterBy) {
+      switch (filters.filterBy) {
+        case 'reviewCount':
+          queryBuilder.andWhere('site.reviewCount > 0');
+          break;
+        case 'firstCharge':
+          queryBuilder.andWhere('site.firstCharge IS NOT NULL');
+          break;
+        case 'recharge':
+          queryBuilder.andWhere('site.recharge IS NOT NULL');
+          break;
+        case 'experience':
+          queryBuilder.andWhere('site.experience IS NOT NULL');
+          break;
+      }
+    }
+
+    // Handle cursor pagination
+    const realLimit = limit > 50 ? 50 : limit;
+    const actualSortBy = sortBy === 'tier' ? 'tier.order' : `site.${sortBy}`;
+
+    if (cursor) {
+      try {
+        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
+        if (sortValue !== null && sortValue !== undefined) {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere(
+              `(${actualSortBy} > :sortValue OR (${actualSortBy} = :sortValue AND site.id > :cursorId))`,
+              { sortValue, cursorId: id },
+            );
+          } else {
+            queryBuilder.andWhere(
+              `(${actualSortBy} < :sortValue OR (${actualSortBy} = :sortValue AND site.id < :cursorId))`,
+              { sortValue, cursorId: id },
+            );
+          }
+        } else {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere('site.id > :cursorId', { cursorId: id });
+          } else {
+            queryBuilder.andWhere('site.id < :cursorId', { cursorId: id });
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
+    // Apply sorting
+    if (sortBy === 'tier') {
+      if (sortOrder === 'DESC') {
+        queryBuilder.addOrderBy('tier.order', 'DESC', 'NULLS LAST');
+      } else {
+        queryBuilder.addOrderBy('tier.order', 'ASC', 'NULLS FIRST');
+      }
+    } else {
+      if (sortOrder === 'DESC') {
+        queryBuilder.addOrderBy(`site.${sortBy}`, 'DESC', 'NULLS LAST');
+      } else {
+        queryBuilder.addOrderBy(`site.${sortBy}`, 'ASC', 'NULLS FIRST');
+      }
+    }
+    queryBuilder.addOrderBy('site.id', sortOrder);
+
+    queryBuilder.take(realLimit + 1);
+
+    const entities = await queryBuilder.getMany();
+    const hasMore = entities.length > realLimit;
+    const data = hasMore ? entities.slice(0, realLimit) : entities;
+
+    let nextCursor: string | null = null;
+    if (hasMore && data.length > 0) {
+      const lastItem = data[data.length - 1];
+      let sortValue: string | number | Date | null = null;
+      if (sortBy === 'tier') {
+        sortValue = lastItem.tier?.order ?? null;
+      } else {
+        const fieldValue = (lastItem as unknown as Record<string, unknown>)[actualSortBy];
+        if (fieldValue !== null && fieldValue !== undefined) {
+          sortValue = fieldValue as string | number | Date;
+        }
+      }
+      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+    }
+
+    return {
+      data,
+      nextCursor,
+      hasMore,
+    };
+  }
+
   async create(site: Partial<Site>): Promise<Site> {
     const entity = this.repository.create(site);
     return this.repository.save(entity);

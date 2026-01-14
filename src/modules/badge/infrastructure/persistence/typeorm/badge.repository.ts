@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Badge } from '../../../domain/entities/badge.entity';
 import { IBadgeRepository } from '../repositories/badge.repository';
-import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class BadgeRepository implements IBadgeRepository {
@@ -12,16 +15,45 @@ export class BadgeRepository implements IBadgeRepository {
     private readonly repository: Repository<Badge>,
   ) {}
 
-  async findAll(isActive: number | null = null, badgeType?: string): Promise<Badge[]> {
-    const where: Record<string, any> = { deletedAt: null };
-    if (isActive === 1) where.isActive = true;
-    if (isActive === 0) where.isActive = false;
-    if (badgeType) where.badgeType = badgeType;
+  async findAll(
+    isActive: number | null = null,
+    badgeType?: string,
+    sortBy: string = 'name',
+    sortDir: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<Badge[]> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('badge')
+      .where('badge.deleted_at IS NULL');
 
-    return this.repository.find({
-      where,
-      order: { name: 'ASC' },
-    });
+    if (isActive === 1) {
+      queryBuilder.andWhere('badge.is_active = :isActive', { isActive: true });
+    } else if (isActive === 0) {
+      queryBuilder.andWhere('badge.is_active = :isActive', { isActive: false });
+    }
+
+    if (badgeType) {
+      queryBuilder.andWhere('badge.badge_type = :badgeType', { badgeType });
+    }
+
+    // Handle sorting
+    if (sortBy === 'order') {
+      if (sortDir === 'DESC') {
+        queryBuilder.addOrderBy('badge.order', 'DESC', 'NULLS LAST');
+      } else {
+        queryBuilder.addOrderBy('badge.order', 'ASC', 'NULLS LAST');
+      }
+    } else {
+      if (sortDir === 'DESC') {
+        queryBuilder.addOrderBy(`badge.${sortBy}`, 'DESC', 'NULLS LAST');
+      } else {
+        queryBuilder.addOrderBy(`badge.${sortBy}`, 'ASC', 'NULLS FIRST');
+      }
+    }
+
+    // Secondary sort by name for stable ordering
+    queryBuilder.addOrderBy('badge.name', 'ASC');
+
+    return queryBuilder.getMany();
   }
 
   async findAllIncludeDeleted(
@@ -38,6 +70,48 @@ export class BadgeRepository implements IBadgeRepository {
       withDeleted: true,
       order: { name: 'ASC' },
     });
+  }
+
+  async findAllDeleted(
+    isActive: number | null = null,
+    badgeType?: string,
+    sortBy: string = 'name',
+    sortDir: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<Badge[]> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('badge')
+      .withDeleted()
+      .where('badge.deleted_at IS NOT NULL');
+
+    if (isActive === 1) {
+      queryBuilder.andWhere('badge.is_active = :isActive', { isActive: true });
+    } else if (isActive === 0) {
+      queryBuilder.andWhere('badge.is_active = :isActive', { isActive: false });
+    }
+
+    if (badgeType) {
+      queryBuilder.andWhere('badge.badge_type = :badgeType', { badgeType });
+    }
+
+    // Handle sorting
+    if (sortBy === 'order') {
+      if (sortDir === 'DESC') {
+        queryBuilder.addOrderBy('badge.order', 'DESC', 'NULLS LAST');
+      } else {
+        queryBuilder.addOrderBy('badge.order', 'ASC', 'NULLS LAST');
+      }
+    } else {
+      if (sortDir === 'DESC') {
+        queryBuilder.addOrderBy(`badge.${sortBy}`, 'DESC', 'NULLS LAST');
+      } else {
+        queryBuilder.addOrderBy(`badge.${sortBy}`, 'ASC', 'NULLS FIRST');
+      }
+    }
+
+    // Secondary sort by name for stable ordering
+    queryBuilder.addOrderBy('badge.name', 'ASC');
+
+    return queryBuilder.getMany();
   }
 
   async findById(id: string, isActive: number | null = null): Promise<Badge | null> {

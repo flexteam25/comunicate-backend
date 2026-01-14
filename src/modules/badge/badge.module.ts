@@ -8,6 +8,7 @@ import { DeleteBadgeUseCase } from './application/handlers/admin/delete-badge.us
 import { ListBadgesUseCase } from './application/handlers/admin/list-badges.use-case';
 import { GetBadgeUseCase } from './application/handlers/admin/get-badge.use-case';
 import { RestoreBadgeUseCase } from './application/handlers/admin/restore-badge.use-case';
+import { ListTrashBadgesUseCase } from './application/handlers/admin/list-trash-badges.use-case';
 import { AdminBadgeController } from './interface/rest/admin/badge.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { UploadModule } from '../../shared/services/upload';
@@ -30,6 +31,7 @@ import { UploadModule } from '../../shared/services/upload';
     ListBadgesUseCase,
     GetBadgeUseCase,
     RestoreBadgeUseCase,
+    ListTrashBadgesUseCase,
   ],
   controllers: [AdminBadgeController],
   exports: ['IBadgeRepository', BadgeRepository],

@@ -15,6 +15,7 @@ export interface CreateBadgeCommand {
   obtain?: string;
   point?: number;
   color?: string;
+  order: number;
 }
 
 @Injectable()
@@ -54,6 +55,7 @@ export class CreateBadgeUseCase {
           obtain: command.obtain,
           point: command.badgeType === BadgeType.USER ? (command.point ?? 0) : 0,
           color: command.color,
+          order: command.order,
         });
         return badgeRepo.save(badge);
       },

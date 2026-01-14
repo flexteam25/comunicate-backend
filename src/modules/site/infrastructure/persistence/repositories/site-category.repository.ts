@@ -3,6 +3,7 @@ import { SiteCategory } from '../../../domain/entities/site-category.entity';
 export interface ISiteCategoryRepository {
   findAll(isActive?: number | null): Promise<SiteCategory[]>;
   findAllIncludeDeleted(isActive?: number | null): Promise<SiteCategory[]>;
+  findAllDeleted(isActive?: number | null): Promise<SiteCategory[]>;
   findById(id: string, isActive?: number | null): Promise<SiteCategory | null>;
   findByIdIncludingDeleted(
     id: string,

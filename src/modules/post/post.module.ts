@@ -14,6 +14,7 @@ import { CreateCategoryUseCase } from './application/handlers/admin/create-categ
 import { UpdateCategoryUseCase } from './application/handlers/admin/update-category.use-case';
 import { DeleteCategoryUseCase } from './application/handlers/admin/delete-category.use-case';
 import { RestoreCategoryUseCase } from './application/handlers/admin/restore-category.use-case';
+import { ListTrashCategoriesUseCase } from './application/handlers/admin/list-trash-categories.use-case';
 import { ListCategoriesUseCase } from './application/handlers/admin/list-categories.use-case';
 import { ListCategoriesUseCase as UserListCategoriesUseCase } from './application/handlers/user/list-categories.use-case';
 import { ListPublicPostsUseCase } from './application/handlers/user/list-posts.use-case';
@@ -53,6 +54,7 @@ import { PostController } from './interface/rest/user/post.controller';
     UpdateCategoryUseCase,
     DeleteCategoryUseCase,
     RestoreCategoryUseCase,
+    ListTrashCategoriesUseCase,
     ListCategoriesUseCase,
     UserListCategoriesUseCase,
     ListPublicPostsUseCase,

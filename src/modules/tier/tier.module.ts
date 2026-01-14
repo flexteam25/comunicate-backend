@@ -8,6 +8,7 @@ import { DeleteTierUseCase } from './application/handlers/admin/delete-tier.use-
 import { ListTiersUseCase } from './application/handlers/admin/list-tiers.use-case';
 import { ListTiersUseCase as UserListTiersUseCase } from './application/handlers/user/list-tiers.use-case';
 import { RestoreTierUseCase } from './application/handlers/admin/restore-tier.use-case';
+import { ListTrashTiersUseCase } from './application/handlers/admin/list-trash-tiers.use-case';
 import { AdminTierController } from './interface/rest/admin/tier.controller';
 import { UserTierController } from './interface/rest/user/tier.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
@@ -37,6 +38,7 @@ import { ConfigModule } from '@nestjs/config';
     ListTiersUseCase,
     UserListTiersUseCase,
     RestoreTierUseCase,
+    ListTrashTiersUseCase,
   ],
   controllers: [AdminTierController, UserTierController],
   exports: ['ITierRepository', TierRepository],

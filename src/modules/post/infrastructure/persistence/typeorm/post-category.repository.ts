@@ -41,6 +41,30 @@ export class PostCategoryRepository implements IPostCategoryRepository {
     return qb.getMany();
   }
 
+  async findAllDeleted(options?: {
+    sortBy?: 'order' | 'orderInMain';
+    sortDir?: 'ASC' | 'DESC';
+  }): Promise<PostCategory[]> {
+    const sortBy = options?.sortBy ?? 'order';
+    const sortDir = options?.sortDir ?? 'ASC';
+
+    const qb = this.repository
+      .createQueryBuilder('category')
+      .withDeleted()
+      .where('category.deleted_at IS NOT NULL');
+
+    if (sortBy === 'orderInMain') {
+      qb.orderBy('category.orderInMain', sortDir, 'NULLS LAST');
+    } else {
+      qb.orderBy('category.order', sortDir, 'NULLS LAST');
+    }
+
+    // Secondary sort by name for stable ordering
+    qb.addOrderBy('category.name', 'ASC');
+
+    return qb.getMany();
+  }
+
   async findByName(name: string): Promise<PostCategory | null> {
     return this.repository.findOne({
       where: { name, deletedAt: null },

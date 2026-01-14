@@ -326,6 +326,18 @@ export class AdminUserController {
               obtain: activeBadge.badge.obtain || null,
             };
           })(),
+          listBadges: (user.userBadges || [])
+            .filter((ub) => ub?.badge && !ub.badge.deletedAt)
+            .map((ub) => ({
+              id: ub.badge.id,
+              name: ub.badge.name,
+              description: ub.badge.description || null,
+              iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null) || null,
+              iconName: ub.badge.iconName || null,
+              color: ub.badge.color || null,
+              earnedAt: ub.earnedAt,
+              active: ub.active,
+            })),
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         };
@@ -408,6 +420,18 @@ export class AdminUserController {
           obtain: activeBadge.badge.obtain || null,
         };
       })(),
+      listBadges: (user.userBadges || [])
+        .filter((ub) => ub?.badge && !ub.badge.deletedAt)
+        .map((ub) => ({
+          id: ub.badge.id,
+          name: ub.badge.name,
+          description: ub.badge.description || null,
+          iconUrl: buildFullUrl(this.apiServiceUrl, ub.badge.iconUrl || null) || null,
+          iconName: ub.badge.iconName || null,
+          color: ub.badge.color || null,
+          earnedAt: ub.earnedAt,
+          active: ub.active,
+        })),
       postCount,
       postDeletedCount,
       commentCount,

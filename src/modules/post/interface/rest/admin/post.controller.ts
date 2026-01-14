@@ -28,6 +28,7 @@ import { CreateCategoryUseCase } from '../../../application/handlers/admin/creat
 import { UpdateCategoryUseCase } from '../../../application/handlers/admin/update-category.use-case';
 import { DeleteCategoryUseCase } from '../../../application/handlers/admin/delete-category.use-case';
 import { RestoreCategoryUseCase } from '../../../application/handlers/admin/restore-category.use-case';
+import { ListTrashCategoriesUseCase } from '../../../application/handlers/admin/list-trash-categories.use-case';
 import { ListCategoriesUseCase } from '../../../application/handlers/admin/list-categories.use-case';
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
@@ -62,6 +63,7 @@ export class AdminPostController {
     private readonly listCategoriesUseCase: ListCategoriesUseCase,
     private readonly configService: ConfigService,
     private readonly restoreCategoryUseCase: RestoreCategoryUseCase,
+    private readonly listTrashCategoriesUseCase: ListTrashCategoriesUseCase,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -134,6 +136,16 @@ export class AdminPostController {
       sortBy: query.sortBy,
       sortDir: query.sortDir,
     });
+    return ApiResponseUtil.success(
+      categories.map((cat) => this.mapCategoryToResponse(cat)),
+    );
+  }
+
+  @Get('categories/trash')
+  @RequirePermission('posts.manage')
+  @HttpCode(HttpStatus.OK)
+  async listTrashCategories(): Promise<ApiResponse<any>> {
+    const categories = await this.listTrashCategoriesUseCase.execute();
     return ApiResponseUtil.success(
       categories.map((cat) => this.mapCategoryToResponse(cat)),
     );

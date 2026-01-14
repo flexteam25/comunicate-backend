@@ -13,7 +13,7 @@ export class CreateTierDto {
   @IsOptional({ message: 'ORDER_OPTIONAL' })
   @Type(() => Number)
   @IsInt({ message: 'ORDER_MUST_BE_INTEGER' })
-  @Min(0, { message: 'ORDER_MIN_VALUE' })
+  @Min(1, { message: 'ORDER_MIN_VALUE' })
   order?: number;
 
   @IsOptional({ message: 'ICONURL_OPTIONAL' })

@@ -19,6 +19,7 @@ export interface UpdateBadgeCommand {
   obtain?: string;
   point?: number;
   color?: string;
+  order?: number;
 }
 
 @Injectable()
@@ -67,6 +68,7 @@ export class UpdateBadgeUseCase {
           updateData.point = badge.badgeType === 'user' ? command.point : 0;
         }
         if (command.color !== undefined) updateData.color = command.color || null;
+        if (command.order !== undefined) updateData.order = command.order;
 
         await badgeRepo.update(command.badgeId, updateData);
         const updated = await badgeRepo.findOne({

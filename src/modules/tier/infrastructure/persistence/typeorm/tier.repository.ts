@@ -23,6 +23,23 @@ export class TierRepository implements ITierRepository {
     });
   }
 
+  async findAllDeleted(isActive: number | null = null): Promise<Tier[]> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('tier')
+      .withDeleted()
+      .where('tier.deleted_at IS NOT NULL');
+
+    if (isActive === 1) {
+      queryBuilder.andWhere('tier.is_active = :isActive', { isActive: true });
+    } else if (isActive === 0) {
+      queryBuilder.andWhere('tier.is_active = :isActive', { isActive: false });
+    }
+
+    queryBuilder.orderBy('tier.order', 'ASC').addOrderBy('tier.created_at', 'ASC');
+
+    return queryBuilder.getMany();
+  }
+
   async findById(id: string, isActive: number | null = null): Promise<Tier | null> {
     const where: Record<string, any> = { id, deletedAt: null };
     if (isActive === 1) where.isActive = true;

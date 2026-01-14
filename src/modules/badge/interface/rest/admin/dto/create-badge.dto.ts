@@ -52,4 +52,10 @@ export class CreateBadgeDto {
   @IsString({ message: 'COLOR_MUST_BE_STRING' })
   @IsOptional({ message: 'COLOR_OPTIONAL' })
   color?: string;
+
+  @IsNotEmpty({ message: 'ORDER_REQUIRED' })
+  @Type(() => Number)
+  @IsInt({ message: 'ORDER_MUST_BE_INTEGER' })
+  @Min(1, { message: 'ORDER_MIN_VALUE' })
+  order: number;
 }

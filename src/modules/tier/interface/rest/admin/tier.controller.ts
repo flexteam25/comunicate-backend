@@ -23,6 +23,7 @@ import { CreateTierUseCase } from '../../../application/handlers/admin/create-ti
 import { UpdateTierUseCase } from '../../../application/handlers/admin/update-tier.use-case';
 import { DeleteTierUseCase } from '../../../application/handlers/admin/delete-tier.use-case';
 import { ListTiersUseCase } from '../../../application/handlers/admin/list-tiers.use-case';
+import { ListTrashTiersUseCase } from '../../../application/handlers/admin/list-trash-tiers.use-case';
 import { CreateTierDto } from '../dto/create-tier.dto';
 import { UpdateTierDto } from '../dto/update-tier.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
@@ -47,6 +48,7 @@ export class AdminTierController {
     private readonly deleteTierUseCase: DeleteTierUseCase,
     private readonly listTiersUseCase: ListTiersUseCase,
     private readonly restoreTierUseCase: RestoreTierUseCase,
+    private readonly listTrashTiersUseCase: ListTrashTiersUseCase,
     private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
   ) {
@@ -95,6 +97,14 @@ export class AdminTierController {
   @RequirePermission('site.view')
   async listTiers(): Promise<ApiResponse<Tier[]>> {
     const tiers = await this.listTiersUseCase.execute();
+    return ApiResponseUtil.success(tiers.map((tier) => this.mapTierToResponse(tier)));
+  }
+
+  @Get('trash')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('site.view')
+  async listTrashTiers(): Promise<ApiResponse<Tier[]>> {
+    const tiers = await this.listTrashTiersUseCase.execute();
     return ApiResponseUtil.success(tiers.map((tier) => this.mapTierToResponse(tier)));
   }
 

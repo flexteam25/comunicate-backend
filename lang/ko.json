@@ -283,7 +283,7 @@
   "ONLY_PENDING_REDEMPTIONS_CAN_BE_CANCELLED": "대기 중인 교환권만 취소할 수 있습니다",
   "ONLY_PENDING_REDEMPTIONS_CAN_BE_REJECTED": "대기 중인 교환권만 거부할 수 있습니다",
   "ONLY_PENDING_SCAM_REPORTS_CAN_BE_DELETED": "대기 중인 사기 신고만 삭제할 수 있습니다",
-  "ORDER_MIN_VALUE": "순서의 최소값은 0입니다",
+  "ORDER_MIN_VALUE": "순서의 최소값은 1입니다",
   "ORDER_MUST_BE_INTEGER": "순서 는 정수여야 합니다",
   "ORDER_OPTIONAL": "순서 는 선택 사항입니다",
   "ORDER_REQUIRED": "순서 가 필요합니다",

@@ -16,6 +16,7 @@ import { UpdateCategoryUseCase } from '../../../application/handlers/admin/updat
 import { DeleteCategoryUseCase } from '../../../application/handlers/admin/delete-category.use-case';
 import { ListCategoriesUseCase } from '../../../application/handlers/admin/list-categories.use-case';
 import { RestoreCategoryUseCase } from '../../../application/handlers/admin/restore-category.use-case';
+import { ListTrashCategoriesUseCase } from '../../../application/handlers/admin/list-trash-categories.use-case';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
@@ -34,6 +35,7 @@ export class AdminCategoryController {
     private readonly deleteCategoryUseCase: DeleteCategoryUseCase,
     private readonly listCategoriesUseCase: ListCategoriesUseCase,
     private readonly restoreCategoryUseCase: RestoreCategoryUseCase,
+    private readonly listTrashCategoriesUseCase: ListTrashCategoriesUseCase,
   ) {}
 
   @Post()
@@ -51,6 +53,14 @@ export class AdminCategoryController {
   @RequirePermission('site.view')
   async listCategories(): Promise<ApiResponse<SiteCategory[]>> {
     const categories = await this.listCategoriesUseCase.execute();
+    return ApiResponseUtil.success(categories);
+  }
+
+  @Get('trash')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('site.view')
+  async listTrashCategories(): Promise<ApiResponse<SiteCategory[]>> {
+    const categories = await this.listTrashCategoriesUseCase.execute();
     return ApiResponseUtil.success(categories);
   }
 

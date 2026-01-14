@@ -20,6 +20,7 @@ import { CreateSiteUseCase } from '../../../application/handlers/admin/create-si
 import { UpdateSiteUseCase } from '../../../application/handlers/admin/update-site.use-case';
 import { DeleteSiteUseCase } from '../../../application/handlers/admin/delete-site.use-case';
 import { ListSitesUseCase } from '../../../application/handlers/admin/list-sites.use-case';
+import { ListTrashSitesUseCase } from '../../../application/handlers/admin/list-trash-sites.use-case';
 import { GetSiteUseCase } from '../../../application/handlers/admin/get-site.use-case';
 import { AssignBadgeToSiteUseCase } from '../../../application/handlers/admin/assign-badge.use-case';
 import { RemoveBadgeFromSiteUseCase } from '../../../application/handlers/admin/remove-badge.use-case';
@@ -72,6 +73,7 @@ export class AdminSiteController {
     private readonly updateSiteUseCase: UpdateSiteUseCase,
     private readonly deleteSiteUseCase: DeleteSiteUseCase,
     private readonly listSitesUseCase: ListSitesUseCase,
+    private readonly listTrashSitesUseCase: ListTrashSitesUseCase,
     private readonly getSiteUseCase: GetSiteUseCase,
     private readonly assignBadgeUseCase: AssignBadgeToSiteUseCase,
     private readonly removeBadgeUseCase: RemoveBadgeFromSiteUseCase,
@@ -230,6 +232,34 @@ export class AdminSiteController {
     @Query() query: ListSitesQueryDto,
   ): Promise<ApiResponse<CursorPaginatedSitesResponse>> {
     const result = await this.listSitesUseCase.execute({
+      filters: {
+        categoryId: query.categoryId,
+        tierId: query.tierId,
+        status: query.status,
+        search: query.search,
+        categoryType: query.categoryType,
+        filterBy: query.filterBy,
+      },
+      cursor: query.cursor,
+      limit: query.limit,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
+
+    return ApiResponseUtil.success({
+      data: result.data.map((site) => this.mapSiteToResponse(site)),
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    });
+  }
+
+  @Get('trash')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('site.view')
+  async listTrashSites(
+    @Query() query: ListSitesQueryDto,
+  ): Promise<ApiResponse<CursorPaginatedSitesResponse>> {
+    const result = await this.listTrashSitesUseCase.execute({
       filters: {
         categoryId: query.categoryId,
         tierId: query.tierId,

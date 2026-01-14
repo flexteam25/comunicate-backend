@@ -35,6 +35,23 @@ export class SiteCategoryRepository implements ISiteCategoryRepository {
     });
   }
 
+  async findAllDeleted(isActive: number | null = null): Promise<SiteCategory[]> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('category')
+      .withDeleted()
+      .where('category.deleted_at IS NOT NULL');
+
+    if (isActive === 1) {
+      queryBuilder.andWhere('category.is_active = :isActive', { isActive: true });
+    } else if (isActive === 0) {
+      queryBuilder.andWhere('category.is_active = :isActive', { isActive: false });
+    }
+
+    queryBuilder.orderBy('category.name', 'ASC');
+
+    return queryBuilder.getMany();
+  }
+
   async findById(
     id: string,
     isActive: number | null = null,

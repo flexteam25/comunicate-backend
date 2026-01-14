@@ -21,6 +21,13 @@ export interface ISiteRepository {
     sortBy?: string,
     sortOrder?: 'ASC' | 'DESC',
   ): Promise<CursorPaginationResult<Site>>;
+  findAllDeletedWithCursor(
+    filters?: SiteFilters,
+    cursor?: string,
+    limit?: number,
+    sortBy?: string,
+    sortOrder?: 'ASC' | 'DESC',
+  ): Promise<CursorPaginationResult<Site>>;
   create(site: Partial<Site>): Promise<Site>;
   update(id: string, data: Partial<Site>): Promise<Site>;
   delete(id: string): Promise<void>;

@@ -27,6 +27,7 @@ import { DeleteBadgeUseCase } from '../../../application/handlers/admin/delete-b
 import { ListBadgesUseCase } from '../../../application/handlers/admin/list-badges.use-case';
 import { GetBadgeUseCase } from '../../../application/handlers/admin/get-badge.use-case';
 import { RestoreBadgeUseCase } from '../../../application/handlers/admin/restore-badge.use-case';
+import { ListTrashBadgesUseCase } from '../../../application/handlers/admin/list-trash-badges.use-case';
 import { CreateBadgeDto } from './dto/create-badge.dto';
 import { UpdateBadgeDto } from './dto/update-badge.dto';
 import { Badge } from '../../../domain/entities/badge.entity';
@@ -50,6 +51,7 @@ export class AdminBadgeController {
     private readonly listBadgesUseCase: ListBadgesUseCase,
     private readonly getBadgeUseCase: GetBadgeUseCase,
     private readonly restoreBadgeUseCase: RestoreBadgeUseCase,
+    private readonly listTrashBadgesUseCase: ListTrashBadgesUseCase,
     private readonly uploadService: UploadService,
     private readonly configService: ConfigService,
   ) {
@@ -68,6 +70,7 @@ export class AdminBadgeController {
       obtain: badge.obtain || null,
       point: badge.badgeType === BadgeType.USER ? (badge.point ?? 0) : null,
       color: badge.color || null,
+      order: badge.order || null,
       createdAt: badge.createdAt,
       updatedAt: badge.updatedAt,
       deletedAt: badge.deletedAt || null,
@@ -110,6 +113,7 @@ export class AdminBadgeController {
       obtain: dto.obtain,
       point: dto.point,
       color: dto.color,
+      order: dto.order,
     });
 
     return ApiResponseUtil.success(
@@ -123,8 +127,30 @@ export class AdminBadgeController {
   @RequirePermission('badge.read')
   async listBadges(
     @Query('badgeType') badgeType?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortDir') sortDir?: string,
   ): Promise<ApiResponse<AdminBadgeResponse[]>> {
-    const badges = await this.listBadgesUseCase.execute(badgeType);
+    const badges = await this.listBadgesUseCase.execute({
+      badgeType,
+      sortBy: sortBy || 'name',
+      sortDir: (sortDir?.toUpperCase() as 'ASC' | 'DESC') || 'ASC',
+    });
+    return ApiResponseUtil.success(badges.map((badge) => this.mapBadgeToResponse(badge)));
+  }
+
+  @Get('trash')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('badge.read')
+  async listTrashBadges(
+    @Query('badgeType') badgeType?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortDir') sortDir?: string,
+  ): Promise<ApiResponse<AdminBadgeResponse[]>> {
+    const badges = await this.listTrashBadgesUseCase.execute({
+      badgeType,
+      sortBy: sortBy || 'name',
+      sortDir: (sortDir?.toUpperCase() as 'ASC' | 'DESC') || 'ASC',
+    });
     return ApiResponseUtil.success(badges.map((badge) => this.mapBadgeToResponse(badge)));
   }
 
@@ -175,6 +201,7 @@ export class AdminBadgeController {
       obtain: dto.obtain,
       point: dto.point,
       color: dto.color,
+      order: dto.order,
     });
 
     return ApiResponseUtil.success(

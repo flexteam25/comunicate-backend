@@ -40,6 +40,7 @@ export class AdminBadgeResponse {
   obtain?: string;
   point: number;
   color?: string;
+  order?: number;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
