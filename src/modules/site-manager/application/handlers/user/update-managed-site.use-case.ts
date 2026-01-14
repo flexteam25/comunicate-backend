@@ -21,7 +21,8 @@ export interface UpdateManagedSiteCommand {
   slug?: string;
   categoryId?: string;
   tierId?: string;
-  permanentUrl?: string;
+  permanentUrl: string;
+  accessibleUrl: string;
   description?: string;
   firstCharge?: number;
   recharge?: number;
@@ -229,8 +230,8 @@ export class UpdateManagedSiteUseCase {
           if (mainImageUrl !== undefined) updateData.mainImageUrl = mainImageUrl;
           if (siteImageUrl !== undefined) updateData.siteImageUrl = siteImageUrl;
           if (command.tierId !== undefined) updateData.tierId = command.tierId || null;
-          if (command.permanentUrl !== undefined)
-            updateData.permanentUrl = command.permanentUrl || null;
+          updateData.permanentUrl = command.permanentUrl;
+          updateData.accessibleUrl = command.accessibleUrl;
           if (command.description !== undefined)
             updateData.description = command.description || null;
           if (command.firstCharge !== undefined)

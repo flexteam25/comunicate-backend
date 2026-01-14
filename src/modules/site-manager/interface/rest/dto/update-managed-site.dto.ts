@@ -7,6 +7,7 @@ import {
   Min,
   Max,
   IsIn,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
@@ -31,10 +32,15 @@ export class UpdateManagedSiteDto {
   @IsUUID(undefined, { message: 'TIERID_MUST_BE_UUID' })
   tierId?: string;
 
-  @IsOptional({ message: 'PERMANENTURL_OPTIONAL' })
   @IsString({ message: 'PERMANENTURL_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'PERMANENTURL_REQUIRED' })
   @MaxLength(500, { message: 'PERMANENTURL_MAX_LENGTH' })
-  permanentUrl?: string;
+  permanentUrl: string;
+
+  @IsString({ message: 'ACCESSIBLEURL_MUST_BE_STRING' })
+  @IsNotEmpty({ message: 'ACCESSIBLEURL_REQUIRED' })
+  @MaxLength(500, { message: 'ACCESSIBLEURL_MAX_LENGTH' })
+  accessibleUrl: string;
 
   @IsOptional({ message: 'DESCRIPTION_OPTIONAL' })
   @IsString({ message: 'DESCRIPTION_MUST_BE_STRING' })

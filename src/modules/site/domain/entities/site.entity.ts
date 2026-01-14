@@ -60,6 +60,14 @@ export class Site extends BaseEntity {
   permanentUrl?: string;
 
   @Column({
+    name: 'accessible_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  accessibleUrl?: string;
+
+  @Column({
     type: 'varchar',
     length: 20,
     default: SiteStatus.UNVERIFIED,

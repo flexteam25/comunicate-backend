@@ -72,6 +72,7 @@ export class UserSiteController {
           }
         : null,
       permanentUrl: site.permanentUrl || null,
+      accessibleUrl: site.accessibleUrl || null,
       status: site.status,
       description: site.description || null,
       reviewCount: site.reviewCount,

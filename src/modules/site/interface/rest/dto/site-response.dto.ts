@@ -68,6 +68,7 @@ export class SiteResponse {
   siteImageUrl?: string;
   tier?: TierResponse;
   permanentUrl?: string;
+  accessibleUrl?: string;
   status: SiteStatus;
   description?: string;
   reviewCount: number;

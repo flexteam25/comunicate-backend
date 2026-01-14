@@ -97,6 +97,7 @@ export class SiteManagerController {
           }
         : null,
       permanentUrl: site.permanentUrl || null,
+      accessibleUrl: site.accessibleUrl || null,
       status: site.status,
       description: site.description || null,
       reviewCount: site.reviewCount,
@@ -197,6 +198,7 @@ export class SiteManagerController {
       categoryId: dto.categoryId,
       tierId: dto.tierId,
       permanentUrl: dto.permanentUrl,
+      accessibleUrl: dto.accessibleUrl,
       description: dto.description,
       firstCharge: dto.firstCharge,
       recharge: dto.recharge,

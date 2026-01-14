@@ -36,7 +36,8 @@ export interface CreatePartnerSiteCommand {
   mainImage?: MulterFile;
   siteImage?: MulterFile;
   tierId?: string;
-  permanentUrl?: string;
+  permanentUrl: string;
+  accessibleUrl: string;
   description?: string;
   firstCharge?: number;
   recharge?: number;
@@ -222,6 +223,7 @@ export class CreatePartnerSiteUseCase {
             siteImageUrl,
             tierId: command.tierId,
             permanentUrl: command.permanentUrl,
+            accessibleUrl: command.accessibleUrl,
             description: command.description,
             firstCharge: command.firstCharge,
             recharge: command.recharge,
@@ -326,6 +328,7 @@ export class CreatePartnerSiteUseCase {
           }
         : null,
       permanentUrl: site.permanentUrl || null,
+      accessibleUrl: site.accessibleUrl || null,
       status: site.status,
       description: site.description || null,
       reviewCount: site.reviewCount,

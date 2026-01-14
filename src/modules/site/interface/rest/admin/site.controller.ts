@@ -119,6 +119,7 @@ export class AdminSiteController {
           }
         : null,
       permanentUrl: site.permanentUrl || null,
+      accessibleUrl: site.accessibleUrl || null,
       status: site.status,
       description: site.description || null,
       reviewCount: site.reviewCount,
@@ -204,6 +205,7 @@ export class AdminSiteController {
       categoryId: dto.categoryId,
       tierId: dto.tierId,
       permanentUrl: dto.permanentUrl,
+      accessibleUrl: dto.accessibleUrl,
       description: dto.description,
       firstCharge: dto.firstCharge,
       recharge: dto.recharge,
@@ -332,6 +334,7 @@ export class AdminSiteController {
       categoryId: dto.categoryId,
       tierId: dto.tierId,
       permanentUrl: dto.permanentUrl,
+      accessibleUrl: dto.accessibleUrl,
       description: dto.description,
       status: dto.status,
       firstCharge: dto.firstCharge,
