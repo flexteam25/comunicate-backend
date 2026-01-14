@@ -205,6 +205,7 @@ export class UserSiteController {
         id: report.id,
         siteId: report.siteId || null,
         siteUrl: report.siteUrl,
+        sitePermanentUrl: report.site?.permanentUrl || null,
         siteName: report.siteName,
         siteAccountInfo: report.siteAccountInfo,
         registrationUrl: report.registrationUrl,

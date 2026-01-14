@@ -364,11 +364,18 @@ export class ScamReportRepository implements IScamReportRepository {
       }
     }
 
-    // Filter by siteName (LIKE search - for backward compatibility)
+    // Filter by siteName - search site.name, site.permanent_url and report.site_url
     if (siteName) {
-      queryBuilder.andWhere('LOWER(site.name) LIKE LOWER(:siteName)', {
-        siteName: `%${siteName}%`,
-      });
+      queryBuilder.andWhere(
+        '(' +
+          'LOWER(site.name) LIKE LOWER(:siteName) ' +
+          'OR LOWER(site.permanent_url) LIKE LOWER(:siteName) ' +
+          'OR LOWER(report.site_url) LIKE LOWER(:siteName)' +
+          ')',
+        {
+          siteName: `%${siteName}%`,
+        },
+      );
     }
 
     // Apply cursor pagination

@@ -39,6 +39,7 @@ export class ScamReportResponseDto {
   siteSlug?: string;
   title?: string;
   siteUrl: string;
+  sitePermanentUrl?: string;
   siteName: string;
   siteAccountInfo: string;
   registrationUrl: string;

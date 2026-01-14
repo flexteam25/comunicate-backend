@@ -89,6 +89,7 @@ export class ScamReportController {
       siteSlug: report.site?.slug || null,
       title: report.title || null,
       siteUrl: report.siteUrl,
+      sitePermanentUrl: report.site?.permanentUrl || null,
       siteName: report.siteName || report.site?.name || null,
       siteAccountInfo: report.siteAccountInfo,
       registrationUrl: report.registrationUrl,
