@@ -13,6 +13,7 @@ export interface CreateCategoryCommand {
   nameKo?: string;
   description?: string;
   showMain?: boolean;
+  isPointBanner?: boolean;
   specialKey?: string | null;
   order: number;
   adminCreateOnly: boolean;
@@ -45,6 +46,7 @@ export class CreateCategoryUseCase {
       nameKo: command.nameKo,
       description: command.description,
       showMain: command.showMain ?? false,
+      isPointBanner: command.isPointBanner ?? false,
       specialKey: command.specialKey || null,
       order: command.order,
       adminCreateOnly: command.adminCreateOnly,

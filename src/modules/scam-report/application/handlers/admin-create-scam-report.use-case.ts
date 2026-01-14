@@ -65,7 +65,7 @@ export class AdminCreateScamReportUseCase {
           amount: command.amount,
           status: command.status || ScamReportStatus.PENDING,
           adminId: command.adminId,
-          // Note: reviewedAt is not set when admin creates (as per requirements)
+          reviewedAt: new Date(), // Set reviewedAt when admin creates
         });
 
         const savedReport = await reportRepo.save(report);

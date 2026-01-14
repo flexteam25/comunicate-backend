@@ -196,6 +196,7 @@ export class PostController {
         nameKo: cat.nameKo || null,
         description: cat.description || null,
         showMain: cat.showMain ?? false,
+        isPointBanner: cat.isPointBanner ?? false,
         specialKey: cat.specialKey || null,
         order: cat.order || null,
         adminCreateOnly: cat.adminCreateOnly ?? true,

@@ -29,6 +29,10 @@ export class UpdateCategoryDto {
   @IsBoolean({ message: 'SHOWMAIN_MUST_BE_BOOLEAN' })
   showMain?: boolean;
 
+  @IsOptional({ message: 'ISPOINTBANNER_OPTIONAL' })
+  @IsBoolean({ message: 'ISPOINTBANNER_MUST_BE_BOOLEAN' })
+  isPointBanner?: boolean;
+
   @IsOptional({ message: 'SPECIALKEY_OPTIONAL' })
   @ValidateIf((o) => o.specialKey !== null)
   @IsString({ message: 'SPECIALKEY_MUST_BE_STRING' })

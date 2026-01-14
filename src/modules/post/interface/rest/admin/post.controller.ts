@@ -112,6 +112,7 @@ export class AdminPostController {
       nameKo: category.nameKo || null,
       description: category.description || null,
       showMain: category.showMain ?? false,
+      isPointBanner: category.isPointBanner ?? false,
       specialKey: category.specialKey || null,
       order: category.order || null,
       adminCreateOnly: category.adminCreateOnly ?? true,

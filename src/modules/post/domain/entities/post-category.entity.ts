@@ -17,6 +17,9 @@ export class PostCategory extends BaseEntity {
   @Column({ name: 'show_main', type: 'boolean', default: false })
   showMain: boolean;
 
+  @Column({ name: 'is_point_banner', type: 'boolean', default: false })
+  isPointBanner: boolean;
+
   @Column({ name: 'special_key', type: 'varchar', length: 50, nullable: true })
   specialKey?: string | null;
 
