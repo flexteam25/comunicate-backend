@@ -28,6 +28,13 @@ export function unauthorized(
   return new ApiExceptionWithKey(messageKey, HttpStatus.UNAUTHORIZED, params);
 }
 
+export function tooManyRequests(
+  messageKey: string,
+  params?: Record<string, string | number>,
+) {
+  return new ApiExceptionWithKey(messageKey, HttpStatus.TOO_MANY_REQUESTS, params);
+}
+
 /**
  * Common message keys for reuse
  */
@@ -35,6 +42,7 @@ export const MessageKeys = {
   // Generic
   INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
   VALIDATION_FAILED: 'VALIDATION_FAILED',
+  TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
 
   // Auth
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
@@ -301,6 +309,7 @@ export const MessageKeys = {
   // OTP
   OTP_NOT_FOUND: 'OTP_NOT_FOUND',
   OTP_HAS_EXPIRED: 'OTP_HAS_EXPIRED',
+  OTP_ALREADY_SENT: 'OTP_ALREADY_SENT',
 
   // Success Messages
   PROFILE_UPDATED_SUCCESS: 'PROFILE_UPDATED_SUCCESS',
@@ -349,4 +358,5 @@ export const MessageKeys = {
   EVENT_DELETED_SUCCESS: 'EVENT_DELETED_SUCCESS',
   ATTENDANCE_CHECKED_SUCCESS: 'ATTENDANCE_CHECKED_SUCCESS',
   OTP_GENERATED_SUCCESS: 'OTP_GENERATED_SUCCESS',
+  OTP_SENT_IF_EMAIL_EXISTS: 'OTP_SENT_IF_EMAIL_EXISTS',
 } as const;

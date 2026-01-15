@@ -148,6 +148,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
           messageKey = 'CONFLICT';
         }
         break;
+      case HttpStatus.TOO_MANY_REQUESTS:
+        if (!messageKey) {
+          messageKey = 'TOO_MANY_REQUESTS';
+        }
+        break;
       case HttpStatus.INTERNAL_SERVER_ERROR:
         if (!messageKey) {
           messageKey = 'INTERNAL_SERVER_ERROR';
@@ -163,6 +168,22 @@ export class ApiExceptionFilter implements ExceptionFilter {
         if (!messageKey) {
           messageKey = 'INTERNAL_SERVER_ERROR';
         }
+    }
+
+    // Extract retryAfter for 429 errors (after messageKey is set)
+    if (status === HttpStatus.TOO_MANY_REQUESTS && exception instanceof HttpException) {
+      const exceptionResponse = exception.getResponse();
+      if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+        const responseObj = exceptionResponse as HttpExceptionResponse & {
+          retryAfter?: number;
+        };
+        if (responseObj.retryAfter !== undefined) {
+          if (!params) {
+            params = {};
+          }
+          params.retryAfter = responseObj.retryAfter;
+        }
+      }
     }
 
     // Format response using ApiResponseUtil

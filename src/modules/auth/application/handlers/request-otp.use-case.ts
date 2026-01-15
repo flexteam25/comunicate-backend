@@ -4,7 +4,11 @@ import { IUserRepository } from '../../../user/infrastructure/persistence/reposi
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { QueueService } from '../../../../shared/queue/queue.service';
 import { User } from '../../../user/domain/entities/user.entity';
-import { notFound, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface RequestOtpCommand {
   email: string;
@@ -25,7 +29,9 @@ export class RequestOtpUseCase {
       this.configService.get<string>('TEST_MAIL')?.toLowerCase() === 'true';
   }
 
-  async execute(command: RequestOtpCommand): Promise<{ message: string; otp?: string }> {
+  async execute(
+    command: RequestOtpCommand,
+  ): Promise<{ messageKey: string; otp?: string }> {
     // Find user by email
     const user = await this.userRepository.findByEmail(command.email);
     if (!user) {
@@ -39,10 +45,7 @@ export class RequestOtpUseCase {
     const redisKey = `otp:forgot-password:${user.id}`;
     const storedOtp = await this.redisService.getString(redisKey);
     if (storedOtp) {
-      return {
-        message:
-          'An OTP has already been sent, please wait some minutes before requesting again',
-      };
+      throw badRequest(MessageKeys.OTP_ALREADY_SENT);
     }
 
     // Generate 6-digit OTP
@@ -55,7 +58,7 @@ export class RequestOtpUseCase {
     // In test mail mode, do NOT send email, just return OTP
     if (this.isTestMail) {
       return {
-        message: 'OTP has been generated (test mail mode)',
+        messageKey: MessageKeys.OTP_GENERATED_SUCCESS,
         otp,
       };
     }
@@ -64,7 +67,7 @@ export class RequestOtpUseCase {
     await this.queueOtpEmail(user, otp);
 
     // Return success message (don't reveal if user exists)
-    return { message: 'If the email exists, an OTP has been sent' };
+    return { messageKey: MessageKeys.OTP_SENT_IF_EMAIL_EXISTS };
   }
 
   /**

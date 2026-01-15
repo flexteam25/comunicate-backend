@@ -203,11 +203,14 @@ export class AdminController {
           code: result.otp || null,
           note: 'Testing: OTP is returned in response instead of sending email',
         },
-        result?.message || MessageKeys.OTP_GENERATED_SUCCESS,
+        result?.messageKey || MessageKeys.OTP_GENERATED_SUCCESS,
       );
     }
 
-    return ApiResponseUtil.success(null, result?.message || MessageKeys.OTP_SENT_SUCCESS);
+    return ApiResponseUtil.success(
+      null,
+      result?.messageKey || MessageKeys.OTP_SENT_SUCCESS,
+    );
   }
 
   @Post('verify-otp-forgot-password')
