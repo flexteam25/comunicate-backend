@@ -102,6 +102,7 @@ export class AdminPostController {
       viewCount: post.viewCount || 0,
       isPinned: post.isPinned || false,
       isPublished: post.isPublished || false,
+      isPointBanner: post.isPointBanner || false,
       publishedAt: post.publishedAt || null,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
@@ -221,6 +222,7 @@ export class AdminPostController {
   async listPosts(@Query() query: ListAdminPostsQueryDto): Promise<ApiResponse<any>> {
     const result = await this.listPostsUseCase.execute({
       isPublished: query.isPublished,
+      isPointBanner: query.isPointBanner,
       categoryId: query.categoryId,
       userId: query.userId,
       search: query.search,
@@ -262,6 +264,7 @@ export class AdminPostController {
       thumbnail,
       isPinned: dto.isPinned,
       isPublished: dto.isPublished,
+      isPointBanner: dto.isPointBanner,
     });
 
     return ApiResponseUtil.success(

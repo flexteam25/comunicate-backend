@@ -20,6 +20,7 @@ export interface CreatePostCommand {
   content: string;
   thumbnail?: MulterFile;
   isPublished?: boolean;
+  isPointBanner?: boolean;
 }
 
 @Injectable()
@@ -103,6 +104,7 @@ export class CreatePostUseCase {
             thumbnailUrl,
             isPublished: command.isPublished || false,
             isPinned: false, // User posts cannot be pinned
+            isPointBanner: command.isPointBanner || false,
             publishedAt: command.isPublished ? new Date() : null,
           });
 

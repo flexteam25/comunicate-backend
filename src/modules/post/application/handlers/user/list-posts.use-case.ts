@@ -5,6 +5,7 @@ import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagin
 
 export interface ListPublicPostsCommand {
   categoryId?: string;
+  isPointBanner?: boolean;
   search?: string;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
@@ -24,6 +25,7 @@ export class ListPublicPostsUseCase {
     return this.postRepository.findPublished(
       {
         categoryId: command.categoryId,
+        isPointBanner: command.isPointBanner,
         search: command.search,
         sortBy: command.sortBy,
         sortOrder: command.sortOrder,

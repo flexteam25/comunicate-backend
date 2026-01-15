@@ -116,6 +116,7 @@ export class PostRepository implements IPostRepository {
   async findAllAdmin(
     filters?: {
       isPublished?: boolean;
+      isPointBanner?: boolean;
       categoryId?: string;
       userId?: string;
       search?: string;
@@ -167,6 +168,12 @@ export class PostRepository implements IPostRepository {
     if (filters?.isPublished !== undefined) {
       queryBuilder.andWhere('post.isPublished = :isPublished', {
         isPublished: filters.isPublished,
+      });
+    }
+
+    if (filters?.isPointBanner !== undefined) {
+      queryBuilder.andWhere('post.isPointBanner = :isPointBanner', {
+        isPointBanner: filters.isPointBanner,
       });
     }
 
@@ -278,6 +285,7 @@ export class PostRepository implements IPostRepository {
   async findPublished(
     filters?: {
       categoryId?: string;
+      isPointBanner?: boolean;
       search?: string;
       sortBy?: string;
       sortOrder?: 'ASC' | 'DESC';
@@ -358,6 +366,12 @@ export class PostRepository implements IPostRepository {
           categoryId: filters.categoryId,
         });
       }
+    }
+
+    if (filters?.isPointBanner !== undefined) {
+      queryBuilder.andWhere('post.isPointBanner = :isPointBanner', {
+        isPointBanner: filters.isPointBanner,
+      });
     }
 
     if (filters?.search) {

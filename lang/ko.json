@@ -230,6 +230,8 @@
   "ISPINNED_OPTIONAL": "ispinned 는 선택 사항입니다",
   "ISPUBLISHED_MUST_BE_BOOLEAN": "게시 여부 는 불린 값이어야 합니다",
   "ISPUBLISHED_OPTIONAL": "ispublished 는 선택 사항입니다",
+  "ISPOINTBANNER_MUST_BE_BOOLEAN": "포인트 배너 여부 는 불린 값이어야 합니다",
+  "ISPOINTBANNER_OPTIONAL": "ispointbanner 는 선택 사항입니다",
   "LIMIT_MAX_VALUE": "limit의 최대값은 100입니다",
   "LIMIT_MIN_VALUE": "limit의 최소값은 0입니다",
   "LIMIT_MUST_BE_INTEGER": "limit 는 정수여야 합니다",

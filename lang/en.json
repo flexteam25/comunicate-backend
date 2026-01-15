@@ -230,6 +230,8 @@
   "ISPINNED_OPTIONAL": "Pinned status is optional",
   "ISPUBLISHED_MUST_BE_BOOLEAN": "Publish status must be a boolean",
   "ISPUBLISHED_OPTIONAL": "Publish status is optional",
+  "ISPOINTBANNER_MUST_BE_BOOLEAN": "Point banner status must be a boolean",
+  "ISPOINTBANNER_OPTIONAL": "Point banner status is optional",
   "LIMIT_MAX_VALUE": "Limit must be at most 100",
   "LIMIT_MIN_VALUE": "Limit must be at least 0",
   "LIMIT_MUST_BE_INTEGER": "Limit must be an integer",

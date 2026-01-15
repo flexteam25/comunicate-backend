@@ -22,6 +22,7 @@ export interface UpdatePostCommand {
   deleteThumbnail?: boolean | 'true' | 'false';
   isPinned?: boolean;
   isPublished?: boolean;
+  isPointBanner?: boolean;
 }
 
 @Injectable()
@@ -137,6 +138,8 @@ export class UpdatePostUseCase {
             // Set publishedAt when publishing, clear when unpublishing
             updateData.publishedAt = command.isPublished ? new Date() : null;
           }
+          if (command.isPointBanner !== undefined)
+            updateData.isPointBanner = command.isPointBanner;
 
           await postRepo.update(command.postId, updateData);
 

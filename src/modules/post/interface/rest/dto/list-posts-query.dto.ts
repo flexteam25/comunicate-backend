@@ -1,5 +1,6 @@
-import { IsOptional, IsUUID, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsUUID, IsString, IsEnum, IsInt, Min, Max, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 
 export enum PostSortBy {
   CREATED_AT = 'createdAt',
@@ -16,6 +17,11 @@ export class ListPostsQueryDto {
   @IsOptional({ message: 'CATEGORYID_OPTIONAL' })
   @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
   categoryId?: string;
+
+  @IsOptional({ message: 'ISPOINTBANNER_OPTIONAL' })
+  @TransformToBoolean
+  @IsBoolean({ message: 'ISPOINTBANNER_MUST_BE_BOOLEAN' })
+  isPointBanner?: boolean;
 
   @IsOptional({ message: 'SEARCH_OPTIONAL' })
   @IsString({ message: 'SEARCH_MUST_BE_STRING' })

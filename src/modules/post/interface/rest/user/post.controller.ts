@@ -118,6 +118,7 @@ export class PostController {
       viewCount: post.viewCount || 0,
       reacted: post.reacted || null, // 'like', 'dislike', or null
       isPinned: post.isPinned || false,
+      isPointBanner: post.isPointBanner || false,
       publishedAt: post.publishedAt || null,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
@@ -170,6 +171,7 @@ export class PostController {
   ): Promise<ApiResponse<any>> {
     const result = await this.listPublicPostsUseCase.execute({
       categoryId: query.categoryId,
+      isPointBanner: query.isPointBanner,
       search: query.search,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
@@ -418,6 +420,7 @@ export class PostController {
       content: dto.content,
       thumbnail,
       isPublished: dto.isPublished,
+      isPointBanner: dto.isPointBanner,
     });
 
     return ApiResponseUtil.success(

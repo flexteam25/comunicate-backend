@@ -50,6 +50,9 @@ export class Post extends BaseEntity {
   @Column({ name: 'is_published', type: 'boolean', default: false })
   isPublished: boolean;
 
+  @Column({ name: 'is_point_banner', type: 'boolean', default: false })
+  isPointBanner: boolean;
+
   @Column({ name: 'published_at', type: 'timestamptz', nullable: true })
   publishedAt?: Date;
 

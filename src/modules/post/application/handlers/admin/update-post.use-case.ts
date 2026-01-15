@@ -20,6 +20,7 @@ export interface UpdatePostCommand {
   deleteThumbnail?: boolean | string;
   isPublished?: boolean;
   isPinned?: boolean;
+  isPointBanner?: boolean;
 }
 
 @Injectable()
@@ -128,6 +129,8 @@ export class UpdatePostUseCase {
             }
           }
           if (command.isPinned !== undefined) updateData.isPinned = command.isPinned;
+          if (command.isPointBanner !== undefined)
+            updateData.isPointBanner = command.isPointBanner;
 
           await postRepo.update(command.postId, updateData);
         },

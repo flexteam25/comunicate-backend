@@ -8,6 +8,7 @@ export interface IPostRepository {
   findAllAdmin(
     filters?: {
       isPublished?: boolean;
+      isPointBanner?: boolean;
       categoryId?: string;
       userId?: string;
       search?: string;
@@ -20,6 +21,7 @@ export interface IPostRepository {
   findPublished(
     filters?: {
       categoryId?: string;
+      isPointBanner?: boolean;
       search?: string;
       sortBy?: string;
       sortOrder?: 'ASC' | 'DESC';

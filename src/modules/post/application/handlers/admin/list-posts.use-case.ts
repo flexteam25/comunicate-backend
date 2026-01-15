@@ -5,6 +5,7 @@ import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagin
 
 export interface ListPostsCommand {
   isPublished?: boolean;
+  isPointBanner?: boolean;
   categoryId?: string;
   userId?: string;
   search?: string;
@@ -25,6 +26,7 @@ export class ListPostsUseCase {
     return this.postRepository.findAllAdmin(
       {
         isPublished: command.isPublished,
+        isPointBanner: command.isPointBanner,
         categoryId: command.categoryId,
         userId: command.userId,
         search: command.search,

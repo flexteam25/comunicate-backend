@@ -18,6 +18,11 @@ export class ListAdminPostsQueryDto {
   @IsBoolean({ message: 'ISPUBLISHED_MUST_BE_BOOLEAN' })
   isPublished?: boolean;
 
+  @IsOptional({ message: 'ISPOINTBANNER_OPTIONAL' })
+  @TransformToBoolean
+  @IsBoolean({ message: 'ISPOINTBANNER_MUST_BE_BOOLEAN' })
+  isPointBanner?: boolean;
+
   @IsOptional({ message: 'CATEGORYID_OPTIONAL' })
   @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
   categoryId?: string;

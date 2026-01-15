@@ -32,6 +32,11 @@ export class UpdatePostDto {
   @IsBoolean({ message: 'ISPINNED_MUST_BE_BOOLEAN' })
   isPinned?: boolean;
 
+  @IsOptional({ message: 'ISPOINTBANNER_OPTIONAL' })
+  @TransformToBoolean
+  @IsBoolean({ message: 'ISPOINTBANNER_MUST_BE_BOOLEAN' })
+  isPointBanner?: boolean;
+
   @IsOptional()
   @IsString({ message: 'Delete thumbnail flag must be a string' })
   @IsIn(['true', 'false'], {
