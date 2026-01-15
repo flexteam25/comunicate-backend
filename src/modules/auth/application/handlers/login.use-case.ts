@@ -9,7 +9,7 @@ import { UserToken } from '../../domain/entities/user-token.entity';
 import { User } from '../../../user/domain/entities/user.entity';
 import { UserProfile } from '../../../user/domain/entities/user-profile.entity';
 import {
-  unauthorized,
+  badRequest,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
 export interface LoginCommand {
@@ -40,11 +40,11 @@ export class LoginUseCase {
     // Find user (outside transaction for validation)
     const user = await this.userRepository.findByEmail(command.email);
     if (!user) {
-      throw unauthorized(MessageKeys.INVALID_CREDENTIALS);
+      throw badRequest(MessageKeys.INVALID_CREDENTIALS);
     }
 
     if (!user.isActive) {
-      throw unauthorized(MessageKeys.USER_ACCOUNT_INACTIVE);
+      throw badRequest(MessageKeys.USER_ACCOUNT_INACTIVE);
     }
 
     // Verify password (outside transaction)
@@ -53,7 +53,7 @@ export class LoginUseCase {
       user.passwordHash,
     );
     if (!isValidPassword) {
-      throw unauthorized(MessageKeys.INVALID_CREDENTIALS);
+      throw badRequest(MessageKeys.INVALID_CREDENTIALS);
     }
 
     // Generate token pair (outside transaction)

@@ -3,7 +3,7 @@ import { IUserRepository } from '../../../user/infrastructure/persistence/reposi
 import { RedisService } from '../../../../shared/redis/redis.service';
 import {
   notFound,
-  unauthorized,
+  badRequest,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
 
@@ -36,11 +36,11 @@ export class VerifyOtpForgotPasswordUseCase {
     const storedOtp = await this.redisService.getString(redisKey);
 
     if (!storedOtp) {
-      throw unauthorized(MessageKeys.OTP_EXPIRED_OR_INVALID);
+      throw badRequest(MessageKeys.OTP_EXPIRED_OR_INVALID);
     }
 
     if (storedOtp !== command.verifyCode) {
-      throw unauthorized(MessageKeys.INVALID_OTP_CODE);
+      throw badRequest(MessageKeys.INVALID_OTP_CODE);
     }
 
     // Generate token (64 characters, alphanumeric)

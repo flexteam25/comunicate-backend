@@ -4,8 +4,11 @@ import {
 } from '@nestjs/common';
 import { IAdminRepository } from '../../infrastructure/persistence/repositories/admin.repository';
 import { RedisService } from '../../../../shared/redis/redis.service';
-import { notFound, unauthorized } from '../../../../shared/exceptions/exception-helpers';
-import { MessageKeys } from '../../../../shared/exceptions/exception-helpers';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../shared/exceptions/exception-helpers';
 
 export interface VerifyOtpForgotPasswordCommand {
   email: string;
@@ -36,11 +39,11 @@ export class VerifyOtpForgotPasswordUseCase {
     const storedOtp = await this.redisService.getString(redisKey);
 
     if (!storedOtp) {
-      throw unauthorized(MessageKeys.OTP_EXPIRED_OR_INVALID);
+      throw badRequest(MessageKeys.OTP_EXPIRED_OR_INVALID);
     }
 
     if (storedOtp !== command.verifyCode) {
-      throw unauthorized(MessageKeys.INVALID_OTP_CODE);
+      throw badRequest(MessageKeys.INVALID_OTP_CODE);
     }
 
     // Generate token (64 characters, alphanumeric)
