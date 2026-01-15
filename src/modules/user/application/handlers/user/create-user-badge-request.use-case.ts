@@ -1,10 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { SiteBadgeRequest, SiteBadgeRequestStatus } from '../../../domain/entities/site-badge-request.entity';
-import { ISiteBadgeRequestRepository } from '../../../infrastructure/persistence/repositories/site-badge-request.repository';
-import { ISiteBadgeRequestImageRepository } from '../../../infrastructure/persistence/repositories/site-badge-request-image.repository';
-import { ISiteRepository } from '../../../infrastructure/persistence/repositories/site.repository';
-import { ISiteBadgeRepository } from '../../../infrastructure/persistence/repositories/site-badge.repository';
-import { ISiteManagerRepository } from '../../../../site-manager/infrastructure/persistence/repositories/site-manager.repository';
+import { UserBadgeRequest, UserBadgeRequestStatus } from '../../../domain/entities/user-badge-request.entity';
+import { IUserBadgeRequestRepository } from '../../../infrastructure/persistence/repositories/user-badge-request.repository';
+import { IUserBadgeRequestImageRepository } from '../../../infrastructure/persistence/repositories/user-badge-request-image.repository';
+import { IUserBadgeRepository } from '../../../infrastructure/persistence/repositories/user-badge.repository';
 import { IBadgeRepository } from '../../../../badge/infrastructure/persistence/repositories/badge.repository';
 import { BadgeType } from '../../../../badge/domain/entities/badge.entity';
 import { UploadService } from '../../../../../shared/services/upload/upload.service';
@@ -13,53 +11,32 @@ import {
   badRequest,
   conflict,
   notFound,
-  forbidden,
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
 
-export interface CreateBadgeRequestCommand {
+export interface CreateUserBadgeRequestCommand {
   userId: string;
-  siteId: string;
   badgeId: string;
   content?: string;
   images?: MulterFile[];
 }
 
 @Injectable()
-export class CreateBadgeRequestUseCase {
+export class CreateUserBadgeRequestUseCase {
   constructor(
-    @Inject('ISiteBadgeRequestRepository')
-    private readonly badgeRequestRepository: ISiteBadgeRequestRepository,
-    @Inject('ISiteBadgeRequestImageRepository')
-    private readonly badgeRequestImageRepository: ISiteBadgeRequestImageRepository,
-    @Inject('ISiteRepository')
-    private readonly siteRepository: ISiteRepository,
-    @Inject('ISiteBadgeRepository')
-    private readonly siteBadgeRepository: ISiteBadgeRepository,
-    @Inject('ISiteManagerRepository')
-    private readonly siteManagerRepository: ISiteManagerRepository,
+    @Inject('IUserBadgeRequestRepository')
+    private readonly badgeRequestRepository: IUserBadgeRequestRepository,
+    @Inject('IUserBadgeRequestImageRepository')
+    private readonly badgeRequestImageRepository: IUserBadgeRequestImageRepository,
+    @Inject('IUserBadgeRepository')
+    private readonly userBadgeRepository: IUserBadgeRepository,
     @Inject('IBadgeRepository')
     private readonly badgeRepository: IBadgeRepository,
     private readonly uploadService: UploadService,
   ) {}
 
-  async execute(command: CreateBadgeRequestCommand): Promise<SiteBadgeRequest> {
-    // Validate site exists
-    const site = await this.siteRepository.findById(command.siteId);
-    if (!site) {
-      throw notFound(MessageKeys.SITE_NOT_FOUND);
-    }
-
-    // Check if user is a manager of this site
-    const manager = await this.siteManagerRepository.findBySiteAndUser(
-      command.siteId,
-      command.userId,
-    );
-    if (!manager) {
-      throw forbidden(MessageKeys.PERMISSION_DENIED);
-    }
-
-    // Validate badge exists, is active, not deleted, and has type SITE
+  async execute(command: CreateUserBadgeRequestCommand): Promise<UserBadgeRequest> {
+    // Validate badge exists, is active, not deleted, and has type USER
     const badge = await this.badgeRepository.findByIdIncludingDeleted(command.badgeId);
     if (!badge) {
       throw notFound(MessageKeys.BADGE_NOT_FOUND);
@@ -70,19 +47,19 @@ export class CreateBadgeRequestUseCase {
     if (!badge.isActive) {
       throw badRequest(MessageKeys.BADGE_NOT_AVAILABLE);
     }
-    if (badge.badgeType !== BadgeType.SITE) {
+    if (badge.badgeType !== BadgeType.USER) {
       throw badRequest(MessageKeys.BADGE_WRONG_TYPE);
     }
 
-    // Check if site already has this badge
-    const hasBadge = await this.siteBadgeRepository.hasBadge(command.siteId, command.badgeId);
+    // Check if user already has this badge
+    const hasBadge = await this.userBadgeRepository.hasBadge(command.userId, command.badgeId);
     if (hasBadge) {
-      throw conflict(MessageKeys.BADGE_ALREADY_ASSIGNED_TO_SITE);
+      throw conflict(MessageKeys.BADGE_ALREADY_ASSIGNED_TO_USER);
     }
 
     // Check if there's already a pending request for this badge
-    const existingPending = await this.badgeRequestRepository.findPendingBySiteAndBadge(
-      command.siteId,
+    const existingPending = await this.badgeRequestRepository.findPendingByUserAndBadge(
+      command.userId,
       command.badgeId,
     );
     if (existingPending) {
@@ -114,7 +91,7 @@ export class CreateBadgeRequestUseCase {
     if (command.images && command.images.length > 0) {
       for (const image of command.images) {
         const uploadResult = await this.uploadService.uploadImage(image, {
-          folder: 'badge-requests',
+          folder: 'user-badge-requests',
         });
         uploadedImageUrls.push(uploadResult.relativePath);
       }
@@ -122,10 +99,9 @@ export class CreateBadgeRequestUseCase {
 
     // Create request
     const request = await this.badgeRequestRepository.create({
-      siteId: command.siteId,
-      badgeId: command.badgeId,
       userId: command.userId,
-      status: SiteBadgeRequestStatus.PENDING,
+      badgeId: command.badgeId,
+      status: UserBadgeRequestStatus.PENDING,
       content: command.content,
     });
 
@@ -141,14 +117,13 @@ export class CreateBadgeRequestUseCase {
 
     // Reload with relations
     const reloaded = await this.badgeRequestRepository.findById(request.id, [
-      'site',
-      'badge',
       'user',
+      'badge',
       'images',
     ]);
 
     if (!reloaded) {
-      throw notFound(MessageKeys.SITE_BADGE_REQUEST_NOT_FOUND_AFTER_CREATE);
+      throw notFound(MessageKeys.USER_BADGE_REQUEST_NOT_FOUND_AFTER_CREATE);
     }
 
     return reloaded;

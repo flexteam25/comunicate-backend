@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { SiteBadgeRequest, SiteBadgeRequestStatus } from '../../../domain/entities/site-badge-request.entity';
-import { ISiteBadgeRequestRepository } from '../../../infrastructure/persistence/repositories/site-badge-request.repository';
+import { UserBadgeRequest, UserBadgeRequestStatus } from '../../../domain/entities/user-badge-request.entity';
+import { IUserBadgeRequestRepository } from '../../../infrastructure/persistence/repositories/user-badge-request.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import {
   notFound,
@@ -9,24 +9,24 @@ import {
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
 
-export interface RejectBadgeRequestCommand {
+export interface RejectUserBadgeRequestCommand {
   requestId: string;
   adminId: string;
   note?: string;
 }
 
 @Injectable()
-export class RejectBadgeRequestUseCase {
+export class RejectUserBadgeRequestUseCase {
   constructor(
-    @Inject('ISiteBadgeRequestRepository')
-    private readonly badgeRequestRepository: ISiteBadgeRequestRepository,
+    @Inject('IUserBadgeRequestRepository')
+    private readonly badgeRequestRepository: IUserBadgeRequestRepository,
     private readonly transactionService: TransactionService,
   ) {}
 
-  async execute(command: RejectBadgeRequestCommand): Promise<SiteBadgeRequest> {
+  async execute(command: RejectUserBadgeRequestCommand): Promise<UserBadgeRequest> {
     return this.transactionService.executeInTransaction(
       async (manager: EntityManager) => {
-        const requestRepo = manager.getRepository(SiteBadgeRequest);
+        const requestRepo = manager.getRepository(UserBadgeRequest);
 
         // Lock request row with pessimistic lock
         const request = await requestRepo
@@ -36,16 +36,16 @@ export class RejectBadgeRequestUseCase {
           .getOne();
 
         if (!request) {
-          throw notFound(MessageKeys.SITE_BADGE_REQUEST_NOT_FOUND);
+          throw notFound(MessageKeys.USER_BADGE_REQUEST_NOT_FOUND);
         }
 
         // Check status is pending
-        if (request.status !== SiteBadgeRequestStatus.PENDING) {
+        if (request.status !== UserBadgeRequestStatus.PENDING) {
           throw badRequest(MessageKeys.BADGE_REQUEST_ALREADY_PROCESSED);
         }
 
         // Update request
-        request.status = SiteBadgeRequestStatus.REJECTED;
+        request.status = UserBadgeRequestStatus.REJECTED;
         request.adminId = command.adminId;
         request.note = command.note || null;
         await requestRepo.save(request);
@@ -53,11 +53,11 @@ export class RejectBadgeRequestUseCase {
         // Reload with relations
         const reloaded = await requestRepo.findOne({
           where: { id: request.id },
-          relations: ['site', 'badge', 'user', 'admin', 'images'],
+          relations: ['user', 'badge', 'admin', 'images'],
         });
 
         if (!reloaded) {
-          throw notFound(MessageKeys.SITE_BADGE_REQUEST_NOT_FOUND_AFTER_UPDATE);
+          throw notFound(MessageKeys.USER_BADGE_REQUEST_NOT_FOUND_AFTER_UPDATE);
         }
 
         return reloaded;

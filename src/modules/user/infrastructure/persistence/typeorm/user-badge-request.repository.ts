@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SiteBadgeRequest, SiteBadgeRequestStatus } from '../../../domain/entities/site-badge-request.entity';
+import { UserBadgeRequest, UserBadgeRequestStatus } from '../../../domain/entities/user-badge-request.entity';
 import {
-  ISiteBadgeRequestRepository,
-  SiteBadgeRequestFilters,
-} from '../repositories/site-badge-request.repository';
+  IUserBadgeRequestRepository,
+  UserBadgeRequestFilters,
+} from '../repositories/user-badge-request.repository';
 import {
   CursorPaginationResult,
   CursorPaginationUtil,
@@ -13,57 +13,52 @@ import {
 import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
-export class SiteBadgeRequestRepository implements ISiteBadgeRequestRepository {
+export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
   constructor(
-    @InjectRepository(SiteBadgeRequest)
-    private readonly repository: Repository<SiteBadgeRequest>,
+    @InjectRepository(UserBadgeRequest)
+    private readonly repository: Repository<UserBadgeRequest>,
   ) {}
 
-  async create(request: Partial<SiteBadgeRequest>): Promise<SiteBadgeRequest> {
+  async create(request: Partial<UserBadgeRequest>): Promise<UserBadgeRequest> {
     const entity = this.repository.create(request);
     return this.repository.save(entity);
   }
 
-  async findById(id: string, relations?: string[]): Promise<SiteBadgeRequest | null> {
+  async findById(id: string, relations?: string[]): Promise<UserBadgeRequest | null> {
     return this.repository.findOne({
       where: { id },
       ...(relations && relations.length > 0 ? { relations } : {}),
     });
   }
 
-  async findPendingBySiteAndBadge(
-    siteId: string,
+  async findPendingByUserAndBadge(
+    userId: string,
     badgeId: string,
-  ): Promise<SiteBadgeRequest | null> {
+  ): Promise<UserBadgeRequest | null> {
     return this.repository.findOne({
       where: {
-        siteId,
+        userId,
         badgeId,
-        status: SiteBadgeRequestStatus.PENDING,
+        status: UserBadgeRequestStatus.PENDING,
       },
     });
   }
 
   async findAllWithCursor(
-    filters: SiteBadgeRequestFilters,
+    filters: UserBadgeRequestFilters,
     cursor?: string,
     limit = 20,
     sortBy = 'createdAt',
     sortOrder: 'ASC' | 'DESC' = 'DESC',
-  ): Promise<CursorPaginationResult<SiteBadgeRequest>> {
+  ): Promise<CursorPaginationResult<UserBadgeRequest>> {
     const realLimit = limit > 50 ? 50 : limit;
 
     const queryBuilder = this.repository
       .createQueryBuilder('request')
-      .leftJoinAndSelect('request.site', 'site')
-      .leftJoinAndSelect('request.badge', 'badge')
       .leftJoinAndSelect('request.user', 'user')
+      .leftJoinAndSelect('request.badge', 'badge')
       .leftJoinAndSelect('request.admin', 'admin')
       .leftJoinAndSelect('request.images', 'images');
-
-    if (filters.siteId) {
-      queryBuilder.andWhere('request.siteId = :siteId', { siteId: filters.siteId });
-    }
 
     if (filters.userId) {
       queryBuilder.andWhere('request.userId = :userId', { userId: filters.userId });
@@ -77,9 +72,9 @@ export class SiteBadgeRequestRepository implements ISiteBadgeRequestRepository {
       queryBuilder.andWhere('request.status = :status', { status: filters.status });
     }
 
-    if (filters.siteName) {
-      queryBuilder.andWhere('LOWER(site.name) LIKE LOWER(:siteName)', {
-        siteName: `%${filters.siteName}%`,
+    if (filters.userName) {
+      queryBuilder.andWhere('LOWER(user.displayName) LIKE LOWER(:userName)', {
+        userName: `%${filters.userName}%`,
       });
     }
 
@@ -147,11 +142,11 @@ export class SiteBadgeRequestRepository implements ISiteBadgeRequestRepository {
     };
   }
 
-  async update(id: string, data: Partial<SiteBadgeRequest>): Promise<SiteBadgeRequest> {
+  async update(id: string, data: Partial<UserBadgeRequest>): Promise<UserBadgeRequest> {
     await this.repository.update(id, data);
-    const updated = await this.findById(id, ['site', 'badge', 'user', 'admin', 'images']);
+    const updated = await this.findById(id, ['user', 'badge', 'admin', 'images']);
     if (!updated) {
-      throw notFound(MessageKeys.SITE_NOT_FOUND_AFTER_UPDATE);
+      throw notFound(MessageKeys.USER_BADGE_REQUEST_NOT_FOUND_AFTER_UPDATE);
     }
     return updated;
   }

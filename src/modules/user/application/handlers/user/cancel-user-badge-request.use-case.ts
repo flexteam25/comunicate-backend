@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { SiteBadgeRequest, SiteBadgeRequestStatus } from '../../../domain/entities/site-badge-request.entity';
-import { ISiteBadgeRequestRepository } from '../../../infrastructure/persistence/repositories/site-badge-request.repository';
+import { UserBadgeRequest, UserBadgeRequestStatus } from '../../../domain/entities/user-badge-request.entity';
+import { IUserBadgeRequestRepository } from '../../../infrastructure/persistence/repositories/user-badge-request.repository';
 import {
   notFound,
   badRequest,
@@ -8,28 +8,27 @@ import {
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
 
-export interface CancelBadgeRequestCommand {
+export interface CancelUserBadgeRequestCommand {
   userId: string;
   requestId: string;
 }
 
 @Injectable()
-export class CancelBadgeRequestUseCase {
+export class CancelUserBadgeRequestUseCase {
   constructor(
-    @Inject('ISiteBadgeRequestRepository')
-    private readonly badgeRequestRepository: ISiteBadgeRequestRepository,
+    @Inject('IUserBadgeRequestRepository')
+    private readonly badgeRequestRepository: IUserBadgeRequestRepository,
   ) {}
 
-  async execute(command: CancelBadgeRequestCommand): Promise<SiteBadgeRequest> {
+  async execute(command: CancelUserBadgeRequestCommand): Promise<UserBadgeRequest> {
     const request = await this.badgeRequestRepository.findById(command.requestId, [
-      'site',
-      'badge',
       'user',
+      'badge',
       'images',
     ]);
 
     if (!request) {
-      throw notFound(MessageKeys.SITE_BADGE_REQUEST_NOT_FOUND);
+      throw notFound(MessageKeys.USER_BADGE_REQUEST_NOT_FOUND);
     }
 
     // Check if user owns this request
@@ -38,13 +37,13 @@ export class CancelBadgeRequestUseCase {
     }
 
     // Check if request is pending
-    if (request.status !== SiteBadgeRequestStatus.PENDING) {
+    if (request.status !== UserBadgeRequestStatus.PENDING) {
       throw badRequest(MessageKeys.CAN_ONLY_CANCEL_PENDING_BADGE_REQUEST);
     }
 
     // Update status to cancelled
     const updated = await this.badgeRequestRepository.update(command.requestId, {
-      status: SiteBadgeRequestStatus.CANCELLED,
+      status: UserBadgeRequestStatus.CANCELLED,
     });
 
     return updated;

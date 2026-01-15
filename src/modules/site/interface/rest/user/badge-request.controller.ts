@@ -10,7 +10,10 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 import {
   CurrentUser,
@@ -28,6 +31,7 @@ import { SiteBadgeRequest } from '../../../domain/entities/site-badge-request.en
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import { MulterFile } from '../../../../../shared/services/upload';
 
 @Controller('api/site-managers')
 @UseGuards(JwtAuthGuard)
@@ -54,6 +58,12 @@ export class BadgeRequestController {
       adminId: request.adminId || null,
       status: request.status,
       note: request.note || null,
+      content: request.content || null,
+      images: (request.images || []).map((img) => ({
+        id: img.id,
+        imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl) || null,
+        order: img.order || null,
+      })),
       site: request.site
         ? {
             id: request.site.id,
@@ -91,15 +101,26 @@ export class BadgeRequestController {
 
   @Post('sites/:siteId/badge-requests')
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'images', maxCount: 5 },
+    ]),
+  )
   async createBadgeRequest(
     @Param('siteId', new ParseUUIDPipe()) siteId: string,
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateBadgeRequestDto,
+    @UploadedFiles()
+    files?: {
+      images?: MulterFile[];
+    },
   ): Promise<ApiResponse<any>> {
     const request = await this.createBadgeRequestUseCase.execute({
       userId: user.userId,
       siteId,
       badgeId: dto.badgeId,
+      content: dto.content,
+      images: files?.images || [],
     });
 
     const response = this.mapBadgeRequestToResponse(request);

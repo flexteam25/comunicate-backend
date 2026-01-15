@@ -6,6 +6,7 @@ import { SiteBadge } from './domain/entities/site-badge.entity';
 import { SiteDomain } from './domain/entities/site-domain.entity';
 import { SiteView } from './domain/entities/site-view.entity';
 import { SiteBadgeRequest } from './domain/entities/site-badge-request.entity';
+import { SiteBadgeRequestImage } from './domain/entities/site-badge-request-image.entity';
 import { Badge } from '../badge/domain/entities/badge.entity';
 import { SiteRepository } from './infrastructure/persistence/typeorm/site.repository';
 import { SiteCategoryRepository } from './infrastructure/persistence/typeorm/site-category.repository';
@@ -13,6 +14,7 @@ import { SiteBadgeRepository } from './infrastructure/persistence/typeorm/site-b
 import { SiteDomainRepository } from './infrastructure/persistence/typeorm/site-domain.repository';
 import { SiteViewRepository } from './infrastructure/persistence/typeorm/site-view.repository';
 import { SiteBadgeRequestRepository } from './infrastructure/persistence/typeorm/site-badge-request.repository';
+import { SiteBadgeRequestImageRepository } from './infrastructure/persistence/typeorm/site-badge-request-image.repository';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { SiteBadgeRequestRepository } from './infrastructure/persistence/typeorm
       SiteDomain,
       SiteView,
       SiteBadgeRequest,
+      SiteBadgeRequestImage,
       Badge,
     ]),
   ],
@@ -51,12 +54,17 @@ import { SiteBadgeRequestRepository } from './infrastructure/persistence/typeorm
       provide: 'ISiteBadgeRequestRepository',
       useClass: SiteBadgeRequestRepository,
     },
+    {
+      provide: 'ISiteBadgeRequestImageRepository',
+      useClass: SiteBadgeRequestImageRepository,
+    },
     SiteRepository,
     SiteCategoryRepository,
     SiteBadgeRepository,
     SiteDomainRepository,
     SiteViewRepository,
     SiteBadgeRequestRepository,
+    SiteBadgeRequestImageRepository,
   ],
   exports: [
     TypeOrmModule,
@@ -66,12 +74,14 @@ import { SiteBadgeRequestRepository } from './infrastructure/persistence/typeorm
     'ISiteDomainRepository',
     'ISiteViewRepository',
     'ISiteBadgeRequestRepository',
+    'ISiteBadgeRequestImageRepository',
     SiteRepository,
     SiteCategoryRepository,
     SiteBadgeRepository,
     SiteDomainRepository,
     SiteViewRepository,
     SiteBadgeRequestRepository,
+    SiteBadgeRequestImageRepository,
   ],
 })
 export class SitePersistenceModule {}

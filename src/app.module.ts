@@ -86,6 +86,9 @@ import { SiteEventModule } from './modules/site-event/site-event.module';
 import { SiteEvent } from './modules/site-event/domain/entities/site-event.entity';
 import { SiteEventBanner } from './modules/site-event/domain/entities/site-event-banner.entity';
 import { SiteEventView } from './modules/site-event/domain/entities/site-event-view.entity';
+import { SiteBadgeRequestImage } from './modules/site/domain/entities/site-badge-request-image.entity';
+import { UserBadgeRequest } from './modules/user/domain/entities/user-badge-request.entity';
+import { UserBadgeRequestImage } from './modules/user/domain/entities/user-badge-request-image.entity';
 
 @Module({
   imports: [
@@ -161,6 +164,9 @@ import { SiteEventView } from './modules/site-event/domain/entities/site-event-v
         SiteEvent,
         SiteEventBanner,
         SiteEventView,
+        SiteBadgeRequestImage,
+        UserBadgeRequest,
+        UserBadgeRequestImage,
       ],
       synchronize: false,
       logging: false,

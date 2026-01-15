@@ -63,6 +63,9 @@ import { PartnerRequest } from '../../modules/partner/domain/entities/partner-re
 import { SiteEvent } from '../../modules/site-event/domain/entities/site-event.entity';
 import { SiteEventBanner } from '../../modules/site-event/domain/entities/site-event-banner.entity';
 import { SiteEventView } from '../../modules/site-event/domain/entities/site-event-view.entity';
+import { SiteBadgeRequest } from '../../modules/site/domain/entities/site-badge-request.entity';
+import { SiteBadgeRequestImage } from '../../modules/site/domain/entities/site-badge-request-image.entity';
+import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
 
 @Module({
   imports: [
@@ -161,6 +164,9 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
         SiteEvent,
         SiteEventBanner,
         SiteEventView,
+        SiteBadgeRequest,
+        SiteBadgeRequestImage,
+        SiteReviewCommentImage,
       ],
       synchronize: false,
       logging: false,

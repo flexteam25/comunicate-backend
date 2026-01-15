@@ -4,6 +4,7 @@ import { SiteBadgeRequest, SiteBadgeRequestStatus } from '../../../domain/entiti
 import { SiteBadge } from '../../../domain/entities/site-badge.entity';
 import { ISiteBadgeRequestRepository } from '../../../infrastructure/persistence/repositories/site-badge-request.repository';
 import { ISiteBadgeRepository } from '../../../infrastructure/persistence/repositories/site-badge.repository';
+import { IBadgeRepository } from '../../../../badge/infrastructure/persistence/repositories/badge.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import {
   notFound,
@@ -24,6 +25,8 @@ export class ApproveBadgeRequestUseCase {
     private readonly badgeRequestRepository: ISiteBadgeRequestRepository,
     @Inject('ISiteBadgeRepository')
     private readonly siteBadgeRepository: ISiteBadgeRepository,
+    @Inject('IBadgeRepository')
+    private readonly badgeRepository: IBadgeRepository,
     private readonly transactionService: TransactionService,
   ) {}
 
@@ -47,6 +50,20 @@ export class ApproveBadgeRequestUseCase {
         // Check status is pending
         if (request.status !== SiteBadgeRequestStatus.PENDING) {
           throw badRequest(MessageKeys.BADGE_REQUEST_ALREADY_PROCESSED);
+        }
+
+        // Validate badge is still active and not deleted at approval time
+        const badge = await this.badgeRepository.findByIdIncludingDeleted(
+          request.badgeId,
+        );
+        if (!badge) {
+          throw notFound(MessageKeys.BADGE_NOT_FOUND);
+        }
+        if (badge.deletedAt) {
+          throw badRequest(MessageKeys.BADGE_ALREADY_DELETED);
+        }
+        if (!badge.isActive) {
+          throw badRequest(MessageKeys.BADGE_NOT_AVAILABLE);
         }
 
         // Double-check site doesn't already have this badge (handle race condition)
@@ -77,7 +94,7 @@ export class ApproveBadgeRequestUseCase {
         // Reload with relations
         const reloaded = await requestRepo.findOne({
           where: { id: request.id },
-          relations: ['site', 'badge', 'user', 'admin'],
+          relations: ['site', 'badge', 'user', 'admin', 'images'],
         });
 
         if (!reloaded) {

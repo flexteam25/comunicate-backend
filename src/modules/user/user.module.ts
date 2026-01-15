@@ -8,12 +8,16 @@ import { UserHistorySite } from './domain/entities/user-history-site.entity';
 import { UserSearchSite } from './domain/entities/user-search-site.entity';
 import { UserComment } from './domain/entities/user-comment.entity';
 import { UserPost } from './domain/entities/user-post.entity';
+import { UserBadgeRequest } from './domain/entities/user-badge-request.entity';
+import { UserBadgeRequestImage } from './domain/entities/user-badge-request-image.entity';
 import { Badge } from '../badge/domain/entities/badge.entity';
 import { UserRepository } from './infrastructure/persistence/typeorm/user.repository';
 import { UserOldPasswordRepository } from './infrastructure/persistence/typeorm/user-old-password.repository';
 import { UserBadgeRepository } from './infrastructure/persistence/typeorm/user-badge.repository';
 import { UserFavoriteSiteRepository } from './infrastructure/persistence/typeorm/user-favorite-site.repository';
 import { UserHistorySiteRepository } from './infrastructure/persistence/typeorm/user-history-site.repository';
+import { UserBadgeRequestRepository } from './infrastructure/persistence/typeorm/user-badge-request.repository';
+import { UserBadgeRequestImageRepository } from './infrastructure/persistence/typeorm/user-badge-request-image.repository';
 import { UserHistorySitePersistenceModule } from './user-history-site-persistence.module';
 import { UserSearchSitePersistenceModule } from './user-search-site-persistence.module';
 import { ChangePasswordUseCase } from './application/handlers/change-password.use-case';
@@ -27,6 +31,8 @@ import { CreateUserUseCase } from './application/handlers/admin/create-user.use-
 import { DeleteUserUseCase } from './application/handlers/admin/delete-user.use-case';
 import { UserController } from './interface/rest/user.controller';
 import { AdminUserController } from './interface/rest/admin/user.controller';
+import { UserBadgeRequestController } from './interface/rest/user-badge-request.controller';
+import { AdminUserBadgeRequestController } from './interface/rest/admin/user-badge-request.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { PointTransaction } from '../point/domain/entities/point-transaction.entity';
 import { AddFavoriteSiteUseCase } from './application/handlers/add-favorite-site.use-case';
@@ -35,7 +41,14 @@ import { ListFavoriteSitesUseCase } from './application/handlers/list-favorite-s
 import { GetActivityUseCase } from './application/handlers/get-activity.use-case';
 import { SaveSearchHistoryUseCase } from './application/handlers/save-search-history.use-case';
 import { GetSearchHistoryUseCase } from './application/handlers/get-search-history.use-case';
+import { CreateUserBadgeRequestUseCase } from './application/handlers/user/create-user-badge-request.use-case';
+import { ListUserBadgeRequestsUseCase } from './application/handlers/user/list-user-badge-requests.use-case';
+import { CancelUserBadgeRequestUseCase } from './application/handlers/user/cancel-user-badge-request.use-case';
+import { ListAllUserBadgeRequestsUseCase } from './application/handlers/admin/list-all-user-badge-requests.use-case';
+import { ApproveUserBadgeRequestUseCase } from './application/handlers/admin/approve-user-badge-request.use-case';
+import { RejectUserBadgeRequestUseCase } from './application/handlers/admin/reject-user-badge-request.use-case';
 import { PasswordService } from '../../shared/services/password.service';
+import { TransactionService } from '../../shared/services/transaction.service';
 import { UploadModule } from '../../shared/services/upload';
 import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { SiteModule } from '../site/site.module';
@@ -53,6 +66,8 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
       UserSearchSite,
       UserComment,
       UserPost,
+      UserBadgeRequest,
+      UserBadgeRequestImage,
       Badge,
       PointTransaction,
     ]),
@@ -66,7 +81,12 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
     UserSearchSitePersistenceModule,
     PostPersistenceModule,
   ],
-  controllers: [UserController, AdminUserController],
+  controllers: [
+    UserController,
+    AdminUserController,
+    UserBadgeRequestController,
+    AdminUserBadgeRequestController,
+  ],
   providers: [
     {
       provide: 'IUserRepository',
@@ -88,11 +108,21 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
       provide: 'IUserHistorySiteRepository',
       useClass: UserHistorySiteRepository,
     },
+    {
+      provide: 'IUserBadgeRequestRepository',
+      useClass: UserBadgeRequestRepository,
+    },
+    {
+      provide: 'IUserBadgeRequestImageRepository',
+      useClass: UserBadgeRequestImageRepository,
+    },
     UserRepository,
     UserOldPasswordRepository,
     UserBadgeRepository,
     UserFavoriteSiteRepository,
     UserHistorySiteRepository,
+    UserBadgeRequestRepository,
+    UserBadgeRequestImageRepository,
     ChangePasswordUseCase,
     UpdateProfileUseCase,
     AddFavoriteSiteUseCase,
@@ -108,7 +138,14 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
     UpdateUserUseCase,
     CreateUserUseCase,
     DeleteUserUseCase,
+    CreateUserBadgeRequestUseCase,
+    ListUserBadgeRequestsUseCase,
+    CancelUserBadgeRequestUseCase,
+    ListAllUserBadgeRequestsUseCase,
+    ApproveUserBadgeRequestUseCase,
+    RejectUserBadgeRequestUseCase,
     PasswordService,
+    TransactionService,
   ],
   exports: [
     UserRepository,

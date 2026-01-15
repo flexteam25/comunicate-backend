@@ -51,6 +51,9 @@ import { PostComment } from '../../modules/post/domain/entities/post-comment.ent
 import { PostCommentImage } from '../../modules/post/domain/entities/post-comment-image.entity';
 import { PostReaction } from '../../modules/post/domain/entities/post-reaction.entity';
 import { PostView } from '../../modules/post/domain/entities/post-view.entity';
+import { SiteBadgeRequest } from '../../modules/site/domain/entities/site-badge-request.entity';
+import { SiteBadgeRequestImage } from '../../modules/site/domain/entities/site-badge-request-image.entity';
+import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
 
 @Module({
   imports: [
@@ -88,6 +91,8 @@ import { PostView } from '../../modules/post/domain/entities/post-view.entity';
         SiteBadge,
         SiteDomain,
         SiteView,
+        SiteBadgeRequest,
+        SiteBadgeRequestImage,
         Tier,
         UserProfile,
         Inquiry,
@@ -102,6 +107,7 @@ import { PostView } from '../../modules/post/domain/entities/post-view.entity';
         SiteReview,
         SiteReviewReaction,
         SiteReviewComment,
+        SiteReviewCommentImage,
         SiteManager,
         SiteManagerApplication,
         PocaEvent,

@@ -523,6 +523,12 @@ export class AdminSiteController {
       adminId: request.adminId || null,
       status: request.status,
       note: request.note || null,
+      content: request.content || null,
+      images: (request.images || []).map((img) => ({
+        id: img.id,
+        imageUrl: buildFullUrl(this.apiServiceUrl, img.imageUrl) || null,
+        order: img.order || null,
+      })),
       site: request.site
         ? {
             id: request.site.id,

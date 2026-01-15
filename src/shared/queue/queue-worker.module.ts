@@ -67,7 +67,9 @@ import { PartnerRequest } from '../../modules/partner/domain/entities/partner-re
 import { SiteEvent } from '../../modules/site-event/domain/entities/site-event.entity';
 import { SiteEventBanner } from '../../modules/site-event/domain/entities/site-event-banner.entity';
 import { SiteEventView } from '../../modules/site-event/domain/entities/site-event-view.entity';
-
+import { SiteBadgeRequestImage } from '../../modules/site/domain/entities/site-badge-request-image.entity';
+import { SiteBadgeRequest } from '../../modules/site/domain/entities/site-badge-request.entity';
+import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -132,6 +134,8 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
         SiteBadge,
         SiteDomain,
         SiteView,
+        SiteBadgeRequest,
+        SiteBadgeRequestImage,
         Tier,
         UserProfile,
         Inquiry,
@@ -165,6 +169,7 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
         SiteEvent,
         SiteEventBanner,
         SiteEventView,
+        SiteReviewCommentImage,
       ],
       synchronize: false,
       logging: false,
