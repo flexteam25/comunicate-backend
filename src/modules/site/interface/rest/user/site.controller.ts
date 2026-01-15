@@ -32,7 +32,6 @@ import {
   ListSiteBadgesUseCase,
   SiteBadgeWithActive,
 } from '../../../application/handlers/user/list-site-badges.use-case';
-import { SiteBadgeResponse } from '../dto/site-badge-response.dto';
 
 @Controller('api/sites')
 export class UserSiteController {
@@ -278,17 +277,11 @@ export class UserSiteController {
       ipAddress,
     });
 
-    return ApiResponseUtil.success(this.mapSiteToResponse(site));
-  }
+    const siteResponse = this.mapSiteToResponse(site);
 
-  @Get(':id/badges')
-  @HttpCode(HttpStatus.OK)
-  async listSiteBadges(
-    @Param('id', new ParseUUIDPipe()) siteId: string,
-  ): Promise<ApiResponse<SiteBadgeResponse[]>> {
-    const result = await this.listSiteBadgesUseCase.execute({ siteId });
-
-    const badges: SiteBadgeResponse[] = result.map((item: SiteBadgeWithActive) => {
+    // Get all site badges with active flag
+    const badgesResult = await this.listSiteBadgesUseCase.execute({ siteId: id });
+    siteResponse.allBadges = badgesResult.map((item: SiteBadgeWithActive) => {
       const { badge, active } = item;
       return {
         id: badge.id,
@@ -308,6 +301,6 @@ export class UserSiteController {
       };
     });
 
-    return ApiResponseUtil.success(badges);
+    return ApiResponseUtil.success(siteResponse);
   }
 }

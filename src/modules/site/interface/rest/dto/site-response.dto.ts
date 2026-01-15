@@ -29,6 +29,23 @@ export class BadgeResponse {
   color?: string;
 }
 
+export class SiteBadgeWithActiveResponse {
+  id: string;
+  name: string;
+  description?: string;
+  iconUrl?: string;
+  iconName?: string;
+  badgeType: string;
+  isActive: boolean;
+  obtain?: string;
+  point: number;
+  color?: string;
+  order?: number;
+  active: boolean; // true if badge is assigned to the site
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class AdminBadgeResponse {
   id: string;
   name: string;
@@ -80,6 +97,7 @@ export class SiteResponse {
   issueCount: number;
   tetherDepositWithdrawalStatus?: TetherDepositWithdrawalStatus;
   badges: BadgeResponse[];
+  allBadges?: SiteBadgeWithActiveResponse[]; // All site badges with active flag
   domains: SiteDomainResponse[];
   managers?: SiteManagerResponse[];
   createdAt: Date;

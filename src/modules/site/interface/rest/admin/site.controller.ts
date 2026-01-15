@@ -55,6 +55,10 @@ import { DeleteSiteDomainUseCase } from '../../../application/handlers/admin/del
 import { ListAllBadgeRequestsUseCase } from '../../../application/handlers/admin/list-all-badge-requests.use-case';
 import { ApproveBadgeRequestUseCase } from '../../../application/handlers/admin/approve-badge-request.use-case';
 import { RejectBadgeRequestUseCase } from '../../../application/handlers/admin/reject-badge-request.use-case';
+import {
+  ListSiteBadgesUseCase,
+  SiteBadgeWithActive,
+} from '../../../application/handlers/user/list-site-badges.use-case';
 import { ListAllBadgeRequestsQueryDto } from '../dto/list-all-badge-requests-query.dto';
 import { RejectBadgeRequestDto } from '../dto/reject-badge-request.dto';
 import { ApproveBadgeRequestDto } from '../dto/approve-badge-request.dto';
@@ -85,6 +89,7 @@ export class AdminSiteController {
     private readonly listAllBadgeRequestsUseCase: ListAllBadgeRequestsUseCase,
     private readonly approveBadgeRequestUseCase: ApproveBadgeRequestUseCase,
     private readonly rejectBadgeRequestUseCase: RejectBadgeRequestUseCase,
+    private readonly listSiteBadgesUseCase: ListSiteBadgesUseCase,
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
   ) {
@@ -334,7 +339,31 @@ export class AdminSiteController {
   @RequirePermission('site.view')
   async getSite(@Param('id') id: string): Promise<ApiResponse<SiteResponse>> {
     const site = await this.getSiteUseCase.execute({ siteId: id });
-    return ApiResponseUtil.success(this.mapSiteToResponse(site));
+    const siteResponse = this.mapSiteToResponse(site);
+
+    // Get all site badges with active flag
+    const badgesResult = await this.listSiteBadgesUseCase.execute({ siteId: id });
+    siteResponse.allBadges = badgesResult.map((item: SiteBadgeWithActive) => {
+      const { badge, active } = item;
+      return {
+        id: badge.id,
+        name: badge.name,
+        description: badge.description || null,
+        iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || null,
+        iconName: badge.iconName || null,
+        badgeType: badge.badgeType,
+        isActive: badge.isActive,
+        obtain: badge.obtain || null,
+        point: badge.point ?? 0,
+        color: badge.color || null,
+        order: badge.order || null,
+        active,
+        createdAt: badge.createdAt,
+        updatedAt: badge.updatedAt,
+      };
+    });
+
+    return ApiResponseUtil.success(siteResponse);
   }
 
   @Put(':id')
