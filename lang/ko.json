@@ -311,7 +311,7 @@
   "OTP_VERIFIED_SUCCESS": "OTP 확인 성공",
   "OTP_VERIFIED_FORGOT_PASSWORD_SUCCESS": "OTP 인증완료!",
   "OTP_ALREADY_SENT": "OTP가 이미 전송되었습니다. 몇 분 후에 다시 요청해주세요",
-  "OTP_SENT_IF_EMAIL_EXISTS": "이메일이 존재하는 경우 OTP가 전송되었습니다",
+  "OTP_SENT_IF_EMAIL_EXISTS": "OTP 인증완료!",
   "PARENTCOMMENTID_MUST_BE_UUID": "parentcommentid 는 유효한 UUID여야 합니다",
   "PARENTCOMMENTID_OPTIONAL": "parentcommentid 는 선택 사항입니다",
   "PARENT_COMMENT_DOES_NOT_BELONG_TO_REPORT": "부모 댓글이 신고에 속하지 않습니다",
