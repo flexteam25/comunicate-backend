@@ -30,6 +30,7 @@ import { CancelBadgeRequestUseCase } from './application/handlers/user/cancel-ba
 import { ListAllBadgeRequestsUseCase } from './application/handlers/admin/list-all-badge-requests.use-case';
 import { ApproveBadgeRequestUseCase } from './application/handlers/admin/approve-badge-request.use-case';
 import { RejectBadgeRequestUseCase } from './application/handlers/admin/reject-badge-request.use-case';
+import { ListSiteBadgesUseCase } from './application/handlers/user/list-site-badges.use-case';
 import { BadgeRequestController } from './interface/rest/user/badge-request.controller';
 import { Module } from '@nestjs/common';
 import { TierModule } from '../tier/tier.module';
@@ -96,6 +97,7 @@ import { BadgeModule } from '../badge/badge.module';
     ListAllBadgeRequestsUseCase,
     ApproveBadgeRequestUseCase,
     RejectBadgeRequestUseCase,
+    ListSiteBadgesUseCase,
     OptionalJwtAuthGuard,
   ],
   controllers: [

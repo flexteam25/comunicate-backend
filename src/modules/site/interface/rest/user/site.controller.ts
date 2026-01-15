@@ -28,6 +28,11 @@ import { Site } from '../../../domain/entities/site.entity';
 import { SiteCategory } from '../../../domain/entities/site-category.entity';
 import { ListScamReportsUseCase } from '../../../../scam-report/application/handlers/list-scam-reports.use-case';
 import { ScamReportStatus } from '../../../../scam-report/domain/entities/scam-report.entity';
+import {
+  ListSiteBadgesUseCase,
+  SiteBadgeWithActive,
+} from '../../../application/handlers/user/list-site-badges.use-case';
+import { SiteBadgeResponse } from '../dto/site-badge-response.dto';
 
 @Controller('api/sites')
 export class UserSiteController {
@@ -38,6 +43,7 @@ export class UserSiteController {
     private readonly getSiteUseCase: GetSiteUseCase,
     private readonly listCategoriesUseCase: ListCategoriesUseCase,
     private readonly listScamReportsUseCase: ListScamReportsUseCase,
+    private readonly listSiteBadgesUseCase: ListSiteBadgesUseCase,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -273,5 +279,35 @@ export class UserSiteController {
     });
 
     return ApiResponseUtil.success(this.mapSiteToResponse(site));
+  }
+
+  @Get(':id/badges')
+  @HttpCode(HttpStatus.OK)
+  async listSiteBadges(
+    @Param('id', new ParseUUIDPipe()) siteId: string,
+  ): Promise<ApiResponse<SiteBadgeResponse[]>> {
+    const result = await this.listSiteBadgesUseCase.execute({ siteId });
+
+    const badges: SiteBadgeResponse[] = result.map((item: SiteBadgeWithActive) => {
+      const { badge, active } = item;
+      return {
+        id: badge.id,
+        name: badge.name,
+        description: badge.description || null,
+        iconUrl: buildFullUrl(this.apiServiceUrl, badge.iconUrl || null) || null,
+        iconName: badge.iconName || null,
+        badgeType: badge.badgeType,
+        isActive: badge.isActive,
+        obtain: badge.obtain || null,
+        point: badge.point ?? 0,
+        color: badge.color || null,
+        order: badge.order || null,
+        active,
+        createdAt: badge.createdAt,
+        updatedAt: badge.updatedAt,
+      };
+    });
+
+    return ApiResponseUtil.success(badges);
   }
 }
