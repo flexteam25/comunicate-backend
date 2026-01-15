@@ -622,6 +622,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       },
       select: ['content'],
       order: {
+        rating: 'DESC',
         createdAt: 'DESC',
       },
       take: 5,
