@@ -199,6 +199,7 @@ export class UserController {
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
       issueCount: site.issueCount || 0,
+      tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
       slug: site.slug,
     }));
 
@@ -473,9 +474,7 @@ export class UserController {
   async getActivity(@CurrentUser() user: CurrentUserPayload): Promise<
     ApiResponse<{
       favorite: SiteResponse[];
-      recent: Array<
-        Omit<SiteResponse, 'id'> & { siteId: string; historyId: string; createdAt: Date }
-      >;
+      recent: Array<SiteResponse & { historyId: string; createdAt: Date }>;
       searchHistory: Array<{ searchQuery: string; historyId: string; createdAt: Date }>;
     }>
   > {
@@ -483,11 +482,10 @@ export class UserController {
       userId: user.userId,
     });
 
-    // Use the same mapping as favorite-sites API
+    // Use the same mapping as favorite-sites API - format must match 100%
     const mapSiteToResponse = (site: Site): SiteResponse => ({
       id: site.id,
       name: site.name,
-      slug: site.slug,
       category: site.category
         ? {
             id: site.category.id,
@@ -542,24 +540,14 @@ export class UserController {
       experience: site.experience,
       issueCount: site.issueCount || 0,
       tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
+      slug: site.slug,
     });
 
     const favoriteSites = result.favorite.map(mapSiteToResponse);
 
-    // For recent, use siteId instead of id
-    const mapSiteToResponseWithSiteId = (
-      site: Site,
-    ): Omit<SiteResponse, 'id'> & { siteId: string } => {
-      const siteResponse = mapSiteToResponse(site);
-      const { id, ...rest } = siteResponse;
-      return {
-        ...rest,
-        siteId: id,
-      };
-    };
-
+    // Recent uses the same format as favorite, with additional historyId and createdAt
     const recentSites = result.recent.map((item) => ({
-      ...mapSiteToResponseWithSiteId(item.site),
+      ...mapSiteToResponse(item.site),
       historyId: item.historyId,
       createdAt: item.createdAt,
     }));
