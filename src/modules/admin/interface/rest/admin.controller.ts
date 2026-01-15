@@ -222,7 +222,7 @@ export class AdminController {
 
     return ApiResponseUtil.success(
       { token: result.token },
-      'OTP verified successfully. Use the token to reset your password.',
+      MessageKeys.OTP_VERIFIED_FORGOT_PASSWORD_SUCCESS,
     );
   }
 

@@ -280,7 +280,8 @@ export class UserSiteController {
     const siteResponse = this.mapSiteToResponse(site);
 
     // Get all site badges with active flag
-    const badgesResult = await this.listSiteBadgesUseCase.execute({ siteId: id });
+    // Use site.id (UUID) instead of id (which could be slug)
+    const badgesResult = await this.listSiteBadgesUseCase.execute({ siteId: site.id });
     siteResponse.allBadges = badgesResult.map((item: SiteBadgeWithActive) => {
       const { badge, active } = item;
       return {

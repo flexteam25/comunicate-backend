@@ -92,6 +92,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
     const queryBuilder = this.repository
       .createQueryBuilder('redemption')
       .leftJoinAndSelect('redemption.user', 'user')
+      .leftJoinAndSelect('user.userProfile', 'userProfile')
       .leftJoinAndSelect('redemption.gifticon', 'gifticon')
       .orderBy('redemption.createdAt', 'DESC')
       .addOrderBy('redemption.id', 'DESC');
