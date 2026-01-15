@@ -11,8 +11,12 @@ export interface GetActivityCommand {
 
 export interface ActivityResult {
   favorite: Site[];
-  recent: Site[];
-  searchHistory: { searchQuery: string; createdAt: Date }[];
+  recent: Array<{ site: Site; historyId: string; createdAt: Date }>;
+  searchHistory: Array<{
+    searchQuery: string;
+    historyId: string;
+    createdAt: Date;
+  }>;
 }
 
 @Injectable()
@@ -49,12 +53,18 @@ export class GetActivityUseCase {
       .map((id) => favoriteSiteMap.get(id))
       .filter((site): site is Site => site !== undefined);
 
-    // Get 20 recent history sites
-    const recentHistory = await this.historyRepository.findRecentHistory(
+    // Get 20 recent history sites with UUIDs
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const recentHistory = (await this.historyRepository.findRecentHistoryWithIds(
       command.userId,
       20,
-    );
-    const recentSiteIds = recentHistory.map((item) => item.siteId);
+    )) as Array<{
+      id: string;
+      siteId: string;
+      createdAt: Date;
+    }>;
+    const recentSiteIds: string[] = recentHistory.map((item) => item.siteId);
     const recentSites = await this.siteRepository.findByIds(recentSiteIds);
 
     // Create map to maintain order
@@ -63,16 +73,47 @@ export class GetActivityUseCase {
       recentSiteMap.set(site.id, site);
     }
 
-    // Maintain order from recentHistory
-    const orderedRecentSites = recentSiteIds
-      .map((id) => recentSiteMap.get(id))
-      .filter((site): site is Site => site !== undefined);
+    // Maintain order from recentHistory with UUIDs
+    const orderedRecentSites: Array<{
+      site: Site;
+      historyId: string;
+      createdAt: Date;
+    }> = recentHistory
+      .map((item) => {
+        const site = recentSiteMap.get(item.siteId);
+        if (!site) return null;
+        return {
+          site,
+          historyId: item.id,
+          createdAt: item.createdAt,
+        };
+      })
+      .filter(
+        (item): item is { site: Site; historyId: string; createdAt: Date } =>
+          item !== null,
+      );
 
-    // Get 20 recent search history
-    const searchHistory = await this.searchHistoryRepository.findRecentSearchHistory(
-      command.userId,
-      20,
-    );
+    // Get 20 recent search history with UUIDs
+    const searchHistoryData =
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      (await this.searchHistoryRepository.findRecentSearchHistoryWithIds(
+        command.userId,
+        20,
+      )) as Array<{
+        id: string;
+        searchQuery: string;
+        createdAt: Date;
+      }>;
+
+    const searchHistory: Array<{
+      searchQuery: string;
+      historyId: string;
+      createdAt: Date;
+    }> = searchHistoryData.map((item) => ({
+      searchQuery: item.searchQuery,
+      historyId: item.id,
+      createdAt: item.createdAt,
+    }));
 
     return {
       favorite: orderedFavoriteSites,

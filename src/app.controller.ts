@@ -16,4 +16,12 @@ export class AppController {
     const fileContent = readFileSync(filePath, 'utf-8');
     return JSON.parse(fileContent) as Record<string, string>;
   }
+
+  @Get('en.json')
+  @HttpCode(HttpStatus.OK)
+  getEnJson(): Record<string, string> {
+    const filePath = join(process.cwd(), 'lang', 'en.json');
+    const fileContent = readFileSync(filePath, 'utf-8');
+    return JSON.parse(fileContent) as Record<string, string>;
+  }
 }

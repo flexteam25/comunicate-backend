@@ -41,6 +41,8 @@ import { ListFavoriteSitesUseCase } from './application/handlers/list-favorite-s
 import { GetActivityUseCase } from './application/handlers/get-activity.use-case';
 import { SaveSearchHistoryUseCase } from './application/handlers/save-search-history.use-case';
 import { GetSearchHistoryUseCase } from './application/handlers/get-search-history.use-case';
+import { DeleteSearchHistoryUseCase } from './application/handlers/delete-search-history.use-case';
+import { DeleteSiteHistoryUseCase } from './application/handlers/delete-site-history.use-case';
 import { CreateUserBadgeRequestUseCase } from './application/handlers/user/create-user-badge-request.use-case';
 import { ListUserBadgeRequestsUseCase } from './application/handlers/user/list-user-badge-requests.use-case';
 import { CancelUserBadgeRequestUseCase } from './application/handlers/user/cancel-user-badge-request.use-case';
@@ -131,6 +133,8 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
     GetActivityUseCase,
     SaveSearchHistoryUseCase,
     GetSearchHistoryUseCase,
+    DeleteSearchHistoryUseCase,
+    DeleteSiteHistoryUseCase,
     AssignBadgeUseCase,
     RemoveBadgeUseCase,
     ListUsersUseCase,

@@ -333,6 +333,8 @@
   "PASSWORDCONFIRMATION_MUST_BE_STRING": "비밀번호 확인 는 문자열이어야 합니다",
   "PASSWORDCONFIRMATION_REQUIRED": "비밀번호 확인 가 필요합니다",
   "PASSWORD_CHANGED_SUCCESS": "비밀번호 변경 성공",
+  "SEARCH_HISTORY_DELETED_SUCCESS": "검색 기록 삭제 성공",
+  "SITE_HISTORY_DELETED_SUCCESS": "사이트 접근 기록 삭제 성공",
   "PASSWORD_CONFIRMATION_MISMATCH": "비밀번호 확인이 일치하지 않습니다",
   "PASSWORD_MIN_LENGTH": "비밀번호의 최소 길이는 8자입니다",
   "PASSWORD_MUST_BE_STRING": "비밀번호 는 문자열이어야 합니다",

@@ -49,6 +49,9 @@ import { RemoveFavoriteSiteUseCase } from '../../application/handlers/remove-fav
 import { ListFavoriteSitesUseCase } from '../../application/handlers/list-favorite-sites.use-case';
 import { GetActivityUseCase } from '../../application/handlers/get-activity.use-case';
 import { GetSearchHistoryUseCase } from '../../application/handlers/get-search-history.use-case';
+import { DeleteSearchHistoryUseCase } from '../../application/handlers/delete-search-history.use-case';
+import { DeleteSiteHistoryUseCase } from '../../application/handlers/delete-site-history.use-case';
+import { DeleteHistoryDto } from './dto/delete-history.dto';
 import { SiteResponse } from '../../../site/interface/rest/dto/site-response.dto';
 import { Site } from '../../../site/domain/entities/site.entity';
 import { Request } from 'express';
@@ -73,6 +76,8 @@ export class UserController {
     private readonly listFavoriteSitesUseCase: ListFavoriteSitesUseCase,
     private readonly getActivityUseCase: GetActivityUseCase,
     private readonly getSearchHistoryUseCase: GetSearchHistoryUseCase,
+    private readonly deleteSearchHistoryUseCase: DeleteSearchHistoryUseCase,
+    private readonly deleteSiteHistoryUseCase: DeleteSiteHistoryUseCase,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -467,17 +472,21 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async getActivity(@CurrentUser() user: CurrentUserPayload): Promise<
     ApiResponse<{
-      favorite: SiteResponse[];
-      recent: SiteResponse[];
-      searchHistory: { searchQuery: string; createdAt: Date }[];
+      favorite: Array<Omit<SiteResponse, 'id'> & { siteId: string }>;
+      recent: Array<
+        Omit<SiteResponse, 'id'> & { siteId: string; historyId: string; createdAt: Date }
+      >;
+      searchHistory: Array<{ searchQuery: string; historyId: string; createdAt: Date }>;
     }>
   > {
     const result = await this.getActivityUseCase.execute({
       userId: user.userId,
     });
 
-    const mapSiteToResponse = (site: Site): SiteResponse => ({
-      id: site.id,
+    const mapSiteToResponse = (
+      site: Site,
+    ): Omit<SiteResponse, 'id'> & { siteId: string } => ({
+      siteId: site.id,
       name: site.name,
       category: site.category
         ? {
@@ -539,12 +548,20 @@ export class UserController {
     });
 
     const favoriteSites = result.favorite.map(mapSiteToResponse);
-    const recentSites = result.recent.map(mapSiteToResponse);
+    const recentSites = result.recent.map((item) => ({
+      ...mapSiteToResponse(item.site),
+      historyId: item.historyId,
+      createdAt: item.createdAt,
+    }));
 
     return ApiResponseUtil.success({
       favorite: favoriteSites,
       recent: recentSites,
-      searchHistory: result.searchHistory,
+      searchHistory: result.searchHistory.map((item) => ({
+        searchQuery: item.searchQuery,
+        historyId: item.historyId,
+        createdAt: item.createdAt,
+      })),
     });
   }
 
@@ -560,5 +577,35 @@ export class UserController {
     });
 
     return ApiResponseUtil.success(result);
+  }
+
+  @Delete('search-history')
+  @HttpCode(HttpStatus.OK)
+  async deleteSearchHistory(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: DeleteHistoryDto,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.deleteSearchHistoryUseCase.execute({
+      userId: user.userId,
+      ids: dto.delete,
+      deleteAll: dto.deleteAll,
+    });
+
+    return ApiResponseUtil.success(null, MessageKeys.SEARCH_HISTORY_DELETED_SUCCESS);
+  }
+
+  @Delete('site-history')
+  @HttpCode(HttpStatus.OK)
+  async deleteSiteHistory(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: DeleteHistoryDto,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.deleteSiteHistoryUseCase.execute({
+      userId: user.userId,
+      ids: dto.delete,
+      deleteAll: dto.deleteAll,
+    });
+
+    return ApiResponseUtil.success(null, MessageKeys.SITE_HISTORY_DELETED_SUCCESS);
   }
 }
