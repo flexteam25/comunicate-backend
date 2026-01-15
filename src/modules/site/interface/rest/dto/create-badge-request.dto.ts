@@ -6,5 +6,5 @@ export class CreateBadgeRequestDto {
 
   @IsOptional({ message: 'CONTENT_OPTIONAL' })
   @IsString({ message: 'CONTENT_MUST_BE_STRING' })
-  content?: string;
+  content?: string | null; // Allow empty string or null
 }
