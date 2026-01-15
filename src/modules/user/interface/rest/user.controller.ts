@@ -472,7 +472,7 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async getActivity(@CurrentUser() user: CurrentUserPayload): Promise<
     ApiResponse<{
-      favorite: Array<Omit<SiteResponse, 'id'> & { siteId: string }>;
+      favorite: SiteResponse[];
       recent: Array<
         Omit<SiteResponse, 'id'> & { siteId: string; historyId: string; createdAt: Date }
       >;
@@ -483,11 +483,11 @@ export class UserController {
       userId: user.userId,
     });
 
-    const mapSiteToResponse = (
-      site: Site,
-    ): Omit<SiteResponse, 'id'> & { siteId: string } => ({
-      siteId: site.id,
+    // Use the same mapping as favorite-sites API
+    const mapSiteToResponse = (site: Site): SiteResponse => ({
+      id: site.id,
       name: site.name,
+      slug: site.slug,
       category: site.category
         ? {
             id: site.category.id,
@@ -497,11 +497,9 @@ export class UserController {
             id: '',
             name: '',
           },
-      logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || undefined,
-      mainImageUrl:
-        buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || undefined,
-      siteImageUrl:
-        buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || undefined,
+      logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || null,
+      mainImageUrl: buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || null,
+      siteImageUrl: buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || null,
       tier: site.tier
         ? {
             id: site.tier.id,
@@ -510,10 +508,10 @@ export class UserController {
             iconUrl: buildFullUrl(this.apiServiceUrl, site.tier.iconUrl || null) || null,
             iconName: site.tier.iconName || null,
           }
-        : undefined,
-      permanentUrl: site.permanentUrl || undefined,
+        : null,
+      permanentUrl: site.permanentUrl || null,
       status: site.status,
-      description: site.description || undefined,
+      description: site.description || null,
       reviewCount: site.reviewCount,
       averageRating: Number(site.averageRating),
       badges: (site.siteBadges || [])
@@ -525,8 +523,8 @@ export class UserController {
           return {
             id: sb.badge.id,
             name: sb.badge.name,
-            iconUrl:
-              buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || undefined,
+            iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
+            iconName: sb.badge.iconName || null,
             color: sb.badge.color || null,
           };
         })
@@ -544,12 +542,24 @@ export class UserController {
       experience: site.experience,
       issueCount: site.issueCount || 0,
       tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
-      slug: site.slug,
     });
 
     const favoriteSites = result.favorite.map(mapSiteToResponse);
+
+    // For recent, use siteId instead of id
+    const mapSiteToResponseWithSiteId = (
+      site: Site,
+    ): Omit<SiteResponse, 'id'> & { siteId: string } => {
+      const siteResponse = mapSiteToResponse(site);
+      const { id, ...rest } = siteResponse;
+      return {
+        ...rest,
+        siteId: id,
+      };
+    };
+
     const recentSites = result.recent.map((item) => ({
-      ...mapSiteToResponse(item.site),
+      ...mapSiteToResponseWithSiteId(item.site),
       historyId: item.historyId,
       createdAt: item.createdAt,
     }));

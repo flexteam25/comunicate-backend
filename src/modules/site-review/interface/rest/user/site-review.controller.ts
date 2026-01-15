@@ -204,7 +204,7 @@ export class SiteReviewController {
 
     return ApiResponseUtil.success(
       this.mapSiteReviewToResponse(review),
-      'Site review created successfully',
+      MessageKeys.SITE_REVIEW_CREATED_SUCCESS,
     );
   }
 
@@ -274,7 +274,7 @@ export class SiteReviewController {
         highlights: statistics.highlights,
         enHighlights: statistics.enHighlights,
       },
-      'Site review statistics retrieved successfully',
+      MessageKeys.SITE_REVIEW_STATISTICS_RETRIEVED_SUCCESS,
     );
   }
 
@@ -332,7 +332,7 @@ export class SiteReviewController {
 
     return ApiResponseUtil.success(
       this.mapSiteReviewToResponse(review),
-      'Site review updated successfully',
+      MessageKeys.SITE_REVIEW_UPDATED_SUCCESS,
     );
   }
 

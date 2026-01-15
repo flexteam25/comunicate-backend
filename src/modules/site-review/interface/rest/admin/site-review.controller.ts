@@ -18,6 +18,7 @@ import { ApproveSiteReviewUseCase } from '../../../application/handlers/admin/ap
 import { RejectSiteReviewUseCase } from '../../../application/handlers/admin/reject-site-review.use-case';
 import { SiteReviewResponseDto } from '../dto/site-review-response.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 
@@ -123,7 +124,7 @@ export class AdminSiteReviewController {
     });
     return ApiResponseUtil.success(
       this.mapSiteReviewToResponse(review),
-      'Site review approved successfully',
+      MessageKeys.SITE_REVIEW_APPROVED_SUCCESS,
     );
   }
 
@@ -136,7 +137,7 @@ export class AdminSiteReviewController {
     const review = await this.rejectSiteReviewUseCase.execute({ reviewId: id });
     return ApiResponseUtil.success(
       this.mapSiteReviewToResponse(review),
-      'Site review rejected successfully',
+      MessageKeys.SITE_REVIEW_REJECTED_SUCCESS,
     );
   }
 }
