@@ -271,6 +271,8 @@ export class SiteReviewController {
         averageSpeed: statistics.averageSpeed,
         reviewCount: statistics.reviewCount,
         topReviews: statistics.topReviews,
+        highlights: statistics.highlights,
+        enHighlights: statistics.enHighlights,
       },
       'Site review statistics retrieved successfully',
     );

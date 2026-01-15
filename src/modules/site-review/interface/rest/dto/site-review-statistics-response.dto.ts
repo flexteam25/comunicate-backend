@@ -7,4 +7,6 @@ export class SiteReviewStatisticsResponseDto {
   averageSpeed: number;
   reviewCount: number;
   topReviews: string[];
+  highlights: string[];
+  enHighlights: string[];
 }

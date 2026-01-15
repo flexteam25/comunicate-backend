@@ -1,6 +1,6 @@
 import { Injectable, Inject, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { SiteReview } from '../../../domain/entities/site-review.entity';
 import { ISiteReviewRepository } from '../repositories/site-review.repository';
 import {
@@ -616,7 +616,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     const reviews = await this.repository.find({
       where: {
         siteId,
-        rating: 4,
+        rating: MoreThanOrEqual(4),
         isPublished: true,
         deletedAt: null,
       },
