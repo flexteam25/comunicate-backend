@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { parseIp } from './ip.util';
 
 /**
  * Get client IP address from request
@@ -12,14 +13,16 @@ import { Request } from 'express';
  * 5. 'unknown' as fallback
  *
  * @param req Express Request object
- * @returns Client IP address (IPv4 or IPv6, max 45 chars)
+ * @returns Parsed and normalized IP address (IPv4 or IPv6, max 45 chars)
  */
 export function getClientIp(req: Request): string {
-  return (
+  const rawIp =
     (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
     (req.headers['x-real-ip'] as string) ||
     req.ip ||
     req.socket.remoteAddress ||
-    'unknown'
-  );
+    'unknown';
+
+  // Parse and normalize IP (handles IPv4/IPv6 conversion)
+  return parseIp(rawIp) as string;
 }

@@ -17,11 +17,7 @@ export class QueueWorkerCommand extends CommandRunner implements OnModuleInit {
   }
 
   async onModuleInit() {
-    this.logger.info(
-      'Queue Worker started and listening for jobs...',
-      null,
-      'queue-worker',
-    );
+    // Queue Worker started
   }
 
   async run(): Promise<void> {

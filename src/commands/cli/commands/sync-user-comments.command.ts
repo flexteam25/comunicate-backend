@@ -37,8 +37,6 @@ export class SyncUserCommentsCommand implements ICommand {
     }
 
     try {
-      this.logger.info(`Starting sync user_comments for user: ${userId}`, { userId }, 'cli');
-
       let totalCreated = 0;
       let totalUpdated = 0;
       let totalSoftDeleted = 0;
@@ -138,22 +136,6 @@ export class SyncUserCommentsCommand implements ICommand {
       const totalProcessed = totalCreated + totalUpdated;
       const totalComments =
         postComments.length + siteReviewComments.length + scamReportComments.length;
-
-      this.logger.info(
-        `Sync completed successfully`,
-        {
-          userId,
-          totalComments,
-          postComments: postComments.length,
-          siteReviewComments: siteReviewComments.length,
-          scamReportComments: scamReportComments.length,
-          created: totalCreated,
-          updated: totalUpdated,
-          softDeleted: totalSoftDeleted,
-          totalProcessed,
-        },
-        'cli',
-      );
 
       console.log(`✅ Sync completed successfully!`);
       console.log(`📊 Total comments found: ${totalComments}`);

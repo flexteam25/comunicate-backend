@@ -38,7 +38,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
 
     await this.client.connect();
-    this.logger.info('Redis client connected successfully', {}, 'redis');
   }
 
   async onModuleDestroy() {
@@ -206,7 +205,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     if (!this.subscriber) {
       this.subscriber = this.client.duplicate();
       await this.subscriber.connect();
-      this.logger.info('Redis subscriber client initialized successfully', {}, 'redis');
     }
 
     // Store callback
@@ -230,8 +228,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
           );
         }
       });
-
-      this.logger.info(`Subscribed to Redis channel: ${channel}`, { channel }, 'redis');
     }
 
     const callbacks = this.subscriptions.get(channel);
@@ -310,5 +306,182 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async getInfo(): Promise<any> {
     const info = await this.client.info();
     return info;
+  }
+
+  // User IP Tracking
+  /**
+   * Add IP to user's IP set in Redis
+   * @param userId User ID
+   * @param ip IP address
+   * @param ttl TTL in seconds (default: 3600 = 1 hour)
+   */
+  async addUserIp(userId: string, ip: string, ttl: number = 3600): Promise<void> {
+    const key = `user:ips:${userId}`;
+    await this.client.sAdd(key, ip);
+    await this.client.expire(key, ttl);
+  }
+
+  /**
+   * Get all IPs for a user from Redis
+   * @param userId User ID
+   * @returns Array of IP addresses
+   */
+  async getUserIps(userId: string): Promise<string[]> {
+    const key = `user:ips:${userId}`;
+    return await this.client.sMembers(key);
+  }
+
+  /**
+   * Remove IP from user's IP set
+   * @param userId User ID
+   * @param ip IP address
+   */
+  async removeUserIp(userId: string, ip: string): Promise<void> {
+    const key = `user:ips:${userId}`;
+    await this.client.sRem(key, ip);
+  }
+
+  /**
+   * Get all user IP keys from Redis (for scheduler)
+   * @returns Array of keys matching pattern user:ips:*
+   */
+  async getUserIpKeys(): Promise<string[]> {
+    return await this.client.keys('user:ips:*');
+  }
+
+  /**
+   * Delete user IP key from Redis (after processing by scheduler)
+   * @param key Redis key
+   */
+  async deleteUserIpKey(key: string): Promise<void> {
+    await this.client.del(key);
+  }
+
+  // Global Blocked IPs Cache
+  /**
+   * Cache all globally blocked IPs in Redis
+   * @param ips Array of blocked IP addresses
+   * @param ttl TTL in seconds (default: 1800 = 30 minutes)
+   */
+  async cacheGlobalBlockedIps(ips: string[], ttl: number = 1800): Promise<void> {
+    const key = 'blocked:ips:global';
+    // Clear existing set
+    await this.client.del(key);
+    // Add all blocked IPs (if any)
+    if (ips.length > 0) {
+      await this.client.sAdd(key, ips);
+      // Set TTL only if there are IPs
+      await this.client.expire(key, ttl);
+    }
+    // If ips.length === 0, cache is cleared (no IPs blocked)
+  }
+
+  /**
+   * Get globally blocked IPs from cache
+   * @returns Array of blocked IP addresses or null if cache miss
+   */
+  async getGlobalBlockedIps(): Promise<string[] | null> {
+    const key = 'blocked:ips:global';
+    const exists = await this.client.exists(key);
+    if (exists === 0) {
+      return null; // Cache miss
+    }
+    return await this.client.sMembers(key);
+  }
+
+  /**
+   * Check if an IP is globally blocked (from cache)
+   * @param ip IP address to check
+   * @returns true if blocked, false otherwise
+   */
+  async isIpGloballyBlocked(ip: string): Promise<boolean> {
+    const key = 'blocked:ips:global';
+    const exists = await this.client.exists(key);
+    if (exists === 0) {
+      return false; // Cache miss, assume not blocked
+    }
+    const isMember = await this.client.sIsMember(key, ip);
+    return isMember === 1;
+  }
+
+  /**
+   * Clear globally blocked IPs cache (called when admin updates block status)
+   */
+  async clearGlobalBlockedIpsCache(): Promise<void> {
+    await this.client.del('blocked:ips:global');
+  }
+
+  // Legacy methods (deprecated, use global methods instead)
+  /**
+   * @deprecated Use cacheGlobalBlockedIps instead
+   */
+  async cacheBlockedIps(ips: string[], ttl: number = 1800): Promise<void> {
+    return this.cacheGlobalBlockedIps(ips, ttl);
+  }
+
+  /**
+   * @deprecated Use getGlobalBlockedIps instead
+   */
+  async getBlockedIps(): Promise<string[] | null> {
+    return this.getGlobalBlockedIps();
+  }
+
+  /**
+   * @deprecated Use isIpGloballyBlocked instead
+   */
+  async isIpBlocked(ip: string): Promise<boolean> {
+    return this.isIpGloballyBlocked(ip);
+  }
+
+  /**
+   * @deprecated Use clearGlobalBlockedIpsCache instead
+   */
+  async clearBlockedIpsCache(): Promise<void> {
+    return this.clearGlobalBlockedIpsCache();
+  }
+
+  /**
+   * Cache blocked IPs for a specific user
+   * @param userId User ID
+   * @param ips Array of blocked IP addresses for this user
+   * @param ttl TTL in seconds (default: 1800 = 30 minutes)
+   */
+  async cacheBlockedIpsByUserId(
+    userId: string,
+    ips: string[],
+    ttl: number = 1800,
+  ): Promise<void> {
+    const key = `blocked:ips:user:${userId}`;
+    // Clear existing set
+    await this.client.del(key);
+    // Add all blocked IPs (if any)
+    if (ips.length > 0) {
+      await this.client.sAdd(key, ips);
+      // Set TTL only if there are IPs
+      await this.client.expire(key, ttl);
+    }
+    // If ips.length === 0, cache is cleared (no IPs blocked for this user)
+  }
+
+  /**
+   * Get blocked IPs for a specific user from cache
+   * @param userId User ID
+   * @returns Array of blocked IP addresses or null if cache miss
+   */
+  async getBlockedIpsByUserId(userId: string): Promise<string[] | null> {
+    const key = `blocked:ips:user:${userId}`;
+    const exists = await this.client.exists(key);
+    if (exists === 0) {
+      return null;
+    }
+    return await this.client.sMembers(key);
+  }
+
+  /**
+   * Clear blocked IPs cache for a specific user
+   * @param userId User ID
+   */
+  async clearBlockedIpsCacheByUserId(userId: string): Promise<void> {
+    await this.client.del(`blocked:ips:user:${userId}`);
   }
 }

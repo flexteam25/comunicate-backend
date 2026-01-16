@@ -43,6 +43,8 @@ import { SiteView } from './modules/site/domain/entities/site-view.entity';
 import { SiteBadgeRequest } from './modules/site/domain/entities/site-badge-request.entity';
 import { Tier } from './modules/tier/domain/entities/tier.entity';
 import { UserProfile } from './modules/user/domain/entities/user-profile.entity';
+import { UserIp } from './modules/user/domain/entities/user-ip.entity';
+import { BlockedIp } from './modules/user/domain/entities/blocked-ip.entity';
 import { Inquiry } from './modules/support/domain/entities/inquiry.entity';
 import { Attendance } from './modules/attendance/domain/entities/attendance.entity';
 import { AttendanceStatistic } from './modules/attendance/domain/entities/attendance-statistic.entity';
@@ -132,6 +134,8 @@ import { EditorModule } from './modules/editor/editor.module';
         SiteBadgeRequest,
         Tier,
         UserProfile,
+        UserIp,
+        BlockedIp,
         Inquiry,
         Attendance,
         AttendanceStatistic,

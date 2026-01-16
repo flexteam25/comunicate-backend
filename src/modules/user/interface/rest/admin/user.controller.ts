@@ -45,6 +45,17 @@ import { IPostRepository } from '../../../../post/infrastructure/persistence/rep
 import { IPostCommentRepository } from '../../../../post/infrastructure/persistence/repositories/post-comment.repository';
 import { PostComment } from '../../../../post/domain/entities/post-comment.entity';
 import { CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
+import { IUserIpRepository } from '../../../infrastructure/persistence/repositories/user-ip.repository.interface';
+import { IBlockedIpRepository } from '../../../infrastructure/persistence/repositories/blocked-ip.repository.interface';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
+import { BlockUserIpDto } from '../dto/block-user-ip.dto';
+import { UnblockUserIpDto } from '../dto/unblock-user-ip.dto';
+import { BlockGlobalIpDto } from '../dto/block-global-ip.dto';
+import { UnblockGlobalIpDto } from '../dto/unblock-global-ip.dto';
+import { ListUserIpsQueryDto } from '../dto/list-user-ips-query.dto';
+import { BlockedIp } from '../../../domain/entities/blocked-ip.entity';
+import { TriggerIpSyncUseCase } from '../../../application/handlers/admin/trigger-ip-sync.use-case';
 
 @Controller('admin/users')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -73,6 +84,13 @@ export class AdminUserController {
     private readonly postCommentRepository: IPostCommentRepository,
     @InjectRepository(PostComment)
     private readonly postCommentEntityRepository: Repository<PostComment>,
+    @Inject('IUserIpRepository')
+    private readonly userIpRepository: IUserIpRepository,
+    @Inject('IBlockedIpRepository')
+    private readonly blockedIpRepository: IBlockedIpRepository,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
+    private readonly triggerIpSyncUseCase: TriggerIpSyncUseCase,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
     this.adminFrontendUrl =
@@ -794,5 +812,246 @@ export class AdminUserController {
     });
 
     return ApiResponseUtil.success(null, MessageKeys.USER_DELETED_SUCCESS);
+  }
+
+  @Get(':id/ips')
+  @RequirePermission('users.read')
+  @HttpCode(HttpStatus.OK)
+  async listUserIps(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Query() _query: ListUserIpsQueryDto,
+  ): Promise<ApiResponse<any>> {
+    const userIps = await this.userIpRepository.findByUserId(userId);
+
+    return ApiResponseUtil.success({
+      userId,
+      ips: userIps.map((ui) => ({
+        id: ui.id,
+        ip: ui.ip,
+        isBlocked: ui.isBlocked,
+        createdAt: ui.createdAt,
+        updatedAt: ui.updatedAt,
+      })),
+      total: userIps.length,
+    });
+  }
+
+  @Post(':id/ips/block')
+  @RequirePermission('users.update')
+  @HttpCode(HttpStatus.OK)
+  async blockUserIp(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Body() dto: BlockUserIpDto,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @CurrentAdmin() _admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    const userIp = await this.userIpRepository.updateBlockStatus(userId, dto.ip, true);
+
+    if (!userIp) {
+      throw notFound(MessageKeys.USER_NOT_FOUND);
+    }
+
+    // Update user-specific blocked IPs cache in background (non-blocking)
+    setImmediate(() => {
+      (async () => {
+        try {
+          const blockedIps = await this.userIpRepository.findBlockedIpsByUserId(userId);
+          await this.redisService.cacheBlockedIpsByUserId(userId, blockedIps, 1800);
+        } catch (err: unknown) {
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : err != null
+                ? JSON.stringify(err)
+                : 'Unknown error';
+          this.logger.error(
+            'Failed to update user blocked IPs cache',
+            { error: errorMessage },
+            'ip-blocking',
+          );
+        }
+      })().catch(() => {
+        // Ignore unhandled promise rejection
+      });
+    });
+
+    return ApiResponseUtil.success(
+      {
+        userId: userIp.userId,
+        ip: userIp.ip,
+        isBlocked: userIp.isBlocked,
+      },
+      MessageKeys.USER_IP_BLOCKED_SUCCESS,
+    );
+  }
+
+  @Post(':id/ips/unblock')
+  @RequirePermission('users.update')
+  @HttpCode(HttpStatus.OK)
+  async unblockUserIp(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Body() dto: UnblockUserIpDto,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @CurrentAdmin() _admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    const userIp = await this.userIpRepository.updateBlockStatus(userId, dto.ip, false);
+
+    if (!userIp) {
+      throw notFound(MessageKeys.USER_NOT_FOUND);
+    }
+
+    // Update user-specific blocked IPs cache in background (non-blocking)
+    setImmediate(() => {
+      (async () => {
+        try {
+          const blockedIps = await this.userIpRepository.findBlockedIpsByUserId(userId);
+          await this.redisService.cacheBlockedIpsByUserId(userId, blockedIps, 1800);
+        } catch (err: unknown) {
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : err != null
+                ? JSON.stringify(err)
+                : 'Unknown error';
+          this.logger.error(
+            'Failed to update user blocked IPs cache',
+            { error: errorMessage },
+            'ip-blocking',
+          );
+        }
+      })().catch(() => {
+        // Ignore unhandled promise rejection
+      });
+    });
+
+    return ApiResponseUtil.success(
+      {
+        userId: userIp.userId,
+        ip: userIp.ip,
+        isBlocked: userIp.isBlocked,
+      },
+      MessageKeys.USER_IP_UNBLOCKED_SUCCESS,
+    );
+  }
+
+  @Post('ips/block')
+  @RequirePermission('users.update')
+  @HttpCode(HttpStatus.OK)
+  async blockIp(
+    @Body() dto: BlockGlobalIpDto,
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    // Check if IP is already blocked
+    const existingBlockedIp = await this.blockedIpRepository.findByIp(dto.ip);
+    if (existingBlockedIp) {
+      // Update existing record
+      existingBlockedIp.note = dto.note || null;
+      existingBlockedIp.createdByAdminId = admin.adminId;
+      await this.blockedIpRepository.create(existingBlockedIp);
+    } else {
+      // Create new blocked IP record
+      const blockedIp = new BlockedIp();
+      blockedIp.ip = dto.ip;
+      blockedIp.note = dto.note || null;
+      blockedIp.createdByAdminId = admin.adminId;
+      await this.blockedIpRepository.create(blockedIp);
+    }
+
+    // Update global blocked IPs cache in background (non-blocking)
+    setImmediate(() => {
+      (async () => {
+        try {
+          const blockedIps = await this.blockedIpRepository.findBlockedIps();
+          await this.redisService.cacheGlobalBlockedIps(blockedIps, 1800);
+        } catch (err: unknown) {
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : err != null
+                ? JSON.stringify(err)
+                : 'Unknown error';
+          this.logger.error(
+            'Failed to update global blocked IPs cache',
+            { error: errorMessage },
+            'ip-blocking',
+          );
+        }
+      })().catch(() => {
+        // Ignore unhandled promise rejection
+      });
+    });
+
+    return ApiResponseUtil.success(
+      {
+        ip: dto.ip,
+        note: dto.note || null,
+        isBlocked: true,
+      },
+      MessageKeys.GLOBAL_IP_BLOCKED_SUCCESS,
+    );
+  }
+
+  @Post('ips/unblock')
+  @RequirePermission('users.update')
+  @HttpCode(HttpStatus.OK)
+  async unblockIp(
+    @Body() dto: UnblockGlobalIpDto,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @CurrentAdmin() _admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    await this.blockedIpRepository.delete(dto.ip);
+
+    // Update global blocked IPs cache in background (non-blocking)
+    setImmediate(() => {
+      (async () => {
+        try {
+          const blockedIps = await this.blockedIpRepository.findBlockedIps();
+          await this.redisService.cacheGlobalBlockedIps(blockedIps, 1800);
+        } catch (err: unknown) {
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : err != null
+                ? JSON.stringify(err)
+                : 'Unknown error';
+          this.logger.error(
+            'Failed to update global blocked IPs cache',
+            { error: errorMessage },
+            'ip-blocking',
+          );
+        }
+      })().catch(() => {
+        // Ignore unhandled promise rejection
+      });
+    });
+
+    return ApiResponseUtil.success(
+      {
+        ip: dto.ip,
+        isBlocked: false,
+      },
+      MessageKeys.GLOBAL_IP_UNBLOCKED_SUCCESS,
+    );
+  }
+
+  @Post(':id/ips/sync')
+  @RequirePermission('users.update')
+  @HttpCode(HttpStatus.OK)
+  async triggerIpSync(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @CurrentAdmin() _admin: CurrentAdminPayload,
+  ): Promise<ApiResponse<any>> {
+    const result = await this.triggerIpSyncUseCase.execute({ userId });
+
+    return ApiResponseUtil.success(
+      {
+        userId: result.userId,
+        totalIps: result.totalIps,
+        blockedIps: result.blockedIps,
+      },
+      MessageKeys.IP_SYNC_TRIGGERED_SUCCESS,
+    );
   }
 }

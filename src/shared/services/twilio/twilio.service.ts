@@ -21,13 +21,6 @@ export class TwilioService {
 
     if (this.isEnabled) {
       this.client = twilio(accountSid, authToken);
-      this.logger.info(
-        'Twilio service initialized successfully',
-        {
-          fromPhoneNumber: this.fromPhoneNumber,
-        },
-        'twilio',
-      );
     } else {
       const missingConfigs: string[] = [];
       if (!accountSid) missingConfigs.push('TWILIO_ACCOUNT_SID');
@@ -65,16 +58,6 @@ export class TwilioService {
         from: this.fromPhoneNumber,
         to: to,
       });
-
-      this.logger.info(
-        'SMS sent successfully',
-        {
-          to,
-          messageSid: result.sid,
-          status: result.status,
-        },
-        'twilio',
-      );
 
       return true;
     } catch (error) {

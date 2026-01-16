@@ -23,22 +23,13 @@ import { QueueService } from './queue.service';
       inject: [ConfigService],
     }),
     // Only register queues for adding jobs, NO processors
-    BullModule.registerQueue(
-      {
-        name: 'email',
-        defaultJobOptions: {
-          removeOnComplete: 10, // Keep 10 successful jobs for debugging
-          removeOnFail: 20, // Keep 20 failed jobs
-        },
+    BullModule.registerQueue({
+      name: 'email',
+      defaultJobOptions: {
+        removeOnComplete: 10, // Keep 10 successful jobs for debugging
+        removeOnFail: 20, // Keep 20 failed jobs
       },
-      {
-        name: 'attendance-statistics',
-        defaultJobOptions: {
-          removeOnComplete: 10,
-          removeOnFail: 20,
-        },
-      },
-    ),
+    }),
   ],
   providers: [QueueService],
   exports: [QueueService], // Only export QueueService, not BullModule

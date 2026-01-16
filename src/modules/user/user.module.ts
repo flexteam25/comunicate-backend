@@ -10,6 +10,8 @@ import { UserComment } from './domain/entities/user-comment.entity';
 import { UserPost } from './domain/entities/user-post.entity';
 import { UserBadgeRequest } from './domain/entities/user-badge-request.entity';
 import { UserBadgeRequestImage } from './domain/entities/user-badge-request-image.entity';
+import { UserIp } from './domain/entities/user-ip.entity';
+import { BlockedIp } from './domain/entities/blocked-ip.entity';
 import { Badge } from '../badge/domain/entities/badge.entity';
 import { UserRepository } from './infrastructure/persistence/typeorm/user.repository';
 import { UserOldPasswordRepository } from './infrastructure/persistence/typeorm/user-old-password.repository';
@@ -56,6 +58,10 @@ import { AuthPersistenceModule } from '../auth/auth-persistence.module';
 import { SiteModule } from '../site/site.module';
 import { BadgeModule } from '../badge/badge.module';
 import { PostPersistenceModule } from '../post/post-persistence.module';
+import { UserIpRepository } from './infrastructure/persistence/repositories/user-ip.repository';
+import { BlockedIpRepository } from './infrastructure/persistence/typeorm/blocked-ip.repository';
+import { RedisModule } from '../../shared/redis/redis.module';
+import { TriggerIpSyncUseCase } from './application/handlers/admin/trigger-ip-sync.use-case';
 
 @Module({
   imports: [
@@ -70,6 +76,8 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
       UserPost,
       UserBadgeRequest,
       UserBadgeRequestImage,
+      UserIp,
+      BlockedIp,
       Badge,
       PointTransaction,
     ]),
@@ -82,6 +90,7 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
     UserHistorySitePersistenceModule,
     UserSearchSitePersistenceModule,
     PostPersistenceModule,
+    RedisModule,
   ],
   controllers: [
     UserController,
@@ -118,6 +127,14 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
       provide: 'IUserBadgeRequestImageRepository',
       useClass: UserBadgeRequestImageRepository,
     },
+    {
+      provide: 'IUserIpRepository',
+      useClass: UserIpRepository,
+    },
+    {
+      provide: 'IBlockedIpRepository',
+      useClass: BlockedIpRepository,
+    },
     UserRepository,
     UserOldPasswordRepository,
     UserBadgeRepository,
@@ -125,6 +142,8 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
     UserHistorySiteRepository,
     UserBadgeRequestRepository,
     UserBadgeRequestImageRepository,
+    UserIpRepository,
+    BlockedIpRepository,
     ChangePasswordUseCase,
     UpdateProfileUseCase,
     AddFavoriteSiteUseCase,
@@ -148,6 +167,7 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
     ListAllUserBadgeRequestsUseCase,
     ApproveUserBadgeRequestUseCase,
     RejectUserBadgeRequestUseCase,
+    TriggerIpSyncUseCase,
     PasswordService,
     TransactionService,
   ],
@@ -160,6 +180,8 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
     'IUserBadgeRepository',
     UserFavoriteSiteRepository,
     'IUserFavoriteSiteRepository',
+    UserIpRepository,
+    'IUserIpRepository',
     AssignBadgeUseCase,
     RemoveBadgeUseCase,
   ],

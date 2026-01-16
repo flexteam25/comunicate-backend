@@ -123,11 +123,6 @@ export class RequestOtpPhoneUseCase {
 
     // Send SMS via Twilio (skip in test mode)
     if (this.isTestMode) {
-      this.logger.info(
-        'Test mode: OTP not sent via SMS',
-        { phone: normalizedPhone, otp },
-        'request-otp-phone',
-      );
       return {
         message: 'OTP has been generated (test mode)',
         otp: otp,

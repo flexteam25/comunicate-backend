@@ -77,7 +77,7 @@ export class SocketGateway
   }
 
   afterInit() {
-    this.logger.info('Socket Gateway initialized successfully', {}, 'socket');
+    // Socket Gateway initialized
   }
 
   private async setupRedisSubscriptions() {
@@ -365,8 +365,6 @@ export class SocketGateway
           this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SITE_BADGE_REQUEST_CANCELLED, data);
         },
       );
-
-      this.logger.info('Redis subscriptions setup completed', {}, 'socket');
     } catch (error) {
       this.logger.error(
         'Failed to setup Redis subscriptions',

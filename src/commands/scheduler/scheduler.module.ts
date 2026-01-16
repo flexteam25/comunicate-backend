@@ -32,6 +32,8 @@ import { SiteDomain } from '../../modules/site/domain/entities/site-domain.entit
 import { SiteView } from '../../modules/site/domain/entities/site-view.entity';
 import { Tier } from '../../modules/tier/domain/entities/tier.entity';
 import { UserProfile } from '../../modules/user/domain/entities/user-profile.entity';
+import { UserIp } from '../../modules/user/domain/entities/user-ip.entity';
+import { BlockedIp } from '../../modules/user/domain/entities/blocked-ip.entity';
 import { Inquiry } from '../../modules/support/domain/entities/inquiry.entity';
 import { Attendance } from '../../modules/attendance/domain/entities/attendance.entity';
 import { AttendanceStatistic } from '../../modules/attendance/domain/entities/attendance-statistic.entity';
@@ -66,6 +68,10 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
 import { SiteBadgeRequest } from '../../modules/site/domain/entities/site-badge-request.entity';
 import { SiteBadgeRequestImage } from '../../modules/site/domain/entities/site-badge-request-image.entity';
 import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
+import { UserIpSyncService } from './user-ip-sync.service';
+import { UserIpRepository } from '../../modules/user/infrastructure/persistence/repositories/user-ip.repository';
+import { BlockedIpRepository } from '../../modules/user/infrastructure/persistence/typeorm/blocked-ip.repository';
+import { RedisModule } from '../../shared/redis/redis.module';
 
 @Module({
   imports: [
@@ -133,6 +139,8 @@ import { SiteReviewCommentImage } from '../../modules/site-review/domain/entitie
         SiteView,
         Tier,
         UserProfile,
+        UserIp,
+        BlockedIp,
         Inquiry,
         Attendance,
         AttendanceStatistic,
@@ -167,6 +175,7 @@ import { SiteReviewCommentImage } from '../../modules/site-review/domain/entitie
         SiteBadgeRequest,
         SiteBadgeRequestImage,
         SiteReviewCommentImage,
+        SiteReviewCommentImage,
       ],
       synchronize: false,
       logging: false,
@@ -188,7 +197,23 @@ import { SiteReviewCommentImage } from '../../modules/site-review/domain/entitie
       },
       inject: [ConfigService],
     }),
+    RedisModule,
+    TypeOrmModule.forFeature([UserIp, BlockedIp]),
   ],
-  providers: [SchedulerCommand],
+  providers: [
+    SchedulerCommand,
+    UserIpSyncService,
+    {
+      provide: 'IUserIpRepository',
+      useClass: UserIpRepository,
+    },
+    {
+      provide: 'IBlockedIpRepository',
+      useClass: BlockedIpRepository,
+    },
+    UserIpRepository,
+    BlockedIpRepository,
+  ],
+  exports: [UserIpSyncService],
 })
 export class SchedulerCommandModule {}

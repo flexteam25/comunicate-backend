@@ -24,29 +24,9 @@ export class EmailService {
    */
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
     try {
-      this.logger.info(
-        'Sending email',
-        {
-          to: options.to,
-          subject: options.subject,
-          provider: this.emailProvider.getProviderName(),
-        },
-        'email',
-      );
-
       const result = await this.emailProvider.sendEmail(options);
 
       if (result.success) {
-        this.logger.info(
-          'Email sent successfully',
-          {
-            to: options.to,
-            subject: options.subject,
-            messageId: result.messageId,
-            provider: this.emailProvider.getProviderName(),
-          },
-          'email',
-        );
       } else {
         this.logger.error(
           'Email sending failed',
@@ -140,13 +120,6 @@ export class EmailService {
     try {
       const isValid = await this.emailProvider.verifyConfiguration();
       if (isValid) {
-        this.logger.info(
-          'Email provider configuration verified',
-          {
-            provider: this.emailProvider.getProviderName(),
-          },
-          'email',
-        );
       } else {
         this.logger.error(
           'Email provider configuration invalid',

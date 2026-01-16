@@ -7,7 +7,6 @@ import { BullModule } from '@nestjs/bullmq';
 import { CliCommand } from './cli.command';
 import { SyncUserPostsCommand } from './commands/sync-user-posts.command';
 import { SyncUserCommentsCommand } from './commands/sync-user-comments.command';
-import { AttendanceStatisticsCommand } from './commands/attendance-statistics.command';
 import { LoggerModule } from '../../shared/logger/logger.module';
 import { ALL_ENTITIES } from './entities';
 import { UserPost } from '../../modules/user/domain/entities/user-post.entity';
@@ -85,19 +84,11 @@ import { ScamReportComment } from '../../modules/scam-report/domain/entities/sca
       },
       inject: [ConfigService],
     }),
-    BullModule.registerQueue({
-      name: 'attendance-statistics',
-      defaultJobOptions: {
-        removeOnComplete: 10,
-        removeOnFail: 20,
-      },
-    }),
   ],
   providers: [
     CliCommand,
     SyncUserPostsCommand,
     SyncUserCommentsCommand,
-    AttendanceStatisticsCommand,
   ],
 })
 export class CliCommandModule {}

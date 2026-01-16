@@ -31,8 +31,6 @@ export class SyncUserPostsCommand implements ICommand {
     }
 
     try {
-      this.logger.info(`Starting sync user_posts for user: ${userId}`, { userId }, 'cli');
-
       // Get all posts for this user (including soft-deleted posts, excluding admin posts)
       const posts = await this.postRepository
         .createQueryBuilder('post')
@@ -138,19 +136,6 @@ export class SyncUserPostsCommand implements ICommand {
       }
 
       const totalProcessed = createdCount + updatedCount;
-
-      this.logger.info(
-        `Sync completed successfully`,
-        {
-          userId,
-          totalPosts: posts.length,
-          created: createdCount,
-          updated: updatedCount,
-          softDeleted: softDeletedCount,
-          totalProcessed,
-        },
-        'cli',
-      );
 
       console.log(`✅ Sync completed successfully!`);
       console.log(`📊 Total posts found: ${posts.length}`);
