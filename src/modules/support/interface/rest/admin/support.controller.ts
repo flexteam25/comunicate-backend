@@ -31,18 +31,17 @@ import {
   InquiryCategory,
 } from '../../../domain/entities/inquiry.entity';
 
-const INQUIRY_STATUS_OPTIONS = [
-  { value: InquiryStatus.PENDING, text: 'Pending' },
-  { value: InquiryStatus.PROCESSING, text: 'Processing' },
-  { value: InquiryStatus.CLOSED, text: 'Closed' },
-  { value: InquiryStatus.RESOLVED, text: 'Resolved' },
+// Admin can only use PENDING and RESOLVED statuses
+const ADMIN_INQUIRY_STATUS_OPTIONS = [
+  { value: InquiryStatus.PENDING, text: 'Pending', textKo: '답변대기' },
+  { value: InquiryStatus.RESOLVED, text: 'Resolved', textKo: '답변완료' },
 ];
 
 const INQUIRY_CATEGORY_OPTIONS = [
-  { value: InquiryCategory.INQUIRY, text: 'Inquiry' },
-  { value: InquiryCategory.FEEDBACK, text: 'Feedback' },
-  { value: InquiryCategory.BUG, text: 'Bug' },
-  { value: InquiryCategory.ADVERTISEMENT, text: 'Advertisement' },
+  { value: InquiryCategory.INQUIRY, text: 'Inquiry', textKo: '문의' },
+  { value: InquiryCategory.FEEDBACK, text: 'Feedback', textKo: '피드백' },
+  { value: InquiryCategory.BUG, text: 'Bug', textKo: '버그' },
+  { value: InquiryCategory.ADVERTISEMENT, text: 'Advertisement', textKo: '광고' },
 ];
 
 @Controller('admin/support')
@@ -64,14 +63,14 @@ export class AdminSupportController {
   @Get('inquiries/statuses')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.inquiry.view')
-  async getInquiryStatuses(): Promise<ApiResponse<any>> {
-    return ApiResponseUtil.success(INQUIRY_STATUS_OPTIONS);
+  getInquiryStatuses(): ApiResponse<any> {
+    return ApiResponseUtil.success(ADMIN_INQUIRY_STATUS_OPTIONS);
   }
 
   @Get('inquiry-categories')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('support.inquiry.view')
-  async getInquiryCategories(): Promise<ApiResponse<any>> {
+  getInquiryCategories(): ApiResponse<any> {
     return ApiResponseUtil.success(INQUIRY_CATEGORY_OPTIONS);
   }
 
@@ -92,6 +91,7 @@ export class AdminSupportController {
       sortOrder: query.sortOrder,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return ApiResponseUtil.success({
       data: result.data.map((inquiry) => this.mapInquiryToResponse(inquiry)),
       nextCursor: result.nextCursor,

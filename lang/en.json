@@ -215,6 +215,7 @@
   "IMAGE_FILE_SIZE_EXCEEDS_LIMIT": "Image file size exceeds the allowed limit",
   "INQUIRY_NOT_FOUND": "Inquiry not found",
   "INQUIRY_NOT_FOUND_AFTER_UPDATE": "Inquiry not found after update",
+  "INVALID_INQUIRY_STATUS_FOR_ADMIN": "Invalid inquiry status",
   "INSUFFICIENT_POINTS": "You do not have enough points",
   "INTERNAL_SERVER_ERROR": "Internal server error",
   "INVALID_CREDENTIALS": "Invalid credentials",

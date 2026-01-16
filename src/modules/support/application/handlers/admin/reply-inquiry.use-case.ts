@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import {
   notFound,
+  badRequest,
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
 import { IInquiryRepository } from '../../../infrastructure/persistence/repositories/inquiry.repository';
@@ -12,6 +13,9 @@ import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
+
+// Admin can only use PENDING and RESOLVED statuses
+const ALLOWED_ADMIN_STATUSES = [InquiryStatus.PENDING, InquiryStatus.RESOLVED];
 
 export interface ReplyInquiryCommand {
   inquiryId: string;
@@ -42,6 +46,11 @@ export class ReplyInquiryUseCase {
       throw notFound(MessageKeys.INQUIRY_NOT_FOUND);
     }
 
+    // Validate status: admin can only use PENDING and RESOLVED
+    if (command.status && !ALLOWED_ADMIN_STATUSES.includes(command.status)) {
+      throw badRequest(MessageKeys.INVALID_INQUIRY_STATUS_FOR_ADMIN);
+    }
+
     const userId = existingInquiry.userId;
 
     const savedInquiry = await this.transactionService.executeInTransaction(
@@ -53,9 +62,8 @@ export class ReplyInquiryUseCase {
         existingInquiry.repliedAt = new Date();
         if (command.status) {
           existingInquiry.status = command.status;
-        } else if (existingInquiry.status === InquiryStatus.PENDING) {
-          existingInquiry.status = InquiryStatus.PROCESSING;
         }
+        // Note: No automatic status change to PROCESSING - admin must explicitly set status
 
         return inquiryRepo.save(existingInquiry);
       },
