@@ -249,23 +249,23 @@ export class ManagerApplicationController {
     };
   }
 
-  //   @Get('my-submissions')
-  //   @HttpCode(HttpStatus.OK)
-  //   async listMyApplications(
-  //     @CurrentUser() user: CurrentUserPayload,
-  //     @Query() query: ListMyApplicationsQueryDto,
-  //   ): Promise<ApiResponse<any>> {
-  //     const result = await this.listMyApplicationsUseCase.execute({
-  //       userId: user.userId,
-  //       status: query.status,
-  //       cursor: query.cursor,
-  //       limit: query.limit,
-  //     });
+  @Get('my-submissions')
+  @HttpCode(HttpStatus.OK)
+  async listMyApplications(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ListMyApplicationsQueryDto,
+  ): Promise<ApiResponse<any>> {
+    const result = await this.listMyApplicationsUseCase.execute({
+      userId: user.userId,
+      status: query.status,
+      cursor: query.cursor,
+      limit: query.limit,
+    });
 
-  //     return ApiResponseUtil.success({
-  //       data: result.data.map((app) => this.mapApplicationToResponse(app)),
-  //       nextCursor: result.nextCursor,
-  //       hasMore: result.hasMore,
-  //     });
-  //   }
+    return ApiResponseUtil.success({
+      data: result.data.map((app) => this.mapApplicationToResponse(app)),
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    });
+  }
 }

@@ -7,6 +7,8 @@ import { SiteManagerRole } from '../../../domain/entities/site-manager.entity';
 import { ISiteManagerApplicationRepository } from '../../../infrastructure/persistence/repositories/site-manager-application.repository';
 import { ISiteManagerRepository } from '../../../infrastructure/persistence/repositories/site-manager.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
+import { Role } from '../../../../user/domain/entities/role.entity';
+import { UserRole } from '../../../../user/domain/entities/user-role.entity';
 import {
   notFound,
   badRequest,
@@ -77,6 +79,64 @@ export class ApproveApplicationUseCase {
           isActive: true,
         });
         await managerRepo.save(siteManager);
+
+        // Convert user role from "user" to "partner" if needed
+        // User can only have 1 role: either "user" or "partner"
+        const roleRepo = manager.getRepository(Role);
+        const userRoleRepo = manager.getRepository(UserRole);
+
+        // Find partner role
+        const partnerRole = await roleRepo.findOne({
+          where: { name: 'partner', deletedAt: null },
+        });
+
+        if (!partnerRole) {
+          throw notFound(MessageKeys.PARTNER_ROLE_NOT_FOUND);
+        }
+
+        // Get current user roles
+        const currentUserRoles = await userRoleRepo.find({
+          where: { userId: application.userId },
+          relations: ['role'],
+        });
+
+        // Check if user has "user" role
+        const userRole = await roleRepo.findOne({
+          where: { name: 'user', deletedAt: null },
+        });
+
+        if (userRole) {
+          const hasUserRole = currentUserRoles.some(
+            (ur) => ur.roleId === userRole.id,
+          );
+          const hasPartnerRole = currentUserRoles.some(
+            (ur) => ur.roleId === partnerRole.id,
+          );
+
+          // If user has "user" role and doesn't have "partner" role, convert to "partner"
+          if (hasUserRole && !hasPartnerRole) {
+            // Remove "user" role
+            await userRoleRepo.delete({
+              userId: application.userId,
+              roleId: userRole.id,
+            });
+
+            // Add "partner" role
+            const newUserRole = userRoleRepo.create({
+              userId: application.userId,
+              roleId: partnerRole.id,
+            });
+            await userRoleRepo.save(newUserRole);
+          } else if (currentUserRoles.length === 0) {
+            // User has no role, add "partner" role
+            const newUserRole = userRoleRepo.create({
+              userId: application.userId,
+              roleId: partnerRole.id,
+            });
+            await userRoleRepo.save(newUserRole);
+          }
+          // If user already has "partner" role, do nothing
+        }
 
         // Reload with relations
         const reloaded = await appRepo.findOne({

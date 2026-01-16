@@ -1,8 +1,15 @@
-import { IsOptional, IsBoolean, IsInt, Min, IsString } from 'class-validator';
+import { IsOptional, IsBoolean, IsInt, Min, IsString, MaxLength } from 'class-validator';
 import { TransformToBoolean } from '../../../../../shared/utils/transform-boolean.util';
 import { Type } from 'class-transformer';
+import { MaxKoreanChars } from '../../../../../shared/validators/max-korean-chars.validator';
 
 export class AdminUpdateUserDto {
+  @IsOptional({ message: 'DISPLAYNAME_OPTIONAL' })
+  @IsString({ message: 'DISPLAYNAME_MUST_BE_STRING' })
+  @MaxLength(100, { message: 'DISPLAYNAME_MAX_LENGTH' })
+  @MaxKoreanChars(6, { message: 'DISPLAYNAME_MAX_KOREAN_CHARS' })
+  displayName?: string;
+
   @IsOptional({ message: 'ISACTIVE_OPTIONAL' })
   @TransformToBoolean
   @IsBoolean({ message: 'ISACTIVE_MUST_BE_BOOLEAN' })

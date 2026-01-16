@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Param,
   Body,
   Query,
@@ -31,6 +32,7 @@ import { CreateSiteEventUseCase } from '../../../application/handlers/user/creat
 import { UpdateSiteEventUseCase } from '../../../application/handlers/user/update-site-event.use-case';
 import { ListSiteEventsUseCase } from '../../../application/handlers/user/list-site-events.use-case';
 import { GetSiteEventUseCase } from '../../../application/handlers/user/get-site-event.use-case';
+import { DeleteSiteEventUseCase } from '../../../application/handlers/user/delete-site-event.use-case';
 import { CreateSiteEventDto } from '../dto/create-site-event.dto';
 import { UpdateSiteEventUserDto } from '../dto/update-site-event-user.dto';
 import { ListSiteEventsQueryDto } from '../dto/list-site-events-query.dto';
@@ -48,6 +50,7 @@ export class SiteEventController {
     private readonly updateSiteEventUseCase: UpdateSiteEventUseCase,
     private readonly listSiteEventsUseCase: ListSiteEventsUseCase,
     private readonly getSiteEventUseCase: GetSiteEventUseCase,
+    private readonly deleteSiteEventUseCase: DeleteSiteEventUseCase,
     private readonly configService: ConfigService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
@@ -289,5 +292,20 @@ export class SiteEventController {
       this.mapSiteEventToResponse(event),
       'Event updated successfully. Waiting for admin approval.',
     );
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async deleteSiteEvent(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<{ message: string }>> {
+    await this.deleteSiteEventUseCase.execute({
+      userId: user.userId,
+      eventId: id,
+    });
+
+    return ApiResponseUtil.success(null, MessageKeys.EVENT_DELETED_SUCCESS);
   }
 }

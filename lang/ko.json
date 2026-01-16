@@ -283,6 +283,7 @@
   "NO_PERMISSION_TO_MOVE_EXCHANGES_TO_PROCESSING": "교환을 처리 중으로 이동할 권한이 없습니다",
   "NO_PERMISSION_TO_REJECT_EXCHANGES": "교환을 거부할 권한이 없습니다",
   "NO_PERMISSION_TO_UPDATE_EVENTS": "이벤트를 업데이트할 권한이 없습니다",
+  "NO_PERMISSION_TO_DELETE_EVENTS": "이벤트를 삭제할 권한이 없습니다",
   "NO_PERMISSION_TO_VIEW_EXCHANGES": "교환을 볼 권한이 없습니다",
   "OBTAIN_MUST_BE_STRING": "obtain 는 문자열이어야 합니다",
   "OBTAIN_OPTIONAL": "obtain 는 선택 사항입니다",
@@ -573,5 +574,6 @@
   "USER_REGISTERED_SUCCESS": "사용자 등록 성공",
   "VALIDATION_FAILED": "유효성 검사 실패",
   "VERIFYCODE_MUST_BE_STRING": "인증 코드 는 문자열이어야 합니다",
-  "VERIFYCODE_REQUIRED": "인증 코드 가 필요합니다"
+  "VERIFYCODE_REQUIRED": "인증 코드 가 필요합니다",
+  "FUNCTION_NOT_AVAILABLE": "이 기능은 사용할 수 없습니다"
 }

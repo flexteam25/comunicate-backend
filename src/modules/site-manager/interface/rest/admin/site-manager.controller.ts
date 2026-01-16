@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
   Param,
   Query,
@@ -92,7 +93,7 @@ export class AdminSiteManagerController {
     return ApiResponseUtil.success(this.mapApplicationToResponse(application));
   }
 
-  @Put(':id/approve')
+  @Post(':id/approve')
   @RequirePermission('site-manager-applications.approve')
   @HttpCode(HttpStatus.OK)
   async approveApplication(

@@ -745,6 +745,7 @@ export class AdminUserController {
     const user = await this.updateUserUseCase.execute({
       userId: id,
       adminId: admin.adminId,
+      displayName: dto.displayName,
       isActive: dto.isActive,
       points: dto.points,
       partner: dto.partner,

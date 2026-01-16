@@ -283,6 +283,7 @@
   "NO_PERMISSION_TO_MOVE_EXCHANGES_TO_PROCESSING": "You do not have permission to move exchanges to processing",
   "NO_PERMISSION_TO_REJECT_EXCHANGES": "You do not have permission to reject exchanges",
   "NO_PERMISSION_TO_UPDATE_EVENTS": "You do not have permission to update events",
+  "NO_PERMISSION_TO_DELETE_EVENTS": "You do not have permission to delete events",
   "NO_PERMISSION_TO_VIEW_EXCHANGES": "You do not have permission to view exchanges",
   "OBTAIN_MUST_BE_STRING": "Obtain field must be a string",
   "OBTAIN_OPTIONAL": "Obtain field is optional",
@@ -573,7 +574,8 @@
   "USER_REGISTERED_SUCCESS": "User registered successfully",
   "VALIDATION_FAILED": "Validation failed",
   "VERIFYCODE_MUST_BE_STRING": "Verify code must be a string",
-  "VERIFYCODE_REQUIRED": "Verify code is required"
+  "VERIFYCODE_REQUIRED": "Verify code is required",
+  "FUNCTION_NOT_AVAILABLE": "This function is not available"
 }
 
 

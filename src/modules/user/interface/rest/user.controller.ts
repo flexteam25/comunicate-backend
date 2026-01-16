@@ -278,10 +278,9 @@ export class UserController {
     const hasActiveBadgeField = 'activeBadge' in dto;
     const clearActiveBadge = hasActiveBadgeField && !dto.activeBadge;
 
-    // Update profile with displayName, avatarUrl, badge, and audit IP
+    // Update profile with avatarUrl, badge, and audit IP
     await this.updateProfileUseCase.execute({
       userId: user.userId,
-      displayName: dto.displayName,
       avatarUrl,
       bio: dto.bio,
       phone: dto.phone,

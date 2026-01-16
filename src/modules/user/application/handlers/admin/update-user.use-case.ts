@@ -22,6 +22,7 @@ import {
 export interface UpdateUserCommand {
   userId: string;
   adminId: string;
+  displayName?: string;
   isActive?: boolean;
   points?: number; // Absolute value (>= 0), not delta
   partner?: boolean;
@@ -60,6 +61,11 @@ export class UpdateUserUseCase {
     // Execute update in transaction
     return this.transactionService.executeInTransaction(
       async (entityManager: EntityManager) => {
+        // Update displayName if provided
+        if (command.displayName !== undefined) {
+          user.displayName = command.displayName || null;
+        }
+
         // Update isActive if provided
         if (command.isActive !== undefined) {
           user.isActive = command.isActive;
