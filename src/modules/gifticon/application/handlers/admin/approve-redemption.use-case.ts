@@ -54,7 +54,7 @@ export class ApproveRedemptionUseCase {
     // Reload with relationships for event
     const redemptionWithRelations = await this.redemptionRepository.findById(
       updatedRedemption.id,
-      ['user', 'gifticon'],
+      ['user', 'user.userProfile', 'gifticon'],
     );
 
     if (!redemptionWithRelations) {

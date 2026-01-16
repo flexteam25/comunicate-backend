@@ -106,6 +106,7 @@ export class PointExchangeRepository implements IPointExchangeRepository {
     const queryBuilder = this.repository
       .createQueryBuilder('exchange')
       .leftJoinAndSelect('exchange.user', 'user')
+      .leftJoinAndSelect('user.userProfile', 'userProfile')
       .leftJoinAndSelect('exchange.site', 'site')
       .leftJoinAndSelect('exchange.admin', 'admin')
       .leftJoinAndSelect('exchange.manager', 'manager')

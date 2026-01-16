@@ -17,6 +17,7 @@ export class GetExchangeDetailUseCase {
   async execute(command: GetExchangeDetailCommand): Promise<PointExchange> {
     const exchange = await this.pointExchangeRepository.findById(command.exchangeId, [
       'user',
+      'user.userProfile',
       'site',
       'admin',
       'manager',

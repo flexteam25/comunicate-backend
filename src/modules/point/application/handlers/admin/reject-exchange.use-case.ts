@@ -155,9 +155,10 @@ export class RejectExchangeUseCase {
             });
         });
 
-        // Get updated exchange to return
+        // Get updated exchange to return with relations
         const updated = await exchangeRepo.findOne({
           where: { id: command.exchangeId },
+          relations: ['user', 'user.userProfile', 'site', 'admin', 'manager'],
         });
 
         if (!updated) {

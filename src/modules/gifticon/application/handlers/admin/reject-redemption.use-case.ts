@@ -135,9 +135,10 @@ export class RejectRedemptionUseCase {
             });
         });
 
-        // Get updated redemption to return
+        // Get updated redemption to return with relations
         const updated = await redemptionRepo.findOne({
           where: { id: command.redemptionId },
+          relations: ['user', 'user.userProfile', 'gifticon'],
         });
 
         if (!updated) {

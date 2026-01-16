@@ -17,6 +17,7 @@ export class GetRedemptionDetailUseCase {
   async execute(command: GetRedemptionDetailCommand): Promise<GifticonRedemption> {
     const redemption = await this.redemptionRepository.findById(command.redemptionId, [
       'user',
+      'user.userProfile',
       'gifticon',
     ]);
 

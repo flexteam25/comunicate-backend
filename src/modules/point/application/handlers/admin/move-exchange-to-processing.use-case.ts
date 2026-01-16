@@ -55,7 +55,7 @@ export class MoveExchangeToProcessingUseCase {
     // Reload with relationships for response
     const updatedExchange = await this.pointExchangeRepository.findById(
       command.exchangeId,
-      ['user', 'site', 'admin', 'manager'],
+      ['user', 'user.userProfile', 'site', 'admin', 'manager'],
     );
 
     if (!updatedExchange) {
