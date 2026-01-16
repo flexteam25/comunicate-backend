@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PostCategory } from '../../../domain/entities/post-category.entity';
 import { IPostCategoryRepository } from '../repositories/post-category.repository';
-import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import {
+  notFound,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
 export class PostCategoryRepository implements IPostCategoryRepository {

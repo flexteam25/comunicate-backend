@@ -38,6 +38,7 @@ export class AddCommentUseCase {
   ) {}
 
   async execute(command: AddCommentCommand): Promise<PostComment> {
+    // postId is UUID only (resolved by controller)
     const post = await this.postRepository.findById(command.postId);
     if (!post) {
       throw notFound(MessageKeys.POST_NOT_FOUND);

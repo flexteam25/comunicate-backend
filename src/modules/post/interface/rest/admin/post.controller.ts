@@ -71,6 +71,7 @@ export class AdminPostController {
   private mapPostToResponse(post: any): any {
     return {
       id: post.id,
+      slug: post.slug,
       userId: post.userId || null,
       userName: post.user?.displayName || null,
       userBadge: (() => {
@@ -242,7 +243,7 @@ export class AdminPostController {
   @Get(':id')
   @RequirePermission('posts.manage')
   @HttpCode(HttpStatus.OK)
-  async getPost(@Param('id', new ParseUUIDPipe()) id: string): Promise<ApiResponse<any>> {
+  async getPost(@Param('id') id: string): Promise<ApiResponse<any>> {
     const post = await this.getPostUseCase.execute({ postId: id });
     return ApiResponseUtil.success(this.mapPostToResponse(post));
   }
@@ -278,7 +279,7 @@ export class AdminPostController {
   @UseInterceptors(FileInterceptor('thumbnail'))
   @HttpCode(HttpStatus.OK)
   async updatePost(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdatePostDto,
     @UploadedFile() thumbnail?: MulterFile,
   ): Promise<ApiResponse<any>> {
@@ -304,7 +305,7 @@ export class AdminPostController {
   @RequirePermission('posts.manage')
   @HttpCode(HttpStatus.OK)
   async deletePost(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deletePostUseCase.execute({ postId: id });
     return ApiResponseUtil.success({ message: MessageKeys.POST_DELETED_SUCCESS });

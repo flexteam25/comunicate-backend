@@ -35,8 +35,8 @@ export class UpdatePostUseCase {
   ) {}
 
   async execute(command: UpdatePostCommand): Promise<Post> {
-    // Get existing post first to check for old thumbnail
-    const existingPost = await this.postRepository.findById(command.postId);
+    // Get existing post first to check for old thumbnail (support both UUID and slug)
+    const existingPost = await this.postRepository.findByIdOrSlug(command.postId);
     if (!existingPost) {
       throw notFound(MessageKeys.POST_NOT_FOUND);
     }
@@ -100,7 +100,7 @@ export class UpdatePostUseCase {
           if (command.title) {
             const duplicatePost = await this.postRepository.findByTitle(
               command.title,
-              command.postId,
+              existingPost.id,
             );
             if (duplicatePost) {
               throw badRequest(MessageKeys.POST_TITLE_ALREADY_EXISTS);
@@ -132,12 +132,13 @@ export class UpdatePostUseCase {
           if (command.isPointBanner !== undefined)
             updateData.isPointBanner = command.isPointBanner;
 
-          await postRepo.update(command.postId, updateData);
+          // Use post.id (UUID) for update, not the slug
+          await postRepo.update(existingPost.id, updateData);
         },
       );
 
       // Reload with aggregates after transaction commits
-      const reloaded = await this.postRepository.findByIdWithAggregates(command.postId);
+      const reloaded = await this.postRepository.findByIdWithAggregates(existingPost.id);
       if (!reloaded) {
         throw notFound(MessageKeys.POST_NOT_FOUND_AFTER_UPDATE);
       }

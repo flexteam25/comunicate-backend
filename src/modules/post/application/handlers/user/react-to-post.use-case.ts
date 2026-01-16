@@ -26,6 +26,7 @@ export class ReactToPostUseCase {
   ) {}
 
   async execute(command: ReactToPostCommand): Promise<PostReaction> {
+    // postId is UUID only (resolved by controller)
     const post = await this.postRepository.findById(command.postId);
     if (!post || !post.isPublished) {
       throw notFound(MessageKeys.POST_NOT_FOUND);

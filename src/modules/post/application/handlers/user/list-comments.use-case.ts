@@ -4,7 +4,7 @@ import { IPostCommentRepository } from '../../../infrastructure/persistence/repo
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 export interface ListCommentsCommand {
-  postId: string;
+  postId: string; // UUID only (resolved by controller)
   parentCommentId?: string | null;
   cursor?: string;
   limit?: number;

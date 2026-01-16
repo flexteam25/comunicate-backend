@@ -7,6 +7,7 @@ import { EntityManager } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { randomUUID } from 'crypto';
 import { badRequest, notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import { customAlphabet } from 'nanoid';
 
 export interface CreatePostCommand {
   adminId: string; // Admin's ID
@@ -63,8 +64,24 @@ export class CreatePostUseCase {
       });
     }
 
-    // Generate post ID first
+    // Generate post ID and slug first
     const postId = randomUUID();
+    const nanoid = customAlphabet(
+      '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      8,
+    );
+    let slug = nanoid();
+
+    // Ensure slug is unique (retry up to 3 times)
+    let retries = 0;
+    while (retries < 3) {
+      const existingPost = await this.postRepository.findByIdOrSlug(slug);
+      if (!existingPost) {
+        break;
+      }
+      slug = nanoid();
+      retries++;
+    }
 
     // Upload thumbnail before transaction
     let thumbnailUrl: string | undefined;
@@ -89,6 +106,7 @@ export class CreatePostUseCase {
 
           const post = postRepo.create({
             id: postId,
+            slug,
             adminId: command.adminId,
             categoryId: command.categoryId,
             title: command.title,

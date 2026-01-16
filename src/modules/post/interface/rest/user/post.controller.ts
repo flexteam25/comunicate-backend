@@ -40,7 +40,6 @@ import { ReactToCommentDto } from '../dto/react-to-comment.dto';
 import { AddCommentDto } from '../dto/add-comment.dto';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
-import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { getClientIp } from '../../../../../shared/utils/request.util';
@@ -52,6 +51,10 @@ import { DeletePostUseCase } from '../../../application/handlers/user/delete-pos
 import { CreatePostDto } from '../dto/create-post.dto';
 import { UpdatePostDto } from '../dto/update-post.dto';
 import { UploadedFile } from '@nestjs/common';
+import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
+import { Inject } from '@nestjs/common';
+import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import { isUuid } from '../../../../../shared/utils/uuid.util';
 
 @Controller('api/posts')
 @UseGuards(OptionalJwtAuthGuard)
@@ -74,13 +77,31 @@ export class PostController {
     private readonly reactToCommentUseCase: ReactToCommentUseCase,
     private readonly deleteCommentReactionUseCase: DeleteCommentReactionUseCase,
     private readonly configService: ConfigService,
+    @Inject('IPostRepository')
+    private readonly postRepository: IPostRepository,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
+  }
+
+  /**
+   * Resolve slug to UUID if needed. Returns UUID.
+   * For comment/reaction APIs that need UUID only.
+   */
+  private async resolvePostId(idOrSlug: string): Promise<string> {
+    if (isUuid(idOrSlug)) {
+      return idOrSlug;
+    }
+    const post = await this.postRepository.findByIdOrSlug(idOrSlug);
+    if (!post) {
+      throw notFound(MessageKeys.POST_NOT_FOUND);
+    }
+    return post.id;
   }
 
   private mapPostToResponse(post: any): any {
     return {
       id: post.id,
+      slug: post.slug,
       userId: post.userId || null,
       userName: post.user?.displayName || null,
       userAvatarUrl:
@@ -210,7 +231,7 @@ export class PostController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getPost(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
     @Req() req: Request,
     @CurrentUser() user?: CurrentUserPayload,
   ): Promise<ApiResponse<any>> {
@@ -232,12 +253,13 @@ export class PostController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async reactToPost(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
     @Body() dto: ReactToPostDto,
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<ApiResponse<any>> {
+    const postId = await this.resolvePostId(id);
     const reaction = await this.reactToPostUseCase.execute({
-      postId: id,
+      postId,
       userId: user.userId,
       reactionType: dto.reactionType,
     });
@@ -256,7 +278,7 @@ export class PostController {
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
   async addComment(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
     @Body() dto: AddCommentDto,
     @CurrentUser() user: CurrentUserPayload,
     @UploadedFiles()
@@ -264,8 +286,9 @@ export class PostController {
       images?: MulterFile[];
     },
   ): Promise<ApiResponse<any>> {
+    const postId = await this.resolvePostId(id);
     const comment = await this.addCommentUseCase.execute({
-      postId: id,
+      postId,
       userId: user.userId,
       content: dto.content,
       parentCommentId: dto.parentCommentId,
@@ -283,7 +306,7 @@ export class PostController {
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
   async updateComment(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
     @Param('commentId', new ParseUUIDPipe()) commentId: string,
     @Body() dto: UpdateCommentDto,
     @CurrentUser() user: CurrentUserPayload,
@@ -309,12 +332,13 @@ export class PostController {
   @Get(':id/comments')
   @HttpCode(HttpStatus.OK)
   async listComments(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
     @Query() query: ListCommentsQueryDto,
     @CurrentUser() user?: CurrentUserPayload,
   ): Promise<ApiResponse<any>> {
+    const postId = await this.resolvePostId(id);
     const result = await this.listCommentsUseCase.execute({
-      postId: id,
+      postId,
       parentCommentId: query.parentCommentId,
       cursor: query.cursor,
       limit: query.limit,
@@ -332,11 +356,12 @@ export class PostController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async deleteReaction(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<ApiResponse<{ message: string }>> {
+    const postId = await this.resolvePostId(id);
     await this.deleteReactionUseCase.execute({
-      postId: id,
+      postId,
       userId: user.userId,
     });
     return ApiResponseUtil.success(
@@ -349,7 +374,7 @@ export class PostController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async reactToComment(
-    @Param('postId', new ParseUUIDPipe()) postId: string,
+    @Param('postId') postId: string,
     @Param('commentId', new ParseUUIDPipe()) commentId: string,
     @Body() dto: ReactToCommentDto,
     @CurrentUser() user: CurrentUserPayload,
@@ -373,7 +398,7 @@ export class PostController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async deleteCommentReaction(
-    @Param('postId', new ParseUUIDPipe()) postId: string,
+    @Param('postId') postId: string,
     @Param('commentId', new ParseUUIDPipe()) commentId: string,
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<ApiResponse<{ message: string }>> {
@@ -435,7 +460,7 @@ export class PostController {
   @HttpCode(HttpStatus.OK)
   async updatePost(
     @CurrentUser() user: CurrentUserPayload,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdatePostDto,
     @UploadedFile() thumbnail?: MulterFile,
   ): Promise<ApiResponse<any>> {
@@ -463,7 +488,7 @@ export class PostController {
   @HttpCode(HttpStatus.OK)
   async deletePost(
     @CurrentUser() user: CurrentUserPayload,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
   ): Promise<ApiResponse<{ message: string }>> {
     await this.deletePostUseCase.execute({ postId: id, userId: user.userId });
     return ApiResponseUtil.success(

@@ -37,8 +37,8 @@ export class UpdatePostUseCase {
   ) {}
 
   async execute(command: UpdatePostCommand): Promise<Post> {
-    // Get existing post first
-    const existingPost = await this.postRepository.findById(command.postId);
+    // Get existing post first (support both UUID and slug)
+    const existingPost = await this.postRepository.findByIdOrSlug(command.postId);
     if (!existingPost) {
       throw notFound(MessageKeys.POST_NOT_FOUND);
     }
@@ -141,10 +141,11 @@ export class UpdatePostUseCase {
           if (command.isPointBanner !== undefined)
             updateData.isPointBanner = command.isPointBanner;
 
-          await postRepo.update(command.postId, updateData);
+          // Use post.id (UUID) for update, not the slug
+          await postRepo.update(existingPost.id, updateData);
 
           const updated = await postRepo.findOne({
-            where: { id: command.postId },
+            where: { id: existingPost.id },
             relations: [
               'user',
               'user.userBadges',

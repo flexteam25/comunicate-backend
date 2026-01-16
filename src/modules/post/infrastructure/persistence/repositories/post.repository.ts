@@ -3,7 +3,9 @@ import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagin
 
 export interface IPostRepository {
   findById(id: string, relations?: string[]): Promise<Post | null>;
+  findByIdOrSlug(idOrSlug: string, relations?: string[]): Promise<Post | null>;
   findByIdWithAggregates(id: string, userId?: string): Promise<Post | null>;
+  findByIdOrSlugWithAggregates(idOrSlug: string, userId?: string): Promise<Post | null>;
   findByTitle(title: string, excludePostId?: string): Promise<Post | null>;
   findAllAdmin(
     filters?: {

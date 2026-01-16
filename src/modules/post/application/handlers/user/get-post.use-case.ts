@@ -20,7 +20,7 @@ export class GetPostUseCase {
   ) {}
 
   async execute(command: GetPostCommand): Promise<Post> {
-    const post = await this.postRepository.findByIdWithAggregates(
+    const post = await this.postRepository.findByIdOrSlugWithAggregates(
       command.postId,
       command.userId,
     );
@@ -36,8 +36,9 @@ export class GetPostUseCase {
     // Track view only for authenticated users (best-effort, don't block on errors)
     if (command.userId) {
       try {
+        // Use post.id (UUID) for view tracking, not the slug
         await this.postViewRepository.create({
-          postId: command.postId,
+          postId: post.id,
           userId: command.userId,
           ipAddress: command.ipAddress || 'unknown',
         });

@@ -15,7 +15,7 @@ export class GetPostUseCase {
   ) {}
 
   async execute(command: GetPostCommand): Promise<Post> {
-    const post = await this.postRepository.findByIdWithAggregates(command.postId);
+    const post = await this.postRepository.findByIdOrSlugWithAggregates(command.postId);
 
     if (!post) {
       throw notFound(MessageKeys.POST_NOT_FOUND);

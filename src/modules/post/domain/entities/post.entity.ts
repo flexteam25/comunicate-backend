@@ -33,6 +33,10 @@ export class Post extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
+  @Column({ type: 'varchar', length: 20, unique: true })
+  @Index('IDX_posts_slug')
+  slug: string;
+
   @Column({ type: 'text' })
   content: string;
 

@@ -9,6 +9,7 @@ import {
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
 import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import { isUuid } from '../../../../../shared/utils/uuid.util';
 
 @Injectable()
 export class PostRepository implements IPostRepository {
@@ -24,6 +25,27 @@ export class PostRepository implements IPostRepository {
       where: { id, deletedAt: null },
       relations,
     });
+  }
+
+  async findByIdOrSlug(idOrSlug: string, relations?: string[]): Promise<Post | null> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('post')
+      .where('post.deletedAt IS NULL');
+
+    // Check if it's a UUID format
+    if (isUuid(idOrSlug)) {
+      queryBuilder.andWhere('post.id = :idOrSlug', { idOrSlug });
+    } else {
+      queryBuilder.andWhere('post.slug = :idOrSlug', { idOrSlug });
+    }
+
+    if (relations && relations.length > 0) {
+      relations.forEach((relation) => {
+        queryBuilder.leftJoinAndSelect(`post.${relation}`, relation);
+      });
+    }
+
+    return queryBuilder.getOne();
   }
 
   async findByIdWithAggregates(id: string, userId?: string): Promise<Post | null> {
@@ -62,6 +84,86 @@ export class PostRepository implements IPostRepository {
       )
       .where('post.deletedAt IS NULL')
       .andWhere('post.id = :id', { id });
+
+    // Join user's reaction if userId is provided
+    if (userId) {
+      queryBuilder
+        .leftJoin(
+          'post_reactions',
+          'userReaction',
+          'userReaction.post_id = post.id AND userReaction.user_id = :userId',
+          { userId },
+        )
+        .addSelect('userReaction.reaction_type', 'userReactionType');
+    }
+
+    const result = await queryBuilder.getRawAndEntities();
+    if (result.entities.length === 0) {
+      return null;
+    }
+
+    const post = result.entities[0];
+    const rawData = result.raw[0];
+    (post as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
+    (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+    (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
+    (post as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
+
+    // Map user reaction if userId is provided
+    if (userId) {
+      // PostgreSQL may return column names in lowercase when using getRawAndEntities
+      const userReactionType = (rawData?.userReactionType ||
+        rawData?.userreactiontype ||
+        rawData?.['userReactionType'] ||
+        rawData?.['userreactiontype']) as string | null;
+      (post as any).reacted = userReactionType || null;
+    }
+
+    return post;
+  }
+
+  async findByIdOrSlugWithAggregates(idOrSlug: string, userId?: string): Promise<Post | null> {
+    const queryBuilder = this.repository
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.user', 'user')
+      .leftJoinAndSelect('user.userBadges', 'userBadges')
+      .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
+      .leftJoinAndSelect('post.admin', 'admin')
+      .leftJoinAndSelect('post.category', 'category')
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(reaction.id)', 'likeCount')
+            .from('post_reactions', 'reaction')
+            .where('reaction.post_id = post.id')
+            .andWhere("reaction.reaction_type = 'like'"),
+        'likeCount',
+      )
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(reaction.id)', 'dislikeCount')
+            .from('post_reactions', 'reaction')
+            .where('reaction.post_id = post.id')
+            .andWhere("reaction.reaction_type = 'dislike'"),
+        'dislikeCount',
+      )
+      .addSelect(
+        `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id AND deleted_at IS NULL)`,
+        'commentCount',
+      )
+      .addSelect(
+        `(SELECT COUNT(DISTINCT user_id) FROM post_views WHERE post_id = post.id AND user_id IS NOT NULL)`,
+        'viewCount',
+      )
+      .where('post.deletedAt IS NULL');
+
+    // Check if it's a UUID format
+    if (isUuid(idOrSlug)) {
+      queryBuilder.andWhere('post.id = :idOrSlug', { idOrSlug });
+    } else {
+      queryBuilder.andWhere('post.slug = :idOrSlug', { idOrSlug });
+    }
 
     // Join user's reaction if userId is provided
     if (userId) {

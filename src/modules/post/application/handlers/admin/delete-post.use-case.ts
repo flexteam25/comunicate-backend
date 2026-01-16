@@ -18,22 +18,23 @@ export class DeletePostUseCase {
   ) {}
 
   async execute(command: DeletePostCommand): Promise<void> {
-    const post = await this.postRepository.findById(command.postId);
+    // Support both UUID and slug
+    const post = await this.postRepository.findByIdOrSlug(command.postId);
     if (!post) {
       throw notFound(MessageKeys.POST_NOT_FOUND);
     }
 
     // Soft delete post and user_posts in transaction
     await this.transactionService.executeInTransaction(async (manager: EntityManager) => {
-      // Soft delete post
-      await this.postRepository.delete(command.postId);
+      // Soft delete post (use post.id which is UUID)
+      await this.postRepository.delete(post.id);
 
       // Soft delete user_posts if post was created by a user
       if (post.userId) {
         const userPostRepo = manager.getRepository(UserPost);
         await userPostRepo.softDelete({
           userId: post.userId,
-          postId: command.postId,
+          postId: post.id,
         });
       }
     });
