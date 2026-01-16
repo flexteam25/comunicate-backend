@@ -46,6 +46,7 @@ export class AdminPointExchangeController {
             id: exchange.user.id,
             email: exchange.user.email,
             displayName: exchange.user.displayName || null,
+            phone: exchange.user.userProfile?.phone || null,
           }
         : null,
       siteId: exchange.siteId,

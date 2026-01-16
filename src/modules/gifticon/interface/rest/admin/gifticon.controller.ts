@@ -251,6 +251,7 @@ export class AdminGifticonController {
             id: redemption.user.id,
             email: redemption.user.email,
             displayName: redemption.user.displayName || null,
+            phone: redemption.user.userProfile?.phone || null,
           }
         : null,
       gifticonId: redemption.gifticonId,
@@ -295,6 +296,7 @@ export class AdminGifticonController {
               id: redemption.user.id,
               email: redemption.user.email,
               displayName: redemption.user.displayName || null,
+              phone: redemption.user.userProfile?.phone || null,
             }
           : null,
         gifticonId: redemption.gifticonId,
@@ -346,6 +348,7 @@ export class AdminGifticonController {
               id: redemption.user.id,
               email: redemption.user.email,
               displayName: redemption.user.displayName || null,
+              phone: redemption.user.userProfile?.phone || null,
             }
           : null,
         gifticonId: redemption.gifticonId,
