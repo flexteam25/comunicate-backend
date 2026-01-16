@@ -15,10 +15,15 @@ export class AddSlugToPosts1769900000000 implements MigrationInterface {
       }),
     );
 
-    // Generate slug for existing posts
-    const nanoid = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 8);
-    const posts = await queryRunner.query('SELECT id FROM posts WHERE deleted_at IS NULL');
-    
+    // Generate slug for ALL existing posts (including soft-deleted ones)
+    const nanoid = customAlphabet(
+      '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      8,
+    );
+    const posts = (await queryRunner.query('SELECT id FROM posts')) as Array<{
+      id: string;
+    }>;
+
     const usedSlugs = new Set<string>();
     for (const post of posts) {
       let slug = nanoid();
@@ -27,7 +32,10 @@ export class AddSlugToPosts1769900000000 implements MigrationInterface {
         slug = nanoid();
       }
       usedSlugs.add(slug);
-      await queryRunner.query(`UPDATE posts SET slug = $1 WHERE id = $2`, [slug, post.id]);
+      await queryRunner.query(`UPDATE posts SET slug = $1 WHERE id = $2`, [
+        slug,
+        post.id,
+      ]);
     }
 
     // Now make slug NOT NULL and UNIQUE
