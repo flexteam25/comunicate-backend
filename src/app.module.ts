@@ -89,6 +89,7 @@ import { SiteEventView } from './modules/site-event/domain/entities/site-event-v
 import { SiteBadgeRequestImage } from './modules/site/domain/entities/site-badge-request-image.entity';
 import { UserBadgeRequest } from './modules/user/domain/entities/user-badge-request.entity';
 import { UserBadgeRequestImage } from './modules/user/domain/entities/user-badge-request-image.entity';
+import { EditorModule } from './modules/editor/editor.module';
 
 @Module({
   imports: [
@@ -193,6 +194,7 @@ import { UserBadgeRequestImage } from './modules/user/domain/entities/user-badge
     PointModule,
     PartnerModule,
     SiteEventModule,
+    EditorModule,
   ],
   controllers: [AppController],
   providers: [AppService],
