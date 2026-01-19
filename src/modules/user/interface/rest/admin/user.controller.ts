@@ -831,21 +831,44 @@ export class AdminUserController {
   @HttpCode(HttpStatus.OK)
   async listUserIps(
     @Param('id', new ParseUUIDPipe()) userId: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    @Query() _query: ListUserIpsQueryDto,
+    @Query() query: ListUserIpsQueryDto,
   ): Promise<ApiResponse<any>> {
+    const user = await this.userRepository.findById(userId, ['userProfile']);
+
+    if (!user) {
+      throw notFound(MessageKeys.USER_NOT_FOUND);
+    }
+
     const userIps = await this.userIpRepository.findByUserId(userId);
 
+    let filteredIps = userIps;
+    if (query?.search) {
+      const search = String(query.search).toLowerCase();
+      filteredIps = userIps.filter((ui) => String(ui.ip).toLowerCase().includes(search));
+    }
+
     return ApiResponseUtil.success({
-      userId,
-      ips: userIps.map((ui) => ({
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl
+          ? buildFullUrl(this.apiServiceUrl, user.avatarUrl)
+          : null,
+        registerIp: user.userProfile?.registerIp || null,
+        lastLoginIp: user.userProfile?.lastLoginIp || null,
+        lastRequestIp: user.userProfile?.lastRequestIp || null,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+      },
+      ips: filteredIps.map((ui) => ({
         id: ui.id,
         ip: ui.ip,
         isBlocked: ui.isBlocked,
         createdAt: ui.createdAt,
         updatedAt: ui.updatedAt,
       })),
-      total: userIps.length,
+      total: filteredIps.length,
     });
   }
 
