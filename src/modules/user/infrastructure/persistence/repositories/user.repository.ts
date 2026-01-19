@@ -5,7 +5,7 @@ export interface UserFilters {
   search?: string; // Search in email or displayName
   email?: string;
   displayName?: string;
-  searchIp?: string; // Search in user_profile IP columns and user_ips table
+  searchIp?: string; // Search in user_profile IP columns (registerIp, lastLoginIp, lastRequestIp)
   status?: string;
   isActive?: boolean;
   sortBy?: string;
