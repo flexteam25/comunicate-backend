@@ -136,7 +136,7 @@ export class CreateSiteEventUseCase {
             description: command.description,
             startDate: command.startDate,
             endDate: command.endDate,
-            isActive: false, // User-created events need admin approval
+            isActive: true, // Manager-created events are active immediately
           });
 
           const savedEvent = await eventRepo.save(event);

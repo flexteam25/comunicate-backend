@@ -209,8 +209,6 @@
   "GIFTICON_NOT_FOUND": "기프티콘을 찾을 수 없습니다",
   "GIFTICON_NOT_FOUND_AFTER_UPDATE": "업데이트 후 기프티콘을 찾을 수 없습니다",
   "GIFTICON_NOT_STARTED_YET": "기프티콘이 아직 시작되지 않았습니다",
-  "HANDLEPOINT_MUST_BE_BOOLEAN": "입력한 데이터가 올바르지 않습니다",
-  "HANDLEPOINT_OPTIONAL": "입력 형식이 올바르지 않습니다",
   "ICONNAME_MAX_LENGTH": "입력한 데이터가 너무 깁니다",
   "ICONNAME_MUST_BE_STRING": "입력한 데이터가 올바르지 않습니다",
   "ICONNAME_OPTIONAL": "입력 형식이 올바르지 않습니다",

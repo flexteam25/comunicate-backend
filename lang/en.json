@@ -209,8 +209,6 @@
   "GIFTICON_NOT_FOUND": "Gifticon not found",
   "GIFTICON_NOT_FOUND_AFTER_UPDATE": "Gifticon not found after update",
   "GIFTICON_NOT_STARTED_YET": "This gifticon has not started yet",
-  "HANDLEPOINT_MUST_BE_BOOLEAN": "Invalid input data",
-  "HANDLEPOINT_OPTIONAL": "Invalid input format",
   "ICONNAME_MAX_LENGTH": "Input data is too long",
   "ICONNAME_MUST_BE_STRING": "Invalid input data",
   "ICONNAME_OPTIONAL": "Invalid input format",

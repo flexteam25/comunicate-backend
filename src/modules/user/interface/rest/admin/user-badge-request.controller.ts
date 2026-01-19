@@ -117,7 +117,6 @@ export class AdminUserBadgeRequestController {
       requestId,
       adminId: admin.adminId,
       note: dto.note,
-      handlePoint: dto.handlePoint,
     });
 
     return ApiResponseUtil.success(this.mapBadgeRequestToResponse(request));

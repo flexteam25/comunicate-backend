@@ -12,7 +12,6 @@ import { notFound, badRequest, MessageKeys } from '../../../../../shared/excepti
 export interface RemoveBadgeCommand {
   userId: string;
   badgeId: string;
-  handlePoint?: boolean;
 }
 
 @Injectable()
@@ -42,21 +41,20 @@ export class RemoveBadgeUseCase {
       throw badRequest(MessageKeys.BADGE_NOT_ASSIGNED_TO_USER);
     }
 
-    // Optionally handle point deduction
+    // Always handle point deduction if badge has point
     if (
-      command.handlePoint &&
       userBadge.badge &&
-      typeof userBadge.badge.point === 'number'
+      typeof userBadge.badge.point === 'number' &&
+      userBadge.badge.point > 0
     ) {
       const badgePoint = userBadge.badge.point;
-      if (badgePoint > 0) {
         const userWithProfile = await this.userRepository.findById(command.userId, [
           'userProfile',
         ]);
         if (userWithProfile?.userProfile) {
           const currentPoints = userWithProfile.userProfile.points ?? 0;
           const newPoints = Math.max(0, currentPoints - badgePoint);
-          const delta = newPoints - currentPoints; // <= 0
+        const pointsDeducted = currentPoints - newPoints; // Amount actually deducted
 
           userWithProfile.userProfile.points = newPoints;
           await this.userRepository.save(userWithProfile);
@@ -64,15 +62,14 @@ export class RemoveBadgeUseCase {
           const transaction = this.pointTransactionRepository.create({
             userId: command.userId,
             type: PointTransactionType.SPEND,
-            amount: delta,
+          amount: -pointsDeducted, // Negative for deduction
             balanceAfter: newPoints,
-            category: 'badge_reward',
-            referenceType: 'badge',
-            referenceId: command.badgeId,
-            description: `Badge removed: ${userBadge.badge.name}`,
+          category: 'badge_removal',
+          referenceType: 'user_badge',
+          referenceId: userBadge.id,
+          description: `Badge removed: ${userBadge.badge.name} (Badge ID: ${command.badgeId}, User Badge ID: ${userBadge.id}). Badge point value: ${badgePoint}, Previous points: ${currentPoints}, Points deducted: ${pointsDeducted}, Remaining points: ${newPoints}${currentPoints < badgePoint ? ' (insufficient points, deducted to minimum 0)' : ''}`,
           });
           await this.pointTransactionRepository.save(transaction);
-        }
       }
     }
 

@@ -24,7 +24,6 @@ export interface ApproveUserBadgeRequestCommand {
   requestId: string;
   adminId: string;
   note?: string;
-  handlePoint?: boolean;
 }
 
 @Injectable()
@@ -104,8 +103,8 @@ export class ApproveUserBadgeRequestUseCase {
         });
         await userBadgeRepo.save(userBadge);
 
-        // Handle point reward if requested and badge has point
-        if (command.handlePoint && typeof badge.point === 'number' && badge.point > 0) {
+        // Always handle point reward if badge has point
+        if (typeof badge.point === 'number' && badge.point > 0) {
           const user = await this.userRepository.findById(request.userId, [
             'userProfile',
           ]);
@@ -122,9 +121,9 @@ export class ApproveUserBadgeRequestUseCase {
               amount: badge.point,
               balanceAfter: newPoints,
               category: 'badge_reward',
-              referenceType: 'badge',
-              referenceId: badge.id,
-              description: `Badge reward: ${badge.name}`,
+              referenceType: 'user_badge_request',
+              referenceId: request.id,
+              description: `Badge reward: ${badge.name} (Badge ID: ${badge.id}, Request ID: ${request.id}). Points added: ${badge.point}, Previous points: ${currentPoints}, New points: ${newPoints}`,
             });
             await pointTransactionRepo.save(transaction);
           }

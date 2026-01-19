@@ -14,7 +14,6 @@ import { notFound, badRequest, MessageKeys } from '../../../../../shared/excepti
 export interface AssignBadgeCommand {
   userId: string;
   badgeId: string;
-  handlePoint?: boolean;
 }
 
 @Injectable()
@@ -69,8 +68,8 @@ export class AssignBadgeUseCase {
       false,
     );
 
-    // Handle point reward if requested and badge has point
-    if (command.handlePoint && typeof badge.point === 'number' && badge.point > 0) {
+    // Always handle point reward if badge has point
+    if (typeof badge.point === 'number' && badge.point > 0) {
       const currentPoints = user.userProfile?.points ?? 0;
       const newPoints = currentPoints + badge.point;
 
@@ -86,9 +85,9 @@ export class AssignBadgeUseCase {
         amount: badge.point,
         balanceAfter: newPoints,
         category: 'badge_reward',
-        referenceType: 'badge',
-        referenceId: badge.id,
-        description: `Badge reward: ${badge.name}`,
+        referenceType: 'user_badge',
+        referenceId: userBadge.id,
+        description: `Badge reward: ${badge.name} (Badge ID: ${badge.id}, User Badge ID: ${userBadge.id}). Points added: ${badge.point}, Previous points: ${currentPoints}, New points: ${newPoints}`,
       });
       await this.pointTransactionRepository.save(transaction);
     }
