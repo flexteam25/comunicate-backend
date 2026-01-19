@@ -322,7 +322,7 @@
   "OTP_VERIFIED_SUCCESS": "OTP 인증완료!",
   "OTP_VERIFIED_FORGOT_PASSWORD_SUCCESS": "OTP 인증완료!",
   "OTP_ALREADY_SENT": "OTP가 이미 전송되었습니다. 몇 분 후에 다시 요청해주세요",
-  "OTP_SENT_IF_EMAIL_EXISTS": "OTP가 전송되었습니다",
+  "OTP_SENT_IF_EMAIL_EXISTS": "OTP 인증완료!",
   "PARENTCOMMENTID_MUST_BE_UUID": "입력한 데이터가 올바르지 않습니다",
   "PARENTCOMMENTID_OPTIONAL": "입력 형식이 올바르지 않습니다",
   "PARENT_COMMENT_DOES_NOT_BELONG_TO_REPORT": "부모 댓글이 신고에 속하지 않습니다",
