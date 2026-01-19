@@ -68,6 +68,7 @@ export class AdminScamReportController {
     report: ScamReport & {
       likeCount?: number;
       dislikeCount?: number;
+      commentCount?: number;
       images?: {
         id: string;
         imageUrl: string;
@@ -138,6 +139,7 @@ export class AdminScamReportController {
         createdAt: img.createdAt,
       })),
       reactions,
+      commentCount: report.commentCount || 0,
       adminId: report.adminId || null,
       adminName: report.admin?.displayName || null,
       reviewedAt: report.reviewedAt || null,
