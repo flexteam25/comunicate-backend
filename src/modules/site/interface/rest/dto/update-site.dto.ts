@@ -9,6 +9,7 @@ import {
   Max,
   IsArray,
   IsNotEmpty,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -37,15 +38,17 @@ export class UpdateSiteDto {
   @IsUUID(undefined, { message: 'TIERID_MUST_BE_UUID' })
   tierId?: string;
 
+  @ValidateIf((o, v) => v !== undefined)
   @IsString({ message: 'PERMANENTURL_MUST_BE_STRING' })
   @IsNotEmpty({ message: 'PERMANENTURL_REQUIRED' })
   @MaxLength(500, { message: 'PERMANENTURL_MAX_LENGTH' })
-  permanentUrl: string;
+  permanentUrl?: string;
 
+  @ValidateIf((o, v) => v !== undefined)
   @IsString({ message: 'ACCESSIBLEURL_MUST_BE_STRING' })
   @IsNotEmpty({ message: 'ACCESSIBLEURL_REQUIRED' })
   @MaxLength(500, { message: 'ACCESSIBLEURL_MAX_LENGTH' })
-  accessibleUrl: string;
+  accessibleUrl?: string;
 
   @IsOptional({ message: 'STATUS_OPTIONAL' })
   @IsEnum(SiteStatus, { message: 'STATUS_INVALID_ENUM' })

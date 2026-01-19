@@ -41,8 +41,8 @@ export interface UpdateSiteCommand {
   deleteMainImage?: boolean;
   deleteSiteImage?: boolean;
   tierId?: string;
-  permanentUrl: string;
-  accessibleUrl: string;
+  permanentUrl?: string;
+  accessibleUrl?: string;
   status?: SiteStatus;
   description?: string;
   firstCharge?: number;
@@ -236,8 +236,10 @@ export class UpdateSiteUseCase {
           if (mainImageUrl !== undefined) updateData.mainImageUrl = mainImageUrl;
           if (siteImageUrl !== undefined) updateData.siteImageUrl = siteImageUrl;
           if (command.tierId !== undefined) updateData.tierId = command.tierId || null;
-          updateData.permanentUrl = command.permanentUrl;
-          updateData.accessibleUrl = command.accessibleUrl;
+          if (command.permanentUrl !== undefined)
+            updateData.permanentUrl = command.permanentUrl;
+          if (command.accessibleUrl !== undefined)
+            updateData.accessibleUrl = command.accessibleUrl;
           if (command.status !== undefined) updateData.status = command.status;
           if (command.description !== undefined)
             updateData.description = command.description || null;

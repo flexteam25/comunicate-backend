@@ -63,6 +63,7 @@ export class ScamReportResponseDto {
     like: number;
     dislike: number;
   };
+  commentCount?: number;
   adminId?: string;
   adminName?: string;
   reviewedAt?: Date;

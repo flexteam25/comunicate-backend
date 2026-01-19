@@ -25,8 +25,10 @@ export class ScamReportRepository implements IScamReportRepository {
 
   async findById(id: string, relations?: string[]): Promise<ScamReport | null> {
     const needsReactionCount = relations?.includes('reactions');
+    // Always load commentCount for user APIs
+    const needsCommentCount = true;
 
-    if (needsReactionCount) {
+    if (needsReactionCount || needsCommentCount) {
       const queryBuilder = this.repository
         .createQueryBuilder('report')
         .where('report.id = :id', { id })
@@ -79,6 +81,16 @@ export class ScamReportRepository implements IScamReportRepository {
             .andWhere("reaction.reaction_type = 'dislike'"),
         'dislikeCount',
       );
+      // Add comment count (excluding soft deleted comments)
+      queryBuilder.addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(comment.id)', 'commentCount')
+            .from('scam_report_comments', 'comment')
+            .where('comment.scam_report_id = report.id')
+            .andWhere('comment.deletedAt IS NULL'),
+        'commentCount',
+      );
 
       const result = await queryBuilder.getRawAndEntities();
       if (result.entities.length === 0) {
@@ -89,14 +101,66 @@ export class ScamReportRepository implements IScamReportRepository {
       const rawData = result.raw[0];
       (report as any).likeCount = parseInt(rawData?.likeCount || '0', 10);
       (report as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
+      (report as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
 
       return report;
     }
 
-    return this.repository.findOne({
-      where: { id, deletedAt: null },
-      ...(relations && relations.length > 0 ? { relations } : {}),
-    });
+    // Always use query builder to load commentCount
+    const queryBuilder = this.repository
+      .createQueryBuilder('report')
+      .where('report.id = :id', { id })
+      .andWhere('report.deletedAt IS NULL');
+
+    // Add relations
+    if (relations?.includes('images')) {
+      queryBuilder.leftJoinAndSelect(
+        'report.images',
+        'images',
+        'images.deletedAt IS NULL',
+      );
+    }
+    if (relations?.includes('user')) {
+      queryBuilder.leftJoinAndSelect('report.user', 'user');
+    }
+    if (relations?.includes('site')) {
+      queryBuilder.leftJoinAndSelect('report.site', 'site');
+    }
+    if (relations?.includes('admin')) {
+      queryBuilder.leftJoinAndSelect('report.admin', 'admin');
+    }
+    if (relations?.includes('user.userBadges')) {
+      queryBuilder.leftJoinAndSelect('user.userBadges', 'userBadges');
+    }
+    if (relations?.includes('user.userBadges.badge')) {
+      queryBuilder.leftJoinAndSelect(
+        'userBadges.badge',
+        'badge',
+        'badge.deletedAt IS NULL',
+      );
+    }
+
+    // Add comment count (excluding soft deleted comments)
+    queryBuilder.addSelect(
+      (subQuery) =>
+        subQuery
+          .select('COUNT(comment.id)', 'commentCount')
+          .from('scam_report_comments', 'comment')
+          .where('comment.scam_report_id = report.id')
+          .andWhere('comment.deletedAt IS NULL'),
+      'commentCount',
+    );
+
+    const result = await queryBuilder.getRawAndEntities();
+    if (result.entities.length === 0) {
+      return null;
+    }
+
+    const report = result.entities[0];
+    const rawData = result.raw[0];
+    (report as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
+
+    return report;
   }
 
   async findBySiteId(
@@ -131,6 +195,15 @@ export class ScamReportRepository implements IScamReportRepository {
             .where('reaction.scam_report_id = report.id')
             .andWhere("reaction.reaction_type = 'dislike'"),
         'dislikeCount',
+      )
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(comment.id)', 'commentCount')
+            .from('scam_report_comments', 'comment')
+            .where('comment.scam_report_id = report.id')
+            .andWhere('comment.deletedAt IS NULL'),
+        'commentCount',
       )
       .where('report.siteId = :siteId', { siteId })
       .andWhere('report.deletedAt IS NULL');
@@ -181,15 +254,17 @@ export class ScamReportRepository implements IScamReportRepository {
       }
     });
 
-    // Map reaction counts from raw data to entities
+    // Map reaction counts and comment count from raw data to entities
     data.forEach((report) => {
       const rawData = rawDataMap.get(report.id);
       if (rawData) {
         (report as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
         (report as any).dislikeCount = parseInt(String(rawData.dislikeCount || '0'), 10);
+        (report as any).commentCount = parseInt(String(rawData.commentCount || '0'), 10);
       } else {
         (report as any).likeCount = 0;
         (report as any).dislikeCount = 0;
+        (report as any).commentCount = 0;
       }
     });
 
@@ -238,6 +313,15 @@ export class ScamReportRepository implements IScamReportRepository {
             .where('reaction.scam_report_id = report.id')
             .andWhere("reaction.reaction_type = 'dislike'"),
         'dislikeCount',
+      )
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(comment.id)', 'commentCount')
+            .from('scam_report_comments', 'comment')
+            .where('comment.scam_report_id = report.id')
+            .andWhere('comment.deletedAt IS NULL'),
+        'commentCount',
       )
       .where('report.userId = :userId', { userId })
       .andWhere('report.deletedAt IS NULL');
@@ -288,15 +372,17 @@ export class ScamReportRepository implements IScamReportRepository {
       }
     });
 
-    // Map reaction counts from raw data to entities
+    // Map reaction counts and comment count from raw data to entities
     data.forEach((report) => {
       const rawData = rawDataMap.get(report.id);
       if (rawData) {
         (report as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
         (report as any).dislikeCount = parseInt(String(rawData.dislikeCount || '0'), 10);
+        (report as any).commentCount = parseInt(String(rawData.commentCount || '0'), 10);
       } else {
         (report as any).likeCount = 0;
         (report as any).dislikeCount = 0;
+        (report as any).commentCount = 0;
       }
     });
 
@@ -346,6 +432,15 @@ export class ScamReportRepository implements IScamReportRepository {
             .where('reaction.scam_report_id = report.id')
             .andWhere("reaction.reaction_type = 'dislike'"),
         'dislikeCount',
+      )
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(comment.id)', 'commentCount')
+            .from('scam_report_comments', 'comment')
+            .where('comment.scam_report_id = report.id')
+            .andWhere('comment.deletedAt IS NULL'),
+        'commentCount',
       )
       .where('report.deletedAt IS NULL');
 
@@ -420,15 +515,17 @@ export class ScamReportRepository implements IScamReportRepository {
       }
     });
 
-    // Map reaction counts from raw data to entities
+    // Map reaction counts and comment count from raw data to entities
     data.forEach((report) => {
       const rawData = rawDataMap.get(report.id);
       if (rawData) {
         (report as any).likeCount = parseInt(String(rawData.likeCount || '0'), 10);
         (report as any).dislikeCount = parseInt(String(rawData.dislikeCount || '0'), 10);
+        (report as any).commentCount = parseInt(String(rawData.commentCount || '0'), 10);
       } else {
         (report as any).likeCount = 0;
         (report as any).dislikeCount = 0;
+        (report as any).commentCount = 0;
       }
     });
 
