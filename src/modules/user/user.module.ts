@@ -11,6 +11,7 @@ import { UserPost } from './domain/entities/user-post.entity';
 import { UserBadgeRequest } from './domain/entities/user-badge-request.entity';
 import { UserBadgeRequestImage } from './domain/entities/user-badge-request-image.entity';
 import { UserIp } from './domain/entities/user-ip.entity';
+import { UserProfile } from './domain/entities/user-profile.entity';
 import { BlockedIp } from './domain/entities/blocked-ip.entity';
 import { Badge } from '../badge/domain/entities/badge.entity';
 import { UserRepository } from './infrastructure/persistence/typeorm/user.repository';
@@ -77,6 +78,7 @@ import { TriggerIpSyncUseCase } from './application/handlers/admin/trigger-ip-sy
       UserBadgeRequest,
       UserBadgeRequestImage,
       UserIp,
+      UserProfile,
       BlockedIp,
       Badge,
       PointTransaction,

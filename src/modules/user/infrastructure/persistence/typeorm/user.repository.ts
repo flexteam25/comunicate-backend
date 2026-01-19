@@ -125,6 +125,16 @@ export class UserRepository implements IUserRepository {
       }
     }
 
+    // Search IP filter - search in user_profile (3 columns) and user_ips table
+    if (filters?.searchIp) {
+      queryBuilder.andWhere(
+        '(LOWER(userProfile.registerIp) LIKE LOWER(:searchIp) OR LOWER(userProfile.lastLoginIp) LIKE LOWER(:searchIp) OR LOWER(userProfile.lastRequestIp) LIKE LOWER(:searchIp) OR EXISTS (SELECT 1 FROM user_ips WHERE user_ips.user_id = user.id AND LOWER(user_ips.ip) LIKE LOWER(:searchIp)))',
+        {
+          searchIp: `%${filters.searchIp}%`,
+        },
+      );
+    }
+
     // Status filter (if provided and not empty)
     if (filters?.status && filters.status.trim() !== '') {
       // Assuming status maps to isActive, but can be extended

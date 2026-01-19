@@ -76,20 +76,32 @@ export class CliCommand extends CommandRunner {
   }
 
   private showHelp(): void {
-    console.log('\nUsage:');
+    console.log('\n╔══════════════════════════════════════════════════════════════╗');
+    console.log('║                    CLI Commands Help                         ║');
+    console.log('╚══════════════════════════════════════════════════════════════╝\n');
+    
+    console.log('Usage:');
     console.log('  npm run cli:dev -- <command> [options]');
-    console.log('  npm run cli -- <command> [options]');
-    console.log('\nAvailable commands:');
+    console.log('  npm run cli -- <command> [options]\n');
+    
+    console.log('Available commands:');
+    console.log('─────────────────────────────────────────────────────────────');
 
     // Automatically list all registered commands
     const commandEntries = Array.from(this.commands.entries()).sort();
-    for (const [signature, command] of commandEntries) {
-      console.log(`\n  ${signature}`);
-      console.log(`    ${command.description}`);
+    if (commandEntries.length === 0) {
+      console.log('  No commands available.\n');
+    } else {
+      for (const [signature, command] of commandEntries) {
+        console.log(`\n  ${signature}`);
+        console.log(`    ${command.description}`);
+      }
+      console.log('');
     }
 
-    console.log('\nExamples:');
+    console.log('Examples:');
+    console.log('─────────────────────────────────────────────────────────────');
     console.log('  npm run cli:dev -- sync-user-posts --userId=xxx');
-    console.log('  npm run cli:dev -- sync-user-comments --userId=xxx');
+    console.log('  npm run cli:dev -- sync-user-comments --userId=xxx\n');
   }
 }

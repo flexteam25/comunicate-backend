@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserIp } from '../../../domain/entities/user-ip.entity';
+import { UserProfile } from '../../../domain/entities/user-profile.entity';
 import { IUserIpRepository } from '../../../infrastructure/persistence/repositories/user-ip.repository.interface';
 import { IBlockedIpRepository } from '../../../infrastructure/persistence/repositories/blocked-ip.repository.interface';
 import { RedisService } from '../../../../../shared/redis/redis.service';
@@ -22,6 +23,8 @@ export class TriggerIpSyncUseCase {
   constructor(
     @InjectRepository(UserIp)
     private readonly userIpRepository: Repository<UserIp>,
+    @InjectRepository(UserProfile)
+    private readonly userProfileRepository: Repository<UserProfile>,
     @Inject('IUserIpRepository')
     private readonly userIpRepo: IUserIpRepository,
     @Inject('IBlockedIpRepository')
@@ -60,7 +63,47 @@ export class TriggerIpSyncUseCase {
 
     await this.userIpRepo.bulkUpsert(bulkData);
 
-    // 3. Update blocked IPs cache for this user
+    // 3. Update lastRequestIp in user_profile
+    // After bulkUpsert, get the most recent IP from database (by updatedAt)
+    try {
+      // Get the most recent IP from database (after bulkUpsert, updatedAt will be latest)
+      const mostRecentIp = await this.userIpRepository
+        .createQueryBuilder('userIp')
+        .where('userIp.userId = :userId', { userId })
+        .orderBy('userIp.updatedAt', 'DESC')
+        .addOrderBy('userIp.createdAt', 'DESC')
+        .limit(1)
+        .getOne();
+
+      if (mostRecentIp) {
+        // Update lastRequestIp in user profile
+        const profile = await this.userProfileRepository.findOne({
+          where: { userId },
+        });
+
+        if (profile) {
+          profile.lastRequestIp = mostRecentIp.ip;
+          await this.userProfileRepository.save(profile);
+        } else {
+          // Create new profile if it doesn't exist
+          const newProfile = this.userProfileRepository.create({
+            userId,
+            points: 0,
+            lastRequestIp: mostRecentIp.ip,
+          });
+          await this.userProfileRepository.save(newProfile);
+        }
+      }
+    } catch (error) {
+      // Log error but continue
+      this.logger.error(
+        `Error updating lastRequestIp for user ${userId}`,
+        { error: error instanceof Error ? error.message : String(error) },
+        'trigger-ip-sync',
+      );
+    }
+
+    // 4. Update blocked IPs cache for this user
     const blockedUserIps = await this.userIpRepository.find({
       where: { userId, isBlocked: true },
       select: ['ip'],

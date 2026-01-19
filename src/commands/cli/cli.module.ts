@@ -15,6 +15,7 @@ import { UserComment } from '../../modules/user/domain/entities/user-comment.ent
 import { PostComment } from '../../modules/post/domain/entities/post-comment.entity';
 import { SiteReviewComment } from '../../modules/site-review/domain/entities/site-review-comment.entity';
 import { ScamReportComment } from '../../modules/scam-report/domain/entities/scam-report-comment.entity';
+import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { ScamReportComment } from '../../modules/scam-report/domain/entities/sca
       PostComment,
       SiteReviewComment,
       ScamReportComment,
+      SiteReviewCommentImage,
     ]),
     BullModule.forRootAsync({
       imports: [ConfigModule],

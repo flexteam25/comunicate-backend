@@ -182,6 +182,7 @@ export class AdminUserController {
       search: query.search,
       email: query.email,
       displayName: query.displayName,
+      searchIp: query.searchIp,
       status: query.status,
       isActive: query.isActive,
       cursor: query.cursor,

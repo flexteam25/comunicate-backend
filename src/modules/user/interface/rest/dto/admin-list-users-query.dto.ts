@@ -35,6 +35,10 @@ export class AdminListUsersQueryDto {
   @IsString({ message: 'DISPLAYNAME_MUST_BE_STRING' })
   displayName?: string;
 
+  @IsOptional({ message: 'SEARCHIP_OPTIONAL' })
+  @IsString({ message: 'SEARCHIP_MUST_BE_STRING' })
+  searchIp?: string;
+
   @IsOptional({ message: 'STATUS_OPTIONAL' })
   @IsString({ message: 'STATUS_MUST_BE_STRING' })
   status?: string;

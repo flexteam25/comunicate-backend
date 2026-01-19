@@ -10,6 +10,7 @@ export interface ListUsersCommand {
   search?: string;
   email?: string;
   displayName?: string;
+  searchIp?: string;
   status?: string;
   isActive?: boolean;
   cursor?: string;
@@ -31,6 +32,7 @@ export class ListUsersUseCase {
       search: command.search,
       email: command.search ? undefined : command.email,
       displayName: command.search ? undefined : command.displayName,
+      searchIp: command.searchIp,
       status: command.status,
       isActive: command.isActive,
       sortBy: command.sortBy,

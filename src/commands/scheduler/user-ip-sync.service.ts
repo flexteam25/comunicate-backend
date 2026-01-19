@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { RedisService } from '../../shared/redis/redis.service';
 import { LoggerService } from '../../shared/logger/logger.service';
 import { UserIp } from '../../modules/user/domain/entities/user-ip.entity';
+import { UserProfile } from '../../modules/user/domain/entities/user-profile.entity';
 import { IUserIpRepository } from '../../modules/user/infrastructure/persistence/repositories/user-ip.repository.interface';
 
 /**
@@ -20,6 +21,8 @@ export class UserIpSyncService {
   constructor(
     @InjectRepository(UserIp)
     private readonly userIpRepository: Repository<UserIp>,
+    @InjectRepository(UserProfile)
+    private readonly userProfileRepository: Repository<UserProfile>,
     @Inject('IUserIpRepository')
     private readonly userIpRepo: IUserIpRepository,
     private readonly redisService: RedisService,
@@ -30,7 +33,7 @@ export class UserIpSyncService {
    * Sync user IPs from Redis to Database
    * Runs every 5 minutes
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_5_SECONDS)
   async syncUserIps() {
     try {
       // 1. Get all user IP keys from Redis
@@ -90,7 +93,50 @@ export class UserIpSyncService {
         await this.userIpRepo.bulkUpsert(chunk);
       }
 
-      // 4. Clear processed Redis keys (optional - keep them for a while)
+      // 4. Update lastRequestIp in user_profile for each user
+      // After bulkUpsert, get the most recent IP from database (by updatedAt)
+      const userIds = Array.from(userIpMap.keys());
+      for (const userId of userIds) {
+        try {
+          // Get the most recent IP from database (after bulkUpsert, updatedAt will be latest)
+          const mostRecentIp = await this.userIpRepository
+            .createQueryBuilder('userIp')
+            .where('userIp.userId = :userId', { userId })
+            .orderBy('userIp.updatedAt', 'DESC')
+            .addOrderBy('userIp.createdAt', 'DESC')
+            .limit(1)
+            .getOne();
+
+          if (mostRecentIp) {
+            // Update lastRequestIp in user profile
+            const profile = await this.userProfileRepository.findOne({
+              where: { userId },
+            });
+
+            if (profile) {
+              profile.lastRequestIp = mostRecentIp.ip;
+              await this.userProfileRepository.save(profile);
+            } else {
+              // Create new profile if it doesn't exist
+              const newProfile = this.userProfileRepository.create({
+                userId,
+                points: 0,
+                lastRequestIp: mostRecentIp.ip,
+              });
+              await this.userProfileRepository.save(newProfile);
+            }
+          }
+        } catch (error) {
+          // Log error but continue with other users
+          this.logger.error(
+            `Error updating lastRequestIp for user ${userId}`,
+            { error: error instanceof Error ? error.message : String(error) },
+            'scheduler',
+          );
+        }
+      }
+
+      // 5. Clear processed Redis keys (optional - keep them for a while)
       // We don't delete immediately to allow for retry if DB fails
       // Keys will expire after TTL (1 hour)
     } catch (error) {

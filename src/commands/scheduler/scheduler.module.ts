@@ -198,7 +198,7 @@ import { RedisModule } from '../../shared/redis/redis.module';
       inject: [ConfigService],
     }),
     RedisModule,
-    TypeOrmModule.forFeature([UserIp, BlockedIp]),
+    TypeOrmModule.forFeature([UserIp, UserProfile, BlockedIp]),
   ],
   providers: [
     SchedulerCommand,

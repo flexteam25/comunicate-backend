@@ -61,6 +61,7 @@ import { PartnerRequest } from '../../modules/partner/domain/entities/partner-re
 import { SiteEvent } from '../../modules/site-event/domain/entities/site-event.entity';
 import { SiteEventBanner } from '../../modules/site-event/domain/entities/site-event-banner.entity';
 import { SiteEventView } from '../../modules/site-event/domain/entities/site-event-view.entity';
+import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
 
 export const ALL_ENTITIES = [
   User,
@@ -122,4 +123,5 @@ export const ALL_ENTITIES = [
   SiteEvent,
   SiteEventBanner,
   SiteEventView,
+  SiteReviewCommentImage,
 ];
