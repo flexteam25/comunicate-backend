@@ -41,12 +41,6 @@ export class CreatePostUseCase {
       throw badRequest(MessageKeys.CANNOT_CREATE_POST_WITH_SPECIAL_KEY_CATEGORY);
     }
 
-    // Check for duplicate title
-    const existingPost = await this.postRepository.findByTitle(command.title);
-    if (existingPost) {
-      throw badRequest(MessageKeys.POST_TITLE_ALREADY_EXISTS);
-    }
-
     // Validate file size (20MB max)
     const maxSize = 20 * 1024 * 1024; // 20MB
     if (command.thumbnail && command.thumbnail.size > maxSize) {
