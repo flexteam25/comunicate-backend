@@ -11,6 +11,8 @@ import {
   Put,
   Query,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/admin-permission.guard';
@@ -56,6 +58,13 @@ import { UnblockGlobalIpDto } from '../dto/unblock-global-ip.dto';
 import { ListUserIpsQueryDto } from '../dto/list-user-ips-query.dto';
 import { BlockedIp } from '../../../domain/entities/blocked-ip.entity';
 import { TriggerIpSyncUseCase } from '../../../application/handlers/admin/trigger-ip-sync.use-case';
+import { AdminGetUserAttendanceUseCase } from '../../../../attendance/application/handlers/admin/get-user-attendance.use-case';
+import { AdminGetUserAttendanceQueryDto } from '../../../../attendance/interface/rest/dto/admin-get-user-attendance-query.dto';
+import {
+  AdminUserAttendanceResponse,
+  AdminAttendanceResponse,
+} from '../../../../attendance/interface/rest/dto/admin-attendance-response.dto';
+import { Attendance } from '../../../../attendance/domain/entities/attendance.entity';
 
 @Controller('admin/users')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -91,6 +100,7 @@ export class AdminUserController {
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
     private readonly triggerIpSyncUseCase: TriggerIpSyncUseCase,
+    private readonly adminGetUserAttendanceUseCase: AdminGetUserAttendanceUseCase,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
     this.adminFrontendUrl =
@@ -1055,5 +1065,46 @@ export class AdminUserController {
       },
       MessageKeys.IP_SYNC_TRIGGERED_SUCCESS,
     );
+  }
+
+  @Get(':id/attendance')
+  @RequirePermission('attendances.read')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async getUserAttendance(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Query() query: AdminGetUserAttendanceQueryDto,
+  ): Promise<ApiResponse<AdminUserAttendanceResponse>> {
+    const result = await this.adminGetUserAttendanceUseCase.execute({
+      userId,
+      startDate: query.startDate ? new Date(query.startDate) : undefined,
+      endDate: query.endDate ? new Date(query.endDate) : undefined,
+      cursor: query.cursor,
+      limit: query.limit || 20,
+    });
+
+    const mappedData: AdminAttendanceResponse[] = result.data.map((attendance) => ({
+      id: attendance.id,
+      userId: attendance.userId,
+      displayName: attendance.user?.displayName || undefined,
+      avatarUrl: attendance.user?.avatarUrl
+        ? buildFullUrl(this.apiServiceUrl, attendance.user.avatarUrl)
+        : undefined,
+      message: attendance.message || undefined,
+      attendanceDate: attendance.attendanceDate,
+      attendanceTime: attendance.createdAt,
+      currentStreak: (attendance as Attendance & { currentStreak?: number })
+        .currentStreak,
+      totalAttendanceDays: (attendance as Attendance & { totalAttendanceDays?: number })
+        .totalAttendanceDays,
+    }));
+
+    const response: AdminUserAttendanceResponse = {
+      data: mappedData,
+      nextCursor: result.nextCursor,
+      hasMore: result.hasMore,
+    };
+
+    return ApiResponseUtil.success(response);
   }
 }

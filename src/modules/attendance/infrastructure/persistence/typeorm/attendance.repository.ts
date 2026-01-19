@@ -98,4 +98,137 @@ export class AttendanceRepository implements IAttendanceRepository {
       },
     });
   }
+
+  async findByDateRange(
+    startDate: Date,
+    endDate: Date,
+    cursor?: string,
+    limit = 20,
+    search?: string,
+  ): Promise<{
+    data: Attendance[];
+    nextCursor: string | null;
+    hasMore: boolean;
+  }> {
+    const realLimit = limit > 50 ? 50 : limit;
+    const queryBuilder = this.repository
+      .createQueryBuilder('attendance')
+      .leftJoinAndSelect('attendance.user', 'user')
+      .where('attendance.attendance_date >= :startDate', { startDate })
+      .andWhere('attendance.attendance_date <= :endDate', { endDate })
+      .orderBy('attendance.attendanceDate', 'DESC')
+      .addOrderBy('attendance.createdAt', 'DESC')
+      .addOrderBy('attendance.id', 'DESC');
+
+    // Search by user displayName (only if user exists and is not deleted)
+    if (search) {
+      queryBuilder.andWhere(
+        '(user.deletedAt IS NULL AND LOWER(user.displayName) LIKE LOWER(:search))',
+        {
+          search: `%${search}%`,
+        },
+      );
+    }
+
+    if (cursor) {
+      try {
+        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
+        if (sortValue) {
+          const sortCreatedAt = new Date(sortValue);
+          // For date range queries, we need to check both attendance_date and created_at
+          // Since we sort by attendance_date DESC first, then createdAt DESC
+          // We'll use a simpler approach: compare by createdAt (which is in sortValue)
+          queryBuilder.andWhere(
+            '(attendance.createdAt < :sortCreatedAt OR (attendance.createdAt = :sortCreatedAt AND attendance.id < :cursorId))',
+            { sortCreatedAt, cursorId: id },
+          );
+        } else {
+          queryBuilder.andWhere('attendance.id < :cursorId', { cursorId: id });
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
+    queryBuilder.take(realLimit + 1);
+    const rows = await queryBuilder.getMany();
+
+    const hasMore = rows.length > realLimit;
+    const data = rows.slice(0, realLimit);
+
+    let nextCursor: string | null = null;
+    if (hasMore && data.length > 0) {
+      const lastItem = data[data.length - 1];
+      // Use createdAt as sort value (secondary sort after attendanceDate)
+      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt);
+    }
+
+    return {
+      data,
+      nextCursor,
+      hasMore,
+    };
+  }
+
+  async findByUserIdAndDateRange(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    cursor?: string,
+    limit = 20,
+  ): Promise<{
+    data: Attendance[];
+    nextCursor: string | null;
+    hasMore: boolean;
+  }> {
+    const realLimit = limit > 50 ? 50 : limit;
+    const queryBuilder = this.repository
+      .createQueryBuilder('attendance')
+      .leftJoinAndSelect('attendance.user', 'user')
+      .where('attendance.user_id = :userId', { userId })
+      .andWhere('attendance.attendance_date >= :startDate', { startDate })
+      .andWhere('attendance.attendance_date <= :endDate', { endDate })
+      .orderBy('attendance.attendanceDate', 'DESC')
+      .addOrderBy('attendance.createdAt', 'DESC')
+      .addOrderBy('attendance.id', 'DESC');
+
+    if (cursor) {
+      try {
+        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
+        if (sortValue) {
+          const sortCreatedAt = new Date(sortValue);
+          // For date range queries, we need to check both attendance_date and created_at
+          // Since we sort by attendance_date DESC first, then createdAt DESC
+          // We'll use a simpler approach: compare by createdAt (which is in sortValue)
+          queryBuilder.andWhere(
+            '(attendance.createdAt < :sortCreatedAt OR (attendance.createdAt = :sortCreatedAt AND attendance.id < :cursorId))',
+            { sortCreatedAt, cursorId: id },
+          );
+        } else {
+          queryBuilder.andWhere('attendance.id < :cursorId', { cursorId: id });
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
+    queryBuilder.take(realLimit + 1);
+    const rows = await queryBuilder.getMany();
+
+    const hasMore = rows.length > realLimit;
+    const data = rows.slice(0, realLimit);
+
+    let nextCursor: string | null = null;
+    if (hasMore && data.length > 0) {
+      const lastItem = data[data.length - 1];
+      // Use createdAt as sort value (secondary sort after attendanceDate)
+      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt);
+    }
+
+    return {
+      data,
+      nextCursor,
+      hasMore,
+    };
+  }
 }

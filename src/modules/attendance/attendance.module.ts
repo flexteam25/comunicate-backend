@@ -1,44 +1,29 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Attendance } from './domain/entities/attendance.entity';
-import { AttendanceStatistic } from './domain/entities/attendance-statistic.entity';
-import { AttendanceRepository } from './infrastructure/persistence/typeorm/attendance.repository';
-import { AttendanceStatisticRepository } from './infrastructure/persistence/typeorm/attendance-statistic.repository';
+import { AttendancePersistenceModule } from './attendance-persistence.module';
 import { CreateAttendanceUseCase } from './application/handlers/create-attendance.use-case';
 import { ListAttendancesUseCase } from './application/handlers/list-attendances.use-case';
 import { CalculateAttendanceStatisticsUseCase } from './application/handlers/calculate-attendance-statistics.use-case';
 import { AttendanceController } from './interface/rest/attendance.controller';
+import { AdminAttendanceController } from './interface/rest/admin/attendance.controller';
+import { AdminListAttendancesUseCase } from './application/handlers/admin/list-attendances.use-case';
 import { UserModule } from '../user/user.module';
 import { AuthPersistenceModule } from '../auth/auth-persistence.module';
+import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Attendance, AttendanceStatistic]),
+    AttendancePersistenceModule,
     UserModule, // To access IUserRepository
     AuthPersistenceModule,
+    AdminGuardsModule,
   ],
-  controllers: [AttendanceController],
+  controllers: [AttendanceController, AdminAttendanceController],
   providers: [
-    {
-      provide: 'IAttendanceRepository',
-      useClass: AttendanceRepository,
-    },
-    {
-      provide: 'IAttendanceStatisticRepository',
-      useClass: AttendanceStatisticRepository,
-    },
-    AttendanceRepository,
-    AttendanceStatisticRepository,
     CreateAttendanceUseCase,
     ListAttendancesUseCase,
     CalculateAttendanceStatisticsUseCase,
+    AdminListAttendancesUseCase,
   ],
-  exports: [
-    'IAttendanceRepository',
-    'IAttendanceStatisticRepository',
-    AttendanceRepository,
-    AttendanceStatisticRepository,
-    CalculateAttendanceStatisticsUseCase,
-  ],
+  exports: [AttendancePersistenceModule, CalculateAttendanceStatisticsUseCase],
 })
 export class AttendanceModule {}

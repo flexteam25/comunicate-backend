@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In, Between } from 'typeorm';
 import { AttendanceStatistic } from '../../../domain/entities/attendance-statistic.entity';
 import { IAttendanceStatisticRepository } from '../repositories/attendance-statistic.repository';
 import { CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
@@ -37,6 +37,23 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
       where: {
         userId: In(userIds),
         statisticDate: date,
+      },
+    });
+  }
+
+  async findByUserIdsInDateRange(
+    userIds: string[],
+    startDate: Date,
+    endDate: Date,
+  ): Promise<AttendanceStatistic[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    return this.repository.find({
+      where: {
+        userId: In(userIds),
+        statisticDate: Between(startDate, endDate),
       },
     });
   }
@@ -161,5 +178,30 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
         statisticDate: date,
       },
     });
+  }
+
+  async findByUserIds(userIds: string[]): Promise<AttendanceStatistic[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+    // Get the latest statistic for each user (by statisticDate DESC)
+    // Use DISTINCT ON for PostgreSQL to get the latest record per user
+    return this.repository
+      .createQueryBuilder('stat')
+      .where('stat.userId IN (:...userIds)', { userIds })
+      .distinctOn(['stat.userId'])
+      .orderBy('stat.userId', 'ASC')
+      .addOrderBy('stat.statisticDate', 'DESC')
+      .getMany();
+  }
+
+  async findByUserId(userId: string): Promise<AttendanceStatistic | null> {
+    // Get the latest statistic for the user (by statisticDate DESC)
+    return this.repository
+      .createQueryBuilder('stat')
+      .where('stat.userId = :userId', { userId })
+      .orderBy('stat.statisticDate', 'DESC')
+      .limit(1)
+      .getOne();
   }
 }

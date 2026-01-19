@@ -14,4 +14,26 @@ export interface IAttendanceRepository {
   }>;
   findAllByDate(date: Date): Promise<Attendance[]>; // Get all attendances for a date (for statistics calculation)
   countByDate(date: Date): Promise<number>;
+  findByDateRange(
+    startDate: Date,
+    endDate: Date,
+    cursor?: string,
+    limit?: number,
+    search?: string,
+  ): Promise<{
+    data: Attendance[];
+    nextCursor: string | null;
+    hasMore: boolean;
+  }>;
+  findByUserIdAndDateRange(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    cursor?: string,
+    limit?: number,
+  ): Promise<{
+    data: Attendance[];
+    nextCursor: string | null;
+    hasMore: boolean;
+  }>;
 }

@@ -63,6 +63,8 @@ import { UserIpRepository } from './infrastructure/persistence/repositories/user
 import { BlockedIpRepository } from './infrastructure/persistence/typeorm/blocked-ip.repository';
 import { RedisModule } from '../../shared/redis/redis.module';
 import { TriggerIpSyncUseCase } from './application/handlers/admin/trigger-ip-sync.use-case';
+import { AttendancePersistenceModule } from '../attendance/attendance-persistence.module';
+import { AdminGetUserAttendanceUseCase } from '../attendance/application/handlers/admin/get-user-attendance.use-case';
 
 @Module({
   imports: [
@@ -93,6 +95,7 @@ import { TriggerIpSyncUseCase } from './application/handlers/admin/trigger-ip-sy
     UserSearchSitePersistenceModule,
     PostPersistenceModule,
     RedisModule,
+    AttendancePersistenceModule,
   ],
   controllers: [
     UserController,
@@ -170,6 +173,7 @@ import { TriggerIpSyncUseCase } from './application/handlers/admin/trigger-ip-sy
     ApproveUserBadgeRequestUseCase,
     RejectUserBadgeRequestUseCase,
     TriggerIpSyncUseCase,
+    AdminGetUserAttendanceUseCase,
     PasswordService,
     TransactionService,
   ],
