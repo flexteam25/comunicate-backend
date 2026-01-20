@@ -109,6 +109,7 @@ export class UserSiteController {
         isActive: sd.isActive,
         isCurrent: sd.isCurrent,
       })),
+      manager: (site.siteManagers || []).some((sm: any) => sm.isActive === true),
       createdAt: site.createdAt,
       updatedAt: site.updatedAt,
       slug: site.slug,

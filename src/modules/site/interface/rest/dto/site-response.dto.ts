@@ -100,6 +100,7 @@ export class SiteResponse {
   allBadges?: SiteBadgeWithActiveResponse[]; // All site badges with active flag
   domains: SiteDomainResponse[];
   managers?: SiteManagerResponse[];
+  manager?: boolean; // true if site has active managers
   createdAt: Date;
   updatedAt: Date;
 }
