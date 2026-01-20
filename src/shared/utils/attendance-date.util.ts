@@ -78,3 +78,26 @@ export function getYesterdayInKST(): Date {
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   return yesterday;
 }
+
+/**
+ * Format a date to KST timezone string (+09:00)
+ * @param date - Date to format (assumed to be in UTC)
+ * @returns Formatted string in format "YYYY-MM-DD HH:mm:ss +09:00"
+ *
+ * Example:
+ * - Input: 2026-01-19 15:22:30 UTC
+ * - Output: "2026-01-20 00:22:30 +09:00"
+ */
+export function formatDateToKST(date: Date): string {
+  // Convert UTC to KST (UTC+9)
+  const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+
+  const year = kstDate.getUTCFullYear();
+  const month = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(kstDate.getUTCDate()).padStart(2, '0');
+  const hours = String(kstDate.getUTCHours()).padStart(2, '0');
+  const minutes = String(kstDate.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(kstDate.getUTCSeconds()).padStart(2, '0');
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} +09:00`;
+}

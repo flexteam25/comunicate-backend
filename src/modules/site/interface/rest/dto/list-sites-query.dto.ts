@@ -1,5 +1,6 @@
 import { IsOptional, IsString, IsUUID, IsInt, Min, Max, IsEnum } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { TetherDepositWithdrawalStatus } from '../../../domain/entities/site.entity';
 
 const emptyToUndefined = ({ value }: { value: unknown }) =>
   value === '' ? undefined : value;
@@ -29,6 +30,13 @@ export class ListSitesQueryDto {
   @IsOptional()
   @IsEnum(['toto', 'casino', 'all'])
   categoryType?: 'toto' | 'casino' | 'all'; // Filter by category type: toto, casino, or all
+
+  @Transform(emptyToUndefined)
+  @IsOptional()
+  @IsEnum(TetherDepositWithdrawalStatus, {
+    message: 'tether must be one of: possible, not_possible, no_info (or empty)',
+  })
+  tether?: TetherDepositWithdrawalStatus; // Filter by tether deposit/withdrawal status
 
   @Transform(emptyToUndefined)
   @IsOptional()

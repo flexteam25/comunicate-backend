@@ -243,6 +243,7 @@ export class AdminSiteController {
         status: query.status,
         search: query.search,
         categoryType: query.categoryType,
+        tether: query.tether,
         filterBy: query.filterBy,
       },
       cursor: query.cursor,

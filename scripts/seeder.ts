@@ -46,6 +46,9 @@ import { SiteReviewImage } from '../src/modules/site-review/domain/entities/site
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { SiteReviewCommentImage } from '../src/modules/site-review/domain/entities/site-review-comment-image.entity';
+import { Attendance } from '../src/modules/attendance/domain/entities/attendance.entity';
+import { AttendanceStatistic } from '../src/modules/attendance/domain/entities/attendance-statistic.entity';
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -124,6 +127,9 @@ function createDataSource(): DataSource {
       PostReaction,
       PostView,
       SiteReviewImage,
+      SiteReviewCommentImage,
+      Attendance,
+      AttendanceStatistic,
     ],
     synchronize: false,
     logging: true,

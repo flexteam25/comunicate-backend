@@ -1,10 +1,11 @@
 export class AttendanceResponse {
-  rankByTime?: number;
+  filterRank?: number; // Rank in the current list (based on filter: today/streak/total)
+  overviewRank?: number; // Rank for today based on total/streak
   userId: string;
   nickname: string;
   avatarUrl?: string;
   message?: string;
-  attendanceTime: Date;
+  attendanceTime: string; // Formatted as "YYYY-MM-DD HH:mm:ss +09:00"
   currentStreak: number;
   totalAttendanceDays: number;
 }

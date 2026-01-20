@@ -1,11 +1,14 @@
 import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { SiteManagerApplicationStatus } from '../../../domain/entities/site-manager-application.entity';
 
 export class ListMyApplicationsQueryDto {
   @IsOptional({ message: 'STATUS_OPTIONAL' })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  )
   @IsEnum(SiteManagerApplicationStatus, {
-    message: 'Status must be one of: pending, approved, rejected',
+    message: 'STATUS_INVALID_ENUM',
   })
   status?: SiteManagerApplicationStatus;
 

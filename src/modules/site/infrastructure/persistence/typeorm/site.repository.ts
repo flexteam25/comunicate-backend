@@ -194,6 +194,12 @@ export class SiteRepository implements ISiteRepository {
         categoryType: filters.categoryType,
       });
     }
+    if (filters?.tether) {
+      // Filter by tether deposit/withdrawal status
+      queryBuilder.andWhere('site.tetherDepositWithdrawalStatus = :tether', {
+        tether: filters.tether,
+      });
+    }
     if (filters?.search) {
       queryBuilder.andWhere(
         '(site.name ILIKE :search OR siteDomains.domain ILIKE :search)',
@@ -211,6 +217,26 @@ export class SiteRepository implements ISiteRepository {
     if (filters?.filterBy) {
       actualSortBy = filters.filterBy;
       actualSortOrder = 'DESC'; // Always DESC for "highest" filters
+    }
+
+    // If sortOrder is not provided, apply default per sort field
+    if (!actualSortOrder) {
+      if (actualSortBy === 'tier') {
+        // Tier: tier.order ASC
+        actualSortOrder = 'ASC';
+      } else if (
+        actualSortBy === 'createdAt' ||
+        actualSortBy === 'reviewCount' ||
+        actualSortBy === 'firstCharge' ||
+        actualSortBy === 'recharge' ||
+        actualSortBy === 'experience'
+      ) {
+        // createdAt, reviewCount, firstCharge, recharge, experience: DESC
+        actualSortOrder = 'DESC';
+      } else {
+        // Fallback: DESC
+        actualSortOrder = 'DESC';
+      }
     }
 
     // Handle tier sorting (sort by tier.order)
@@ -387,8 +413,15 @@ export class SiteRepository implements ISiteRepository {
     }
 
     if (filters?.categoryType && filters.categoryType !== 'all') {
+      // Filter by category type (toto or casino)
       queryBuilder.andWhere('category.type = :categoryType', {
         categoryType: filters.categoryType,
+      });
+    }
+    if (filters?.tether) {
+      // Filter by tether deposit/withdrawal status
+      queryBuilder.andWhere('site.tetherDepositWithdrawalStatus = :tether', {
+        tether: filters.tether,
       });
     }
 

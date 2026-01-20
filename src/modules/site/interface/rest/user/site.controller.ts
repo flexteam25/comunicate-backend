@@ -129,6 +129,7 @@ export class UserSiteController {
         tierId: query.tierId,
         search: query.search,
         categoryType: query.categoryType,
+        tether: query.tether,
         filterBy: query.filterBy,
       },
       cursor: query.cursor,

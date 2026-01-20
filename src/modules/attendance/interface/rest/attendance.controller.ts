@@ -31,6 +31,7 @@ import {
 } from './dto/attendance-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
+import { formatDateToKST } from '../../../../shared/utils/attendance-date.util';
 
 @Controller('api')
 export class AttendanceController {
@@ -56,7 +57,7 @@ export class AttendanceController {
       attendanceDate: string;
       currentStreak: number;
       totalAttendanceDays: number;
-      attendanceRank: number;
+      overviewRank: number;
     }>
   > {
     const result = await this.createAttendanceUseCase.execute({
@@ -72,7 +73,7 @@ export class AttendanceController {
         attendanceDate,
         currentStreak: result.currentStreak,
         totalAttendanceDays: result.totalAttendanceDays,
-        attendanceRank: result.attendanceRank,
+        overviewRank: result.attendanceRank, // attendanceRank is now overviewRank
       },
       MessageKeys.ATTENDANCE_CHECKED_SUCCESS,
     );
@@ -94,14 +95,17 @@ export class AttendanceController {
     });
 
     const mappedData: AttendanceResponse[] = result.data.map((item) => ({
-      rankByTime: item.rankByTime,
+      filterRank: item.filterRank,
+      overviewRank: item.overviewRank,
       userId: item.userId,
       nickname: item.nickname,
       avatarUrl: item.avatarUrl
         ? buildFullUrl(this.apiServiceUrl, item.avatarUrl)
         : undefined,
       message: item.message,
-      attendanceTime: item.attendanceTime,
+      attendanceTime: item.attendanceTime
+        ? formatDateToKST(item.attendanceTime)
+        : formatDateToKST(new Date()),
       currentStreak: item.currentStreak,
       totalAttendanceDays: item.totalAttendanceDays,
     }));

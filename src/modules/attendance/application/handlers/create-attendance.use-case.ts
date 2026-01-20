@@ -80,23 +80,58 @@ export class CreateAttendanceUseCase {
           currentStreak = 1;
         }
 
-        // Count existing statistics for today (within transaction) to calculate accurate rank
-        const existingStatsCount = await manager
-          .getRepository(AttendanceStatistic)
-          .count({
-            where: {
-              statisticDate: today,
-            },
-          });
-        const attendanceRank = existingStatsCount + 1; // +1 because this user is the next one
-
-        // Create attendance
+        // Create attendance first to get createdAt
         const attendance = manager.getRepository(Attendance).create({
           userId: command.userId,
           message: command.message?.trim() || undefined,
           attendanceDate: today,
         });
         const savedAttendance = await manager.getRepository(Attendance).save(attendance);
+
+        // Calculate rank based on total and streak for today
+        // Priority: total DESC, streak DESC, attendanceTime ASC (earlier = better)
+        const todayStats = await manager.getRepository(AttendanceStatistic).find({
+          where: {
+            statisticDate: today,
+          },
+          order: {
+            totalAttendanceDays: 'DESC',
+            currentStreak: 'DESC',
+            attendanceTime: 'ASC',
+          },
+        });
+
+        // Calculate rank: count how many users have better stats
+        // Priority: total DESC, streak DESC, attendanceTime ASC (earlier = better)
+        let attendanceRank = 1;
+        for (const stat of todayStats) {
+          // Compare total first
+          if (stat.totalAttendanceDays > totalAttendanceDays) {
+            attendanceRank++;
+            continue;
+          }
+          if (stat.totalAttendanceDays < totalAttendanceDays) {
+            break; // Since sorted, we can break early
+          }
+          // If total is equal, compare streak
+          if (stat.currentStreak > currentStreak) {
+            attendanceRank++;
+            continue;
+          }
+          if (stat.currentStreak < currentStreak) {
+            break; // Since sorted, we can break early
+          }
+          // If both total and streak are equal, compare attendanceTime (earlier = better)
+          if (
+            stat.attendanceTime &&
+            savedAttendance.createdAt &&
+            stat.attendanceTime < savedAttendance.createdAt
+          ) {
+            attendanceRank++;
+          } else {
+            break; // Since sorted, we can break early
+          }
+        }
 
         // Save statistics immediately
         const statistic = manager.getRepository(AttendanceStatistic).create({
@@ -110,11 +145,45 @@ export class CreateAttendanceUseCase {
         });
         await manager.getRepository(AttendanceStatistic).save(statistic);
 
+        // Recalculate ranks for all users of today (including the new user)
+        // This ensures all ranks are correct after new user joins
+        const allTodayStats = await manager.getRepository(AttendanceStatistic).find({
+          where: {
+            statisticDate: today,
+          },
+          order: {
+            totalAttendanceDays: 'DESC',
+            currentStreak: 'DESC',
+            attendanceTime: 'ASC',
+          },
+        });
+
+        // Update ranks for all users
+        for (let i = 0; i < allTodayStats.length; i++) {
+          const stat = allTodayStats[i];
+          const newRank = i + 1; // 1-based rank
+
+          // Only update if rank changed
+          if (stat.attendanceRank !== newRank) {
+            await manager
+              .getRepository(AttendanceStatistic)
+              .update(stat.id, { attendanceRank: newRank });
+          }
+        }
+
+        // Get the final rank for the new user
+        const finalStat = await manager.getRepository(AttendanceStatistic).findOne({
+          where: {
+            userId: command.userId,
+            statisticDate: today,
+          },
+        });
+
         return {
           attendance: savedAttendance,
           currentStreak,
           totalAttendanceDays,
-          attendanceRank,
+          attendanceRank: finalStat?.attendanceRank || attendanceRank,
         };
       },
     );

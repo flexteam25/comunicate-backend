@@ -1,4 +1,4 @@
-import { Site } from '../../../domain/entities/site.entity';
+import { Site, TetherDepositWithdrawalStatus } from '../../../domain/entities/site.entity';
 import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 
 export interface SiteFilters {
@@ -7,6 +7,7 @@ export interface SiteFilters {
   status?: string;
   search?: string;
   categoryType?: 'toto' | 'casino' | 'all'; // Filter by category type: toto, casino, or all
+  tether?: TetherDepositWithdrawalStatus; // Filter by tether deposit/withdrawal status
   filterBy?: 'reviewCount' | 'firstCharge' | 'recharge' | 'experience'; // Filter by specific field
 }
 

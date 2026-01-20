@@ -17,7 +17,8 @@ export interface ListAttendancesCommand {
 }
 
 export interface AttendanceListItem {
-  rankByTime?: number;
+  filterRank?: number; // Rank in the current list (based on filter)
+  overviewRank?: number; // Rank for today based on total/streak
   userId: string;
   nickname: string;
   avatarUrl?: string;
@@ -59,8 +60,14 @@ export class ListAttendancesUseCase {
 
     // Get today's date in KST (+9 timezone)
     const today = getTodayInKST();
+    // Default limit: 20 for 'today', 30 for 'streak'/'total' ranking
+    const defaultLimit = command.filter === 'today' ? 20 : 30;
     const realLimit =
-      command.limit && command.limit > 0 ? (command.limit > 50 ? 50 : command.limit) : 20;
+      command.limit && command.limit > 0
+        ? command.limit > 50
+          ? 50
+          : command.limit
+        : defaultLimit;
 
     if (command.filter === 'today') {
       // Query from attendances table
@@ -86,20 +93,28 @@ export class ListAttendancesUseCase {
       }
 
       // Map to AttendanceListItem
-      // Use attendanceRank from statistics (rank by time when checking in)
-      const data: AttendanceListItem[] = result.data.map((attendance) => {
-        const stat = statisticsMap.get(attendance.userId);
-        return {
-          rankByTime: stat?.attendanceRank || undefined,
-          userId: attendance.userId,
-          nickname: attendance.user?.displayName || '',
-          avatarUrl: attendance.user?.avatarUrl,
-          message: attendance.message,
-          attendanceTime: attendance.createdAt,
-          currentStreak: stat?.currentStreak || 0,
-          totalAttendanceDays: stat?.totalAttendanceDays || 0,
-        };
-      });
+      // Sort by overviewRank (based on total/streak) for today filter
+      const data: AttendanceListItem[] = result.data
+        .map((attendance) => {
+          const stat = statisticsMap.get(attendance.userId);
+          return {
+            filterRank: stat?.attendanceRank || undefined, // Rank in list (same as overviewRank for today filter)
+            overviewRank: stat?.attendanceRank || undefined, // Rank for today based on total/streak
+            userId: attendance.userId,
+            nickname: attendance.user?.displayName || '',
+            avatarUrl: attendance.user?.avatarUrl,
+            message: attendance.message,
+            attendanceTime: attendance.createdAt,
+            currentStreak: stat?.currentStreak || 0,
+            totalAttendanceDays: stat?.totalAttendanceDays || 0,
+          };
+        })
+        // Sort by overviewRank ASC (better rank = lower number)
+        .sort((a, b) => {
+          const rankA = a.overviewRank ?? Number.MAX_SAFE_INTEGER;
+          const rankB = b.overviewRank ?? Number.MAX_SAFE_INTEGER;
+          return rankA - rankB;
+        });
 
       // Determine current user's attendance status for today (independent of pagination)
       let attended: boolean | null = null;
@@ -119,20 +134,19 @@ export class ListAttendancesUseCase {
         hasMore: result.hasMore,
       };
     } else {
-      // Query from attendance_statistics table
+      // Query latest statistics for all users (ranking)
       const sortBy = command.filter === 'streak' ? 'streak' : 'total';
-      const result = await this.statisticRepository.findByDate(
-        today,
+      const statistics = await this.statisticRepository.findLatestStatisticsByRanking(
         sortBy,
-        command.cursor,
         realLimit,
       );
 
       // Map to AttendanceListItem
-      // Use attendanceRank from statistics (rank by time when checking in)
-      const data: AttendanceListItem[] = result.data.map((stat) => {
+      // Add rank based on position in sorted list
+      const data: AttendanceListItem[] = statistics.map((stat, index) => {
         return {
-          rankByTime: stat.attendanceRank || undefined,
+          filterRank: index + 1, // Rank in the ranking list (1-based)
+          overviewRank: stat.attendanceRank || undefined, // Rank for today (if available)
           userId: stat.userId,
           nickname: stat.user?.displayName || '',
           avatarUrl: stat.user?.avatarUrl,
@@ -145,8 +159,8 @@ export class ListAttendancesUseCase {
 
       return {
         data,
-        nextCursor: result.nextCursor,
-        hasMore: result.hasMore,
+        nextCursor: null, // Ranking doesn't need pagination (fixed top 30)
+        hasMore: false,
         attended: null,
       };
     }

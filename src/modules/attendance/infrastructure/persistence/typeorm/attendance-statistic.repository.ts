@@ -204,4 +204,74 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
       .limit(1)
       .getOne();
   }
+
+  async findLatestStatisticsByRanking(
+    sortBy: 'streak' | 'total',
+    limit = 30,
+  ): Promise<AttendanceStatistic[]> {
+    const realLimit = limit > 50 ? 50 : limit;
+
+    // Use raw SQL with DISTINCT ON to get latest statistic for each user
+    const rawResults = await this.repository.query(
+      `
+      SELECT DISTINCT ON (stat.user_id) 
+        stat.id
+      FROM attendance_statistics stat
+      INNER JOIN users u ON stat.user_id = u.id
+      WHERE u.deleted_at IS NULL
+        AND (stat.current_streak > 0 OR stat.total_attendance_days > 0)
+      ORDER BY stat.user_id, stat.statistic_date DESC
+    `,
+    );
+
+    if (rawResults.length === 0) {
+      return [];
+    }
+
+    const statisticIds = rawResults.map((r: { id: string }) => r.id);
+
+    // Load all statistics with user relation
+    const allStatistics = await this.repository.find({
+      where: { id: In(statisticIds) },
+      relations: ['user'],
+    });
+
+    // Create a map for quick lookup
+    const statisticsMap = new Map(
+      allStatistics.map((stat) => [stat.id, stat]),
+    );
+
+    // Sort by ranking criteria
+    const sortedStatistics = rawResults
+      .map((r: { id: string }) => statisticsMap.get(r.id))
+      .filter((stat): stat is AttendanceStatistic => stat !== undefined)
+      .sort((a, b) => {
+        if (sortBy === 'streak') {
+          if (b.currentStreak !== a.currentStreak) {
+            return b.currentStreak - a.currentStreak;
+          }
+          if (b.totalAttendanceDays !== a.totalAttendanceDays) {
+            return b.totalAttendanceDays - a.totalAttendanceDays;
+          }
+          return (
+            new Date(b.statisticDate).getTime() -
+            new Date(a.statisticDate).getTime()
+          );
+        } else {
+          if (b.totalAttendanceDays !== a.totalAttendanceDays) {
+            return b.totalAttendanceDays - a.totalAttendanceDays;
+          }
+          if (b.currentStreak !== a.currentStreak) {
+            return b.currentStreak - a.currentStreak;
+          }
+          return (
+            new Date(b.statisticDate).getTime() -
+            new Date(a.statisticDate).getTime()
+          );
+        }
+      });
+
+    // Take only the limit
+    return sortedStatistics.slice(0, realLimit);
+  }
 }
