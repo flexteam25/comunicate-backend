@@ -28,23 +28,22 @@ export class ListSitesQueryDto {
 
   @Transform(emptyToUndefined)
   @IsOptional()
-  @IsEnum(['toto', 'casino', 'all'])
+  @IsEnum(['toto', 'casino', 'all'], { message: 'CATEGORYTYPE_INVALID_ENUM' })
   categoryType?: 'toto' | 'casino' | 'all'; // Filter by category type: toto, casino, or all
 
   @Transform(emptyToUndefined)
   @IsOptional()
   @IsEnum(TetherDepositWithdrawalStatus, {
-    message: 'tether must be one of: possible, not_possible, no_info (or empty)',
+    message: 'TETHERDEPOSITWITHDRAWALSTATUS_INVALID_ENUM',
   })
   tether?: TetherDepositWithdrawalStatus; // Filter by tether deposit/withdrawal status
 
   @Transform(emptyToUndefined)
   @IsOptional()
-  @IsEnum(['reviewCount', 'firstCharge', 'recharge', 'experience'], {
-    message:
-      'filterBy must be one of: reviewCount, firstCharge, recharge, experience (or empty)',
+  @IsEnum(['reviewCount', 'firstCharge', 'recharge', 'experience', 'tether'], {
+    message: 'FILTERBY_INVALID_ENUM',
   })
-  filterBy?: 'reviewCount' | 'firstCharge' | 'recharge' | 'experience'; // Filter by specific field (highest)
+  filterBy?: 'reviewCount' | 'firstCharge' | 'recharge' | 'experience' | 'tether'; // Filter by specific field (highest)
 
   @Transform(emptyToUndefined)
   @IsOptional({ message: 'CURSOR_OPTIONAL' })
@@ -61,7 +60,10 @@ export class ListSitesQueryDto {
 
   @Transform(emptyToUndefined)
   @IsOptional()
-  @IsEnum(['tier', 'createdAt', 'reviewCount', 'firstCharge', 'recharge', 'experience'])
+  @IsEnum(
+    ['tier', 'createdAt', 'reviewCount', 'firstCharge', 'recharge', 'experience'],
+    { message: 'SORTBY_INVALID_ENUM' },
+  )
   sortBy?:
     | 'tier'
     | 'createdAt'
@@ -71,6 +73,6 @@ export class ListSitesQueryDto {
     | 'experience'; // Sort by tier or newest
 
   @IsOptional()
-  @IsEnum(['ASC', 'DESC'])
+  @IsEnum(['ASC', 'DESC'], { message: 'SORTORDER_INVALID_ENUM' })
   sortOrder?: 'ASC' | 'DESC';
 }

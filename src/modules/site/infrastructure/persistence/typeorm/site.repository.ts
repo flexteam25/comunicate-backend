@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Site } from '../../../domain/entities/site.entity';
+import { Site, TetherDepositWithdrawalStatus } from '../../../domain/entities/site.entity';
 import { ISiteRepository, SiteFilters } from '../repositories/site.repository';
 import {
   CursorPaginationResult,
@@ -271,6 +271,11 @@ export class SiteRepository implements ISiteRepository {
         queryBuilder.orderBy('tier.order', 'ASC');
       }
       queryBuilder.addOrderBy('site.id', actualSortOrder);
+    } else if (actualSortBy === 'tether') {
+      // Filter by tether deposit/withdrawal status
+      queryBuilder.andWhere('site.tetherDepositWithdrawalStatus = :tether', {
+        tether: TetherDepositWithdrawalStatus.POSSIBLE,
+      });
     } else {
       // Apply cursor pagination
       if (cursor) {

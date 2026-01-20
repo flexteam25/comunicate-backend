@@ -8,7 +8,7 @@ export interface SiteFilters {
   search?: string;
   categoryType?: 'toto' | 'casino' | 'all'; // Filter by category type: toto, casino, or all
   tether?: TetherDepositWithdrawalStatus; // Filter by tether deposit/withdrawal status
-  filterBy?: 'reviewCount' | 'firstCharge' | 'recharge' | 'experience'; // Filter by specific field
+  filterBy?: 'reviewCount' | 'firstCharge' | 'recharge' | 'experience' | 'tether'; // Filter by specific field
 }
 
 export interface ISiteRepository {
