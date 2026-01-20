@@ -128,7 +128,7 @@ export class SiteRepository implements ISiteRepository {
     cursor?: string,
     limit: number = 20,
     sortBy: string = 'createdAt',
-    sortOrder: 'ASC' | 'DESC' = 'DESC',
+    sortOrder?: 'ASC' | 'DESC',
   ): Promise<CursorPaginationResult<Site>> {
     const queryBuilder = this.repository
       .createQueryBuilder('site')

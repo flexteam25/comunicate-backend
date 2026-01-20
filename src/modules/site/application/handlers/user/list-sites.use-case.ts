@@ -58,7 +58,7 @@ export class ListSitesUseCase {
       command.cursor,
       command.limit ? (Number(command.limit) < 50 ? Number(command.limit) : 50) : 20,
       command.sortBy || 'createdAt',
-      command.sortOrder || 'DESC',
+      command.sortOrder,
     );
   }
 }
