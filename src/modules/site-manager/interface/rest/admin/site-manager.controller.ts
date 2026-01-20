@@ -46,6 +46,9 @@ export class AdminSiteManagerController {
       id: app.id,
       siteId: app.siteId,
       siteName: app.site?.name || null,
+      slug: app.site?.slug || null,
+      siteAvatarUrl:
+        buildFullUrl(this.apiServiceUrl, app.site?.logoUrl || null) || null,
       userId: app.userId,
       userName: app.user?.displayName || null,
       userAvatarUrl:
