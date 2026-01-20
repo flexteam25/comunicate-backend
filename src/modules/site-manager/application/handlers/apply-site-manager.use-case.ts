@@ -14,7 +14,10 @@ import {
 export interface ApplySiteManagerCommand {
   userId: string;
   siteId: string;
-  message: string;
+  domain: string;
+  accountId: string;
+  accountPassword: string;
+  message?: string;
 }
 
 @Injectable()
@@ -68,6 +71,9 @@ export class ApplySiteManagerUseCase {
     const application = await this.applicationRepository.create({
       siteId: command.siteId,
       userId: command.userId,
+      domain: command.domain,
+      accountId: command.accountId,
+      accountPassword: command.accountPassword,
       message: command.message,
       status: SiteManagerApplicationStatus.PENDING,
     });

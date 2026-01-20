@@ -50,6 +50,9 @@ export class AdminSiteManagerController {
       userName: app.user?.displayName || null,
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, app.user?.avatarUrl || null) || null,
+      domain: app.domain || null,
+      accountId: app.accountId || null,
+      accountPassword: app.accountPassword || null,
       message: app.message || null,
       status: app.status,
       adminId: app.adminId || null,

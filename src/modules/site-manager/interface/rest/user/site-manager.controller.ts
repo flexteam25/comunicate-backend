@@ -57,6 +57,9 @@ export class SiteManagerController {
       userName: app.user?.displayName || null,
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, app.user?.avatarUrl || null) || null,
+      domain: app.domain || null,
+      accountId: app.accountId || null,
+      accountPassword: app.accountPassword || null,
       message: app.message || null,
       status: app.status,
       adminId: app.adminId || null,
@@ -147,6 +150,9 @@ export class SiteManagerController {
     const application = await this.applySiteManagerUseCase.execute({
       userId: user.userId,
       siteId,
+      domain: dto.domain,
+      accountId: dto.accountId,
+      accountPassword: dto.accountPassword,
       message: dto.message,
     });
 
@@ -239,6 +245,9 @@ export class ManagerApplicationController {
       userName: app.user?.displayName || null,
       userAvatarUrl:
         buildFullUrl(this.apiServiceUrl, app.user?.avatarUrl || null) || null,
+      domain: app.domain || null,
+      accountId: app.accountId || null,
+      accountPassword: app.accountPassword || null,
       message: app.message || null,
       status: app.status,
       adminId: app.adminId || null,

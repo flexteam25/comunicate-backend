@@ -33,6 +33,15 @@ export class SiteManagerApplication {
   @Column({ name: 'user_id', type: 'uuid' })
   userId: string;
 
+  @Column({ type: 'varchar', length: 255 })
+  domain: string;
+
+  @Column({ name: 'account_id', type: 'varchar', length: 255 })
+  accountId: string;
+
+  @Column({ name: 'account_password', type: 'varchar', length: 255 })
+  accountPassword: string;
+
   @Column({ type: 'text', nullable: true })
   message?: string;
 
