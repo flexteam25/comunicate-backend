@@ -16,9 +16,17 @@ export class CursorPaginationUtil {
    * Encode cursor from entity (using id and sort field)
    */
   static encodeCursor(id: string, sortValue?: string | number | Date): string {
+    let normalizedSortValue: string | undefined;
+    if (sortValue instanceof Date) {
+      // Always use ISO string for dates to keep them in UTC and PostgreSQL-friendly
+      normalizedSortValue = sortValue.toISOString();
+    } else if (sortValue !== undefined && sortValue !== null) {
+      normalizedSortValue = String(sortValue);
+    }
+
     const cursorData = {
       id,
-      sortValue: sortValue ? String(sortValue) : undefined,
+      sortValue: normalizedSortValue,
     };
     return Buffer.from(JSON.stringify(cursorData)).toString('base64');
   }
@@ -29,8 +37,9 @@ export class CursorPaginationUtil {
   static decodeCursor(cursor: string): { id: string; sortValue?: string } {
     try {
       const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-      return JSON.parse(decoded);
-    } catch (error) {
+      const parsed = JSON.parse(decoded) as { id: string; sortValue?: string };
+      return parsed;
+    } catch {
       throw new Error('Invalid cursor');
     }
   }

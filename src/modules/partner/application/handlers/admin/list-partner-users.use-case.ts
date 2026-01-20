@@ -77,7 +77,9 @@ export class ListPartnerUsersUseCase {
       const fieldValue = lastItem.createdAt;
       let sortValue: string | number | Date | null = null;
       if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue;
+        // Use ISO string to ensure PostgreSQL can parse the timestamp correctly
+        sortValue =
+          fieldValue instanceof Date ? fieldValue.toISOString() : String(fieldValue);
       }
       nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
     }
