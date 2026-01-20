@@ -6,6 +6,8 @@ import {
   PartnerRequestStatus,
 } from '../../../domain/entities/partner-request.entity';
 import { IPartnerRequestRepository } from '../repositories/partner-request.repository';
+import { UserRole } from '../../../../user/domain/entities/user-role.entity';
+import { Role } from '../../../../user/domain/entities/role.entity';
 import {
   CursorPaginationResult,
   CursorPaginationUtil,
@@ -60,7 +62,14 @@ export class PartnerRequestRepository implements IPartnerRequestRepository {
       .createQueryBuilder('partner_request')
       .leftJoinAndSelect('partner_request.user', 'user')
       .leftJoinAndSelect('partner_request.admin', 'admin')
-      .where('partner_request.deletedAt IS NULL');
+      // Join current user role to filter out users who are currently partners
+      .leftJoin(UserRole, 'user_role', 'user_role.userId = partner_request.userId')
+      .leftJoin(Role, 'role', 'role.id = user_role.roleId AND role.deletedAt IS NULL')
+      .where('partner_request.deletedAt IS NULL')
+      // Exclude requests where the user currently has the "partner" role
+      .andWhere('(role.name IS NULL OR role.name != :partnerRole)', {
+        partnerRole: 'partner',
+      });
 
     if (filters?.status) {
       queryBuilder.andWhere('partner_request.status = :status', {
