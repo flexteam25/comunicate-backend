@@ -7,11 +7,16 @@ import {
 } from '../../../../point/domain/entities/point-transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { notFound, badRequest, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import { UserBadge } from '../../../domain/entities/user-badge.entity';
+import {
+  notFound,
+  badRequest,
+  MessageKeys,
+} from '../../../../../shared/exceptions/exception-helpers';
 
 export interface RemoveBadgeCommand {
   userId: string;
-  badgeId: string;
+  badgeId: string | string[];
 }
 
 @Injectable()
@@ -26,54 +31,79 @@ export class RemoveBadgeUseCase {
   ) {}
 
   async execute(command: RemoveBadgeCommand): Promise<void> {
-    // Check if user exists
-    const user = await this.userRepository.findById(command.userId);
+    const badgeIdsInput = Array.isArray(command.badgeId)
+      ? command.badgeId
+      : [command.badgeId];
+    const badgeIds = Array.from(new Set(badgeIdsInput));
+
+    if (badgeIds.length === 0) {
+      throw badRequest(MessageKeys.BADGEID_REQUIRED || 'BADGEID_REQUIRED');
+    }
+    if (badgeIds.length > 20) {
+      throw badRequest(MessageKeys.BADGEID_TOO_MANY || 'BADGEID_TOO_MANY');
+    }
+
+    // Check if user exists (with profile for points)
+    const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user) {
       throw notFound(MessageKeys.USER_NOT_FOUND);
     }
 
-    // Check if badge is assigned and load full userBadge with badge
-    const userBadge = await this.userBadgeRepository.findByUserAndBadge(
-      command.userId,
-      command.badgeId,
-    );
-    if (!userBadge) {
-      throw badRequest(MessageKeys.BADGE_NOT_ASSIGNED_TO_USER);
+    // Load all user badges for given badgeIds and ensure they exist
+    const userBadges: UserBadge[] = [];
+    for (const badgeId of badgeIds) {
+      const userBadge = await this.userBadgeRepository.findByUserAndBadge(
+        command.userId,
+        badgeId,
+      );
+      if (!userBadge) {
+        throw badRequest(MessageKeys.BADGE_NOT_ASSIGNED_TO_USER, { badgeId });
+      }
+      userBadges.push(userBadge);
     }
 
-    // Always handle point deduction if badge has point
-    if (
-      userBadge.badge &&
-      typeof userBadge.badge.point === 'number' &&
-      userBadge.badge.point > 0
-    ) {
-      const badgePoint = userBadge.badge.point;
-        const userWithProfile = await this.userRepository.findById(command.userId, [
-          'userProfile',
-        ]);
-        if (userWithProfile?.userProfile) {
-          const currentPoints = userWithProfile.userProfile.points ?? 0;
-          const newPoints = Math.max(0, currentPoints - badgePoint);
-        const pointsDeducted = currentPoints - newPoints; // Amount actually deducted
+    // Handle point deduction for all badges (if user has profile & points)
+    if (user.userProfile) {
+      let currentPoints = user.userProfile.points ?? 0;
 
-          userWithProfile.userProfile.points = newPoints;
-          await this.userRepository.save(userWithProfile);
+      for (const userBadge of userBadges) {
+        if (
+          userBadge.badge &&
+          typeof userBadge.badge.point === 'number' &&
+          userBadge.badge.point > 0
+        ) {
+          const badgePoint = userBadge.badge.point;
+          const previousPoints = currentPoints;
+          const newPoints = Math.max(0, previousPoints - badgePoint);
+          const pointsDeducted = previousPoints - newPoints; // Amount actually deducted
+
+          currentPoints = newPoints;
 
           const transaction = this.pointTransactionRepository.create({
             userId: command.userId,
             type: PointTransactionType.SPEND,
-          amount: -pointsDeducted, // Negative for deduction
+            amount: -pointsDeducted, // Negative for deduction
             balanceAfter: newPoints,
-          category: 'badge_removal',
-          referenceType: 'user_badge',
-          referenceId: userBadge.id,
-          description: `Badge removed: ${userBadge.badge.name} (Badge ID: ${command.badgeId}, User Badge ID: ${userBadge.id}). Badge point value: ${badgePoint}, Previous points: ${currentPoints}, Points deducted: ${pointsDeducted}, Remaining points: ${newPoints}${currentPoints < badgePoint ? ' (insufficient points, deducted to minimum 0)' : ''}`,
+            category: 'badge_removal',
+            referenceType: 'user_badge',
+            referenceId: userBadge.id,
+            description: `Badge removed: ${userBadge.badge.name} (Badge ID: ${userBadge.badgeId}, User Badge ID: ${userBadge.id}). Badge point value: ${badgePoint}, Previous points: ${previousPoints}, Points deducted: ${pointsDeducted}, Remaining points: ${newPoints}${
+              previousPoints < badgePoint
+                ? ' (insufficient points, deducted to minimum 0)'
+                : ''
+            }`,
           });
           await this.pointTransactionRepository.save(transaction);
+        }
       }
+
+      user.userProfile.points = currentPoints;
+      await this.userRepository.save(user);
     }
 
-    // Remove badge
-    await this.userBadgeRepository.removeBadge(command.userId, command.badgeId);
+    // Remove badges
+    for (const badgeId of badgeIds) {
+      await this.userBadgeRepository.removeBadge(command.userId, badgeId);
+    }
   }
 }

@@ -41,6 +41,8 @@
   "BADGE_ALREADY_DELETED": "배지가 이미 삭제되었습니다",
   "BADGE_ASSIGNED_SUCCESS": "배지 할당 성공",
   "BADGE_DELETED_SUCCESS": "배지 삭제 성공",
+  "BADGEID_TOO_MANY": "배지가 너무 많습니다",
+  "BADGEID_REQUIRED": "배지가 필요합니다",
   "USER_IP_BLOCKED_SUCCESS": "사용자 IP 차단 성공",
   "USER_IP_UNBLOCKED_SUCCESS": "사용자 IP 차단 해제 성공",
   "GLOBAL_IP_BLOCKED_SUCCESS": "전역 IP 차단 성공",

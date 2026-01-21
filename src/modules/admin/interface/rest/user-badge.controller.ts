@@ -29,12 +29,12 @@ export class AdminUserBadgeController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission('user.badge.assign')
-  async assignBadge(@Body() dto: AssignBadgeDto): Promise<ApiResponse<UserBadge>> {
-    const userBadge = await this.assignBadgeUseCase.execute({
+  async assignBadge(@Body() dto: AssignBadgeDto): Promise<ApiResponse<UserBadge[]>> {
+    const userBadges = await this.assignBadgeUseCase.execute({
       userId: dto.userId,
       badgeId: dto.badgeId,
     });
-    return ApiResponseUtil.success(userBadge, MessageKeys.BADGE_ASSIGNED_SUCCESS);
+    return ApiResponseUtil.success(userBadges, MessageKeys.BADGE_ASSIGNED_SUCCESS);
   }
 
   @Delete()

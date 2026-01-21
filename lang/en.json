@@ -41,6 +41,8 @@
   "BADGE_ALREADY_DELETED": "The badge has already been deleted",
   "BADGE_ASSIGNED_SUCCESS": "Badge assigned successfully",
   "BADGE_DELETED_SUCCESS": "Badge deleted successfully",
+  "BADGEID_TOO_MANY": "Too many badge",
+  "BADGEID_REQUIRED": "Badge is required",
   "USER_IP_BLOCKED_SUCCESS": "User IP blocked successfully",
   "USER_IP_UNBLOCKED_SUCCESS": "User IP unblocked successfully",
   "GLOBAL_IP_BLOCKED_SUCCESS": "Global IP blocked successfully",
