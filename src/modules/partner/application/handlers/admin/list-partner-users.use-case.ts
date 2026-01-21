@@ -1,9 +1,10 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../../../user/domain/entities/user.entity';
-import { UserRole } from '../../../../user/domain/entities/user-role.entity';
 import { Role } from '../../../../user/domain/entities/role.entity';
+import { SiteManager } from '../../../../site-manager/domain/entities/site-manager.entity';
+import { Site } from '../../../../site/domain/entities/site.entity';
 import {
   CursorPaginationResult,
   CursorPaginationUtil,
@@ -21,9 +22,15 @@ export class ListPartnerUsersUseCase {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    @InjectRepository(SiteManager)
+    private readonly siteManagerRepository: Repository<SiteManager>,
   ) {}
 
-  async execute(command: ListPartnerUsersCommand): Promise<CursorPaginationResult<User>> {
+  async execute(command: ListPartnerUsersCommand): Promise<
+    CursorPaginationResult<User> & {
+      sitesByUserId: Record<string, Site[]>;
+    }
+  > {
     const realLimit = command.limit && command.limit > 100 ? 100 : command.limit || 20;
 
     // Find partner role
@@ -32,7 +39,7 @@ export class ListPartnerUsersUseCase {
     });
 
     if (!partnerRole) {
-      return { data: [], nextCursor: null, hasMore: false };
+      return { data: [], nextCursor: null, hasMore: false, sitesByUserId: {} };
     }
 
     const queryBuilder = this.userRepository
@@ -71,6 +78,27 @@ export class ListPartnerUsersUseCase {
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
+    // Load managed sites for the returned partner users (batch, no N+1)
+    const sitesByUserId: Record<string, Site[]> = {};
+    const userIds = data.map((u) => u.id);
+    if (userIds.length > 0) {
+      const siteManagers = await this.siteManagerRepository
+        .createQueryBuilder('sm')
+        .innerJoinAndSelect('sm.site', 'site')
+        .leftJoinAndSelect('site.category', 'category')
+        .leftJoinAndSelect('site.tier', 'tier')
+        .where('sm.userId IN (:...userIds)', { userIds })
+        .andWhere('sm.isActive = true')
+        .andWhere('site.deletedAt IS NULL')
+        .getMany();
+
+      for (const sm of siteManagers) {
+        if (!sm.site) continue;
+        if (!sitesByUserId[sm.userId]) sitesByUserId[sm.userId] = [];
+        sitesByUserId[sm.userId].push(sm.site);
+      }
+    }
+
     let nextCursor: string | null = null;
     if (hasMore && data.length > 0) {
       const lastItem = data[data.length - 1];
@@ -84,6 +112,6 @@ export class ListPartnerUsersUseCase {
       nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
     }
 
-    return { data, nextCursor, hasMore };
+    return { data, nextCursor, hasMore, sitesByUserId };
   }
 }

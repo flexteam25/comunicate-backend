@@ -14,6 +14,7 @@ import { RejectPartnerRequestUseCase } from './application/handlers/admin/reject
 import { ListPartnerUsersUseCase } from './application/handlers/admin/list-partner-users.use-case';
 import { PartnerController } from './interface/rest/user/partner.controller';
 import { AdminPartnerController } from './interface/rest/admin/partner.controller';
+import { SiteManagerPersistenceModule } from '../site-manager/site-manager-persistence.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AdminPartnerController } from './interface/rest/admin/partner.controlle
     TypeOrmModule.forFeature([User, Role, UserRole]),
     AdminGuardsModule,
     AuthPersistenceModule,
+    SiteManagerPersistenceModule,
   ],
   providers: [
     GetMyPartnerRequestUseCase,

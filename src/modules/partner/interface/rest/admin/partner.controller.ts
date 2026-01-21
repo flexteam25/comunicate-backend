@@ -169,6 +169,36 @@ export class AdminPartnerController {
         roles: this.mapUserRoles(user),
         bio: user.userProfile?.bio || null,
         phone: user.userProfile?.phone || null,
+        sites: (result.sitesByUserId?.[user.id] || []).map((site) => ({
+          id: site.id,
+          slug: site.slug,
+          name: site.name,
+          category: site.category
+            ? {
+                id: site.category.id,
+                name: site.category.name,
+                nameKo: (site.category as any).nameKo || null,
+                description: site.category.description || null,
+              }
+            : { id: '', name: '' },
+          logoUrl: buildFullUrl(this.apiServiceUrl, site.logoUrl || null) || null,
+          mainImageUrl: buildFullUrl(this.apiServiceUrl, site.mainImageUrl || null) || null,
+          siteImageUrl: buildFullUrl(this.apiServiceUrl, site.siteImageUrl || null) || null,
+          tier: site.tier
+            ? {
+                id: site.tier.id,
+                name: site.tier.name,
+                description: site.tier.description || null,
+                order: site.tier.order,
+                iconUrl: buildFullUrl(this.apiServiceUrl, (site.tier as any).iconUrl || null) || null,
+                iconName: (site.tier as any).iconName || null,
+              }
+            : null,
+          permanentUrl: site.permanentUrl || null,
+          accessibleUrl: site.accessibleUrl || null,
+          status: site.status,
+          tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
+        })),
         createdAt: user.createdAt,
       })),
       nextCursor: result.nextCursor,
