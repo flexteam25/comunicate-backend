@@ -33,14 +33,16 @@ export class ApplySiteManagerUseCase {
 
   async execute(command: ApplySiteManagerCommand): Promise<SiteManagerApplication> {
     // Validate site exists
-    const site = await this.siteRepository.findById(command.siteId);
+    const site = await this.siteRepository.findByIdOrSlug(command.siteId);
     if (!site) {
       throw badRequest(MessageKeys.SITE_NOT_FOUND);
     }
 
+    const siteId = site.id;
+
     // Check if user is already a manager of this site
     const existingManager = await this.siteManagerRepository.findBySiteAndUser(
-      command.siteId,
+      siteId,
       command.userId,
     );
     if (existingManager) {
@@ -49,7 +51,7 @@ export class ApplySiteManagerUseCase {
 
     // Check existing applications
     const existingPending = await this.applicationRepository.findBySiteAndUser(
-      command.siteId,
+      siteId,
       command.userId,
       SiteManagerApplicationStatus.PENDING,
     );
@@ -58,7 +60,7 @@ export class ApplySiteManagerUseCase {
     }
 
     const existingApproved = await this.applicationRepository.findBySiteAndUser(
-      command.siteId,
+      siteId,
       command.userId,
       SiteManagerApplicationStatus.APPROVED,
     );
@@ -69,7 +71,7 @@ export class ApplySiteManagerUseCase {
     // If rejected application exists, create new one (re-apply)
     // Otherwise create new application
     const application = await this.applicationRepository.create({
-      siteId: command.siteId,
+      siteId,
       userId: command.userId,
       domain: command.domain,
       accountId: command.accountId,

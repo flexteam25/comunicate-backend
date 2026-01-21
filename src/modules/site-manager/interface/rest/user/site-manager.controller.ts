@@ -9,7 +9,6 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  ParseUUIDPipe,
   UseInterceptors,
   UploadedFiles,
 } from '@nestjs/common';
@@ -143,7 +142,7 @@ export class SiteManagerController {
   @Post(':siteId/manager-applications')
   @HttpCode(HttpStatus.CREATED)
   async applySiteManager(
-    @Param('siteId', new ParseUUIDPipe()) siteId: string,
+    @Param('siteId') siteId: string,
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: ApplySiteManagerDto,
   ): Promise<ApiResponse<any>> {
@@ -176,6 +175,20 @@ export class SiteManagerController {
     );
   }
 
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  async getManagedSite(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<ApiResponse<SiteResponse>> {
+    const site = await this.getManagedSitesUseCase.getByIdentifier({
+      userId: user.userId,
+      siteIdentifier: id,
+    });
+
+    return ApiResponseUtil.success(this.mapSiteToResponse(site));
+  }
+
   @Put(':siteId')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
@@ -186,7 +199,7 @@ export class SiteManagerController {
     ]),
   )
   async updateManagedSite(
-    @Param('siteId', new ParseUUIDPipe()) siteId: string,
+    @Param('siteId') siteId: string,
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateManagedSiteDto,
     @UploadedFiles()

@@ -51,9 +51,17 @@ export class UpdateManagedSiteUseCase {
   ) {}
 
   async execute(command: UpdateManagedSiteCommand): Promise<Site> {
+    // Resolve site by ID or slug first
+    const site = await this.siteRepository.findByIdOrSlug(command.siteId);
+    if (!site) {
+      throw notFound(MessageKeys.SITE_NOT_FOUND);
+    }
+
+    const siteId = site.id;
+
     // Check if user is manager of this site
     const manager = await this.siteManagerRepository.findBySiteAndUser(
-      command.siteId,
+      siteId,
       command.userId,
     );
 
@@ -61,11 +69,8 @@ export class UpdateManagedSiteUseCase {
       throw forbidden(MessageKeys.NO_PERMISSION_TO_EDIT_SITE);
     }
 
-    // Get existing site first to check for old files and validate
-    const existingSite = await this.siteRepository.findById(command.siteId);
-    if (!existingSite) {
-      throw notFound(MessageKeys.SITE_NOT_FOUND);
-    }
+    // Use resolved site as existing site to check for old files and validate
+    const existingSite = site;
 
     // Partner can only update site if it's already VERIFIED
     // (Partner cannot update UNVERIFIED sites - they need admin approval first)
@@ -128,7 +133,7 @@ export class UpdateManagedSiteUseCase {
     if (command.logo) {
       const result = await this.uploadService.uploadSiteImage(
         command.logo,
-        command.siteId,
+        siteId,
         'logo',
       );
       logoUrl = result.relativePath;
@@ -139,7 +144,7 @@ export class UpdateManagedSiteUseCase {
     if (command.mainImage) {
       const result = await this.uploadService.uploadSiteImage(
         command.mainImage,
-        command.siteId,
+        siteId,
         'main',
       );
       mainImageUrl = result.relativePath;
@@ -150,7 +155,7 @@ export class UpdateManagedSiteUseCase {
     if (command.siteImage) {
       const result = await this.uploadService.uploadSiteImage(
         command.siteImage,
-        command.siteId,
+        siteId,
         'site',
       );
       siteImageUrl = result.relativePath;
@@ -187,7 +192,7 @@ export class UpdateManagedSiteUseCase {
             const duplicate = await siteRepo
               .createQueryBuilder('s')
               .where('LOWER(s.name) = LOWER(:name)', { name: command.name })
-              .andWhere('s.id != :siteId', { siteId: command.siteId })
+              .andWhere('s.id != :siteId', { siteId })
               .andWhere('s.deletedAt IS NULL')
               .getOne();
             if (duplicate) {
@@ -205,7 +210,7 @@ export class UpdateManagedSiteUseCase {
             const duplicateSlug = await siteRepo
               .createQueryBuilder('s')
               .where('s.slug = :slug', { slug: command.slug })
-              .andWhere('s.id != :siteId', { siteId: command.siteId })
+              .andWhere('s.id != :siteId', { siteId })
               .andWhere('s.deletedAt IS NULL')
               .getOne();
             if (duplicateSlug) {
@@ -230,8 +235,12 @@ export class UpdateManagedSiteUseCase {
           if (mainImageUrl !== undefined) updateData.mainImageUrl = mainImageUrl;
           if (siteImageUrl !== undefined) updateData.siteImageUrl = siteImageUrl;
           if (command.tierId !== undefined) updateData.tierId = command.tierId || null;
-          updateData.permanentUrl = command.permanentUrl;
-          updateData.accessibleUrl = command.accessibleUrl;
+          if (command.permanentUrl !== undefined) {
+            updateData.permanentUrl = command.permanentUrl;
+          }
+          if (command.accessibleUrl !== undefined) {
+            updateData.accessibleUrl = command.accessibleUrl;
+          }
           if (command.description !== undefined)
             updateData.description = command.description || null;
           if (command.firstCharge !== undefined)
@@ -241,9 +250,9 @@ export class UpdateManagedSiteUseCase {
           if (command.experience !== undefined)
             updateData.experience = command.experience;
 
-          await siteRepo.update(command.siteId, updateData);
+          await siteRepo.update(siteId, updateData);
           const updated = await siteRepo.findOne({
-            where: { id: command.siteId, deletedAt: null },
+            where: { id: siteId, deletedAt: null },
           });
           if (!updated) {
             throw notFound(MessageKeys.SITE_NOT_FOUND_AFTER_UPDATE);
