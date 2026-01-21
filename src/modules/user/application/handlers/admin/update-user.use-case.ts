@@ -11,6 +11,7 @@ import { UserProfile } from '../../../domain/entities/user-profile.entity';
 import { UserToken } from '../../../../auth/domain/entities/user-token.entity';
 import { UserRole } from '../../../domain/entities/user-role.entity';
 import { Role } from '../../../domain/entities/role.entity';
+import { SiteManager } from '../../../../site-manager/domain/entities/site-manager.entity';
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
@@ -259,6 +260,15 @@ export class UpdateUserUseCase {
                 });
             });
           }
+        }
+
+        // If partner is set to false, inactive all site managers for this user
+        if (command.partner === false || command?.isActive === false) {
+          const siteManagerRepo = entityManager.getRepository(SiteManager);
+          await siteManagerRepo.update(
+            { userId: command.userId, isActive: true },
+            { isActive: false },
+          );
         }
 
         return savedUser;

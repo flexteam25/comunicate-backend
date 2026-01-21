@@ -62,6 +62,7 @@ export class AdminPartnerController {
         userId: request.userId,
         userName: request.user?.displayName || null,
         userEmail: request.user?.email || null,
+        userAvatar: buildFullUrl(this.apiServiceUrl, request.user?.avatarUrl || null) || null,
         status: request.status,
         adminId: request.adminId || null,
         adminName: request.admin?.displayName || null,

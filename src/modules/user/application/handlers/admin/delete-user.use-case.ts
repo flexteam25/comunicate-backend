@@ -4,6 +4,7 @@ import { IUserRepository } from '../../../infrastructure/persistence/repositorie
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import { User } from '../../../domain/entities/user.entity';
 import { UserToken } from '../../../../auth/domain/entities/user-token.entity';
+import { SiteManager } from '../../../../site-manager/domain/entities/site-manager.entity';
 import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteUserCommand {
@@ -24,6 +25,7 @@ export class DeleteUserUseCase {
    * - Mark user as inactive (isActive = false)
    * - Set deletedAt timestamp
    * - Revoke all active user tokens
+   * - Inactive all site managers for this user
    */
   async execute(command: DeleteUserCommand): Promise<void> {
     const user = await this.userRepository.findById(command.userId);
@@ -43,6 +45,13 @@ export class DeleteUserUseCase {
           UserToken,
           { userId: command.userId, revokedAt: null },
           { revokedAt: new Date() },
+        );
+
+        // Inactive all site managers for this user
+        const siteManagerRepo = entityManager.getRepository(SiteManager);
+        await siteManagerRepo.update(
+          { userId: command.userId, isActive: true },
+          { isActive: false },
         );
       },
     );
