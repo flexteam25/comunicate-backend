@@ -7,13 +7,28 @@ import { CommentHasChildService } from './comment-has-child.service';
 import { PostComment } from '../../modules/post/domain/entities/post-comment.entity';
 import { SiteReviewComment } from '../../modules/site-review/domain/entities/site-review-comment.entity';
 import { ScamReportComment } from '../../modules/scam-report/domain/entities/scam-report-comment.entity';
+import { PointPersistenceModule } from '../../modules/point/point-persistence.module';
+import { PointRewardService } from '../../modules/point/application/services/point-reward.service';
 
 @Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([PostComment, SiteReviewComment, ScamReportComment]),
+    PointPersistenceModule,
   ],
-  providers: [PasswordService, JwtService, TransactionService, CommentHasChildService],
-  exports: [PasswordService, JwtService, TransactionService, CommentHasChildService],
+  providers: [
+    PasswordService,
+    JwtService,
+    TransactionService,
+    CommentHasChildService,
+    PointRewardService,
+  ],
+  exports: [
+    PasswordService,
+    JwtService,
+    TransactionService,
+    CommentHasChildService,
+    PointRewardService,
+  ],
 })
 export class ServicesModule {}

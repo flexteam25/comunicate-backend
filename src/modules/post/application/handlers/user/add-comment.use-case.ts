@@ -18,6 +18,7 @@ import {
   badRequest,
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
+import { PointRewardService } from '../../../../point/application/services/point-reward.service';
 
 export interface AddCommentCommand {
   postId: string;
@@ -35,6 +36,7 @@ export class AddCommentUseCase {
     private readonly transactionService: TransactionService,
     private readonly uploadService: UploadService,
     private readonly commentHasChildService: CommentHasChildService,
+    private readonly pointRewardService: PointRewardService,
   ) {}
 
   async execute(command: AddCommentCommand): Promise<PostComment> {
@@ -116,6 +118,22 @@ export class AddCommentUseCase {
             );
             await imageRepo.save(imageEntities);
           }
+
+          // Reward points for comment
+          await this.pointRewardService.rewardPoints(manager, {
+            userId: command.userId,
+            pointSettingKey: 'comment_any_board',
+            category: 'comment_any_board',
+            referenceType: 'post_comment',
+            referenceId: savedComment.id,
+            description: '댓글 작성 보상 (Comment reward)',
+            descriptionKo: '댓글 작성 보상',
+            metadata: {
+              postId: command.postId,
+              commentId: savedComment.id,
+              commentType: 'POST_COMMENT',
+            },
+          });
 
           // Reload with images and user
           const reloaded = await commentRepo.findOne({

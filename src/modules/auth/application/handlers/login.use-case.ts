@@ -8,15 +8,18 @@ import { TransactionService } from '../../../../shared/services/transaction.serv
 import { UserToken } from '../../domain/entities/user-token.entity';
 import { User } from '../../../user/domain/entities/user.entity';
 import { UserProfile } from '../../../user/domain/entities/user-profile.entity';
+import { badRequest, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
+import { PointRewardService } from '../../../point/application/services/point-reward.service';
 import {
-  badRequest,
-  MessageKeys,
-} from '../../../../shared/exceptions/exception-helpers';
+  getTodayInKST,
+  getDateInKST,
+} from '../../../../shared/utils/attendance-date.util';
 export interface LoginCommand {
   email: string;
   password: string;
   deviceInfo?: string;
   ipAddress?: string;
+  point?: boolean;
 }
 
 export interface LoginResult {
@@ -34,6 +37,7 @@ export class LoginUseCase {
     private readonly passwordService: PasswordService,
     private readonly jwtService: JwtService,
     private readonly transactionService: TransactionService,
+    private readonly pointRewardService: PointRewardService,
   ) {}
 
   async execute(command: LoginCommand): Promise<LoginResult> {
@@ -68,6 +72,13 @@ export class LoginUseCase {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
+    // Check if this is first login of the day (before transaction)
+    const todayKST = getTodayInKST();
+    const lastLoginDateKST = user.lastLoginAt ? getDateInKST(user.lastLoginAt) : null;
+    const isFirstLoginToday =
+      (!lastLoginDateKST || lastLoginDateKST.getTime() !== todayKST.getTime()) &&
+      command.point === true;
+
     // Execute database operations in transaction
     return this.transactionService.executeInTransaction(
       async (entityManager: EntityManager) => {
@@ -83,7 +94,8 @@ export class LoginUseCase {
         await entityManager.save(UserToken, userToken);
 
         // Update last login timestamp
-        user.lastLoginAt = new Date();
+        const now = new Date();
+        user.lastLoginAt = now;
         await entityManager.save(User, user);
 
         // Update last login IP in user profile (if exists)
@@ -96,6 +108,19 @@ export class LoginUseCase {
             profile.lastLoginIp = command.ipAddress;
             await userProfileRepo.save(profile);
           }
+        }
+
+        // Reward points for first login of the day
+        if (isFirstLoginToday) {
+          await this.pointRewardService.rewardPoints(entityManager, {
+            userId: user.id,
+            pointSettingKey: 'first_login_daily',
+            category: 'first_login_daily',
+            referenceType: 'user_login',
+            referenceId: userToken.id,
+            description: '당일 첫 로그인 보상 (First login of the day reward)',
+            descriptionKo: '당일 첫 로그인 보상',
+          });
         }
 
         return {

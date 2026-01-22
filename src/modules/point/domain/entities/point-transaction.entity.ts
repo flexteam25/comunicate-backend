@@ -76,6 +76,10 @@ export class PointTransaction {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
+  /** Transaction description in Korean */
+  @Column({ name: 'description_ko', type: 'text', nullable: true })
+  descriptionKo?: string;
+
   /** Additional information in JSON format (flexible data) */
   @Column({ type: 'jsonb', nullable: true })
   metadata?: Record<string, any>;

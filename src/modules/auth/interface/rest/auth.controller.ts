@@ -96,6 +96,7 @@ export class AuthController {
       email: dto.email,
       password: dto.password,
       ipAddress,
+      point: false,
     });
 
     // Reload user with roles and badges for response
@@ -169,6 +170,7 @@ export class AuthController {
       password: dto.password,
       deviceInfo: dto.deviceInfo,
       ipAddress,
+      point: true,
     });
 
     // Reload user with roles and badges for response

@@ -14,6 +14,7 @@ import {
 import { TransactionService } from '../../../../shared/services/transaction.service';
 import { EntityManager } from 'typeorm';
 import { AttendanceStatistic } from '../../domain/entities/attendance-statistic.entity';
+import { PointRewardService } from '../../../point/application/services/point-reward.service';
 
 export interface CreateAttendanceCommand {
   userId: string;
@@ -35,6 +36,7 @@ export class CreateAttendanceUseCase {
     @Inject('IAttendanceStatisticRepository')
     private readonly statisticRepository: IAttendanceStatisticRepository,
     private readonly transactionService: TransactionService,
+    private readonly pointRewardService: PointRewardService,
   ) {}
 
   async execute(command: CreateAttendanceCommand): Promise<CreateAttendanceResult> {
@@ -176,6 +178,23 @@ export class CreateAttendanceUseCase {
           where: {
             userId: command.userId,
             statisticDate: today,
+          },
+        });
+
+        // Reward points for attendance
+        await this.pointRewardService.rewardPoints(manager, {
+          userId: command.userId,
+          pointSettingKey: 'attendance',
+          category: 'attendance',
+          referenceType: 'attendance',
+          referenceId: savedAttendance.id,
+          description: '출석체크 보상 (Attendance check reward)',
+          descriptionKo: '출석체크 보상',
+          metadata: {
+            attendanceDate: today,
+            currentStreak,
+            totalAttendanceDays,
+            attendanceRank: finalStat?.attendanceRank || attendanceRank,
           },
         });
 

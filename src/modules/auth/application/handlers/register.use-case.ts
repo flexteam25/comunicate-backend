@@ -16,6 +16,7 @@ import {
   badRequest,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
+import { PointRewardService } from '../../../point/application/services/point-reward.service';
 
 export interface RegisterCommand {
   email: string;
@@ -38,6 +39,7 @@ export class RegisterUseCase {
     private readonly otpRequestRepository: IOtpRequestRepository,
     private readonly passwordService: PasswordService,
     private readonly transactionService: TransactionService,
+    private readonly pointRewardService: PointRewardService,
   ) {}
 
   async execute(command: RegisterCommand): Promise<User> {
@@ -119,6 +121,17 @@ export class RegisterUseCase {
           });
           await partnerRequestRepo.save(partnerRequest);
         }
+
+        // Reward points for registration
+        await this.pointRewardService.rewardPoints(entityManager, {
+          userId: savedUser.id,
+          pointSettingKey: 'register',
+          category: 'register',
+          referenceType: 'user_registration',
+          referenceId: savedUser.id,
+          description: '회원가입 보상 (Sign up reward)',
+          descriptionKo: '회원가입 보상',
+        });
 
         return savedUser;
       },

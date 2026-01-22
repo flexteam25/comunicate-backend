@@ -11,6 +11,7 @@ import { LoggerService } from '../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../shared/utils/url.util';
 import { badRequest, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
+import { PointRewardService } from '../../../point/application/services/point-reward.service';
 
 export interface CreateScamReportCommand {
   userId: string;
@@ -39,6 +40,7 @@ export class CreateScamReportUseCase {
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
     private readonly configService: ConfigService,
+    private readonly pointRewardService: PointRewardService,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -86,6 +88,23 @@ export class CreateScamReportUseCase {
           );
           await imageRepo.save(imageEntities);
         }
+
+        // Reward points for scam report
+        await this.pointRewardService.rewardPoints(manager, {
+          userId: command.userId,
+          pointSettingKey: 'report_site_scam',
+          category: 'report_site_scam',
+          referenceType: 'scam_report',
+          referenceId: saved.id,
+          description: '사이트 먹튀제보 보상 (Scam report reward)',
+          descriptionKo: '사이트 먹튀제보 보상',
+          metadata: {
+            siteId: command.siteId || null,
+            reportId: saved.id,
+            siteUrl: command.siteUrl,
+            siteName: command.siteName,
+          },
+        });
 
         return saved;
       },

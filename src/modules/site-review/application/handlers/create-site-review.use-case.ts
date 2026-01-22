@@ -14,6 +14,7 @@ import {
   notFound,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
+import { PointRewardService } from '../../../point/application/services/point-reward.service';
 
 export interface CreateSiteReviewCommand {
   userId: string;
@@ -35,6 +36,7 @@ export class CreateSiteReviewUseCase {
     @Inject('ISiteRepository')
     private readonly siteRepository: ISiteRepository,
     private readonly transactionService: TransactionService,
+    private readonly pointRewardService: PointRewardService,
   ) {}
 
   async execute(command: CreateSiteReviewCommand): Promise<SiteReview> {
@@ -92,6 +94,22 @@ export class CreateSiteReviewUseCase {
           });
           await userCommentRepo.save(userComment);
         }
+
+        // Reward points for site review
+        await this.pointRewardService.rewardPoints(manager, {
+          userId: command.userId,
+          pointSettingKey: 'site_review',
+          category: 'site_review',
+          referenceType: 'site_review',
+          referenceId: savedReview.id,
+          description: '사이트 후기 작성 보상 (Site review reward)',
+          descriptionKo: '사이트 후기 작성 보상',
+          metadata: {
+            siteId: site.id,
+            reviewId: savedReview.id,
+            rating: command.rating,
+          },
+        });
 
         // Reload with relations within transaction
         const reloaded = await reviewRepo.findOne({

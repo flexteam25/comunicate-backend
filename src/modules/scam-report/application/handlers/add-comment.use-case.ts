@@ -19,6 +19,7 @@ import {
   badRequest,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
+import { PointRewardService } from '../../../point/application/services/point-reward.service';
 
 export interface AddCommentCommand {
   reportId: string;
@@ -37,6 +38,7 @@ export class AddCommentUseCase {
     private readonly scamReportCommentRepository: IScamReportCommentRepository,
     private readonly transactionService: TransactionService,
     private readonly commentHasChildService: CommentHasChildService,
+    private readonly pointRewardService: PointRewardService,
   ) {}
 
   async execute(command: AddCommentCommand): Promise<ScamReportComment> {
@@ -90,6 +92,22 @@ export class AddCommentUseCase {
           );
           await imageRepo.save(imageEntities);
         }
+
+        // Reward points for comment
+        await this.pointRewardService.rewardPoints(manager, {
+          userId: command.userId,
+          pointSettingKey: 'comment_any_board',
+          category: 'comment_any_board',
+          referenceType: 'scam_report_comment',
+          referenceId: savedComment.id,
+          description: '댓글 작성 보상 (Comment reward)',
+          descriptionKo: '댓글 작성 보상',
+          metadata: {
+            reportId: command.reportId,
+            commentId: savedComment.id,
+            commentType: 'SCAM_REPORT_COMMENT',
+          },
+        });
 
         // Reload with images
         return commentRepo.findOne({
