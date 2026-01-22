@@ -87,11 +87,12 @@ export class RemoveBadgeUseCase {
             category: 'badge_removal',
             referenceType: 'user_badge',
             referenceId: userBadge.id,
-            description: `Badge removed: ${userBadge.badge.name} (Badge ID: ${userBadge.badgeId}, User Badge ID: ${userBadge.id}). Badge point value: ${badgePoint}, Previous points: ${previousPoints}, Points deducted: ${pointsDeducted}, Remaining points: ${newPoints}${
+            description: `Badge removed: ${userBadge.badge.name} (Badge ID: ${userBadge.badgeId}, User Badge ID: ${userBadge.id})${
               previousPoints < badgePoint
                 ? ' (insufficient points, deducted to minimum 0)'
                 : ''
             }`,
+            descriptionKo: `배지 제거: ${userBadge.badge.name}`,
           });
           await this.pointTransactionRepository.save(transaction);
         }

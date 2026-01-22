@@ -125,7 +125,8 @@ export class AssignBadgeUseCase {
               category: 'badge_reward',
               referenceType: 'user_badge',
               referenceId: userBadge.id,
-              description: `Badge reward: ${badge.name} (Badge ID: ${badge.id}, User Badge ID: ${userBadge.id}). Points added: ${badge.point}, Previous points: ${previousPoints}, New points: ${newPoints}`,
+              description: `Badge reward: ${badge.name} (Badge ID: ${badge.id}, User Badge ID: ${userBadge.id})`,
+              descriptionKo: `배지 보상: ${badge.name}`,
             });
             await pointTxRepo.save(transaction);
           }

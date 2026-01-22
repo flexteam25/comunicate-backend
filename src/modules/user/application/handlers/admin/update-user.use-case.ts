@@ -124,7 +124,8 @@ export class UpdateUserUseCase {
             category: 'admin_adjustment',
             referenceType: 'admin_adjustment',
             referenceId: command.adminId,
-            description: `Admin adjustment: ${pointsDelta > 0 ? '+' : ''}${pointsDelta} points`,
+            description: 'Admin adjustment (관리자 조정)',
+            descriptionKo: '관리자 조정',
             metadata: {
               adminId: command.adminId,
               previousPoints: currentPoints,

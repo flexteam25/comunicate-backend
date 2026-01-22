@@ -123,7 +123,8 @@ export class ApproveUserBadgeRequestUseCase {
               category: 'badge_reward',
               referenceType: 'user_badge_request',
               referenceId: request.id,
-              description: `Badge reward: ${badge.name} (Badge ID: ${badge.id}, Request ID: ${request.id}). Points added: ${badge.point}, Previous points: ${currentPoints}, New points: ${newPoints}`,
+              description: `Badge reward: ${badge.name} (Badge ID: ${badge.id}, Request ID: ${request.id})`,
+              descriptionKo: `배지 보상: ${badge.name}`,
             });
             await pointTransactionRepo.save(transaction);
           }

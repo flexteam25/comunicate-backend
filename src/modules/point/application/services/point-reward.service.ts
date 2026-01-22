@@ -79,9 +79,7 @@ export class PointRewardService {
       category: command.category,
       referenceType: command.referenceType,
       referenceId: command.referenceId,
-      description:
-        command.description ||
-        `Point reward: ${command.pointSettingKey} (${points} points)`,
+      description: command.description || `Point reward: ${command.pointSettingKey}`,
       descriptionKo: command.descriptionKo || null,
       metadata: {
         ...command.metadata,
