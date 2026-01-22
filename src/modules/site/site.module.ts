@@ -28,6 +28,7 @@ import { CreateBadgeRequestUseCase } from './application/handlers/user/create-ba
 import { ListBadgeRequestsUseCase } from './application/handlers/user/list-badge-requests.use-case';
 import { CancelBadgeRequestUseCase } from './application/handlers/user/cancel-badge-request.use-case';
 import { ListAllBadgeRequestsUseCase } from './application/handlers/admin/list-all-badge-requests.use-case';
+import { GetSiteBadgeRequestUseCase } from './application/handlers/admin/get-site-badge-request.use-case';
 import { ApproveBadgeRequestUseCase } from './application/handlers/admin/approve-badge-request.use-case';
 import { RejectBadgeRequestUseCase } from './application/handlers/admin/reject-badge-request.use-case';
 import { ListSiteBadgesUseCase } from './application/handlers/user/list-site-badges.use-case';
@@ -95,6 +96,7 @@ import { BadgeModule } from '../badge/badge.module';
     ListBadgeRequestsUseCase,
     CancelBadgeRequestUseCase,
     ListAllBadgeRequestsUseCase,
+    GetSiteBadgeRequestUseCase,
     ApproveBadgeRequestUseCase,
     RejectBadgeRequestUseCase,
     ListSiteBadgesUseCase,

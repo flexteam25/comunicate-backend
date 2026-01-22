@@ -53,6 +53,7 @@ import { AddSiteDomainUseCase } from '../../../application/handlers/admin/add-si
 import { UpdateSiteDomainUseCase } from '../../../application/handlers/admin/update-site-domain.use-case';
 import { DeleteSiteDomainUseCase } from '../../../application/handlers/admin/delete-site-domain.use-case';
 import { ListAllBadgeRequestsUseCase } from '../../../application/handlers/admin/list-all-badge-requests.use-case';
+import { GetSiteBadgeRequestUseCase } from '../../../application/handlers/admin/get-site-badge-request.use-case';
 import { ApproveBadgeRequestUseCase } from '../../../application/handlers/admin/approve-badge-request.use-case';
 import { RejectBadgeRequestUseCase } from '../../../application/handlers/admin/reject-badge-request.use-case';
 import {
@@ -87,6 +88,7 @@ export class AdminSiteController {
     private readonly updateSiteDomainUseCase: UpdateSiteDomainUseCase,
     private readonly deleteSiteDomainUseCase: DeleteSiteDomainUseCase,
     private readonly listAllBadgeRequestsUseCase: ListAllBadgeRequestsUseCase,
+    private readonly getSiteBadgeRequestUseCase: GetSiteBadgeRequestUseCase,
     private readonly approveBadgeRequestUseCase: ApproveBadgeRequestUseCase,
     private readonly rejectBadgeRequestUseCase: RejectBadgeRequestUseCase,
     private readonly listSiteBadgesUseCase: ListSiteBadgesUseCase,
@@ -333,6 +335,19 @@ export class AdminSiteController {
       nextCursor: result.nextCursor,
       hasMore: result.hasMore,
     });
+  }
+
+  @Get('badge-requests/:id')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('site.update')
+  async getSiteBadgeRequest(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ApiResponse<any>> {
+    const request = await this.getSiteBadgeRequestUseCase.execute({
+      requestId: id,
+    });
+
+    return ApiResponseUtil.success(this.mapBadgeRequestToResponse(request));
   }
 
   @Get(':id')
