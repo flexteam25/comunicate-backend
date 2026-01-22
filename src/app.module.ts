@@ -92,6 +92,7 @@ import { SiteBadgeRequestImage } from './modules/site/domain/entities/site-badge
 import { UserBadgeRequest } from './modules/user/domain/entities/user-badge-request.entity';
 import { UserBadgeRequestImage } from './modules/user/domain/entities/user-badge-request-image.entity';
 import { EditorModule } from './modules/editor/editor.module';
+import { PointSetting } from './modules/point/domain/entities/point-setting.entity';
 
 @Module({
   imports: [
@@ -172,6 +173,7 @@ import { EditorModule } from './modules/editor/editor.module';
         SiteBadgeRequestImage,
         UserBadgeRequest,
         UserBadgeRequestImage,
+        PointSetting,
       ],
       synchronize: false,
       logging: false,

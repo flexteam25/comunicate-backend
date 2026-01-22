@@ -26,6 +26,9 @@ import { ListSiteExchangesUseCase } from './application/handlers/manager/list-si
 import { ManagerApproveExchangeUseCase } from './application/handlers/manager/manager-approve-exchange.use-case';
 import { ManagerRejectExchangeUseCase } from './application/handlers/manager/manager-reject-exchange.use-case';
 import { ManagerMoveExchangeToProcessingUseCase } from './application/handlers/manager/manager-move-exchange-to-processing.use-case';
+import { ListPointSettingsUseCase } from './application/handlers/admin/list-point-settings.use-case';
+import { UpdatePointSettingUseCase } from './application/handlers/admin/update-point-setting.use-case';
+import { AdminPointSettingController } from './interface/rest/admin/point-setting.controller';
 
 @Module({
   imports: [
@@ -42,6 +45,7 @@ import { ManagerMoveExchangeToProcessingUseCase } from './application/handlers/m
     AdminPointExchangeController,
     AdminPointTransactionController,
     ManagerPointExchangeController,
+    AdminPointSettingController,
   ],
   providers: [
     CreatePointTransactionUseCase,
@@ -60,6 +64,8 @@ import { ManagerMoveExchangeToProcessingUseCase } from './application/handlers/m
     ManagerApproveExchangeUseCase,
     ManagerRejectExchangeUseCase,
     ManagerMoveExchangeToProcessingUseCase,
+    ListPointSettingsUseCase,
+    UpdatePointSettingUseCase,
   ],
   exports: [CreatePointTransactionUseCase, PointPersistenceModule],
 })
