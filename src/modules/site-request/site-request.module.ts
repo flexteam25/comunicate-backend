@@ -25,6 +25,7 @@ import { CancelSiteRequestUseCase } from './application/handlers/user/cancel-sit
 import { ListSiteRequestsUseCase as AdminListSiteRequestsUseCase } from './application/handlers/admin/list-site-requests.use-case';
 import { ApproveSiteRequestUseCase } from './application/handlers/admin/approve-site-request.use-case';
 import { RejectSiteRequestUseCase } from './application/handlers/admin/reject-site-request.use-case';
+import { SiteRequestRealtimeMapper } from './application/services/site-request-realtime-mapper.service';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { RejectSiteRequestUseCase } from './application/handlers/admin/reject-si
     AdminListSiteRequestsUseCase,
     ApproveSiteRequestUseCase,
     RejectSiteRequestUseCase,
+    SiteRequestRealtimeMapper,
   ],
   controllers: [SiteRequestController, AdminSiteRequestController],
   exports: [SiteRequestPersistenceModule],

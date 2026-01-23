@@ -29,6 +29,9 @@ import { ManagerMoveExchangeToProcessingUseCase } from './application/handlers/m
 import { ListPointSettingsUseCase } from './application/handlers/admin/list-point-settings.use-case';
 import { UpdatePointSettingUseCase } from './application/handlers/admin/update-point-setting.use-case';
 import { AdminPointSettingController } from './interface/rest/admin/point-setting.controller';
+import { RedisModule } from '../../shared/redis/redis.module';
+import { LoggerModule } from '../../shared/logger/logger.module';
+import { PointRewardService } from './application/services/point-reward.service';
 
 @Module({
   imports: [
@@ -39,6 +42,8 @@ import { AdminPointSettingController } from './interface/rest/admin/point-settin
     SiteManagerPersistenceModule,
     AdminGuardsModule,
     AuthPersistenceModule,
+    RedisModule,
+    LoggerModule,
   ],
   controllers: [
     PointController,
@@ -66,7 +71,8 @@ import { AdminPointSettingController } from './interface/rest/admin/point-settin
     ManagerMoveExchangeToProcessingUseCase,
     ListPointSettingsUseCase,
     UpdatePointSettingUseCase,
+    PointRewardService,
   ],
-  exports: [CreatePointTransactionUseCase, PointPersistenceModule],
+  exports: [CreatePointTransactionUseCase, PointPersistenceModule, PointRewardService],
 })
 export class PointModule {}

@@ -33,6 +33,7 @@ import { LoggerService } from '../../../../../shared/logger/logger.service';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
+import { SiteRequestRealtimeMapper } from '../../services/site-request-realtime-mapper.service';
 
 export interface ApproveSiteRequestCommand {
   requestId: string;
@@ -68,14 +69,13 @@ export class ApproveSiteRequestUseCase {
     private readonly pointRewardService: PointRewardService,
     @Inject('IPointSettingRepository')
     private readonly pointSettingRepository: IPointSettingRepository,
+    private readonly siteRequestRealtimeMapper: SiteRequestRealtimeMapper,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
     this.uploadBaseUrl = this.configService.get<string>('UPLOAD_BASE_URL') || '/uploads';
   }
 
-  async execute(
-    command: ApproveSiteRequestCommand,
-  ): Promise<{ site: Site; request: SiteRequest }> {
+  async execute(command: ApproveSiteRequestCommand): Promise<SiteRequest> {
     // Find request with relations
     const request = await this.siteRequestRepository.findById(command.requestId, [
       'user',
@@ -282,10 +282,10 @@ export class ApproveSiteRequestUseCase {
         throw new NotFoundException('Site not found after creation');
       }
 
-      // Reload request with all relations for events
+      // Reload request with relations for events (without site to avoid including site data in event)
       const requestWithRelations = await this.siteRequestRepository.findById(
         command.requestId,
-        ['user', 'category', 'tier', 'site', 'admin'],
+        ['user', 'category', 'tier', 'admin'],
       );
 
       if (!requestWithRelations) {
@@ -313,10 +313,8 @@ export class ApproveSiteRequestUseCase {
         });
       });
 
-      return {
-        site: siteWithRelations,
-        request: requestWithRelations,
-      };
+      // Only return request (same as reject)
+      return requestWithRelations;
     } catch (error) {
       // If transaction fails, try to cleanup moved files (best effort)
       if (newLogoUrl || newMainImageUrl || newSiteImageUrl) {
@@ -444,24 +442,31 @@ export class ApproveSiteRequestUseCase {
     newBalance: number,
     pointsAwarded: number,
   ): Promise<void> {
-    // Map site to response format for event
-    const siteData: Record<string, any> = this.mapSiteToResponse(site);
-
-    // Map request to response format for event
-    const requestData: Record<string, any> = this.mapRequestToResponse(request, siteData);
-
-    // Publish site-request:approved event to user room
-    await this.redisService.publishEvent(RedisChannel.SITE_REQUEST_APPROVED as string, {
-      ...requestData,
-      userId: request.userId, // Include userId so socket gateway can route to user.{userId}
-      pointsAwarded,
-    });
-
-    // Publish site-request:approved event to admin room (without userId)
+    // Publish site-request:approved event (only request data, same as reject)
+    // Note: request should not have 'site' relation loaded to avoid including site data
+    const requestData = this.siteRequestRealtimeMapper.mapSiteRequestToResponse(request);
     await this.redisService.publishEvent(
       RedisChannel.SITE_REQUEST_APPROVED as string,
       requestData,
     );
+
+    // If site status is VERIFIED, publish SITE_CREATED event separately
+    if (site.status === SiteStatus.VERIFIED) {
+      const siteData = this.mapSiteToResponse(site);
+      await this.redisService
+        .publishEvent(RedisChannel.SITE_CREATED, siteData)
+        .catch((error) => {
+          this.logger.error(
+            'Failed to publish site:created event',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              siteId: site.id,
+              siteStatus: site.status,
+            },
+            'site-request',
+          );
+        });
+    }
 
     // Publish point:updated event to user room (only if points were awarded)
     if (pointsAwarded !== 0) {
@@ -502,9 +507,12 @@ export class ApproveSiteRequestUseCase {
             name: site.tier.name,
             description: site.tier.description || null,
             order: site.tier.order,
+            iconUrl: buildFullUrl(this.apiServiceUrl, site.tier.iconUrl || null) || null,
+            iconName: site.tier.iconName || null,
           }
         : null,
       permanentUrl: site.permanentUrl || null,
+      accessibleUrl: site.accessibleUrl || null,
       status: site.status,
       description: site.description || null,
       reviewCount: site.reviewCount,
@@ -513,48 +521,32 @@ export class ApproveSiteRequestUseCase {
       recharge: site.recharge ? Number(site.recharge) : null,
       experience: site.experience,
       issueCount: site.issueCount || 0,
+      tetherDepositWithdrawalStatus: site.tetherDepositWithdrawalStatus,
+      badges: (site.siteBadges || [])
+        .map((sb) => {
+          // Filter out if badge is null or deleted
+          if (!sb.badge || sb.badge.deletedAt) {
+            return null;
+          }
+          return {
+            id: sb.badge.id,
+            name: sb.badge.name,
+            description: sb.badge.description || null,
+            iconUrl: buildFullUrl(this.apiServiceUrl, sb.badge.iconUrl || null) || null,
+            iconName: sb.badge.iconName || null,
+            color: sb.badge.color || null,
+          };
+        })
+        .filter((badge): badge is NonNullable<typeof badge> => badge !== null),
+      domains: (site.siteDomains || []).map((sd) => ({
+        id: sd.id,
+        domain: sd.domain,
+        isActive: sd.isActive,
+        isCurrent: sd.isCurrent,
+      })),
       createdAt: site.createdAt,
       updatedAt: site.updatedAt,
     };
   }
 
-  private mapRequestToResponse(
-    request: SiteRequest,
-    siteData?: Record<string, any>,
-  ): Record<string, any> {
-    return {
-      id: request.id,
-      userId: request.userId,
-      user: request.user
-        ? {
-            id: request.user.id,
-            email: request.user.email,
-            displayName: request.user.displayName || null,
-          }
-        : null,
-      name: request.name,
-      slug: request.slug || null,
-      categoryId: request.categoryId,
-      category: request.category
-        ? {
-            id: request.category.id,
-            name: request.category.name,
-            nameKo: request.category.nameKo || null,
-          }
-        : null,
-      status: request.status,
-      siteId: request.siteId || null,
-      site: siteData || (request.site ? this.mapSiteToResponse(request.site) : null),
-      adminId: request.adminId || null,
-      admin: request.admin
-        ? {
-            id: request.admin.id,
-            email: request.admin.email,
-            displayName: request.admin.displayName || null,
-          }
-        : null,
-      createdAt: request.createdAt,
-      updatedAt: request.updatedAt,
-    };
-  }
 }

@@ -40,6 +40,9 @@ export class SocketGateway
   @WebSocketServer()
   server: Server;
 
+  private subscriptionsSetup = false; // Guard to prevent duplicate subscriptions
+  private siteCreatedHandler: ((data: any) => void) | null = null; // Store handler to prevent duplicates
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
@@ -53,6 +56,12 @@ export class SocketGateway
   ) {}
 
   async onModuleInit() {
+    // Prevent duplicate subscriptions
+    if (this.subscriptionsSetup) {
+      this.logger.warn('Redis subscriptions already setup, skipping', {}, 'socket');
+      return;
+    }
+
     // Wait for Redis to be ready, then setup subscriptions
     // Retry up to 10 times with 500ms delay
     let retries = 0;
@@ -61,6 +70,7 @@ export class SocketGateway
     while (retries < maxRetries) {
       if (this.redisService.isClientReady()) {
         await this.setupRedisSubscriptions();
+        this.subscriptionsSetup = true;
         return;
       }
 
@@ -74,6 +84,7 @@ export class SocketGateway
       'socket',
     );
     await this.setupRedisSubscriptions();
+    this.subscriptionsSetup = true;
   }
 
   afterInit() {
@@ -83,9 +94,17 @@ export class SocketGateway
   private async setupRedisSubscriptions() {
     try {
       // Subscribe to site:created (public event)
-      await this.redisService.subscribeToChannel(RedisChannel.SITE_CREATED, (data) => {
-        this.server.to(SocketRoom.PUBLIC).emit(SocketEvent.SITE_CREATED, data);
-      });
+      // Use stored handler to prevent duplicate subscriptions
+      if (!this.siteCreatedHandler) {
+        this.siteCreatedHandler = (data: any) => {
+          this.server.to(SocketRoom.PUBLIC).emit(SocketEvent.SITE_CREATED, data);
+        };
+      }
+
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SITE_CREATED,
+        this.siteCreatedHandler,
+      );
 
       // Subscribe to site:verified (send to partner user and all admins)
       await this.redisService.subscribeToChannel(
@@ -355,6 +374,19 @@ export class SocketGateway
             this.server.to(userRoom).emit(SocketEvent.SITE_REQUEST_REJECTED, data);
           }
           this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SITE_REQUEST_REJECTED, data);
+        },
+      );
+
+      // Subscribe to site-request:cancelled (send to user room and admin room)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.SITE_REQUEST_CANCELLED,
+        (data: unknown) => {
+          const eventData = data as { userId?: string };
+          if (eventData.userId) {
+            const userRoom = `${SocketRoom.USER}.${eventData.userId}`;
+            this.server.to(userRoom).emit(SocketEvent.SITE_REQUEST_CANCELLED, data);
+          }
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SITE_REQUEST_CANCELLED, data);
         },
       );
 

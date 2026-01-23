@@ -7,6 +7,9 @@ import {
 } from '../../domain/entities/point-transaction.entity';
 import { UserProfile } from '../../../user/domain/entities/user-profile.entity';
 import { badRequest, MessageKeys } from '../../../../shared/exceptions/exception-helpers';
+import { RedisService } from '../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../shared/logger/logger.service';
 
 export interface RewardPointsCommand {
   userId: string;
@@ -26,6 +29,7 @@ export interface RewardPointsCommand {
  * - Fetches point value from point_settings by key
  * - Creates PointTransaction (even if points = 0 for history)
  * - Updates user profile points
+ * - Publishes realtime point update event
  * - Never throws errors if setting not found or points = 0
  */
 @Injectable()
@@ -33,6 +37,8 @@ export class PointRewardService {
   constructor(
     @Inject('IPointSettingRepository')
     private readonly pointSettingRepository: IPointSettingRepository,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -142,6 +148,37 @@ export class PointRewardService {
     if (points !== 0) {
       userProfile.points = Math.max(0, balanceAfter);
       await userProfileRepo.save(userProfile);
+    }
+
+    // Publish point updated event to Redis (after transaction commits)
+    // Only publish if points actually changed (points !== 0)
+    if (points !== 0) {
+      const eventData = {
+        userId: command.userId,
+        pointsDelta: actualAmount, // Actual amount (positive for EARN, negative for SPEND)
+        previousPoints: currentPoints,
+        newPoints: balanceAfter,
+        transactionType: transactionType,
+        updatedAt: new Date(),
+      };
+
+      // Publish event after transaction (fire and forget)
+      setImmediate(() => {
+        this.redisService
+          .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
+          .catch((error) => {
+            this.logger.error(
+              'Failed to publish point:updated event',
+              {
+                error: error instanceof Error ? error.message : String(error),
+                userId: command.userId,
+                pointSettingKey: command.pointSettingKey,
+                category: command.category,
+              },
+              'point',
+            );
+          });
+      });
     }
 
     return savedTransaction;

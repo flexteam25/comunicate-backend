@@ -113,8 +113,8 @@ export class AdminSiteRequestController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ApproveSiteRequestDto,
     @CurrentAdmin() admin: CurrentAdminPayload,
-  ): Promise<ApiResponse<{ request: SiteRequestResponseDto; site: any }>> {
-    const result = await this.approveSiteRequestUseCase.execute({
+  ): Promise<ApiResponse<SiteRequestResponseDto>> {
+    const request = await this.approveSiteRequestUseCase.execute({
       requestId: id,
       adminId: admin.adminId,
       slug: dto.slug,
@@ -124,10 +124,7 @@ export class AdminSiteRequestController {
     });
 
     return ApiResponseUtil.success(
-      {
-        request: this.mapSiteRequestToResponse(result.request),
-        site: this.mapSiteToResponse(result.site),
-      },
+      this.mapSiteRequestToResponse(request),
       'Site request approved successfully',
     );
   }

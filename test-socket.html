@@ -239,6 +239,7 @@
                     <li><strong>site-badge-request:rejected</strong> - Badge request rejected</li>
                     <li><strong>site-request:approved</strong> - Site request approved</li>
                     <li><strong>site-request:rejected</strong> - Site request rejected</li>
+                    <li><strong>site-request:cancelled</strong> - Site request cancelled</li>
                 </ul>
             </div>
             <input type="text" id="token-user" placeholder="User JWT Access Token">
@@ -279,6 +280,7 @@
                     <li><strong>site-request:created</strong> - New site request created</li>
                     <li><strong>site-request:approved</strong> - Site request approved</li>
                     <li><strong>site-request:rejected</strong> - Site request rejected</li>
+                    <li><strong>site-request:cancelled</strong> - Site request cancelled</li>
                 </ul>
             </div>
             <input type="text" id="token-admin" placeholder="Admin JWT Access Token">
@@ -558,6 +560,12 @@
                 const reason = data.rejectionReason || 'No reason provided';
                 log('log-user', `❌ Site Request Rejected - Name: "${requestName}", Reason: ${reason}`, 'event', data);
             });
+
+            socketUser.on('site-request:cancelled', (data) => {
+                const requestName = data.name || 'Unknown';
+                const status = data.status || 'Unknown';
+                log('log-user', `🚫 Site Request Cancelled - Name: "${requestName}", Status: ${status}`, 'event', data);
+            });
         }
 
         function disconnectUser() {
@@ -799,6 +807,13 @@
                 const userName = data.user?.displayName || data.user?.email || 'Unknown';
                 const reason = data.rejectionReason || 'No reason provided';
                 log('log-admin', `❌ Site Request Rejected - Name: "${requestName}", User: ${userName}, Reason: ${reason}`, 'event', data);
+            });
+
+            socketAdmin.on('site-request:cancelled', (data) => {
+                const requestName = data.name || 'Unknown';
+                const userName = data.user?.displayName || data.user?.email || 'Unknown';
+                const status = data.status || 'Unknown';
+                log('log-admin', `🚫 Site Request Cancelled - Name: "${requestName}", User: ${userName}, Status: ${status}`, 'event', data);
             });
         }
 

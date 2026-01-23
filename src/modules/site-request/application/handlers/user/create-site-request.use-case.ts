@@ -20,6 +20,7 @@ import {
   notFound,
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
+import { SiteRequestRealtimeMapper } from '../../services/site-request-realtime-mapper.service';
 
 export interface CreateSiteRequestCommand {
   userId: string;
@@ -56,6 +57,7 @@ export class CreateSiteRequestUseCase {
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
     private readonly configService: ConfigService,
+    private readonly siteRequestRealtimeMapper: SiteRequestRealtimeMapper,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -245,28 +247,8 @@ export class CreateSiteRequestUseCase {
   }
 
   private async publishSiteRequestCreatedEvent(request: SiteRequest): Promise<void> {
-    const eventData = {
-      id: request.id,
-      userId: request.userId,
-      user: request.user
-        ? {
-            id: request.user.id,
-            email: request.user.email,
-            displayName: request.user.displayName || null,
-          }
-        : null,
-      name: request.name,
-      categoryId: request.categoryId,
-      category: request.category
-        ? {
-            id: request.category.id,
-            name: request.category.name,
-          }
-        : null,
-      status: request.status,
-      createdAt: request.createdAt,
-    };
-
+    // Payload must match API response format (SiteRequestResponseDto)
+    const eventData = this.siteRequestRealtimeMapper.mapSiteRequestToResponse(request);
     await this.redisService.publishEvent(RedisChannel.SITE_REQUEST_CREATED, eventData);
   }
 
