@@ -109,7 +109,8 @@ export class RequestPointExchangeUseCase {
         }
 
         // Calculate new balance after deducting points
-        const newBalance = userProfile.points - command.pointsAmount;
+        // Ensure points never go negative (safety check)
+        const newBalance = Math.max(0, userProfile.points - command.pointsAmount);
 
         // Update user points
         userProfile.points = newBalance;

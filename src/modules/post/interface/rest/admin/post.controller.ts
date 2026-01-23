@@ -122,6 +122,7 @@ export class AdminPostController {
       specialKey: category.specialKey || null,
       order: category.order || null,
       adminCreateOnly: category.adminCreateOnly ?? true,
+      point: category.point ?? 0,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };

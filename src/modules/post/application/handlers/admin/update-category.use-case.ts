@@ -19,6 +19,7 @@ export interface UpdateCategoryCommand {
   order?: number;
   orderInMain?: number;
   adminCreateOnly: boolean;
+  point?: number;
 }
 
 @Injectable()
@@ -72,6 +73,10 @@ export class UpdateCategoryUseCase {
     }
     if (command.adminCreateOnly !== undefined) {
       updateData.adminCreateOnly = command.adminCreateOnly;
+    }
+    // Only update point if provided (undefined means don't update)
+    if (command.point !== undefined) {
+      updateData.point = command.point;
     }
 
     return this.categoryRepository.update(command.categoryId, updateData);

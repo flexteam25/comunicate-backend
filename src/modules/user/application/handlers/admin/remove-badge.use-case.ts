@@ -98,7 +98,8 @@ export class RemoveBadgeUseCase {
         }
       }
 
-      user.userProfile.points = currentPoints;
+      // Ensure points never go negative (safety check)
+      user.userProfile.points = Math.max(0, currentPoints);
       await this.userRepository.save(user);
     }
 

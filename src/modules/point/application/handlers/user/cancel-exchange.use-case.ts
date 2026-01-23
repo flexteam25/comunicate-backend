@@ -81,7 +81,8 @@ export class CancelExchangeUseCase {
         }
 
         // Refund points to user
-        const newBalance = userProfile.points + exchange.pointsAmount;
+        // Ensure points never go negative (safety check)
+        const newBalance = Math.max(0, userProfile.points + exchange.pointsAmount);
         userProfile.points = newBalance;
         await userProfileRepo.save(userProfile);
 

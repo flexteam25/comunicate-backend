@@ -6,6 +6,7 @@ import {
   ValidateIf,
   IsInt,
   Min,
+  Max,
   IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -54,4 +55,11 @@ export class UpdateCategoryDto {
   @Type(() => Boolean)
   @IsBoolean({ message: 'ADMINCREATEONLY_MUST_BE_BOOLEAN' })
   adminCreateOnly: boolean;
+
+  @IsOptional({ message: 'POINT_OPTIONAL' })
+  @Type(() => Number)
+  @IsInt({ message: 'POINT_MUST_BE_INTEGER' })
+  @Min(-100000, { message: 'POINT_MIN_VALUE' })
+  @Max(100000, { message: 'POINT_MAX_VALUE' })
+  point?: number;
 }

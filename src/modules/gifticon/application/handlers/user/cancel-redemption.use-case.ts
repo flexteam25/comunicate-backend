@@ -83,7 +83,8 @@ export class CancelRedemptionUseCase {
         }
 
         // Refund points to user
-        const newBalance = userProfile.points + redemption.pointsUsed;
+        // Ensure points never go negative (safety check)
+        const newBalance = Math.max(0, userProfile.points + redemption.pointsUsed);
         userProfile.points = newBalance;
         await userProfileRepo.save(userProfile);
 

@@ -18,6 +18,7 @@ export interface CreateCategoryCommand {
   specialKey?: string | null;
   order: number;
   adminCreateOnly: boolean;
+  point?: number;
 }
 
 @Injectable()
@@ -52,6 +53,7 @@ export class CreateCategoryUseCase {
       order: command.order,
       orderInMain: command.orderInMain ?? null,
       adminCreateOnly: command.adminCreateOnly,
+      point: command.point ?? 0,
     });
   }
 }

@@ -114,7 +114,7 @@ export class AssignBadgeUseCase {
           // Handle point reward only for newly assigned badges
           if (typeof badge.point === 'number' && badge.point > 0) {
             const previousPoints = currentPoints;
-            const newPoints = previousPoints + badge.point;
+            const newPoints = Math.max(0, previousPoints + badge.point); // Ensure never negative
             currentPoints = newPoints;
 
             const transaction = pointTxRepo.create({
@@ -133,16 +133,18 @@ export class AssignBadgeUseCase {
         }
 
         // Persist updated user points (if any)
+        // Ensure points never go negative (safety check)
         if (currentPoints !== originalPoints) {
+          const finalPoints = Math.max(0, currentPoints); // Ensure never negative
           if (!user.userProfile) {
             const newProfile = userProfileRepo.create({
               userId: user.id,
-              points: currentPoints,
+              points: finalPoints,
             });
             await userProfileRepo.save(newProfile);
             user.userProfile = newProfile;
           } else {
-            user.userProfile.points = currentPoints;
+            user.userProfile.points = finalPoints;
             await userProfileRepo.save(user.userProfile);
           }
         }

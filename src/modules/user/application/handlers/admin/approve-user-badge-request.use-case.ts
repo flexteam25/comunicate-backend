@@ -110,7 +110,7 @@ export class ApproveUserBadgeRequestUseCase {
           ]);
           if (user && user.userProfile) {
             const currentPoints = user.userProfile.points ?? 0;
-            const newPoints = currentPoints + badge.point;
+            const newPoints = Math.max(0, currentPoints + badge.point); // Ensure never negative
 
             user.userProfile.points = newPoints;
             await manager.save(user.userProfile);

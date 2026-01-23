@@ -117,7 +117,8 @@ export class RedeemGifticonUseCase {
         }
 
         // Calculate new balance after deducting points
-        const newBalance = userProfile.points - gifticon.amount;
+        // Ensure points never go negative (safety check)
+        const newBalance = Math.max(0, userProfile.points - gifticon.amount);
 
         // Update user points
         userProfile.points = newBalance;

@@ -3,7 +3,7 @@ import { Post } from '../../../domain/entities/post.entity';
 import { IPostRepository } from '../../../infrastructure/persistence/repositories/post.repository';
 import { IPostCategoryRepository } from '../../../infrastructure/persistence/repositories/post-category.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
-import { EntityManager } from 'typeorm';
+import { EntityManager, DataSource } from 'typeorm';
 import { UploadService, MulterFile } from '../../../../../shared/services/upload';
 import { randomUUID } from 'crypto';
 import {
@@ -13,6 +13,8 @@ import {
 } from '../../../../../shared/exceptions/exception-helpers';
 import { UserPost } from '../../../../user/domain/entities/user-post.entity';
 import { customAlphabet } from 'nanoid';
+import { PointRewardService } from '../../../../point/application/services/point-reward.service';
+import { UserProfile } from '../../../../user/domain/entities/user-profile.entity';
 
 export interface CreatePostCommand {
   userId: string; // User's ID
@@ -33,6 +35,8 @@ export class CreatePostUseCase {
     private readonly categoryRepository: IPostCategoryRepository,
     private readonly transactionService: TransactionService,
     private readonly uploadService: UploadService,
+    private readonly pointRewardService: PointRewardService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async execute(command: CreatePostCommand): Promise<Post> {
@@ -47,6 +51,20 @@ export class CreatePostUseCase {
 
     if (category.specialKey !== null) {
       throw badRequest(MessageKeys.CANNOT_CREATE_POST_WITH_SPECIAL_KEY_CATEGORY);
+    }
+
+    // Check if user has enough points when category requires spending points
+    if (category.point < 0) {
+      const userProfileRepo = this.dataSource.getRepository(UserProfile);
+      const userProfile = await userProfileRepo.findOne({
+        where: { userId: command.userId },
+      });
+      const currentPoints = userProfile?.points ?? 0;
+      const requiredPoints = Math.abs(category.point); // Convert negative to positive for comparison
+
+      if (currentPoints < requiredPoints) {
+        throw badRequest(MessageKeys.INSUFFICIENT_POINTS);
+      }
     }
 
     // Validate file size (20MB max)
@@ -131,6 +149,29 @@ export class CreatePostUseCase {
             updatedAt: savedPost.updatedAt,
           });
           await userPostRepo.save(userPost);
+
+          // Reward/deduct points based on category.point (only if point !== 0)
+          // If category.point < 0, require sufficient points (will throw error if insufficient)
+          if (category.point !== 0) {
+            await this.pointRewardService.rewardPoints(manager, {
+              userId: command.userId,
+              pointSettingKey: 'post_category', // Dummy key, not used since we override with category.point
+              category: 'post_creation',
+              referenceType: 'post',
+              referenceId: savedPost.id,
+              overridePoints: category.point, // Use category.point instead of point_settings
+              requireSufficientPoints: category.point < 0, // Require sufficient points when spending
+              description: `게시글 작성: ${category.nameKo || category.name} (Post creation: ${category.name})`,
+              descriptionKo: `게시글 작성: ${category.nameKo || category.name}`,
+              metadata: {
+                categoryId: category.id,
+                categoryName: category.name,
+                categoryNameKo: category.nameKo || null,
+                postId: savedPost.id,
+                pointFromCategory: category.point,
+              },
+            });
+          }
 
           const reloaded = await postRepo.findOne({
             where: { id: savedPost.id },

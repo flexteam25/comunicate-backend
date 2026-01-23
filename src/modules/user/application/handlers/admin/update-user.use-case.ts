@@ -49,7 +49,9 @@ export class UpdateUserUseCase {
 
     // Check if points is being updated
     const currentPoints = user.userProfile?.points ?? 0;
-    const newPoints = command.points;
+    // Prevent negative points (cap at 0)
+    const newPoints =
+      command.points !== undefined ? Math.max(0, command.points) : undefined;
     const pointsChanged = newPoints !== undefined && newPoints !== currentPoints;
 
     // Calculate diff if points are being updated

@@ -46,7 +46,7 @@ export class CreateBadgeDto {
   @Type(() => Number)
   @IsInt({ message: 'POINT_MUST_BE_INTEGER' })
   @Min(0, { message: 'POINT_MIN_VALUE' })
-  @Max(50000, { message: 'POINT_MAX_VALUE' })
+  @Max(100000, { message: 'POINT_MAX_VALUE' })
   point?: number;
 
   @IsString({ message: 'COLOR_MUST_BE_STRING' })
