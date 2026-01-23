@@ -25,6 +25,13 @@ export interface StorageProvider {
   exists(path: string): Promise<boolean>;
 
   /**
+   * Move file from source path to destination path
+   * @param sourcePath Source file path or URL
+   * @param destPath Destination file path or URL
+   */
+  move(sourcePath: string, destPath: string): Promise<string>;
+
+  /**
    * Get the storage type identifier
    */
   getType(): string;

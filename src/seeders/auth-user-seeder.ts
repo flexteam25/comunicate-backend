@@ -232,6 +232,22 @@ export class AuthUserSeeder {
           description: 'Update/mark advertising contacts as viewed',
           type: PermissionType.ADMIN,
         },
+        // Site request module permissions
+        {
+          name: 'site-request.read',
+          description: 'Read site requests',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'site-request.approve',
+          description: 'Approve site requests',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'site-request.reject',
+          description: 'Reject site requests',
+          type: PermissionType.ADMIN,
+        },
       ];
 
       // Create permissions - User permissions (if needed in future)

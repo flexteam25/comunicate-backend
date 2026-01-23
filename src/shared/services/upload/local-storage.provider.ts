@@ -58,6 +58,25 @@ export class LocalStorageProvider implements StorageProvider {
     }
   }
 
+  async move(sourcePath: string, destPath: string): Promise<string> {
+    // Convert URL paths to file system paths
+    const sourceRelativePath = sourcePath.replace(this.baseUrl, '');
+    const sourceFullPath = path.join(this.uploadDir, sourceRelativePath);
+
+    const destRelativePath = destPath.replace(this.baseUrl, '');
+    const destFullPath = path.join(this.uploadDir, destRelativePath);
+
+    // Ensure destination directory exists
+    const destDir = path.dirname(destFullPath);
+    await fs.mkdir(destDir, { recursive: true });
+
+    // Move file (rename)
+    await fs.rename(sourceFullPath, destFullPath);
+
+    // Return destination URL path
+    return destPath;
+  }
+
   getType(): string {
     return 'local';
   }

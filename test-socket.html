@@ -237,6 +237,8 @@
                     <li><strong>site:verified</strong> - Site verified by admin (for partners)</li>
                     <li><strong>site-badge-request:approved</strong> - Badge request approved</li>
                     <li><strong>site-badge-request:rejected</strong> - Badge request rejected</li>
+                    <li><strong>site-request:approved</strong> - Site request approved</li>
+                    <li><strong>site-request:rejected</strong> - Site request rejected</li>
                 </ul>
             </div>
             <input type="text" id="token-user" placeholder="User JWT Access Token">
@@ -274,6 +276,9 @@
                     <li><strong>site-badge-request:approved</strong> - Badge request approved</li>
                     <li><strong>site-badge-request:rejected</strong> - Badge request rejected</li>
                     <li><strong>site-badge-request:cancelled</strong> - Badge request cancelled</li>
+                    <li><strong>site-request:created</strong> - New site request created</li>
+                    <li><strong>site-request:approved</strong> - Site request approved</li>
+                    <li><strong>site-request:rejected</strong> - Site request rejected</li>
                 </ul>
             </div>
             <input type="text" id="token-admin" placeholder="Admin JWT Access Token">
@@ -540,6 +545,19 @@
                 const note = data.note || 'No reason provided';
                 log('log-user', `❌ Badge Request Rejected - Site: "${siteName}", Badge: ${badgeName}, Note: ${note}`, 'event', data);
             });
+
+            socketUser.on('site-request:approved', (data) => {
+                const requestName = data.name || 'Unknown';
+                const siteId = data.siteId || 'Unknown';
+                const points = data.points || 0;
+                log('log-user', `✅ Site Request Approved - Name: "${requestName}", Site ID: ${siteId}, Points: ${points}`, 'event', data);
+            });
+
+            socketUser.on('site-request:rejected', (data) => {
+                const requestName = data.name || 'Unknown';
+                const reason = data.rejectionReason || 'No reason provided';
+                log('log-user', `❌ Site Request Rejected - Name: "${requestName}", Reason: ${reason}`, 'event', data);
+            });
         }
 
         function disconnectUser() {
@@ -759,6 +777,28 @@
                 const badgeName = data.badge?.name || 'Unknown';
                 const userName = data.user?.displayName || data.user?.email || 'Unknown';
                 log('log-admin', `🚫 Badge Request Cancelled - Site: "${siteName}", Badge: ${badgeName}, User: ${userName}`, 'event', data);
+            });
+
+            socketAdmin.on('site-request:created', (data) => {
+                const requestName = data.name || 'Unknown';
+                const userName = data.user?.displayName || data.user?.email || 'Unknown';
+                const category = data.category?.name || 'Unknown';
+                log('log-admin', `📝 Site Request Created - Name: "${requestName}", User: ${userName}, Category: ${category}`, 'event', data);
+            });
+
+            socketAdmin.on('site-request:approved', (data) => {
+                const requestName = data.name || 'Unknown';
+                const userName = data.user?.displayName || data.user?.email || 'Unknown';
+                const siteId = data.siteId || 'Unknown';
+                const points = data.points || 0;
+                log('log-admin', `✅ Site Request Approved - Name: "${requestName}", User: ${userName}, Site ID: ${siteId}, Points: ${points}`, 'event', data);
+            });
+
+            socketAdmin.on('site-request:rejected', (data) => {
+                const requestName = data.name || 'Unknown';
+                const userName = data.user?.displayName || data.user?.email || 'Unknown';
+                const reason = data.rejectionReason || 'No reason provided';
+                log('log-admin', `❌ Site Request Rejected - Name: "${requestName}", User: ${userName}, Reason: ${reason}`, 'event', data);
             });
         }
 
