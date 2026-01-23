@@ -4,36 +4,36 @@ import { Transform } from 'class-transformer';
 import { SiteRequestStatus } from '../../../domain/entities/site-request.entity';
 
 export class ListSiteRequestsQueryDto {
-  @IsOptional()
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
   @IsEnum(SiteRequestStatus, {
-    message: 'Status must be one of: pending, approved, rejected, cancelled',
+    message: 'STATUS_INVALID_ENUM',
   })
   @Transform(({ value }) => (value === '' ? undefined : value))
   status?: SiteRequestStatus;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'USERNAME_OPTIONAL' })
+  @IsString({ message: 'USERNAME_MUST_BE_STRING' })
   @Transform(({ value }) => (value === '' ? undefined : value))
   userName?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'STARTDATE_OPTIONAL' })
+  @IsString({ message: 'STARTDATE_MUST_BE_STRING' })
   @Transform(({ value }) => (value === '' ? undefined : value))
   startDate?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'ENDDATE_OPTIONAL' })
+  @IsString({ message: 'ENDDATE_MUST_BE_STRING' })
   @Transform(({ value }) => (value === '' ? undefined : value))
   endDate?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'CURSOR_OPTIONAL' })
+  @IsString({ message: 'CURSOR_MUST_BE_STRING' })
   cursor?: string;
 
-  @IsOptional()
+  @IsOptional({ message: 'LIMIT_OPTIONAL' })
   @Type(() => Number)
-  @IsInt({ message: 'Limit must be an integer' })
-  @Min(1, { message: 'Limit must be at least 1' })
-  @Max(50, { message: 'Limit must not exceed 50' })
+  @IsInt({ message: 'LIMIT_MUST_BE_INTEGER' })
+  @Min(1, { message: 'LIMIT_MIN_VALUE' })
+  @Max(50, { message: 'LIMIT_MAX_VALUE' })
   limit?: number;
 }

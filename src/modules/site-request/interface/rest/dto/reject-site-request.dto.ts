@@ -1,8 +1,8 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class RejectSiteRequestDto {
-  @IsOptional()
-  @IsString()
-  @MaxLength(1000, { message: 'Rejection reason must not exceed 1000 characters' })
+  @IsOptional({ message: 'REJECTIONREASON_OPTIONAL' })
+  @IsString({ message: 'REJECTIONREASON_MUST_BE_STRING' })
+  @MaxLength(1000, { message: 'REJECTIONREASON_MAX_LENGTH' })
   rejectionReason?: string;
 }

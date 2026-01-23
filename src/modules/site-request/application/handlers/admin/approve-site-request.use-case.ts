@@ -20,6 +20,8 @@ import {
   PointTransaction,
   PointTransactionType,
 } from '../../../../point/domain/entities/point-transaction.entity';
+import { PointRewardService } from '../../../../point/application/services/point-reward.service';
+import { IPointSettingRepository } from '../../../../point/infrastructure/persistence/repositories/point-setting.repository';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
 import {
   StorageProvider,
@@ -36,7 +38,6 @@ export interface ApproveSiteRequestCommand {
   requestId: string;
   adminId: string;
   slug?: string;
-  points: number;
   status?: SiteStatus;
   tierId?: string;
   categoryId?: string;
@@ -64,6 +65,9 @@ export class ApproveSiteRequestUseCase {
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
     private readonly configService: ConfigService,
+    private readonly pointRewardService: PointRewardService,
+    @Inject('IPointSettingRepository')
+    private readonly pointSettingRepository: IPointSettingRepository,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
     this.uploadBaseUrl = this.configService.get<string>('UPLOAD_BASE_URL') || '/uploads';
@@ -72,14 +76,6 @@ export class ApproveSiteRequestUseCase {
   async execute(
     command: ApproveSiteRequestCommand,
   ): Promise<{ site: Site; request: SiteRequest }> {
-    // Validate points (required, min 0)
-    if (command.points === undefined || command.points === null) {
-      throw new BadRequestException('Points is required');
-    }
-    if (command.points < 0) {
-      throw new BadRequestException('Points must be at least 0');
-    }
-
     // Find request with relations
     const request = await this.siteRequestRepository.findById(command.requestId, [
       'user',
@@ -173,7 +169,6 @@ export class ApproveSiteRequestUseCase {
           const siteRepo = manager.getRepository(Site);
           const requestRepo = manager.getRepository(SiteRequest);
           const userProfileRepo = manager.getRepository(UserProfile);
-          const pointTransactionRepo = manager.getRepository(PointTransaction);
 
           // Create site from request data
           const site = siteRepo.create({
@@ -215,40 +210,59 @@ export class ApproveSiteRequestUseCase {
             throw new NotFoundException('Site request not found after update');
           }
 
-          // Add points to user with pessimistic lock
+          // Check point setting to determine if we should reward points
+          const pointSetting = await this.pointSettingRepository.findByKey(
+            'site_registration_request',
+          );
+
+          // Use point from point setting (default to 0 if not found)
+          const points = pointSetting?.point ?? 0;
+
+          // Get user profile to get current points for response
           const userProfile = await userProfileRepo.findOne({
             where: { userId: request.userId },
-            lock: { mode: 'pessimistic_write' },
           });
 
-          if (!userProfile) {
-            throw new NotFoundException('User profile not found');
+          const previousPoints = userProfile?.points ?? 0;
+          let newBalance = previousPoints;
+          let pointsAwarded = 0;
+          let pointTransaction: PointTransaction | null = null;
+
+          // Only reward points and create transaction if points !== 0
+          if (points !== 0) {
+            pointTransaction = await this.pointRewardService.rewardPoints(manager, {
+              userId: request.userId,
+              pointSettingKey: 'site_registration_request',
+              category: 'site_registration_request',
+              referenceType: 'site_request',
+              referenceId: request.id,
+              description: `사이트 등록신청 승인: ${request.name} (Site registration request approved: ${request.name})`,
+              descriptionKo: `사이트 등록신청 승인: ${request.name}`,
+              metadata: {
+                siteRequestId: request.id,
+                siteId: savedSite.id,
+                siteName: request.name,
+                adminId: command.adminId,
+              },
+            });
+
+            // Get updated balance from transaction
+            const transactionMetadata = pointTransaction?.metadata as
+              | { newPoints?: number }
+              | undefined;
+            newBalance =
+              pointTransaction?.balanceAfter ??
+              transactionMetadata?.newPoints ??
+              previousPoints;
+            pointsAwarded = pointTransaction?.amount ?? 0;
           }
-
-          const previousPoints = userProfile.points;
-          const newBalance = previousPoints + command.points;
-
-          userProfile.points = newBalance;
-          await userProfileRepo.save(userProfile);
-
-          // Create point transaction
-          const pointTransaction = pointTransactionRepo.create({
-            userId: request.userId,
-            type: PointTransactionType.EARN,
-            amount: command.points,
-            balanceAfter: newBalance,
-            category: 'site_request_reward',
-            referenceType: 'site_request',
-            referenceId: request.id,
-            description: `Site request approved: ${request.name}`,
-          });
-          await pointTransactionRepo.save(pointTransaction);
 
           return {
             site: savedSite,
             request: updatedRequest,
             previousPoints,
             newBalance,
+            pointsAwarded,
           };
         },
       );
@@ -285,7 +299,7 @@ export class ApproveSiteRequestUseCase {
           requestWithRelations,
           result.previousPoints,
           result.newBalance,
-          command.points,
+          result.pointsAwarded,
         ).catch((error) => {
           this.logger.error(
             'Failed to publish site-request:approved events',
@@ -337,14 +351,10 @@ export class ApproveSiteRequestUseCase {
 
     // Move file using StorageProvider
     try {
-      const movedPath: string = await this.storageProvider.move(
-        sourceUrl,
-        destUrl,
-      );
+      const movedPath: string = await this.storageProvider.move(sourceUrl, destUrl);
       return movedPath;
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       this.logger.error(
         'Failed to move file from request to site folder',
         {
@@ -438,20 +448,14 @@ export class ApproveSiteRequestUseCase {
     const siteData: Record<string, any> = this.mapSiteToResponse(site);
 
     // Map request to response format for event
-    const requestData: Record<string, any> = this.mapRequestToResponse(
-      request,
-      siteData,
-    );
+    const requestData: Record<string, any> = this.mapRequestToResponse(request, siteData);
 
     // Publish site-request:approved event to user room
-    await this.redisService.publishEvent(
-      RedisChannel.SITE_REQUEST_APPROVED as string,
-      {
-        ...requestData,
-        userId: request.userId, // Include userId so socket gateway can route to user.{userId}
-        pointsAwarded,
-      },
-    );
+    await this.redisService.publishEvent(RedisChannel.SITE_REQUEST_APPROVED as string, {
+      ...requestData,
+      userId: request.userId, // Include userId so socket gateway can route to user.{userId}
+      pointsAwarded,
+    });
 
     // Publish site-request:approved event to admin room (without userId)
     await this.redisService.publishEvent(
@@ -459,18 +463,17 @@ export class ApproveSiteRequestUseCase {
       requestData,
     );
 
-    // Publish point:updated event to user room
-    await this.redisService.publishEvent(
-      RedisChannel.POINT_UPDATED as string,
-      {
+    // Publish point:updated event to user room (only if points were awarded)
+    if (pointsAwarded !== 0) {
+      await this.redisService.publishEvent(RedisChannel.POINT_UPDATED as string, {
         userId: request.userId,
         pointsDelta: pointsAwarded,
         previousPoints,
         newPoints: newBalance,
         transactionType: PointTransactionType.EARN,
         updatedAt: new Date(),
-      },
-    );
+      });
+    }
   }
 
   private mapSiteToResponse(site: Site): Record<string, any> {
@@ -499,7 +502,6 @@ export class ApproveSiteRequestUseCase {
             name: site.tier.name,
             description: site.tier.description || null,
             order: site.tier.order,
-            color: site.tier.color || null,
           }
         : null,
       permanentUrl: site.permanentUrl || null,

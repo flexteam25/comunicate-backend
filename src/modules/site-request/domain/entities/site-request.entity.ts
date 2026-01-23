@@ -62,6 +62,14 @@ export class SiteRequest extends BaseEntity {
   })
   permanentUrl?: string;
 
+  @Column({
+    name: 'accessible_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  accessibleUrl?: string;
+
   @Column({ type: 'text', nullable: true })
   description?: string;
 

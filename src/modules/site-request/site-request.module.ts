@@ -9,6 +9,7 @@ import { SiteRequestPersistenceModule } from './infrastructure/persistence/site-
 import { SitePersistenceModule } from '../site/site-persistence.module';
 import { TierModule } from '../tier/tier.module';
 import { UserPersistenceModule } from '../user/user-persistence.module';
+import { PointPersistenceModule } from '../point/point-persistence.module';
 import { UploadModule } from '../../shared/services/upload';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { AuthPersistenceModule } from '../auth/auth-persistence.module';
@@ -32,6 +33,7 @@ import { RejectSiteRequestUseCase } from './application/handlers/admin/reject-si
     SitePersistenceModule,
     TierModule,
     UserPersistenceModule,
+    PointPersistenceModule,
     UploadModule.register({ storageType: 'local' }),
     AdminGuardsModule,
     AuthPersistenceModule,

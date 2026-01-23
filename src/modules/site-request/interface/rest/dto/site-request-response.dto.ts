@@ -43,6 +43,7 @@ export class SiteRequestResponseDto {
   tierId?: string;
   tier?: SiteRequestTierSummary;
   permanentUrl?: string;
+  accessibleUrl?: string;
   description?: string;
   firstCharge?: number;
   recharge?: number;

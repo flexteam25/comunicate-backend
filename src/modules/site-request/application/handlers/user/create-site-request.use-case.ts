@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ISiteRequestRepository } from '../../../infrastructure/persistence/repositories/site-request.repository';
 import { ISiteCategoryRepository } from '../../../../site/infrastructure/persistence/repositories/site-category.repository';
 import { ISiteRepository } from '../../../../site/infrastructure/persistence/repositories/site.repository';
@@ -28,14 +25,15 @@ export interface CreateSiteRequestCommand {
   userId: string;
   name: string;
   categoryId: string;
+  permanentUrl: string;
+  accessibleUrl: string;
+  firstCharge: number;
+  recharge: number;
   logo?: MulterFile;
   mainImage?: MulterFile;
   siteImage?: MulterFile;
   tierId?: string;
-  permanentUrl?: string;
   description?: string;
-  firstCharge?: number;
-  recharge?: number;
   experience?: number;
   ipAddress?: string;
 }
@@ -130,6 +128,9 @@ export class CreateSiteRequestUseCase {
       throw badRequest(MessageKeys.SITE_REQUEST_PENDING_ALREADY_EXISTS);
     }
 
+    // Generate slug from name
+    const slug = this.generateSlug(command.name);
+
     // Generate request ID first
     const requestId = randomUUID();
 
@@ -171,12 +172,14 @@ export class CreateSiteRequestUseCase {
             id: requestId,
             userId: command.userId,
             name: command.name,
+            slug,
             categoryId: command.categoryId,
             logoUrl,
             mainImageUrl,
             siteImageUrl,
             tierId: command.tierId,
             permanentUrl: command.permanentUrl,
+            accessibleUrl: command.accessibleUrl,
             description: command.description,
             firstCharge: command.firstCharge,
             recharge: command.recharge,
@@ -265,5 +268,29 @@ export class CreateSiteRequestUseCase {
     };
 
     await this.redisService.publishEvent(RedisChannel.SITE_REQUEST_CREATED, eventData);
+  }
+
+  /**
+   * Generate slug from name
+   */
+  private generateSlug(name: string): string {
+    if (!name || name.trim().length === 0) {
+      return 'site';
+    }
+
+    let slug = name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+
+    if (slug.length === 0) {
+      slug = 'site';
+    }
+
+    // Limit to 50 characters
+    return slug.substring(0, 50);
   }
 }

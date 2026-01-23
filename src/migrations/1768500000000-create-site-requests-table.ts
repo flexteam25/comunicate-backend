@@ -268,17 +268,6 @@ export class CreateSiteRequestsTable1768500000000 implements MigrationInterface 
       }),
     );
 
-    // Index for duplicate name check (case-insensitive)
-    await queryRunner.createIndex(
-      'site_requests',
-      new TableIndex({
-        name: 'IDX_site_requests_name_lower',
-        columnNames: [],
-        isUnique: false,
-        where: "deleted_at IS NULL AND status = 'pending'",
-      }),
-    );
-
     // Create index on name (lowercase) for duplicate checking
     await queryRunner.query(`
       CREATE INDEX IDX_site_requests_name_lowercase
@@ -298,7 +287,6 @@ export class CreateSiteRequestsTable1768500000000 implements MigrationInterface 
     await queryRunner.dropIndex('site_requests', 'IDX_site_requests_site_id');
     await queryRunner.dropIndex('site_requests', 'IDX_site_requests_status');
     await queryRunner.dropIndex('site_requests', 'IDX_site_requests_user_id');
-    await queryRunner.dropIndex('site_requests', 'IDX_site_requests_name_lower');
 
     // Drop foreign keys
     await queryRunner.dropForeignKey('site_requests', 'FK_site_requests_admin_id');

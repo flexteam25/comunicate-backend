@@ -243,7 +243,7 @@ export class CreateSiteUseCase {
             tetherDepositWithdrawalStatus:
               command.tetherDepositWithdrawalStatus ||
               TetherDepositWithdrawalStatus.NO_INFO,
-            status: SiteStatus.UNVERIFIED,
+            status: SiteStatus.VERIFIED,
             reviewCount: 0,
             averageRating: 0,
           });

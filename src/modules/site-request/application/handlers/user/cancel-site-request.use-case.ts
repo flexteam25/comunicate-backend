@@ -27,7 +27,13 @@ export class CancelSiteRequestUseCase {
   ) {}
 
   async execute(command: CancelSiteRequestCommand): Promise<SiteRequest> {
-    const request = await this.siteRequestRepository.findById(command.requestId);
+    const request = await this.siteRequestRepository.findById(command.requestId, [
+      'user',
+      'category',
+      'tier',
+      'site',
+      'admin',
+    ]);
 
     if (!request) {
       throw notFound(MessageKeys.SITE_REQUEST_NOT_FOUND);
@@ -44,10 +50,12 @@ export class CancelSiteRequestUseCase {
     }
 
     // Update status to cancelled
-    const updated = await this.siteRequestRepository.update(command.requestId, {
+    await this.siteRequestRepository.update(command.requestId, {
       status: SiteRequestStatus.CANCELLED,
     });
 
-    return updated;
+    // Return the request with updated status and loaded relations
+    request.status = SiteRequestStatus.CANCELLED;
+    return request;
   }
 }

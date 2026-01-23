@@ -21,13 +21,14 @@ export enum RedisChannel {
   REDEMPTION_REJECTED = 'redemption:rejected',
   REDEMPTION_CREATED = 'redemption:created',
   REDEMPTION_CANCELLED = 'redemption:cancelled',
+  SITE_REQUEST_CREATED = 'site-request:created',
+  SITE_REQUEST_APPROVED = 'site-request:approved',
+  SITE_REQUEST_REJECTED = 'site-request:rejected',
+  SITE_REQUEST_CANCELLED = 'site-request:cancelled',
   SITE_BADGE_REQUEST_CREATED = 'site-badge-request:created',
   SITE_BADGE_REQUEST_APPROVED = 'site-badge-request:approved',
   SITE_BADGE_REQUEST_REJECTED = 'site-badge-request:rejected',
   SITE_BADGE_REQUEST_CANCELLED = 'site-badge-request:cancelled',
-  SITE_REQUEST_CREATED = 'site-request:created',
-  SITE_REQUEST_APPROVED = 'site-request:approved',
-  SITE_REQUEST_REJECTED = 'site-request:rejected',
 }
 
 /**
@@ -81,9 +82,6 @@ export enum SocketEvent {
   SITE_BADGE_REQUEST_APPROVED = 'site-badge-request:approved',
   SITE_BADGE_REQUEST_REJECTED = 'site-badge-request:rejected',
   SITE_BADGE_REQUEST_CANCELLED = 'site-badge-request:cancelled',
-  SITE_REQUEST_CREATED = 'site-request:created',
-  SITE_REQUEST_APPROVED = 'site-request:approved',
-  SITE_REQUEST_REJECTED = 'site-request:rejected',
 }
 
 /**

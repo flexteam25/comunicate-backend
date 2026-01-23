@@ -1,28 +1,22 @@
-import { IsString, IsUUID, IsOptional, IsNumber, Min, MaxLength } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsUUID, IsOptional, MaxLength } from 'class-validator';
 import { IsSlug } from '../../../../../shared/validators/is-slug.validator';
 
 export class ApproveSiteRequestDto {
-  @IsOptional()
-  @IsString()
-  @MaxLength(50, { message: 'Slug must not exceed 50 characters' })
-  @IsSlug({ message: 'Slug must contain only lowercase letters, numbers, and hyphens' })
+  @IsOptional({ message: 'SLUG_OPTIONAL' })
+  @IsString({ message: 'SLUG_MUST_BE_STRING' })
+  @MaxLength(50, { message: 'SLUG_MAX_LENGTH' })
+  @IsSlug({ message: 'SLUG_INVALID_FORMAT' })
   slug?: string;
 
-  @IsNumber({}, { message: 'Points must be a number' })
-  @Type(() => Number)
-  @Min(0, { message: 'Points must be at least 0' })
-  points: number;
-
-  @IsOptional()
-  @IsString()
+  @IsOptional({ message: 'STATUS_OPTIONAL' })
+  @IsString({ message: 'STATUS_MUST_BE_STRING' })
   status?: 'verified' | 'unverified' | 'monitored';
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'TIERID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'TIERID_MUST_BE_UUID' })
   tierId?: string;
 
-  @IsOptional()
-  @IsUUID()
+  @IsOptional({ message: 'CATEGORYID_OPTIONAL' })
+  @IsUUID(undefined, { message: 'CATEGORYID_MUST_BE_UUID' })
   categoryId?: string;
 }

@@ -118,7 +118,6 @@ export class AdminSiteRequestController {
       requestId: id,
       adminId: admin.adminId,
       slug: dto.slug,
-      points: dto.points,
       status: dto.status as any,
       tierId: dto.tierId,
       categoryId: dto.categoryId,
@@ -189,10 +188,10 @@ export class AdminSiteRequestController {
             name: request.tier.name,
             description: request.tier.description || null,
             order: request.tier.order,
-            color: request.tier.color || null,
           }
         : undefined,
       permanentUrl: request.permanentUrl || null,
+      accessibleUrl: request.accessibleUrl || null,
       description: request.description || null,
       firstCharge: request.firstCharge || null,
       recharge: request.recharge || null,
@@ -241,7 +240,6 @@ export class AdminSiteRequestController {
             name: site.tier.name,
             description: site.tier.description || null,
             order: site.tier.order,
-            color: site.tier.color || null,
           }
         : null,
       permanentUrl: site.permanentUrl || null,
