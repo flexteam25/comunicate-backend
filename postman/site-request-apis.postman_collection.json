@@ -1,0 +1,392 @@
+{
+  "info": {
+    "name": "Site Request APIs",
+    "description": "APIs for managing site requests (user and admin)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "User APIs",
+      "item": [
+        {
+          "name": "Create Site Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Test Site Request",
+                  "type": "text"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "tierId",
+                  "value": "{{tierId}}",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "permanentUrl",
+                  "value": "https://example.com",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "description",
+                  "value": "Test description",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "firstCharge",
+                  "value": "10",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "recharge",
+                  "value": "5",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "experience",
+                  "value": "100",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "logo",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true
+                },
+                {
+                  "key": "mainImage",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true
+                },
+                {
+                  "key": "siteImage",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/site-requests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "site-requests"]
+            },
+            "description": "Create a new site request. Requires JWT authentication."
+          }
+        },
+        {
+          "name": "List Site Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/site-requests?status=pending&cursor=&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "site-requests"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "pending | approved | rejected | cancelled",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Max 50",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List all site requests for the authenticated user. Supports cursor pagination."
+          }
+        },
+        {
+          "name": "Get Site Request",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/site-requests/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "site-requests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{siteRequestId}}",
+                  "description": "Site request UUID"
+                }
+              ]
+            },
+            "description": "Get details of a specific site request. User can only view their own requests."
+          }
+        },
+        {
+          "name": "Cancel Site Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/site-requests/:id/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "site-requests", ":id", "cancel"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{siteRequestId}}",
+                  "description": "Site request UUID"
+                }
+              ]
+            },
+            "description": "Cancel a pending site request. Only pending requests can be cancelled."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin APIs",
+      "item": [
+        {
+          "name": "List Site Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/site-requests?status=pending&userName=&startDate=&endDate=&cursor=&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "site-requests"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "pending | approved | rejected | cancelled",
+                  "disabled": true
+                },
+                {
+                  "key": "userName",
+                  "value": "",
+                  "description": "Search by user displayName or email",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "ISO8601 date string",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "ISO8601 date string",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Max 50",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List all site requests (admin view). Requires 'site-request.read' permission."
+          }
+        },
+        {
+          "name": "Get Site Request (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/site-requests/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "site-requests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{siteRequestId}}",
+                  "description": "Site request UUID"
+                }
+              ]
+            },
+            "description": "Get details of a specific site request (admin view). Requires 'site-request.read' permission."
+          }
+        },
+        {
+          "name": "Approve Site Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"test-site-slug\",\n  \"points\": 1000,\n  \"status\": \"verified\",\n  \"tierId\": \"{{tierId}}\",\n  \"categoryId\": \"{{categoryId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/site-requests/:id/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "site-requests", ":id", "approve"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{siteRequestId}}",
+                  "description": "Site request UUID"
+                }
+              ]
+            },
+            "description": "Approve a site request. Creates a site and awards points to the user. Requires 'site-request.approve' permission.\n\nBody:\n- slug (optional): If not provided, will be auto-generated from name\n- points (required): Points to award (min 0)\n- status (optional): 'verified' | 'unverified' | 'monitored' (default: 'verified')\n- tierId (optional): Override tier\n- categoryId (optional): Override category"
+          }
+        },
+        {
+          "name": "Reject Site Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Site does not meet our requirements\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/site-requests/:id/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "site-requests", ":id", "reject"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{siteRequestId}}",
+                  "description": "Site request UUID"
+                }
+              ]
+            },
+            "description": "Reject a site request. Requires 'site-request.reject' permission.\n\nBody:\n- rejectionReason (optional): Reason for rejection"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3008",
+      "type": "string"
+    },
+    {
+      "key": "userAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "siteRequestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tierId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
+

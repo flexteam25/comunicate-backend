@@ -93,6 +93,8 @@ import { UserBadgeRequest } from './modules/user/domain/entities/user-badge-requ
 import { UserBadgeRequestImage } from './modules/user/domain/entities/user-badge-request-image.entity';
 import { EditorModule } from './modules/editor/editor.module';
 import { PointSetting } from './modules/point/domain/entities/point-setting.entity';
+import { SiteRequestModule } from './modules/site-request/site-request.module';
+import { SiteRequest } from './modules/site-request/domain/entities/site-request.entity';
 
 @Module({
   imports: [
@@ -174,6 +176,7 @@ import { PointSetting } from './modules/point/domain/entities/point-setting.enti
         UserBadgeRequest,
         UserBadgeRequestImage,
         PointSetting,
+        SiteRequest,
       ],
       synchronize: false,
       logging: false,
@@ -201,6 +204,7 @@ import { PointSetting } from './modules/point/domain/entities/point-setting.enti
     PartnerModule,
     SiteEventModule,
     EditorModule,
+    SiteRequestModule,
   ],
   controllers: [AppController],
   providers: [AppService],
