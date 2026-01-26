@@ -548,5 +548,4 @@ export class ApproveSiteRequestUseCase {
       updatedAt: site.updatedAt,
     };
   }
-
 }

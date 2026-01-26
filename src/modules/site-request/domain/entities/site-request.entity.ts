@@ -111,6 +111,9 @@ export class SiteRequest extends BaseEntity {
   @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
   ipAddress?: string;
 
+  @Column({ name: 'cs_messenger', type: 'varchar', length: 255 })
+  csMessenger: string;
+
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user?: User;

@@ -28,6 +28,7 @@ export interface CreateSiteRequestCommand {
   categoryId: string;
   permanentUrl: string;
   accessibleUrl: string;
+  csMessenger: string;
   firstCharge: number;
   recharge: number;
   logo?: MulterFile;
@@ -182,6 +183,7 @@ export class CreateSiteRequestUseCase {
             tierId: command.tierId,
             permanentUrl: command.permanentUrl,
             accessibleUrl: command.accessibleUrl,
+            csMessenger: command.csMessenger,
             description: command.description,
             firstCharge: command.firstCharge,
             recharge: command.recharge,

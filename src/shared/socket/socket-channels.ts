@@ -29,6 +29,8 @@ export enum RedisChannel {
   SITE_BADGE_REQUEST_APPROVED = 'site-badge-request:approved',
   SITE_BADGE_REQUEST_REJECTED = 'site-badge-request:rejected',
   SITE_BADGE_REQUEST_CANCELLED = 'site-badge-request:cancelled',
+  USER_BADGE_REQUEST_APPROVED = 'user-badge-request:approved',
+  USER_BADGE_REQUEST_REJECTED = 'user-badge-request:rejected',
 }
 
 /**
@@ -82,6 +84,8 @@ export enum SocketEvent {
   SITE_BADGE_REQUEST_APPROVED = 'site-badge-request:approved',
   SITE_BADGE_REQUEST_REJECTED = 'site-badge-request:rejected',
   SITE_BADGE_REQUEST_CANCELLED = 'site-badge-request:cancelled',
+  USER_BADGE_REQUEST_APPROVED = 'user-badge-request:approved',
+  USER_BADGE_REQUEST_REJECTED = 'user-badge-request:rejected',
 }
 
 /**

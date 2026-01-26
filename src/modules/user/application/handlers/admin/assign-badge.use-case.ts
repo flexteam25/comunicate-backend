@@ -16,6 +16,9 @@ import {
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
 import { TransactionService } from '../../../../../shared/services/transaction.service';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 
 export interface AssignBadgeCommand {
   userId: string;
@@ -34,6 +37,8 @@ export class AssignBadgeUseCase {
     @InjectRepository(PointTransaction)
     private readonly pointTransactionRepository: Repository<PointTransaction>,
     private readonly transactionService: TransactionService,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   async execute(command: AssignBadgeCommand): Promise<UserBadge[]> {
@@ -153,6 +158,32 @@ export class AssignBadgeUseCase {
         const allUserBadges = await userBadgeRepo.find({
           where: { userId: command.userId },
         });
+
+        // Publish point:updated event if points were changed (after transaction)
+        if (currentPoints !== originalPoints) {
+          setImmediate(() => {
+            this.redisService
+              .publishEvent(RedisChannel.POINT_UPDATED as string, {
+                userId: command.userId,
+                pointsDelta: currentPoints - originalPoints,
+                previousPoints: originalPoints,
+                newPoints: currentPoints,
+                transactionType: PointTransactionType.EARN,
+                updatedAt: new Date(),
+              })
+              .catch((error) => {
+                this.logger.error(
+                  'Failed to publish point:updated event',
+                  {
+                    error: error instanceof Error ? error.message : String(error),
+                    userId: command.userId,
+                    pointsDelta: currentPoints - originalPoints,
+                  },
+                  'user-badge',
+                );
+              });
+          });
+        }
 
         return allUserBadges;
       },

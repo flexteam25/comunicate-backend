@@ -44,6 +44,7 @@ export class SiteRequestResponseDto {
   tier?: SiteRequestTierSummary;
   permanentUrl?: string;
   accessibleUrl?: string;
+  csMessenger: string;
   description?: string;
   firstCharge?: number;
   recharge?: number;

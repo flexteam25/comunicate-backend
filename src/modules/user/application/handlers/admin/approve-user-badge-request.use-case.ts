@@ -19,6 +19,9 @@ import {
   badRequest,
   MessageKeys,
 } from '../../../../../shared/exceptions/exception-helpers';
+import { RedisService } from '../../../../../shared/redis/redis.service';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
+import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 
 export interface ApproveUserBadgeRequestCommand {
   requestId: string;
@@ -38,6 +41,8 @@ export class ApproveUserBadgeRequestUseCase {
     @Inject('IBadgeRepository')
     private readonly badgeRepository: IBadgeRepository,
     private readonly transactionService: TransactionService,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   async execute(command: ApproveUserBadgeRequestCommand): Promise<UserBadgeRequest> {
@@ -103,14 +108,20 @@ export class ApproveUserBadgeRequestUseCase {
         });
         await userBadgeRepo.save(userBadge);
 
+        // Track points for realtime event
+        let previousPoints = 0;
+        let newPoints = 0;
+        let pointsAwarded = 0;
+
         // Always handle point reward if badge has point
         if (typeof badge.point === 'number' && badge.point > 0) {
           const user = await this.userRepository.findById(request.userId, [
             'userProfile',
           ]);
           if (user && user.userProfile) {
-            const currentPoints = user.userProfile.points ?? 0;
-            const newPoints = Math.max(0, currentPoints + badge.point); // Ensure never negative
+            previousPoints = user.userProfile.points ?? 0;
+            newPoints = Math.max(0, previousPoints + badge.point); // Ensure never negative
+            pointsAwarded = badge.point;
 
             user.userProfile.points = newPoints;
             await manager.save(user.userProfile);
@@ -140,8 +151,98 @@ export class ApproveUserBadgeRequestUseCase {
           throw notFound(MessageKeys.USER_BADGE_REQUEST_NOT_FOUND_AFTER_UPDATE);
         }
 
+        // Publish realtime events after transaction
+        setImmediate(() => {
+          // Publish user-badge-request:approved event
+          this.publishBadgeRequestApprovedEvent(reloaded).catch((error) => {
+            this.logger.error(
+              'Failed to publish user-badge-request:approved event',
+              {
+                error: error instanceof Error ? error.message : String(error),
+                requestId: reloaded.id,
+                userId: reloaded.userId,
+              },
+              'user-badge-request',
+            );
+          });
+
+          // Publish point:updated event if points were awarded
+          if (pointsAwarded > 0) {
+            this.redisService
+              .publishEvent(RedisChannel.POINT_UPDATED as string, {
+                userId: reloaded.userId,
+                pointsDelta: pointsAwarded,
+                previousPoints,
+                newPoints,
+                transactionType: PointTransactionType.EARN,
+                updatedAt: new Date(),
+              })
+              .catch((error) => {
+                this.logger.error(
+                  'Failed to publish point:updated event',
+                  {
+                    error: error instanceof Error ? error.message : String(error),
+                    userId: reloaded.userId,
+                    pointsDelta: pointsAwarded,
+                  },
+                  'user-badge-request',
+                );
+              });
+          }
+        });
+
         return reloaded;
       },
+    );
+  }
+
+  private async publishBadgeRequestApprovedEvent(
+    request: UserBadgeRequest,
+  ): Promise<void> {
+    // Map request to response format (same as API response)
+    const eventData = {
+      id: request.id,
+      userId: request.userId,
+      badgeId: request.badgeId,
+      adminId: request.adminId || null,
+      status: request.status,
+      note: request.note || null,
+      content: request.content || null,
+      images: (request.images || []).map((img: any) => ({
+        id: img.id,
+        imageUrl: img.imageUrl || null,
+        order: img.order || null,
+      })),
+      user: request.user
+        ? {
+            id: request.user.id,
+            email: request.user.email,
+            displayName: request.user.displayName || null,
+          }
+        : null,
+      badge: request.badge
+        ? {
+            id: request.badge.id,
+            name: request.badge.name,
+            description: request.badge.description || null,
+            iconUrl: request.badge.iconUrl || null,
+            iconName: request.badge.iconName || null,
+          }
+        : null,
+      admin: request.admin
+        ? {
+            id: request.admin.id,
+            email: request.admin.email,
+            displayName: request.admin.displayName || null,
+          }
+        : null,
+      createdAt: request.createdAt,
+      updatedAt: request.updatedAt,
+    };
+
+    await this.redisService.publishEvent(
+      RedisChannel.USER_BADGE_REQUEST_APPROVED as string,
+      eventData,
     );
   }
 }

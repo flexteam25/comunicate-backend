@@ -57,6 +57,7 @@ export class SiteRequestRealtimeMapper {
         : undefined,
       permanentUrl: request.permanentUrl || null,
       accessibleUrl: request.accessibleUrl || null,
+      csMessenger: request.csMessenger,
       description: request.description || null,
       firstCharge: request.firstCharge || null,
       recharge: request.recharge || null,

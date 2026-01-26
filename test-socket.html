@@ -240,6 +240,8 @@
                     <li><strong>site-request:approved</strong> - Site request approved</li>
                     <li><strong>site-request:rejected</strong> - Site request rejected</li>
                     <li><strong>site-request:cancelled</strong> - Site request cancelled</li>
+                    <li><strong>user-badge-request:approved</strong> - User badge request approved</li>
+                    <li><strong>user-badge-request:rejected</strong> - User badge request rejected</li>
                 </ul>
             </div>
             <input type="text" id="token-user" placeholder="User JWT Access Token">
@@ -281,6 +283,8 @@
                     <li><strong>site-request:approved</strong> - Site request approved</li>
                     <li><strong>site-request:rejected</strong> - Site request rejected</li>
                     <li><strong>site-request:cancelled</strong> - Site request cancelled</li>
+                    <li><strong>user-badge-request:approved</strong> - User badge request approved</li>
+                    <li><strong>user-badge-request:rejected</strong> - User badge request rejected</li>
                 </ul>
             </div>
             <input type="text" id="token-admin" placeholder="Admin JWT Access Token">
@@ -566,6 +570,19 @@
                 const status = data.status || 'Unknown';
                 log('log-user', `🚫 Site Request Cancelled - Name: "${requestName}", Status: ${status}`, 'event', data);
             });
+
+            socketUser.on('user-badge-request:approved', (data) => {
+                const badgeName = data.badge?.name || 'Unknown';
+                const adminName = data.admin?.displayName || data.admin?.email || 'Admin';
+                log('log-user', `✅ User Badge Request Approved - Badge: "${badgeName}", Admin: ${adminName}`, 'event', data);
+            });
+
+            socketUser.on('user-badge-request:rejected', (data) => {
+                const badgeName = data.badge?.name || 'Unknown';
+                const adminName = data.admin?.displayName || data.admin?.email || 'Admin';
+                const note = data.note || 'No reason provided';
+                log('log-user', `❌ User Badge Request Rejected - Badge: "${badgeName}", Admin: ${adminName}, Note: ${note}`, 'event', data);
+            });
         }
 
         function disconnectUser() {
@@ -814,6 +831,21 @@
                 const userName = data.user?.displayName || data.user?.email || 'Unknown';
                 const status = data.status || 'Unknown';
                 log('log-admin', `🚫 Site Request Cancelled - Name: "${requestName}", User: ${userName}, Status: ${status}`, 'event', data);
+            });
+
+            socketAdmin.on('user-badge-request:approved', (data) => {
+                const badgeName = data.badge?.name || 'Unknown';
+                const userName = data.user?.displayName || data.user?.email || 'Unknown';
+                const adminName = data.admin?.displayName || data.admin?.email || 'Admin';
+                log('log-admin', `✅ User Badge Request Approved - Badge: "${badgeName}", User: ${userName}, Admin: ${adminName}`, 'event', data);
+            });
+
+            socketAdmin.on('user-badge-request:rejected', (data) => {
+                const badgeName = data.badge?.name || 'Unknown';
+                const userName = data.user?.displayName || data.user?.email || 'Unknown';
+                const adminName = data.admin?.displayName || data.admin?.email || 'Admin';
+                const note = data.note || 'No reason provided';
+                log('log-admin', `❌ User Badge Request Rejected - Badge: "${badgeName}", User: ${userName}, Admin: ${adminName}, Note: ${note}`, 'event', data);
             });
         }
 

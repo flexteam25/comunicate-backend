@@ -31,9 +31,7 @@ export class CreateSiteRequestDto {
   @IsString({ message: 'PERMANENTURL_MUST_BE_STRING' })
   @ValidateIf(
     (o: CreateSiteRequestDtoType) =>
-      o.permanentUrl !== undefined &&
-      o.permanentUrl !== null &&
-      o.permanentUrl !== '',
+      o.permanentUrl !== undefined && o.permanentUrl !== null && o.permanentUrl !== '',
   )
   @MaxLength(500, { message: 'PERMANENTURL_MAX_LENGTH' })
   permanentUrl: string;
@@ -42,12 +40,15 @@ export class CreateSiteRequestDto {
   @IsString({ message: 'ACCESSIBLEURL_MUST_BE_STRING' })
   @ValidateIf(
     (o: CreateSiteRequestDtoType) =>
-      o.accessibleUrl !== undefined &&
-      o.accessibleUrl !== null &&
-      o.accessibleUrl !== '',
+      o.accessibleUrl !== undefined && o.accessibleUrl !== null && o.accessibleUrl !== '',
   )
   @MaxLength(500, { message: 'ACCESSIBLEURL_MAX_LENGTH' })
   accessibleUrl: string;
+
+  @IsNotEmpty({ message: 'CSMESSENGER_REQUIRED' })
+  @IsString({ message: 'CSMESSENGER_MUST_BE_STRING' })
+  @MaxLength(255, { message: 'CSMESSENGER_MAX_LENGTH' })
+  csMessenger: string;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'FIRSTCHARGE_MUST_BE_NUMBER' })
