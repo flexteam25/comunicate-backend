@@ -1,6 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
+import { EntityManager } from 'typeorm';
 import { ScamReport, ScamReportStatus } from '../../domain/entities/scam-report.entity';
 import { IScamReportRepository } from '../../infrastructure/persistence/repositories/scam-report.repository';
+import { TransactionService } from '../../../../shared/services/transaction.service';
+import { PointRewardService } from '../../../point/application/services/point-reward.service';
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../shared/logger/logger.service';
@@ -25,6 +28,8 @@ export class ApproveScamReportUseCase {
   constructor(
     @Inject('IScamReportRepository')
     private readonly scamReportRepository: IScamReportRepository,
+    private readonly transactionService: TransactionService,
+    private readonly pointRewardService: PointRewardService,
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
     private readonly configService: ConfigService,
@@ -43,12 +48,37 @@ export class ApproveScamReportUseCase {
       throw badRequest(MessageKeys.SCAM_REPORT_ALREADY_PROCESSED);
     }
 
-    const updatedReport = await this.scamReportRepository.update(command.reportId, {
-      title: command.title,
-      status: ScamReportStatus.PUBLISHED,
-      adminId: command.adminId,
-      reviewedAt: new Date(),
-    });
+    const reviewedAt = new Date();
+    const updatedReport = await this.transactionService.executeInTransaction(
+      async (manager: EntityManager) => {
+        const reportRepo = manager.getRepository(ScamReport);
+        await reportRepo.update(command.reportId, {
+          title: command.title,
+          status: ScamReportStatus.PUBLISHED,
+          adminId: command.adminId,
+          reviewedAt,
+        });
+
+        // Reward points only when admin approves the scam report
+        await this.pointRewardService.rewardPoints(manager, {
+          userId: report.userId,
+          pointSettingKey: 'report_site_scam',
+          category: 'report_site_scam',
+          referenceType: 'scam_report',
+          referenceId: command.reportId,
+          description: '사이트 먹튀제보 보상 (Scam report reward)',
+          descriptionKo: '사이트 먹튀제보 보상',
+          metadata: {
+            siteId: report.siteId || null,
+            reportId: command.reportId,
+            siteUrl: report.siteUrl,
+            siteName: report.siteName,
+          },
+        });
+
+        return { id: command.reportId };
+      },
+    );
 
     // Reload with all relations and reaction counts for event
     const reportWithRelations = await this.scamReportRepository.findById(
@@ -65,7 +95,8 @@ export class ApproveScamReportUseCase {
     );
 
     if (!reportWithRelations) {
-      return updatedReport;
+      const fallback = await this.scamReportRepository.findById(updatedReport.id);
+      return fallback ?? report;
     }
 
     // Map report to response format (same as admin API response)
