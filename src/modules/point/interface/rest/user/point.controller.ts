@@ -64,6 +64,7 @@ export class PointController {
         referenceType: transaction.referenceType || null,
         referenceId: transaction.referenceId || null,
         description: transaction.description || null,
+        descriptionKo: transaction.descriptionKo || null,
         metadata: transaction.metadata || null,
         createdAt: transaction.createdAt,
       })),

@@ -600,5 +600,8 @@
   "USER_REGISTERED_SUCCESS": "User registered successfully",
   "VALIDATION_FAILED": "Invalid input data",
   "VERIFYCODE_MUST_BE_STRING": "Invalid input data",
-  "VERIFYCODE_REQUIRED": "Required field is missing"
+  "VERIFYCODE_REQUIRED": "Required field is missing",
+  "MINIGAME_LAUNCH_SUCCESS": "Game launch URL generated successfully",
+  "MINIGAME_NOT_CONFIGURED": "Minigame is not configured",
+  "MINIGAME_LAUNCH_FAILED": "Failed to launch game"
 }

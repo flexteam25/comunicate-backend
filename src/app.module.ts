@@ -95,6 +95,7 @@ import { EditorModule } from './modules/editor/editor.module';
 import { PointSetting } from './modules/point/domain/entities/point-setting.entity';
 import { SiteRequestModule } from './modules/site-request/site-request.module';
 import { SiteRequest } from './modules/site-request/domain/entities/site-request.entity';
+import { MinigameModule } from './modules/minigame/minigame.module';
 
 @Module({
   imports: [
@@ -205,6 +206,7 @@ import { SiteRequest } from './modules/site-request/domain/entities/site-request
     SiteEventModule,
     EditorModule,
     SiteRequestModule,
+    MinigameModule,
   ],
   controllers: [AppController],
   providers: [AppService],

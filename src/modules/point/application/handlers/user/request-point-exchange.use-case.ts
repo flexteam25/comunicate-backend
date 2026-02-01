@@ -144,7 +144,8 @@ export class RequestPointExchangeUseCase {
           category: 'point_exchange',
           referenceType: 'point_exchange',
           referenceId: saved.id,
-          description: `Point Exchange: ${site.name} ${command.pointsAmount}원`,
+          description: `Point Exchange: ${site.name}`,
+          descriptionKo: `포인트 교환: ${site.name}`,
         });
         await pointTransactionRepo.save(pointTransaction);
 

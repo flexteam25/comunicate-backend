@@ -154,7 +154,8 @@ export class RedeemGifticonUseCase {
           category: 'gifticon_redemption',
           referenceType: 'gifticon_redemption',
           referenceId: saved.id,
-          description: `Gifticon: ${gifticon.title} ${gifticon.amount}원`,
+          description: `Gifticon: ${gifticon.title}`,
+          descriptionKo: `기프티콘: ${gifticon.title}`,
         });
         await pointTransactionRepo.save(pointTransaction);
 

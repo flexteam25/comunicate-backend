@@ -29,6 +29,8 @@ export interface CreatePointTransactionCommand {
   referenceId?: string;
   /** Transaction description */
   description?: string;
+  /** Transaction description in Korean */
+  descriptionKo?: string;
   /** Additional information */
   metadata?: Record<string, any>;
 }
@@ -62,6 +64,7 @@ export class CreatePointTransactionUseCase {
           referenceType: command.referenceType,
           referenceId: command.referenceId,
           description: command.description,
+          descriptionKo: command.descriptionKo ?? null,
           metadata: command.metadata,
         });
         return transactionRepo.save(transaction);

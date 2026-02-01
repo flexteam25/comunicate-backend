@@ -600,5 +600,8 @@
   "USER_REGISTERED_SUCCESS": "사용자 등록 성공",
   "VALIDATION_FAILED": "입력한 정보가 올바르지 않습니다",
   "VERIFYCODE_MUST_BE_STRING": "입력한 데이터가 올바르지 않습니다",
-  "VERIFYCODE_REQUIRED": "필수 항목이 누락되었습니다"
+  "VERIFYCODE_REQUIRED": "필수 항목이 누락되었습니다",
+  "MINIGAME_LAUNCH_SUCCESS": "게임 실행 URL이 생성되었습니다",
+  "MINIGAME_NOT_CONFIGURED": "미니게임이 설정되지 않았습니다",
+  "MINIGAME_LAUNCH_FAILED": "게임 실행에 실패했습니다"
 }
