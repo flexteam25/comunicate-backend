@@ -34,9 +34,13 @@ function buildCanonical(method: string, pathStr: string, query: Record<string, s
   return `${method}\n${pathStr}\n${queryString}\n${bodyString}\n${timestamp}`;
 }
 
+const PATH_SYNC_POINT = '/api/partner/sync-point';
+
 @Injectable()
 export class GameBackendClientService {
   private readonly baseUrl: string;
+  /** Management server URL (sync-point). Falls back to baseUrl if not set. */
+  private readonly managementUrl: string;
   private readonly apiKey: string;
   private readonly apiSecret: string;
   private readonly privateKeyPem: string | null = null;
@@ -45,6 +49,8 @@ export class GameBackendClientService {
 
   constructor(private readonly configService: ConfigService) {
     this.baseUrl = (this.configService.get<string>('GAME_BASE_URL') || '').replace(/\/$/, '');
+    const management = (this.configService.get<string>('GAME_MANAGEMENT_URL') || '').replace(/\/$/, '');
+    this.managementUrl = management || this.baseUrl;
     this.apiKey = this.configService.get<string>('GAME_PARTNER_API_KEY') || '';
     this.apiSecret = this.configService.get<string>('GAME_PARTNER_API_SECRET') || '';
     const keyPath = this.configService.get<string>('GAME_PARTNER_PRIVATE_KEY') || '';
@@ -65,6 +71,45 @@ export class GameBackendClientService {
 
   isConfigured(): boolean {
     return !!(this.baseUrl && this.apiKey && this.apiSecret && this.privateKeyPem);
+  }
+
+  /** Whether sync-point can be called (management URL + RSA key). */
+  isSyncPointConfigured(): boolean {
+    return !!(this.managementUrl && this.apiKey && this.apiSecret && this.privateKeyPem);
+  }
+
+  /**
+   * Sync user point to game backend (management server). Call after any point change on partner.
+   * Game backend updates POINT in a DB transaction and emits balanceUpdated to user's socket.
+   */
+  async syncPoint(userUuid: string, point: number, txRef?: string): Promise<void> {
+    if (!this.isSyncPointConfigured()) {
+      return;
+    }
+    const method = 'POST';
+    const pathStr = PATH_SYNC_POINT;
+    const query: Record<string, string> = {};
+    const body: Record<string, unknown> = { userUuid, point };
+    if (txRef != null) body.txRef = txRef;
+
+    const timestamp = String(Date.now());
+    const canonical = buildCanonical(method, pathStr, query, body, timestamp);
+    const sign = crypto.createSign('RSA-SHA256');
+    sign.update(canonical);
+    const signature = sign.sign({ key: this.privateKeyPem! }, 'base64');
+
+    const url = `${this.managementUrl}${pathStr}`;
+    await this.client.request({
+      method: 'POST',
+      url,
+      data: body,
+      headers: {
+        'x-key': this.apiKey,
+        'x-sec': this.apiSecret,
+        'x-signature': signature,
+        'x-timestamp': timestamp,
+      },
+    });
   }
 
   async launchGame(payload: LaunchGamePayload): Promise<{ url: string }> {

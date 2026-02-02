@@ -11,6 +11,7 @@ import { LoggerModule } from '../../shared/logger/logger.module';
 import { GameBackendClientService } from '../../shared/services/game-backend-client.service';
 import { LaunchGameUseCase } from './application/handlers/launch-game.use-case';
 import { HandleGameCallbackUseCase } from './application/handlers/handle-game-callback.use-case';
+import { GameSyncPointSubscriber } from './application/subscribers/game-sync-point.subscriber';
 import { GameCallbackGuard } from './infrastructure/guards/game-callback.guard';
 import { MinigameController } from './interface/rest/user/minigame.controller';
 
@@ -30,6 +31,7 @@ import { MinigameController } from './interface/rest/user/minigame.controller';
     LaunchGameUseCase,
     GameCallbackGuard,
     HandleGameCallbackUseCase,
+    GameSyncPointSubscriber,
   ],
   exports: [GameBackendClientService],
 })
