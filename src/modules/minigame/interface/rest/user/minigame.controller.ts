@@ -11,6 +11,7 @@ import { HandleGameCallbackUseCase } from '../../../application/handlers/handle-
 import { GameCallbackGuard } from '../../../infrastructure/guards/game-callback.guard';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
+import { formatPoints } from '../../../../../shared/utils/point.util';
 
 @Controller('api/game')
 export class MinigameController {
@@ -36,7 +37,9 @@ export class MinigameController {
   @Post('callback')
   @UseGuards(GameCallbackGuard)
   @HttpCode(HttpStatus.OK)
-  async callback(@Body() dto: GameCallbackDto): Promise<{ status: string; message?: string; newBalance?: number }> {
+  async callback(
+    @Body() dto: GameCallbackDto,
+  ): Promise<{ status: string; message?: string; newBalance?: number }> {
     const result = await this.handleGameCallbackUseCase.execute({
       type: dto.type,
       res: dto.res,
@@ -46,6 +49,9 @@ export class MinigameController {
       roundId: dto.roundId,
       gameType: dto.gameType,
     });
+    if (result.status === 'OK' && 'newBalance' in result && result.newBalance != null) {
+      return { ...result, newBalance: formatPoints(result.newBalance) };
+    }
     return result;
   }
 }

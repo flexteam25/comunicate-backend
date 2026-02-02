@@ -27,6 +27,7 @@ import { GetMyExchangesQueryDto } from '../dto/get-my-exchanges-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { Request } from 'express';
 import { getClientIp } from '../../../../../shared/utils/request.util';
+import { formatPoints } from '../../../../../shared/utils/point.util';
 
 @Controller('api/points')
 @UseGuards(JwtAuthGuard)
@@ -58,8 +59,8 @@ export class PointController {
       data: result.data.map((transaction) => ({
         id: transaction.id,
         type: transaction.type,
-        amount: transaction.amount,
-        balanceAfter: transaction.balanceAfter,
+        amount: formatPoints(transaction.amount),
+        balanceAfter: formatPoints(transaction.balanceAfter),
         category: transaction.category,
         referenceType: transaction.referenceType || null,
         referenceId: transaction.referenceId || null,
@@ -100,8 +101,8 @@ export class PointController {
               name: exchange.site.name,
             }
           : null,
-        pointsAmount: exchange.pointsAmount,
-        siteCurrencyAmount: Number(exchange.siteCurrencyAmount),
+        pointsAmount: formatPoints(exchange.pointsAmount),
+        siteCurrencyAmount: formatPoints(Number(exchange.siteCurrencyAmount)),
         exchangeRate: exchange.exchangeRate ? Number(exchange.exchangeRate) : null,
         siteUserId: exchange.siteUserId,
         status: exchange.status,
@@ -134,8 +135,8 @@ export class PointController {
               name: exchange.site.name,
             }
           : null,
-        pointsAmount: exchange.pointsAmount,
-        siteCurrencyAmount: Number(exchange.siteCurrencyAmount),
+        pointsAmount: formatPoints(exchange.pointsAmount),
+        siteCurrencyAmount: formatPoints(Number(exchange.siteCurrencyAmount)),
         exchangeRate: exchange.exchangeRate ? Number(exchange.exchangeRate) : null,
         siteUserId: exchange.siteUserId,
         status: exchange.status,
@@ -168,8 +169,8 @@ export class PointController {
             name: exchange.site.name,
           }
         : null,
-      pointsAmount: exchange.pointsAmount,
-      siteCurrencyAmount: Number(exchange.siteCurrencyAmount),
+      pointsAmount: formatPoints(exchange.pointsAmount),
+      siteCurrencyAmount: formatPoints(Number(exchange.siteCurrencyAmount)),
       exchangeRate: exchange.exchangeRate ? Number(exchange.exchangeRate) : null,
       siteUserId: exchange.siteUserId,
       status: exchange.status,

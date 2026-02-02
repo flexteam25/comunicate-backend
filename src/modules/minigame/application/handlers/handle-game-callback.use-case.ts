@@ -11,6 +11,7 @@ import { CreatePointTransactionUseCase } from '../../../point/application/handle
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../shared/logger/logger.service';
+import { formatPoints } from '../../../../shared/utils/point.util';
 
 export type GameCallbackResult =
   | { status: 'OK'; newBalance?: number }
@@ -52,9 +53,9 @@ export class HandleGameCallbackUseCase {
   ): void {
     const eventData = {
       userId,
-      pointsDelta,
-      previousPoints,
-      newPoints,
+      pointsDelta: formatPoints(pointsDelta),
+      previousPoints: formatPoints(previousPoints),
+      newPoints: formatPoints(newPoints),
       transactionType,
       updatedAt: new Date(),
     };
@@ -75,7 +76,7 @@ export class HandleGameCallbackUseCase {
   }
 
   async execute(command: GameCallbackCommand): Promise<GameCallbackResult> {
-    const { type, res, amount, userUuid, txRef, roundId, gameType } = command;
+    const { type, amount, userUuid, txRef, roundId, gameType } = command;
 
     const existing = await this.pointTransactionRepo
       .createQueryBuilder('t')

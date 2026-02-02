@@ -56,6 +56,7 @@ import { SiteResponse } from '../../../site/interface/rest/dto/site-response.dto
 import { Site } from '../../../site/domain/entities/site.entity';
 import { Request } from 'express';
 import { getClientIp } from '../../../../shared/utils/request.util';
+import { formatPoints } from '../../../../shared/utils/point.util';
 
 @Controller('api')
 @UseGuards(JwtAuthGuard)
@@ -347,7 +348,7 @@ export class UserController {
       phone: dbUser.userProfile?.phone || undefined,
       birthDate: dbUser.userProfile?.birthDate || undefined,
       gender: dbUser.userProfile?.gender || undefined,
-      points: dbUser.userProfile?.points ?? 0,
+      points: formatPoints(dbUser.userProfile?.points ?? 0),
     };
 
     return ApiResponseUtil.success(userResponse, MessageKeys.PROFILE_UPDATED_SUCCESS);
@@ -415,7 +416,7 @@ export class UserController {
       phone: dbUser.userProfile?.phone || undefined,
       birthDate: dbUser.userProfile?.birthDate || undefined,
       gender: dbUser.userProfile?.gender || undefined,
-      points: dbUser.userProfile?.points ?? 0,
+      points: formatPoints(dbUser.userProfile?.points ?? 0),
       lastLoginAt: dbUser.lastLoginAt || undefined,
       roles: this.mapUserRoles(dbUser),
       badge: badgeSummary,
