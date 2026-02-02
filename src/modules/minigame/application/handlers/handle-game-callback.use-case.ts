@@ -8,6 +8,9 @@ import {
   PointTransactionType,
 } from '../../../point/domain/entities/point-transaction.entity';
 import { CreatePointTransactionUseCase } from '../../../point/application/handlers/create-point-transaction.use-case';
+import { RedisService } from '../../../../shared/redis/redis.service';
+import { RedisChannel } from '../../../../shared/socket/socket-channels';
+import { LoggerService } from '../../../../shared/logger/logger.service';
 
 export type GameCallbackResult =
   | { status: 'OK'; newBalance?: number }
@@ -36,7 +39,40 @@ export class HandleGameCallbackUseCase {
     @InjectRepository(UserProfile)
     private readonly userProfileRepo: Repository<UserProfile>,
     private readonly createPointTransactionUseCase: CreatePointTransactionUseCase,
+    private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
+
+  private publishPointUpdated(
+    userId: string,
+    pointsDelta: number,
+    previousPoints: number,
+    newPoints: number,
+    transactionType: PointTransactionType,
+  ): void {
+    const eventData = {
+      userId,
+      pointsDelta,
+      previousPoints,
+      newPoints,
+      transactionType,
+      updatedAt: new Date(),
+    };
+    setImmediate(() => {
+      this.redisService
+        .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
+        .catch((error) => {
+          this.logger.error(
+            'Failed to publish point:updated event',
+            {
+              error: error instanceof Error ? error.message : String(error),
+              userId,
+            },
+            'minigame',
+          );
+        });
+    });
+  }
 
   async execute(command: GameCallbackCommand): Promise<GameCallbackResult> {
     const { type, res, amount, userUuid, txRef, roundId, gameType } = command;
@@ -80,6 +116,13 @@ export class HandleGameCallbackUseCase {
           descriptionKo: `미니게임 베팅${gameType ? ` (${gameType})` : ''}`,
           metadata: { txRef, type, gameType, roundId },
         });
+        this.publishPointUpdated(
+          userUuid,
+          -amountNum,
+          balanceBefore,
+          balanceAfter,
+          PointTransactionType.SPEND,
+        );
         return { status: 'OK', newBalance: balanceAfter };
       }
       case 'cancel_bet': {
@@ -97,6 +140,13 @@ export class HandleGameCallbackUseCase {
           descriptionKo: `미니게임 베팅 취소${gameType ? ` (${gameType})` : ''}`,
           metadata: { txRef, type, gameType, roundId },
         });
+        this.publishPointUpdated(
+          userUuid,
+          amountNum,
+          balanceBefore,
+          balanceAfter,
+          PointTransactionType.REFUND,
+        );
         return { status: 'OK' };
       }
       case 'win': {
@@ -114,6 +164,13 @@ export class HandleGameCallbackUseCase {
           descriptionKo: `미니게임 당첨${gameType ? ` (${gameType})` : ''}`,
           metadata: { txRef, type, gameType, roundId },
         });
+        this.publishPointUpdated(
+          userUuid,
+          amountNum,
+          balanceBefore,
+          balanceAfter,
+          PointTransactionType.EARN,
+        );
         return { status: 'OK' };
       }
       case 'lose': {
@@ -128,6 +185,13 @@ export class HandleGameCallbackUseCase {
           descriptionKo: `미니게임 패배${gameType ? ` (${gameType})` : ''}`,
           metadata: { txRef, type, gameType, roundId, amount: amountNum },
         });
+        this.publishPointUpdated(
+          userUuid,
+          0,
+          balanceBefore,
+          balanceBefore,
+          PointTransactionType.SPEND,
+        );
         return { status: 'OK' };
       }
       case 'refund': {
@@ -145,6 +209,13 @@ export class HandleGameCallbackUseCase {
           descriptionKo: `미니게임 환불${gameType ? ` (${gameType})` : ''}`,
           metadata: { txRef, type, gameType, roundId },
         });
+        this.publishPointUpdated(
+          userUuid,
+          amountNum,
+          balanceBefore,
+          balanceAfter,
+          PointTransactionType.REFUND,
+        );
         return { status: 'OK' };
       }
       default:

@@ -1,6 +1,17 @@
 const dotenv = require('dotenv');
 const path = require('path');
 
+/**
+ * Resolve key file path to absolute. PM2 may run from different cwd;
+ * relative paths like "keys/partner-private.pem" must resolve from project root.
+ * Returns empty string if envValue is empty/undefined (feature disabled).
+ */
+function resolveKeyPath(envValue) {
+  const val = envValue != null && envValue !== '' ? String(envValue).trim() : '';
+  if (!val) return '';
+  return path.isAbsolute(val) ? val : path.join(__dirname, val);
+}
+
 // Load development environment variables
 const devEnv = dotenv.config({ path: path.join(__dirname, '.env') }).parsed || {};
 
@@ -31,6 +42,12 @@ const prodEnv = dotenv.config({ path: path.join(__dirname, '.env.production') })
  *   pm2 delete all                                    # Delete all processes
  *   pm2 show <process-name>                           # Show process details
  *   pm2 logs <process-name> --lines 50               # View specific process logs
+ *
+ * Path Notes (PM2):
+ *   - cwd is set to project root so relative paths (UPLOAD_DIR, etc.) resolve correctly
+ *   - GAME_PARTNER_PRIVATE_KEY and GAME_PUBLIC_KEY: relative paths are resolved to absolute
+ *     at load time, so they work regardless of where pm2 start is run from
+ *   - Run pm2 from project root: cd /path/to/project && pm2 start ecosystem.config.js
  */
 
 module.exports = {
@@ -38,6 +55,7 @@ module.exports = {
     {
       name: 'poca-api',
       script: 'dist/src/main.js',
+      cwd: __dirname,
       instances: 2,
       exec_mode: 'cluster',
       env: {
@@ -90,6 +108,13 @@ module.exports = {
         SMTP_USER: devEnv.SMTP_USER,
         SMTP_PASSWORD: devEnv.SMTP_PASSWORD,
         SMTP_FROM: devEnv.SMTP_FROM,
+
+        // Minigame (partner -> game backend). Empty GAME_BASE_URL disables launch-game.
+        GAME_BASE_URL: devEnv.GAME_BASE_URL || '',
+        GAME_PARTNER_API_KEY: devEnv.GAME_PARTNER_API_KEY || '',
+        GAME_PARTNER_API_SECRET: devEnv.GAME_PARTNER_API_SECRET || '',
+        GAME_PARTNER_PRIVATE_KEY: resolveKeyPath(devEnv.GAME_PARTNER_PRIVATE_KEY),
+        GAME_PUBLIC_KEY: resolveKeyPath(devEnv.GAME_PUBLIC_KEY),
       },
       env_production: {
         NODE_ENV: prodEnv.NODE_ENV || 'production',
@@ -141,6 +166,13 @@ module.exports = {
         SMTP_USER: prodEnv.SMTP_USER,
         SMTP_PASSWORD: prodEnv.SMTP_PASSWORD,
         SMTP_FROM: prodEnv.SMTP_FROM,
+
+        // Minigame (partner -> game backend). Empty GAME_BASE_URL disables launch-game.
+        GAME_BASE_URL: prodEnv.GAME_BASE_URL || '',
+        GAME_PARTNER_API_KEY: prodEnv.GAME_PARTNER_API_KEY || '',
+        GAME_PARTNER_API_SECRET: prodEnv.GAME_PARTNER_API_SECRET || '',
+        GAME_PARTNER_PRIVATE_KEY: resolveKeyPath(prodEnv.GAME_PARTNER_PRIVATE_KEY),
+        GAME_PUBLIC_KEY: resolveKeyPath(prodEnv.GAME_PUBLIC_KEY),
       },
       log_file: 'pm2/logs/app.log',
       out_file: 'pm2/logs/app-out.log',
