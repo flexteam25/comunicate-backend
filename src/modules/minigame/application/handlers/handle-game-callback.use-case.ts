@@ -92,9 +92,8 @@ export class HandleGameCallbackUseCase {
     }
 
     const profile = user.userProfile;
-    const balanceBefore = profile.points ?? 0;
-    const amountNum = Math.round(Number(amount));
-    const resNum = Math.round(Number(res));
+    const balanceBefore = Number(profile.points ?? 0);
+    const amountNum = Number(amount);
 
     switch (type) {
       case 'bet': {
