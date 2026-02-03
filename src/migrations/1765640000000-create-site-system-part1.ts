@@ -66,6 +66,59 @@ export class CreateSiteSystemPart11765640000000 implements MigrationInterface {
       true,
     );
 
+    // Create tiers table (required by sites.tier_id FK)
+    await queryRunner.createTable(
+      new Table({
+        name: 'tiers',
+        columns: [
+          {
+            name: 'id',
+            type: 'uuid',
+            isPrimary: true,
+            generationStrategy: 'uuid',
+            default: 'gen_random_uuid()',
+          },
+          {
+            name: 'name',
+            type: 'varchar',
+            length: '10',
+            isUnique: true,
+            isNullable: false,
+          },
+          {
+            name: 'description',
+            type: 'text',
+            isNullable: true,
+          },
+          {
+            name: 'order',
+            type: 'integer',
+            default: 0,
+            isNullable: false,
+          },
+          {
+            name: 'color',
+            type: 'varchar',
+            length: '20',
+            isNullable: true,
+          },
+          {
+            name: 'created_at',
+            type: 'timestamptz',
+            default: 'CURRENT_TIMESTAMP',
+            isNullable: false,
+          },
+          {
+            name: 'updated_at',
+            type: 'timestamptz',
+            default: 'CURRENT_TIMESTAMP',
+            isNullable: false,
+          },
+        ],
+      }),
+      true,
+    );
+
     // Create sites table
     await queryRunner.createTable(
       new Table({
@@ -503,6 +556,7 @@ export class CreateSiteSystemPart11765640000000 implements MigrationInterface {
     await queryRunner.dropTable('site_badges');
     await queryRunner.dropTable('sites');
     await queryRunner.dropTable('site_categories');
+    await queryRunner.dropTable('tiers');
 
     // Drop enum type
     await queryRunner.query(`DROP TYPE IF EXISTS site_status_enum`);

@@ -182,43 +182,7 @@ export class CreateSiteSystemPart21765650000000 implements MigrationInterface {
       true,
     );
 
-    // Create site_views table
-    await queryRunner.createTable(
-      new Table({
-        name: 'site_views',
-        columns: [
-          {
-            name: 'id',
-            type: 'uuid',
-            isPrimary: true,
-            generationStrategy: 'uuid',
-            default: 'gen_random_uuid()',
-          },
-          {
-            name: 'site_id',
-            type: 'uuid',
-            isNullable: false,
-          },
-          {
-            name: 'user_id',
-            type: 'uuid',
-            isNullable: true,
-          },
-          {
-            name: 'ip_address',
-            type: 'varchar',
-            length: '45',
-            isNullable: true,
-          },
-          {
-            name: 'created_at',
-            type: 'timestamptz',
-            default: 'CURRENT_TIMESTAMP',
-          },
-        ],
-      }),
-      true,
-    );
+    // site_views table and FKs are created in CreateSiteSystemPart1
 
     // Create foreign keys for site_reviews
     await queryRunner.createForeignKey(
@@ -294,26 +258,6 @@ export class CreateSiteSystemPart21765650000000 implements MigrationInterface {
     );
 
     // Create foreign keys for site_views
-    await queryRunner.createForeignKey(
-      'site_views',
-      new TableForeignKey({
-        columnNames: ['site_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'sites',
-        onDelete: 'CASCADE',
-      }),
-    );
-
-    await queryRunner.createForeignKey(
-      'site_views',
-      new TableForeignKey({
-        columnNames: ['user_id'],
-        referencedColumnNames: ['id'],
-        referencedTableName: 'users',
-        onDelete: 'SET NULL',
-      }),
-    );
-
     // Add check constraint for rating
     await queryRunner.query(`
       ALTER TABLE "site_reviews" 
@@ -366,13 +310,6 @@ export class CreateSiteSystemPart21765650000000 implements MigrationInterface {
       ON "site_review_reactions" ("review_id", "user_id")
     `);
 
-    await queryRunner.createIndex(
-      'site_views',
-      new TableIndex({
-        name: 'IDX_site_views_site_id',
-        columnNames: ['site_id'],
-      }),
-    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -382,8 +319,7 @@ export class CreateSiteSystemPart21765650000000 implements MigrationInterface {
       DROP CONSTRAINT IF EXISTS "CHK_site_reviews_rating"
     `);
 
-    // Drop indexes
-    await queryRunner.dropIndex('site_views', 'IDX_site_views_site_id');
+    // Drop indexes (site_views indexes are dropped in Part1 down)
     await queryRunner.query('DROP INDEX IF EXISTS "IDX_site_review_reactions_unique"');
     await queryRunner.dropIndex(
       'site_review_reactions',
@@ -397,15 +333,7 @@ export class CreateSiteSystemPart21765650000000 implements MigrationInterface {
     await queryRunner.dropIndex('site_reviews', 'IDX_site_reviews_user_id');
     await queryRunner.dropIndex('site_reviews', 'IDX_site_reviews_site_id');
 
-    // Drop foreign keys
-    const siteViewsTable = await queryRunner.getTable('site_views');
-    if (siteViewsTable) {
-      const foreignKeys = siteViewsTable.foreignKeys;
-      for (const fk of foreignKeys) {
-        await queryRunner.dropForeignKey('site_views', fk);
-      }
-    }
-
+    // Drop foreign keys (site_views FKs are dropped in Part1 down)
     const siteReviewReactionsTable = await queryRunner.getTable('site_review_reactions');
     if (siteReviewReactionsTable) {
       const foreignKeys = siteReviewReactionsTable.foreignKeys;
@@ -430,8 +358,7 @@ export class CreateSiteSystemPart21765650000000 implements MigrationInterface {
       }
     }
 
-    // Drop tables
-    await queryRunner.dropTable('site_views');
+    // Drop tables (site_views is dropped in Part1 down)
     await queryRunner.dropTable('site_review_reactions');
     await queryRunner.dropTable('site_review_comments');
     await queryRunner.dropTable('site_reviews');

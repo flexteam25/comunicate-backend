@@ -1,51 +1,29 @@
-import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddRankingFieldsToSites1766022483806 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query("SET timezone = 'UTC'");
-
-    // Add first_charge column
-    await queryRunner.addColumn(
-      'sites',
-      new TableColumn({
-        name: 'first_charge',
-        type: 'decimal',
-        precision: 5,
-        scale: 2,
-        isNullable: true,
-        comment: 'First charge percentage (%)',
-      }),
+    // Columns may already exist from CreateSiteSystemPart1
+    await queryRunner.query(
+      `ALTER TABLE "sites" ADD COLUMN IF NOT EXISTS "first_charge" decimal(5,2)`,
     );
-
-    // Add recharge column
-    await queryRunner.addColumn(
-      'sites',
-      new TableColumn({
-        name: 'recharge',
-        type: 'decimal',
-        precision: 5,
-        scale: 2,
-        isNullable: true,
-        comment: 'Recharge percentage (%)',
-      }),
+    await queryRunner.query(
+      `ALTER TABLE "sites" ADD COLUMN IF NOT EXISTS "recharge" decimal(5,2)`,
     );
-
-    // Add experience column
-    await queryRunner.addColumn(
-      'sites',
-      new TableColumn({
-        name: 'experience',
-        type: 'integer',
-        default: 0,
-        isNullable: false,
-        comment: 'Experience points',
-      }),
+    await queryRunner.query(
+      `ALTER TABLE "sites" ADD COLUMN IF NOT EXISTS "experience" integer DEFAULT 0 NOT NULL`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropColumn('sites', 'experience');
-    await queryRunner.dropColumn('sites', 'recharge');
-    await queryRunner.dropColumn('sites', 'first_charge');
+    await queryRunner.query(
+      `ALTER TABLE "sites" DROP COLUMN IF EXISTS "experience"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "sites" DROP COLUMN IF EXISTS "recharge"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "sites" DROP COLUMN IF EXISTS "first_charge"`,
+    );
   }
 }
