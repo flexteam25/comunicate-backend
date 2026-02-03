@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migration": "ts-node scripts/migration.ts",
     "seeder": "ts-node scripts/seeder.ts",
+    "seeder:perf": "npm run seeder run -- --file performance-dummy.seeder",
     "queue-worker": "node dist/queue-worker-cli.js queue-worker",
     "queue-worker:dev": "ts-node src/queue-worker-cli.ts queue-worker",
     "scheduler": "node dist/scheduler-cli.js scheduler",
@@ -65,6 +66,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.37.0",
+    "@faker-js/faker": "^10.2.0",
     "@nestjs/cli": "^11.0.10",
     "@nestjs/schematics": "^11.0.8",
     "@nestjs/testing": "^11.1.6",
