@@ -5,6 +5,7 @@ import { IUserTokenRepository } from '../../infrastructure/persistence/repositor
 import { RedisService } from '../../../../shared/redis/redis.service';
 import { PasswordService } from '../../../../shared/services/password.service';
 import { TransactionService } from '../../../../shared/services/transaction.service';
+import { GameBackendClientService } from '../../../../shared/services/game-backend-client.service';
 import { User } from '../../../user/domain/entities/user.entity';
 import {
   UserOldPassword,
@@ -33,6 +34,7 @@ export class ResetPasswordUseCase {
     private readonly redisService: RedisService,
     private readonly passwordService: PasswordService,
     private readonly transactionService: TransactionService,
+    private readonly gameBackendClient: GameBackendClientService,
   ) {}
 
   async execute(command: ResetPasswordCommand): Promise<{ message: string }> {
@@ -101,6 +103,13 @@ export class ResetPasswordUseCase {
         }
       },
     );
+
+    // Notify game backend to revoke user session (fire-and-forget)
+    setImmediate(() => {
+      this.gameBackendClient.revokeUser(user.id).catch(() => {
+        // Ignore errors
+      });
+    });
 
     // Delete token from Redis after successful password reset
     await this.redisService.delete(tokenKey);

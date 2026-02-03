@@ -8,7 +8,7 @@ import { PointModule } from '../point/point.module';
 import { PointTransaction } from '../point/domain/entities/point-transaction.entity';
 import { RedisModule } from '../../shared/redis/redis.module';
 import { LoggerModule } from '../../shared/logger/logger.module';
-import { GameBackendClientService } from '../../shared/services/game-backend-client.service';
+import { GameBackendClientModule } from '../../shared/services/game-backend-client.module';
 import { LaunchGameUseCase } from './application/handlers/launch-game.use-case';
 import { HandleGameCallbackUseCase } from './application/handlers/handle-game-callback.use-case';
 import { GameSyncPointSubscriber } from './application/subscribers/game-sync-point.subscriber';
@@ -23,16 +23,16 @@ import { MinigameController } from './interface/rest/user/minigame.controller';
     PointModule,
     RedisModule,
     LoggerModule,
+    GameBackendClientModule,
     TypeOrmModule.forFeature([PointTransaction, UserProfile]),
   ],
   controllers: [MinigameController],
   providers: [
-    GameBackendClientService,
     LaunchGameUseCase,
     GameCallbackGuard,
     HandleGameCallbackUseCase,
     GameSyncPointSubscriber,
   ],
-  exports: [GameBackendClientService],
+  exports: [],
 })
 export class MinigameModule {}

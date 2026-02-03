@@ -11,6 +11,8 @@ interface PointUpdatedEvent {
   pointsDelta?: number;
   transactionType?: string;
   updatedAt?: Date;
+  /** When source is minigame_callback, do not call sync-point (change came from game backend). */
+  source?: string;
 }
 
 /**
@@ -39,6 +41,9 @@ export class GameSyncPointSubscriber implements OnModuleInit {
 
   private onPointUpdated(raw: unknown) {
     const data = raw as PointUpdatedEvent;
+    if (data?.source === 'minigame_callback') {
+      return;
+    }
     const userId = data?.userId;
     const newPoints = data?.newPoints;
     if (userId == null || newPoints == null) {

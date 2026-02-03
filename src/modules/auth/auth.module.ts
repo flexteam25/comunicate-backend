@@ -18,6 +18,7 @@ import { QueueClientModule } from '../../shared/queue/queue-client.module';
 import { PartnerPersistenceModule } from '../partner/partner-persistence.module';
 import { TwilioModule } from '../../shared/services/twilio/twilio.module';
 import { RedisModule } from '../../shared/redis/redis.module';
+import { GameBackendClientModule } from '../../shared/services/game-backend-client.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { RedisModule } from '../../shared/redis/redis.module';
     PartnerPersistenceModule,
     TwilioModule,
     RedisModule,
+    GameBackendClientModule,
   ],
   controllers: [AuthController],
   providers: [

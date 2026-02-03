@@ -58,6 +58,7 @@ export class HandleGameCallbackUseCase {
       newPoints: formatPoints(newPoints),
       transactionType,
       updatedAt: new Date(),
+      source: 'minigame_callback' as const,
     };
     setImmediate(() => {
       this.redisService
