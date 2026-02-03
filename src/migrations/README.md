@@ -1,3 +1,107 @@
 # Migrations
 
-Placeholder for your migrations. Use `scripts/migration.ts` to run/create migrations.
+Use `scripts/migration.ts` to run/create migrations.
+
+## Correct migration order (dev)
+
+Run migrations in this order. Order is determined by timestamp in filename.
+
+1. CreateAuthUserSystem1733760000000
+2. CreateUserOldPasswords1765425187835
+3. AddTypeToRolesAndPermissions1765514782256
+4. CreateAdminSystem1765600000000
+5. CreateUserExtensions1765610000000
+6. CreatePostSystem1765620000000
+7. CreateScamReportSystem1765630000000
+8. CreateSiteSystemPart11765640000000
+9. CreateSiteSystemPart21765650000000
+10. CreateSiteSystemPart31765660000000
+11. **CreateSiteManagersTable1765665000000** — creates `site_managers` (fix: avoid losing site_managers when running migrations from scratch)
+12. AddIsSuperAdminToAdmins1765686535459
+13. AddAvatarUrlToAdmins1765686535460
+14. AddIsActiveToBadgesTiersCategories1765670000000
+15. AddDeletedAtToTiersCategories1765680000000
+16. CreateSupportSystem1765862000000
+17. CreateUserHistorySites1765863000001
+18. AddSiteImageUrlToSites1765935823716
+19. CreateAttendanceSystem1765955273683
+20. AddRankingFieldsToSites1766022483806
+21. AddIndexesToScamReports1766043000000
+22. CreateScamReportImages1766043100000
+23. RemoveLikeCountFromScamReportComments1766049539981
+24. DropScamReportSiteTable1766051045757
+25. Updatesitereviewsschema1766118140089
+26. UpdateInquirySystem1766137602873
+27. AddConstraintsToSiteManagerApplications1766375232586
+28. CreatePocaEventsSystem1766389788887
+29. CreateGifticonsSystem1766394874941
+30. AddAmountToGifticons1766398103142
+31. AddPointsToUserProfiles1766398700563
+32. AddDeletedAtToPostCategories1766399000000
+33. AddThumbnailUrlToPosts1766400000000
+34. AddCreatedByAdminToPosts1766401000000
+35. DropPostUserFk1766479250958
+36. RemoveLikeCountFromPostsAndComments1766479300000
+37. CreatePointTransactionsSystem1766540906228
+38. CreateGifticonRedemptionsSystem1766540907000
+39. CreatePointExchangesSystem1766541221753
+40. AddRejectedStatusToGifticonRedemptionEnum1766559441792
+41. AddTypeColorToGifticons1766563282613
+42. CreatePartnerRequestsSystem1766565658312
+43. AddHasChildToComments1766633300000
+44. AddFieldsToScamReports1766646400000
+45. UpdateSiteReviewsAddFieldsAndImages1766666700000
+46. AddUserAdminToSiteEvents1766700000000
+47. MakeImageUrlNullableInSiteEventBanners1766942000000
+48. MakeUserIdNullableInScamReports1766977504336
+49. AddDeletedAtToScamReportImages1766978708888
+50. AddActiveToUserBadges1766984373674
+51. RemoveSiteOwnerRole1767000000000
+52. CreateOtpRequestsSystem1767630000000
+53. AddUserIdAndDeletedAtToOtpRequests1767640000000
+54. RemoveUniqueConstraintFromOtpRequestsPhone1767650000000
+55. AddTokenToOtpRequests1767660000000
+56. AddObtainToBadges1767680048504
+57. AddIpAddressesToTables1767690000000
+58. AddPointToBadges1767700000000
+59. AddColorToBadges1767790000000
+60. AddSlugToSites1767800000000
+61. AddManagerIdToPointExchanges1767900000000
+62. AddIconNameToBadges1768000000000
+63. CreatePostCommentReactions1768100000000
+64. AddShowMainToPostCategories1768200000000
+65. AddNameKoToSiteCategories1768300000000
+66. AddNameKoToPostCategories1768400000000
+67. AddSpecialKeyToPostCategories1768500000000
+68. AddOrderToPostCategories1768600000000
+69. AddAdminCreateOnlyToPostCategories1768700000000
+70. RemoveTitleFromScamReports1768800000000
+71. AddTitleToScamReports1768817000000
+72. CreateUserSearchSites1768222568710
+73. AddTetherDepositWithdrawalStatusToSites1768225244215
+74. AddDeletedAtAndUniqueToUserPosts1768269966492
+75. AddDeletedAtToUserComments1768270000000
+76. CreateSiteReviewCommentImages1768286506085
+77. RemoveColorAddIconToTiers1769000000000
+78. CreateSiteBadgeRequests1769100000000
+79. AddIsPointBannerToPostCategories1769200000000
+80. AddAccessibleUrlToSites1769300000000
+81. AddOrderInMainToPostCategories1769400000000
+82. AddOrderToBadges1769500000000
+83. AddContentAndImagesToSiteBadgeRequests1769600000000
+84. CreateUserBadgeRequests1769700000000
+85. AddIsPointBannerToPosts1769800000000
+86. AddSlugToPosts1769900000000
+87. CreateUserIpsTable1769100000000
+88. CreateBlockedIpsTable1770000000000
+89. AddDomainAccountToSiteManagerApplications1770100000000
+90. CreatePointSettings1770200000000
+91. AddDescriptionKoToPointTransactions1770300000000
+92. AddPointToPostCategories1770400000000
+93. CreateSiteRequestsTable1768500000000
+94. RemovePostPointSettings1770500000000
+95. AddAccessibleUrlToSiteRequests1770600000000
+96. AddCsMessengerToSiteRequests1770700000000
+97. PointsAndTransactionsToDecimal1770800000000
+
+**Note:** `CreateSiteManagersTable1765665000000` runs after Part3 and before AddConstraintsToSiteManagerApplications (timestamp 1765665000000 sorts between 1765660000000 and 1765686535459). This ensures `site_managers` exists and is not lost when running migrations from scratch.
