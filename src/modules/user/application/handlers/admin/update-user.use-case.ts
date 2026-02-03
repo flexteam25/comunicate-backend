@@ -15,6 +15,7 @@ import { SiteManager } from '../../../../site-manager/domain/entities/site-manag
 import { RedisService } from '../../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../../shared/logger/logger.service';
+import { GameBackendClientService } from '../../../../../shared/services/game-backend-client.service';
 import {
   notFound,
   MessageKeys,
@@ -38,6 +39,7 @@ export class UpdateUserUseCase {
     private readonly transactionService: TransactionService,
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
+    private readonly gameBackendClient: GameBackendClientService,
   ) {}
 
   async execute(command: UpdateUserCommand): Promise<User> {
@@ -62,7 +64,7 @@ export class UpdateUserUseCase {
     const willBeInactive = command.isActive === false && wasActive;
 
     // Execute update in transaction
-    return this.transactionService.executeInTransaction(
+    const savedUser = await this.transactionService.executeInTransaction(
       async (entityManager: EntityManager) => {
         // Update displayName if provided
         if (command.displayName !== undefined) {
@@ -277,5 +279,16 @@ export class UpdateUserUseCase {
         return savedUser;
       },
     );
+
+    // When user is deactivated, notify game backend to revoke (fire-and-forget)
+    if (willBeInactive) {
+      setImmediate(() => {
+        this.gameBackendClient.revokeUser(command.userId).catch(() => {
+          // Ignore errors
+        });
+      });
+    }
+
+    return savedUser;
   }
 }

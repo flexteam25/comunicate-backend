@@ -47,11 +47,28 @@ export class PointTransaction {
    * - Positive for earn and refund
    * - Negative for spend
    */
-  @Column({ type: 'integer' })
+  @Column({
+    type: 'decimal',
+    precision: 18,
+    scale: 4,
+    transformer: {
+      from: (v: string | number | null) => (v == null ? 0 : Number(v)),
+      to: (v: number) => v,
+    },
+  })
   amount: number;
 
   /** Balance after this transaction */
-  @Column({ name: 'balance_after', type: 'integer' })
+  @Column({
+    name: 'balance_after',
+    type: 'decimal',
+    precision: 18,
+    scale: 4,
+    transformer: {
+      from: (v: string | number | null) => (v == null ? 0 : Number(v)),
+      to: (v: number) => v,
+    },
+  })
   balanceAfter: number;
 
   /**

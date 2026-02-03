@@ -37,6 +37,7 @@ import {
 import { IUserRepository } from '../../../infrastructure/persistence/repositories/user.repository';
 import { Inject } from '@nestjs/common';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
+import { formatPoints } from '../../../../../shared/utils/point.util';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -161,7 +162,7 @@ export class AdminUserController {
         isActive: dbUser.isActive,
         lastLoginAt: dbUser.lastLoginAt || null,
         roles: this.mapUserRoles(dbUser),
-        points: dbUser.userProfile?.points ?? 0,
+        points: formatPoints(dbUser.userProfile?.points ?? 0),
         bio: dbUser.userProfile?.bio || null,
         phone: dbUser.userProfile?.phone || null,
         birthDate: dbUser.userProfile?.birthDate || null,
@@ -322,7 +323,7 @@ export class AdminUserController {
           isActive: user.isActive,
           lastLoginAt: user.lastLoginAt || null,
           roles: this.mapUserRoles(user),
-          points: user.userProfile?.points ?? 0,
+          points: formatPoints(user.userProfile?.points ?? 0),
           bio: user.userProfile?.bio || null,
           phone: user.userProfile?.phone || null,
           birthDate: user.userProfile?.birthDate || null,
@@ -425,7 +426,7 @@ export class AdminUserController {
       isActive: user.isActive,
       lastLoginAt: user.lastLoginAt || null,
       roles: this.mapUserRoles(user),
-      points: user.userProfile?.points ?? 0,
+      points: formatPoints(user.userProfile?.points ?? 0),
       bio: user.userProfile?.bio || null,
       phone: user.userProfile?.phone || null,
       birthDate: user.userProfile?.birthDate || null,
@@ -785,7 +786,7 @@ export class AdminUserController {
         isActive: dbUser.isActive,
         lastLoginAt: dbUser.lastLoginAt || null,
         roles: this.mapUserRoles(dbUser),
-        points: dbUser.userProfile?.points ?? 0,
+        points: formatPoints(dbUser.userProfile?.points ?? 0),
         bio: dbUser.userProfile?.bio || null,
         phone: dbUser.userProfile?.phone || null,
         birthDate: dbUser.userProfile?.birthDate || null,

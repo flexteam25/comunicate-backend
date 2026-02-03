@@ -62,6 +62,7 @@ import { PostPersistenceModule } from '../post/post-persistence.module';
 import { UserIpRepository } from './infrastructure/persistence/repositories/user-ip.repository';
 import { BlockedIpRepository } from './infrastructure/persistence/typeorm/blocked-ip.repository';
 import { RedisModule } from '../../shared/redis/redis.module';
+import { GameBackendClientModule } from '../../shared/services/game-backend-client.module';
 import { TriggerIpSyncUseCase } from './application/handlers/admin/trigger-ip-sync.use-case';
 import { AttendancePersistenceModule } from '../attendance/attendance-persistence.module';
 import { AdminGetUserAttendanceUseCase } from '../attendance/application/handlers/admin/get-user-attendance.use-case';
@@ -95,6 +96,7 @@ import { AdminGetUserAttendanceUseCase } from '../attendance/application/handler
     UserSearchSitePersistenceModule,
     PostPersistenceModule,
     RedisModule,
+    GameBackendClientModule,
     AttendancePersistenceModule,
   ],
   controllers: [

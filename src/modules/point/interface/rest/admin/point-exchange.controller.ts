@@ -25,6 +25,7 @@ import { RejectExchangeUseCase } from '../../../application/handlers/admin/rejec
 import { ListExchangesQueryDto } from '../dto/list-exchanges-query.dto';
 import { RejectExchangeDto } from '../dto/reject-exchange.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { formatPoints } from '../../../../../shared/utils/point.util';
 
 @Controller('admin/points/exchanges')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -57,8 +58,8 @@ export class AdminPointExchangeController {
             slug: exchange.site.slug || null,
           }
         : null,
-      pointsAmount: exchange.pointsAmount,
-      siteCurrencyAmount: Number(exchange.siteCurrencyAmount),
+      pointsAmount: formatPoints(exchange.pointsAmount),
+      siteCurrencyAmount: formatPoints(Number(exchange.siteCurrencyAmount)),
       exchangeRate: exchange.exchangeRate ? Number(exchange.exchangeRate) : null,
       siteUserId: exchange.siteUserId,
       status: exchange.status,

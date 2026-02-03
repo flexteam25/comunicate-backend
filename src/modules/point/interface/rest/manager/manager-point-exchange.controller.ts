@@ -21,6 +21,7 @@ import { ManagerMoveExchangeToProcessingUseCase } from '../../../application/han
 import { ListSiteExchangesQueryDto } from '../dto/list-site-exchanges-query.dto';
 import { RejectExchangeDto } from '../dto/reject-exchange.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { formatPoints } from '../../../../../shared/utils/point.util';
 
 @Controller('api/site-management/:siteId/exchanges')
 @UseGuards(JwtAuthGuard)
@@ -50,8 +51,8 @@ export class ManagerPointExchangeController {
             name: exchange.site.name,
           }
         : null,
-      pointsAmount: exchange.pointsAmount,
-      siteCurrencyAmount: Number(exchange.siteCurrencyAmount),
+      pointsAmount: formatPoints(exchange.pointsAmount),
+      siteCurrencyAmount: formatPoints(Number(exchange.siteCurrencyAmount)),
       exchangeRate: exchange.exchangeRate ? Number(exchange.exchangeRate) : null,
       siteUserId: exchange.siteUserId,
       status: exchange.status,

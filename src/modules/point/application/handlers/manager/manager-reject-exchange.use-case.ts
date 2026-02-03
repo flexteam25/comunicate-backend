@@ -125,7 +125,8 @@ export class ManagerRejectExchangeUseCase {
           category: 'point_exchange_refund',
           referenceType: 'point_exchange',
           referenceId: exchange.id,
-          description: `Point Exchange Refund: ${exchange.site?.name || 'Unknown'} ${exchange.pointsAmount}원`,
+          description: `Point Exchange Refund: ${exchange.site?.name || 'Unknown'}`,
+          descriptionKo: `포인트 교환 환불: ${exchange.site?.name || 'Unknown'}`,
         });
         await pointTransactionRepo.save(pointTransaction);
 

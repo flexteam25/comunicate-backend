@@ -106,7 +106,8 @@ export class CancelRedemptionUseCase {
           category: 'gifticon_redemption_refund',
           referenceType: 'gifticon_redemption',
           referenceId: redemption.id,
-          description: `Gifticon Redemption Refund: ${redemption.gifticonSnapshot?.title || 'Unknown'} ${redemption.pointsUsed}원`,
+          description: `Gifticon Redemption Refund: ${redemption.gifticonSnapshot?.title || 'Unknown'}`,
+          descriptionKo: `기프티콘 환불: ${redemption.gifticonSnapshot?.title || 'Unknown'}`,
         });
         await pointTransactionRepo.save(pointTransaction);
 

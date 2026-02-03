@@ -5,6 +5,7 @@ import { RequirePermission } from '../../../../admin/infrastructure/decorators/r
 import { ListPointTransactionsUseCase } from '../../../application/handlers/admin/list-point-transactions.use-case';
 import { AdminListPointTransactionsQueryDto } from '../dto/admin-list-point-transactions-query.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
+import { formatPoints } from '../../../../../shared/utils/point.util';
 
 @Controller('admin/points/transactions')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -40,8 +41,8 @@ export class AdminPointTransactionController {
             }
           : null,
         type: transaction.type,
-        amount: transaction.amount,
-        balanceAfter: transaction.balanceAfter,
+        amount: formatPoints(transaction.amount),
+        balanceAfter: formatPoints(transaction.balanceAfter),
         category: transaction.category,
         referenceType: transaction.referenceType || null,
         referenceId: transaction.referenceId || null,

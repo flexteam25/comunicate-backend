@@ -5,6 +5,7 @@ import { TransactionService } from '../../../../../shared/services/transaction.s
 import { User } from '../../../domain/entities/user.entity';
 import { UserToken } from '../../../../auth/domain/entities/user-token.entity';
 import { SiteManager } from '../../../../site-manager/domain/entities/site-manager.entity';
+import { GameBackendClientService } from '../../../../../shared/services/game-backend-client.service';
 import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 export interface DeleteUserCommand {
@@ -18,6 +19,7 @@ export class DeleteUserUseCase {
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly transactionService: TransactionService,
+    private readonly gameBackendClient: GameBackendClientService,
   ) {}
 
   /**
@@ -55,5 +57,12 @@ export class DeleteUserUseCase {
         );
       },
     );
+
+    // Notify game backend to revoke user (fire-and-forget)
+    setImmediate(() => {
+      this.gameBackendClient.revokeUser(command.userId).catch(() => {
+        // Ignore errors
+      });
+    });
   }
 }

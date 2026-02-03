@@ -28,7 +28,18 @@ export class UserProfile {
   @Column({ name: 'gender', type: 'varchar', length: 10, nullable: true })
   gender?: string;
 
-  @Column({ name: 'points', type: 'integer', default: 0 })
+  @Column({
+    name: 'points',
+    type: 'decimal',
+    precision: 18,
+    scale: 4,
+    default: 0,
+    transformer: {
+      from: (v: string | number | null) =>
+        v == null ? 0 : Number(v),
+      to: (v: number) => v,
+    },
+  })
   points: number;
 
   @Column({ name: 'register_ip', type: 'varchar', length: 45, nullable: true })

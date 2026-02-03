@@ -82,6 +82,11 @@ export class LoginUseCase {
     // Execute database operations in transaction
     return this.transactionService.executeInTransaction(
       async (entityManager: EntityManager) => {
+        // Single token per user: revoke all existing tokens before creating new one
+        await entityManager
+          .getRepository(UserToken)
+          .update({ userId: user.id }, { revokedAt: new Date() });
+
         // Create token record
         const userToken = new UserToken();
         userToken.userId = user.id;
