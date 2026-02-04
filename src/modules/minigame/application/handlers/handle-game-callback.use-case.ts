@@ -50,6 +50,7 @@ export class HandleGameCallbackUseCase {
     previousPoints: number,
     newPoints: number,
     transactionType: PointTransactionType,
+    gameType?: string,
   ): void {
     const eventData = {
       userId,
@@ -60,7 +61,8 @@ export class HandleGameCallbackUseCase {
       updatedAt: new Date(),
       source: 'minigame_callback' as const,
     };
-    setImmediate(() => {
+    const delayMs = gameType === 'slot' ? 2500 : 0;
+    setTimeout(() => {
       this.redisService
         .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
         .catch((error) => {
@@ -69,11 +71,13 @@ export class HandleGameCallbackUseCase {
             {
               error: error instanceof Error ? error.message : String(error),
               userId,
+              gameType,
+              delayMs,
             },
             'minigame',
           );
         });
-    });
+    }, delayMs);
   }
 
   async execute(command: GameCallbackCommand): Promise<GameCallbackResult> {
@@ -123,6 +127,7 @@ export class HandleGameCallbackUseCase {
           balanceBefore,
           balanceAfter,
           PointTransactionType.SPEND,
+          gameType,
         );
         return { status: 'OK', newBalance: balanceAfter };
       }
@@ -147,6 +152,7 @@ export class HandleGameCallbackUseCase {
           balanceBefore,
           balanceAfter,
           PointTransactionType.REFUND,
+          gameType,
         );
         return { status: 'OK' };
       }
@@ -171,6 +177,7 @@ export class HandleGameCallbackUseCase {
           balanceBefore,
           balanceAfter,
           PointTransactionType.EARN,
+          gameType,
         );
         return { status: 'OK' };
       }
@@ -192,6 +199,7 @@ export class HandleGameCallbackUseCase {
           balanceBefore,
           balanceBefore,
           PointTransactionType.SPEND,
+          gameType,
         );
         return { status: 'OK' };
       }
@@ -216,6 +224,7 @@ export class HandleGameCallbackUseCase {
           balanceBefore,
           balanceAfter,
           PointTransactionType.REFUND,
+          gameType,
         );
         return { status: 'OK' };
       }

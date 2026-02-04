@@ -20,7 +20,6 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migration": "ts-node scripts/migration.ts",
     "seeder": "ts-node scripts/seeder.ts",
-    "seeder:perf": "npm run seeder run -- --file performance-dummy.seeder",
     "queue-worker": "node dist/queue-worker-cli.js queue-worker",
     "queue-worker:dev": "ts-node src/queue-worker-cli.ts queue-worker",
     "scheduler": "node dist/scheduler-cli.js scheduler",
