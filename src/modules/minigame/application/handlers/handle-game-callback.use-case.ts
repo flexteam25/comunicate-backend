@@ -63,7 +63,7 @@ export class HandleGameCallbackUseCase {
     };
     const delayMap: Record<string, number> = {
       slot: 2500,
-      plinko: 2500,
+      plinko: 5000,
     };
     const delayMs =
       gameType && delayMap[gameType] !== undefined ? delayMap[gameType] : 0;
