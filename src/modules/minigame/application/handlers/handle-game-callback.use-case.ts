@@ -61,7 +61,12 @@ export class HandleGameCallbackUseCase {
       updatedAt: new Date(),
       source: 'minigame_callback' as const,
     };
-    const delayMs = gameType === 'slot' ? 2500 : 0;
+    const delayMap: Record<string, number> = {
+      slot: 2500,
+      plinko: 2500,
+    };
+    const delayMs =
+      gameType && delayMap[gameType] !== undefined ? delayMap[gameType] : 0;
     setTimeout(() => {
       this.redisService
         .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
