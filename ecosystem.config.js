@@ -310,5 +310,69 @@ module.exports = {
       max_restarts: 10,
       min_uptime: '10s',
     },
+    {
+      name: 'poca-socket',
+      script: 'dist/src/socket-main.js',
+      cwd: __dirname,
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: devEnv.NODE_ENV || 'development',
+        PORT: '3009',
+        DEBUG_MODE: devEnv.DEBUG_MODE || 'false',
+
+        // Database - Development (for JWT / token validation)
+        DB_HOST: devEnv.DB_HOST,
+        DB_PORT: devEnv.DB_PORT,
+        DB_USERNAME: devEnv.DB_USERNAME,
+        DB_PASSWORD: devEnv.DB_PASSWORD,
+        DB_DATABASE: devEnv.DB_DATABASE,
+
+        // Redis - Development
+        REDIS_HOST: devEnv.REDIS_HOST,
+        REDIS_PORT: devEnv.REDIS_PORT,
+        REDIS_PASSWORD: devEnv.REDIS_PASSWORD,
+        REDIS_DB: devEnv.REDIS_DB,
+
+        // JWT - Development
+        JWT_ACCESS_SECRET: devEnv.JWT_ACCESS_SECRET,
+        JWT_REFRESH_SECRET: devEnv.JWT_REFRESH_SECRET,
+        JWT_ACCESS_EXPIRES_IN: devEnv.JWT_ACCESS_EXPIRES_IN || '30m',
+        JWT_REFRESH_EXPIRES_IN: devEnv.JWT_REFRESH_EXPIRES_IN || '1h',
+      },
+      env_production: {
+        NODE_ENV: prodEnv.NODE_ENV || 'production',
+        PORT: '3009',
+        DEBUG_MODE: prodEnv.DEBUG_MODE || 'false',
+
+        // Database - Production
+        DB_HOST: prodEnv.DB_HOST,
+        DB_PORT: prodEnv.DB_PORT,
+        DB_USERNAME: prodEnv.DB_USERNAME,
+        DB_PASSWORD: prodEnv.DB_PASSWORD,
+        DB_DATABASE: prodEnv.DB_DATABASE,
+
+        // Redis - Production
+        REDIS_HOST: prodEnv.REDIS_HOST,
+        REDIS_PORT: prodEnv.REDIS_PORT,
+        REDIS_PASSWORD: prodEnv.REDIS_PASSWORD,
+        REDIS_DB: prodEnv.REDIS_DB,
+
+        // JWT - Production
+        JWT_ACCESS_SECRET: prodEnv.JWT_ACCESS_SECRET,
+        JWT_REFRESH_SECRET: prodEnv.JWT_REFRESH_SECRET,
+        JWT_ACCESS_EXPIRES_IN: prodEnv.JWT_ACCESS_EXPIRES_IN || '30m',
+        JWT_REFRESH_EXPIRES_IN: prodEnv.JWT_REFRESH_EXPIRES_IN || '1h',
+      },
+      log_file: 'pm2/logs/socket.log',
+      out_file: 'pm2/logs/socket-out.log',
+      error_file: 'pm2/logs/socket-error.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      max_memory_restart: '512M',
+      restart_delay: 4000,
+      max_restarts: 10,
+      min_uptime: '10s',
+    },
   ],
 };

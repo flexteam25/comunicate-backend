@@ -24,6 +24,8 @@
     "queue-worker:dev": "ts-node src/queue-worker-cli.ts queue-worker",
     "scheduler": "node dist/scheduler-cli.js scheduler",
     "scheduler:dev": "ts-node src/scheduler-cli.ts scheduler",
+    "socket:dev": "ts-node -r tsconfig-paths/register src/socket-main.ts",
+    "socket": "node dist/src/socket-main.js",
     "cli": "node dist/cli.js cli",
     "cli:dev": "ts-node src/cli.ts cli"
   },

@@ -188,7 +188,7 @@
     <div class="container server-config">
         <h2>Server Configuration</h2>
         <div>
-            <input type="text" id="serverUrl" placeholder="Server URL (e.g., http://localhost:3008)" value="http://localhost:3008">
+            <input type="text" id="serverUrl" placeholder="Server URL (e.g., http://localhost:3009)" value="http://localhost:3009">
             <button onclick="connectAll()" style="margin-top: 10px;">Connect All</button>
             <button onclick="disconnectAll()" style="margin-top: 5px;">Disconnect All</button>
         </div>
@@ -361,7 +361,7 @@
         }
 
         function getServerUrl() {
-            return document.getElementById('serverUrl').value || 'http://localhost:3008';
+            return document.getElementById('serverUrl').value || 'http://localhost:3009';
         }
 
         // Public Connection

@@ -4,10 +4,10 @@ import { SocketService } from './socket.service';
 import { JwtService } from '../services/jwt.service';
 import { RedisModule } from '../redis/redis.module';
 import { AuthPersistenceModule } from '../../modules/auth/auth-persistence.module';
-import { AdminModule } from '../../modules/admin/admin.module';
+import { AdminGuardsModule } from '../../modules/admin/infrastructure/guards/admin-guards.module';
 
 @Module({
-  imports: [RedisModule, AuthPersistenceModule, AdminModule],
+  imports: [RedisModule, AuthPersistenceModule, AdminGuardsModule],
   controllers: [],
   providers: [SocketGateway, SocketService, JwtService],
   exports: [SocketService, SocketGateway],
