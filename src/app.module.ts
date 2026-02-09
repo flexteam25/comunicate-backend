@@ -95,6 +95,7 @@ import { PointSetting } from './modules/point/domain/entities/point-setting.enti
 import { SiteRequestModule } from './modules/site-request/site-request.module';
 import { SiteRequest } from './modules/site-request/domain/entities/site-request.entity';
 import { MinigameModule } from './modules/minigame/minigame.module';
+import { BetHistory } from './modules/minigame/domain/entities/bet-history.entity';
 import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
 import { SystemSetting } from './modules/system-settings/domain/entities/system-setting.entity';
 
@@ -179,6 +180,7 @@ import { SystemSetting } from './modules/system-settings/domain/entities/system-
         UserBadgeRequestImage,
         PointSetting,
         SiteRequest,
+        BetHistory,
         SystemSetting,
       ],
       synchronize: false,

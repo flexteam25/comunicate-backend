@@ -54,6 +54,8 @@ import { PostView } from '../../modules/post/domain/entities/post-view.entity';
 import { SiteBadgeRequest } from '../../modules/site/domain/entities/site-badge-request.entity';
 import { SiteBadgeRequestImage } from '../../modules/site/domain/entities/site-badge-request-image.entity';
 import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
+import { PointTransaction } from '../../modules/point/domain/entities/point-transaction.entity';
+import { BetHistory } from '../../modules/minigame/domain/entities/bet-history.entity';
 
 @Module({
   imports: [
@@ -120,6 +122,8 @@ import { SiteReviewCommentImage } from '../../modules/site-review/domain/entitie
         PostCommentImage,
         PostReaction,
         PostView,
+        PointTransaction,
+        BetHistory,
       ],
       synchronize: false,
       logging: false,

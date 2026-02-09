@@ -9,13 +9,13 @@ import { PointTransaction } from '../point/domain/entities/point-transaction.ent
 import { RedisModule } from '../../shared/redis/redis.module';
 import { LoggerModule } from '../../shared/logger/logger.module';
 import { GameBackendClientModule } from '../../shared/services/game-backend-client.module';
+import { QueueClientModule } from '../../shared/queue/queue-client.module';
 import { SystemSettingsModule } from '../system-settings/system-settings.module';
 import { LaunchGameUseCase } from './application/handlers/launch-game.use-case';
 import { HandleGameCallbackUseCase } from './application/handlers/handle-game-callback.use-case';
 import { GameSyncPointSubscriber } from './application/subscribers/game-sync-point.subscriber';
 import { GameCallbackGuard } from './infrastructure/guards/game-callback.guard';
 import { MinigameController } from './interface/rest/user/minigame.controller';
-
 @Module({
   imports: [
     ConfigModule,
@@ -25,6 +25,7 @@ import { MinigameController } from './interface/rest/user/minigame.controller';
     RedisModule,
     LoggerModule,
     GameBackendClientModule,
+    QueueClientModule,
     SystemSettingsModule,
     TypeOrmModule.forFeature([PointTransaction, UserProfile]),
   ],

@@ -7,27 +7,29 @@ import {
   PointTransaction,
   PointTransactionType,
 } from '../../../point/domain/entities/point-transaction.entity';
-import { CreatePointTransactionUseCase } from '../../../point/application/handlers/create-point-transaction.use-case';
-import { RedisService } from '../../../../shared/redis/redis.service';
-import { RedisChannel } from '../../../../shared/socket/socket-channels';
-import { LoggerService } from '../../../../shared/logger/logger.service';
-import { formatPoints } from '../../../../shared/utils/point.util';
 import { GetGameBetLimitsService } from '../../../system-settings/application/services/get-game-bet-limits.service';
+import { QueueService } from '../../../../shared/queue/queue.service';
+import { GamePointLogJobData } from '../../../../shared/queue/processors/game-point-log.processor';
 
 export type GameCallbackResult =
-  | { status: 'OK'; newBalance?: number }
+  | { status: 'OK'; newBalance?: number; actualAmount?: number }
   | { status: 'REJECT'; message?: string }
   | { status: 'AlreadyProcessed' }
   | { status: 'PlayerNotFound' }
   | { status: 'InsufficientPlayerBalance' };
 
 export interface GameCallbackCommand {
-  type: 'bet' | 'cancel_bet' | 'win' | 'lose' | 'refund';
+  type: 'bet' | 'cancel_bet' | 'win' | 'lose' | 'draw' | 'refund';
   res: number;
   amount: number;
   userUuid: string;
   txRef: string;
   roundId?: string;
+  roundNumber?: string;
+  betAmount?: number;
+  payout?: number;
+  roundResult?: string;
+  coinType?: string;
   gameType?: string;
 }
 
@@ -40,55 +42,23 @@ export class HandleGameCallbackUseCase {
     private readonly pointTransactionRepo: Repository<PointTransaction>,
     @InjectRepository(UserProfile)
     private readonly userProfileRepo: Repository<UserProfile>,
-    private readonly createPointTransactionUseCase: CreatePointTransactionUseCase,
-    private readonly redisService: RedisService,
-    private readonly logger: LoggerService,
+    private readonly queueService: QueueService,
     private readonly getGameBetLimitsService: GetGameBetLimitsService,
   ) {}
 
-  private publishPointUpdated(
-    userId: string,
-    pointsDelta: number,
-    previousPoints: number,
-    newPoints: number,
-    transactionType: PointTransactionType,
-    gameType?: string,
-  ): void {
-    const eventData = {
-      userId,
-      pointsDelta: formatPoints(pointsDelta),
-      previousPoints: formatPoints(previousPoints),
-      newPoints: formatPoints(newPoints),
-      transactionType,
-      updatedAt: new Date(),
-      source: 'minigame_callback' as const,
-    };
-    const delayMap: Record<string, number> = {
-      slot: 2500,
-      plinko: 5000,
-    };
-    const delayMs =
-      gameType && delayMap[gameType] !== undefined ? delayMap[gameType] : 0;
-    setTimeout(() => {
-      this.redisService
-        .publishEvent(RedisChannel.POINT_UPDATED as string, eventData)
-        .catch((error) => {
-          this.logger.error(
-            'Failed to publish point:updated event',
-            {
-              error: error instanceof Error ? error.message : String(error),
-              userId,
-              gameType,
-              delayMs,
-            },
-            'minigame',
-          );
-        });
-    }, delayMs);
-  }
-
   async execute(command: GameCallbackCommand): Promise<GameCallbackResult> {
-    const { type, amount, userUuid, txRef, roundId, gameType } = command;
+    const {
+      type,
+      amount,
+      userUuid,
+      txRef,
+      roundId,
+      roundNumber,
+      payout,
+      roundResult,
+      coinType,
+      gameType,
+    } = command;
 
     const existing = await this.pointTransactionRepo
       .createQueryBuilder('t')
@@ -110,6 +80,43 @@ export class HandleGameCallbackUseCase {
 
     switch (type) {
       case 'bet': {
+        // type=bet with negative amount: treat as cancel_bet (refund)
+        if (amountNum < 0) {
+          const refundAmount = Math.abs(amountNum);
+          const balanceAfter = balanceBefore + refundAmount;
+          profile.points = balanceAfter;
+          await this.userProfileRepo.save(profile);
+
+          const createdAt = new Date().toISOString();
+          const jobData: GamePointLogJobData = {
+            userId: userUuid,
+            txRef,
+            type: 'cancel_bet',
+            pointTransactionType: PointTransactionType.REFUND,
+            amount: refundAmount,
+            balanceAfter,
+            category: 'minigame_callback',
+            referenceType: 'game_bet_cancel',
+            description: `Game cancel bet: ${gameType || 'game'}`,
+            descriptionKo: `미니게임 베팅 취소${gameType ? ` (${gameType})` : ''}`,
+            metadata: { txRef, type: 'bet', amount: amountNum, gameType, roundId },
+            pointsDelta: refundAmount,
+            previousPoints: balanceBefore,
+            newPoints: balanceAfter,
+            gameType,
+            createdAt,
+            betHistoryUpdate: {
+              roundNumber,
+              roundResult: 'cancelled',
+              payout: 0,
+              payoutAmount: 0,
+              maxPayoutDeduct: 0,
+            },
+          };
+          await this.queueService.addGamePointLogJob(jobData);
+          return { status: 'OK', newBalance: balanceAfter };
+        }
+
         // Enforce game bet limits: read from cache, fallback database
         const limits = await this.getGameBetLimitsService.get();
         const key = gameType && limits[gameType] ? gameType : undefined;
@@ -133,107 +140,224 @@ export class HandleGameCallbackUseCase {
         const balanceAfter = balanceBefore - amountNum;
         profile.points = balanceAfter;
         await this.userProfileRepo.save(profile);
-        await this.createPointTransactionUseCase.execute({
+
+        const gameTypeVal = gameType || 'game';
+        const createdAt = new Date().toISOString();
+        const jobData: GamePointLogJobData = {
           userId: userUuid,
-          type: PointTransactionType.SPEND,
+          txRef,
+          type,
+          pointTransactionType: PointTransactionType.SPEND,
           amount: -amountNum,
           balanceAfter,
           category: 'minigame_callback',
           referenceType: 'game_bet',
-          referenceId: undefined,
-          description: `Game bet: ${gameType || 'game'}`,
+          description: `Game bet: ${gameTypeVal}`,
           descriptionKo: `미니게임 베팅${gameType ? ` (${gameType})` : ''}`,
           metadata: { txRef, type, gameType, roundId },
-        });
-        this.publishPointUpdated(
-          userUuid,
-          -amountNum,
-          balanceBefore,
-          balanceAfter,
-          PointTransactionType.SPEND,
+          pointsDelta: -amountNum,
+          previousPoints: balanceBefore,
+          newPoints: balanceAfter,
           gameType,
-        );
+          createdAt,
+          betHistoryCreate: {
+            roundNumber: roundNumber ?? null,
+            betAmount: amountNum,
+            roundResult: roundResult || 'pending',
+            coinType: coinType || 'point',
+          },
+        };
+        await this.queueService.addGamePointLogJob(jobData);
         return { status: 'OK', newBalance: balanceAfter };
       }
       case 'cancel_bet': {
         const balanceAfter = balanceBefore + amountNum;
         profile.points = balanceAfter;
         await this.userProfileRepo.save(profile);
-        await this.createPointTransactionUseCase.execute({
+
+        const createdAt = new Date().toISOString();
+        const jobData: GamePointLogJobData = {
           userId: userUuid,
-          type: PointTransactionType.REFUND,
+          txRef,
+          type,
+          pointTransactionType: PointTransactionType.REFUND,
           amount: amountNum,
           balanceAfter,
           category: 'minigame_callback',
           referenceType: 'game_bet_cancel',
+          referenceId: undefined,
           description: `Game cancel bet: ${gameType || 'game'}`,
           descriptionKo: `미니게임 베팅 취소${gameType ? ` (${gameType})` : ''}`,
           metadata: { txRef, type, gameType, roundId },
-        });
-        this.publishPointUpdated(
-          userUuid,
-          amountNum,
-          balanceBefore,
-          balanceAfter,
-          PointTransactionType.REFUND,
+          pointsDelta: amountNum,
+          previousPoints: balanceBefore,
+          newPoints: balanceAfter,
           gameType,
-        );
-        return { status: 'OK' };
+          createdAt,
+        };
+        await this.queueService.addGamePointLogJob(jobData);
+        return { status: 'OK', newBalance: balanceAfter };
       }
       case 'win': {
-        const balanceAfter = balanceBefore + amountNum;
+        const gameTypeVal = gameType || 'game';
+        const limits = await this.getGameBetLimitsService.get();
+        const limit = limits[gameTypeVal];
+        const maxPayoutAmount = limit
+          ? Number(limit.maxPayoutAmount)
+          : Number.POSITIVE_INFINITY;
+        const actualAmount = Math.min(amountNum, maxPayoutAmount);
+        const balanceAfter = balanceBefore + actualAmount;
+        const capped = actualAmount < amountNum;
+        const deductAmount = capped ? amountNum - actualAmount : 0;
+
         profile.points = balanceAfter;
         await this.userProfileRepo.save(profile);
-        await this.createPointTransactionUseCase.execute({
+
+        const createdAt = new Date().toISOString();
+        // When capped: log win full amount first (balance_after = balance before + full), then deduct row has balance_after = final
+        const balanceAfterFullWin = balanceBefore + amountNum;
+        const winJobData: GamePointLogJobData = {
           userId: userUuid,
-          type: PointTransactionType.EARN,
-          amount: amountNum,
-          balanceAfter,
+          txRef,
+          type: 'win',
+          pointTransactionType: PointTransactionType.EARN,
+          amount: capped ? amountNum : actualAmount,
+          balanceAfter: capped ? balanceAfterFullWin : balanceAfter,
           category: 'minigame_callback',
           referenceType: 'game_win',
-          description: `Game win: ${gameType || 'game'}`,
-          descriptionKo: `미니게임 당첨${gameType ? ` (${gameType})` : ''}`,
-          metadata: { txRef, type, gameType, roundId },
-        });
-        this.publishPointUpdated(
-          userUuid,
-          amountNum,
-          balanceBefore,
-          balanceAfter,
-          PointTransactionType.EARN,
+          description: `Game win: ${gameTypeVal}${capped ? ' (capped)' : ''}`,
+          descriptionKo: `미니게임 당첨${gameType ? ` (${gameType})` : ''}${capped ? ' (상한적용)' : ''}`,
+          metadata: {
+            txRef,
+            type: 'win',
+            gameType,
+            roundId,
+            payout,
+            maxPayoutDeduct: deductAmount,
+          },
+          pointsDelta: actualAmount,
+          previousPoints: balanceBefore,
+          newPoints: balanceAfter,
           gameType,
-        );
-        return { status: 'OK' };
+          createdAt,
+          betHistoryUpdate: {
+            roundNumber,
+            roundResult: roundResult || 'win',
+            payout: payout ?? 0,
+            payoutAmount: actualAmount,
+            maxPayoutDeduct: deductAmount,
+          },
+        };
+        await this.queueService.addGamePointLogJob(winJobData);
+        if (capped && deductAmount > 0) {
+          const deductJobData: GamePointLogJobData = {
+            userId: userUuid,
+            txRef: `${txRef}_deduct`,
+            type: 'win',
+            pointTransactionType: PointTransactionType.SPEND,
+            amount: -deductAmount,
+            balanceAfter,
+            category: 'minigame_callback',
+            referenceType: 'game_win_deduct',
+            description: `Game win max payout deduct: ${gameTypeVal}`,
+            descriptionKo: `미니게임 당첨 상한 초과 차감 (${gameTypeVal})`,
+            metadata: {
+              txRef,
+              type: 'win',
+              gameType,
+              roundNumber,
+              maxPayoutDeduct: deductAmount,
+            },
+            pointsDelta: -deductAmount,
+            previousPoints: balanceAfterFullWin,
+            newPoints: balanceAfter,
+            gameType,
+            createdAt: new Date().toISOString(),
+            skipPublish: true,
+          };
+          await this.queueService.addGamePointLogJob(deductJobData);
+        }
+
+        return { status: 'OK', newBalance: balanceAfter, actualAmount };
       }
       case 'lose': {
-        await this.createPointTransactionUseCase.execute({
+        const gameTypeVal = gameType || 'game';
+        const createdAt = new Date().toISOString();
+        const jobData: GamePointLogJobData = {
           userId: userUuid,
-          type: PointTransactionType.SPEND,
+          txRef,
+          type: 'lose',
+          pointTransactionType: PointTransactionType.SPEND,
           amount: 0,
           balanceAfter: balanceBefore,
           category: 'minigame_callback',
           referenceType: 'game_lose',
-          description: `Game lose: ${gameType || 'game'}`,
-          descriptionKo: `미니게임 패배${gameType ? ` (${gameType})` : ''}`,
-          metadata: { txRef, type, gameType, roundId, amount: amountNum },
-        });
-        this.publishPointUpdated(
-          userUuid,
-          0,
-          balanceBefore,
-          balanceBefore,
-          PointTransactionType.SPEND,
+          description: '',
+          descriptionKo: '',
+          metadata: { txRef, type: 'lose', gameType, roundId },
+          pointsDelta: 0,
+          previousPoints: balanceBefore,
+          newPoints: balanceBefore,
           gameType,
-        );
-        return { status: 'OK' };
+          createdAt,
+          betHistoryUpdate: {
+            roundNumber,
+            roundResult: roundResult || 'lost',
+            payout: payout ?? 0,
+            payoutAmount: 0,
+            maxPayoutDeduct: 0,
+          },
+          skipPointTransaction: true,
+        };
+        await this.queueService.addGamePointLogJob(jobData);
+        return { status: 'OK', newBalance: balanceBefore };
+      }
+      case 'draw': {
+        const gameTypeVal = gameType || 'game';
+        const balanceAfter = balanceBefore + amountNum;
+        profile.points = balanceAfter;
+        await this.userProfileRepo.save(profile);
+
+        const createdAt = new Date().toISOString();
+        const jobData: GamePointLogJobData = {
+          userId: userUuid,
+          txRef,
+          type: 'draw',
+          pointTransactionType: PointTransactionType.REFUND,
+          amount: amountNum,
+          balanceAfter,
+          category: 'minigame_callback',
+          referenceType: 'game_draw',
+          description: `Game draw: ${gameTypeVal}`,
+          descriptionKo: `미니게임 무승부${gameType ? ` (${gameType})` : ''}`,
+          metadata: { txRef, type: 'draw', gameType, roundId },
+          pointsDelta: amountNum,
+          previousPoints: balanceBefore,
+          newPoints: balanceAfter,
+          gameType,
+          createdAt,
+          betHistoryUpdate: {
+            roundNumber,
+            roundResult: roundResult || 'draw',
+            payout: payout ?? 1,
+            payoutAmount: amountNum,
+            maxPayoutDeduct: 0,
+          },
+        };
+        await this.queueService.addGamePointLogJob(jobData);
+        return { status: 'OK', newBalance: balanceAfter };
       }
       case 'refund': {
         const balanceAfter = balanceBefore + amountNum;
         profile.points = balanceAfter;
         await this.userProfileRepo.save(profile);
-        await this.createPointTransactionUseCase.execute({
+
+        const createdAt = new Date().toISOString();
+        const jobData: GamePointLogJobData = {
           userId: userUuid,
-          type: PointTransactionType.REFUND,
+          txRef,
+          type,
+          pointTransactionType: PointTransactionType.REFUND,
           amount: amountNum,
           balanceAfter,
           category: 'minigame_callback',
@@ -241,16 +365,14 @@ export class HandleGameCallbackUseCase {
           description: `Game refund: ${gameType || 'game'}`,
           descriptionKo: `미니게임 환불${gameType ? ` (${gameType})` : ''}`,
           metadata: { txRef, type, gameType, roundId },
-        });
-        this.publishPointUpdated(
-          userUuid,
-          amountNum,
-          balanceBefore,
-          balanceAfter,
-          PointTransactionType.REFUND,
+          pointsDelta: amountNum,
+          previousPoints: balanceBefore,
+          newPoints: balanceAfter,
           gameType,
-        );
-        return { status: 'OK' };
+          createdAt,
+        };
+        await this.queueService.addGamePointLogJob(jobData);
+        return { status: 'OK', newBalance: balanceAfter };
       }
       default:
         return { status: 'REJECT', message: 'Invalid type' };

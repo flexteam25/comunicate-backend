@@ -23,13 +23,24 @@ import { QueueService } from './queue.service';
       inject: [ConfigService],
     }),
     // Only register queues for adding jobs, NO processors
-    BullModule.registerQueue({
-      name: 'email',
-      defaultJobOptions: {
-        removeOnComplete: 10, // Keep 10 successful jobs for debugging
-        removeOnFail: 20, // Keep 20 failed jobs
+    BullModule.registerQueue(
+      {
+        name: 'email',
+        defaultJobOptions: {
+          removeOnComplete: 10, // Keep 10 successful jobs for debugging
+          removeOnFail: 20, // Keep 20 failed jobs
+        },
       },
-    }),
+      {
+        // Queue for logging point transactions + realtime events for minigame callbacks
+        // NOTE: keep all failed jobs for audit/debugging
+        name: 'game-point-log',
+        defaultJobOptions: {
+          removeOnComplete: 10,
+          removeOnFail: false,
+        },
+      },
+    ),
   ],
   providers: [QueueService],
   exports: [QueueService], // Only export QueueService, not BullModule

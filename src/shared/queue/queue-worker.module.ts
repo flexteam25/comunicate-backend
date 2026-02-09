@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { EmailProcessor } from './processors/email.processor';
+import { GamePointLogProcessor } from './processors/game-point-log.processor';
 import { LoggerModule } from '../logger/logger.module';
 import { RedisModule } from '../redis/redis.module';
 import { QueueService } from './queue.service';
@@ -68,6 +69,7 @@ import { SiteEventView } from '../../modules/site-event/domain/entities/site-eve
 import { SiteBadgeRequestImage } from '../../modules/site/domain/entities/site-badge-request-image.entity';
 import { SiteBadgeRequest } from '../../modules/site/domain/entities/site-badge-request.entity';
 import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
+import { BetHistory } from '../../modules/minigame/domain/entities/bet-history.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -168,10 +170,12 @@ import { SiteReviewCommentImage } from '../../modules/site-review/domain/entitie
         SiteEventBanner,
         SiteEventView,
         SiteReviewCommentImage,
+        BetHistory,
       ],
       synchronize: false,
       logging: false,
     }),
+    TypeOrmModule.forFeature([PointTransaction, BetHistory]),
     EmailModule.forRoot(),
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -189,15 +193,26 @@ import { SiteReviewCommentImage } from '../../modules/site-review/domain/entitie
       },
       inject: [ConfigService],
     }),
-    BullModule.registerQueue({
-      name: 'email',
-      defaultJobOptions: {
-        removeOnComplete: 10,
-        removeOnFail: 20,
+    BullModule.registerQueue(
+      {
+        name: 'email',
+        defaultJobOptions: {
+          removeOnComplete: 10,
+          removeOnFail: 20,
+        },
       },
-    }),
+      {
+        // Queue for logging point transactions + realtime events for minigame callbacks
+        // NOTE: keep all failed jobs for audit/debugging
+        name: 'game-point-log',
+        defaultJobOptions: {
+          removeOnComplete: 10,
+          removeOnFail: false,
+        },
+      },
+    ),
   ],
-  providers: [EmailProcessor, QueueService],
+  providers: [EmailProcessor, GamePointLogProcessor, QueueService],
   exports: [BullModule, EmailProcessor, QueueService],
 })
 export class QueueWorkerModule {}

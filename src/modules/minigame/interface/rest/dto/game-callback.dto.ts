@@ -1,7 +1,7 @@
 import { IsString, IsNumber, IsOptional, IsIn } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
-const CALLBACK_TYPES = ['bet', 'cancel_bet', 'win', 'lose', 'refund'] as const;
+const CALLBACK_TYPES = ['bet', 'cancel_bet', 'win', 'lose', 'draw', 'refund'] as const;
 
 export class GameCallbackDto {
   @IsString()
@@ -25,6 +25,28 @@ export class GameCallbackDto {
   @IsOptional()
   @IsString()
   roundId?: string;
+
+  @IsOptional()
+  @IsString()
+  roundNumber?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => (value === undefined || value === null ? undefined : Number(value)))
+  betAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => (value === undefined || value === null ? undefined : Number(value)))
+  payout?: number;
+
+  @IsOptional()
+  @IsString()
+  roundResult?: string;
+
+  @IsOptional()
+  @IsString()
+  coinType?: string;
 
   @IsOptional()
   @IsString()

@@ -27,7 +27,8 @@
     "socket:dev": "ts-node -r tsconfig-paths/register src/socket-main.ts",
     "socket": "node dist/src/socket-main.js",
     "cli": "node dist/cli.js cli",
-    "cli:dev": "ts-node src/cli.ts cli"
+    "cli:dev": "ts-node src/cli.ts cli",
+    "queue:retry": "ts-node -r tsconfig-paths/register scripts/retry-queue.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.3",

@@ -9,7 +9,7 @@ const MAINTENANCE_DEFAULT_VALUE = {
 
 const GAME_BET_LIMITS_KEY = 'game_bet_limits';
 const GAME_BET_LIMITS_INIT_VALUE = {
-  crash: { minBet: 1, maxBet: 1000, maxPayoutAmount: 0 },
+  crash: { minBet: 1, maxBet: 1000, maxPayoutAmount: 1000000 },
   dice: { minBet: 1, maxBet: 1000, maxPayoutAmount: 34200 },
   mines: { minBet: 1, maxBet: 1000, maxPayoutAmount: 297000 },
   plinko: { minBet: 1, maxBet: 1000, maxPayoutAmount: 1000000 },

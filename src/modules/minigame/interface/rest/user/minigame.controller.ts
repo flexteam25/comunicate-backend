@@ -21,6 +21,7 @@ import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-resp
 import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { formatPoints } from '../../../../../shared/utils/point.util';
 import { GetGameBetLimitsService } from '../../../../system-settings/application/services/get-game-bet-limits.service';
+import { LoggerService } from '../../../../../shared/logger/logger.service';
 
 @Controller('api/game')
 export class MinigameController {
@@ -28,6 +29,7 @@ export class MinigameController {
     private readonly launchGameUseCase: LaunchGameUseCase,
     private readonly handleGameCallbackUseCase: HandleGameCallbackUseCase,
     private readonly getGameBetLimitsService: GetGameBetLimitsService,
+    private readonly logger: LoggerService,
   ) {}
 
   @Get('bet-limits')
@@ -57,6 +59,7 @@ export class MinigameController {
   async callback(
     @Body() dto: GameCallbackDto,
   ): Promise<{ status: string; message?: string; newBalance?: number }> {
+    // this.logger.info('Game callback', { dto }, 'game-callback');
     const result = await this.handleGameCallbackUseCase.execute({
       type: dto.type,
       res: dto.res,
@@ -64,10 +67,22 @@ export class MinigameController {
       userUuid: dto.userUuid,
       txRef: dto.txRef,
       roundId: dto.roundId,
+      roundNumber: dto.roundNumber,
+      betAmount: dto.betAmount,
+      payout: dto.payout,
+      roundResult: dto.roundResult,
+      coinType: dto.coinType,
       gameType: dto.gameType,
     });
-    if (result.status === 'OK' && 'newBalance' in result && result.newBalance != null) {
-      return { ...result, newBalance: formatPoints(result.newBalance) };
+    if (result.status === 'OK') {
+      const out: Record<string, unknown> = { ...result };
+      if ('newBalance' in result && result.newBalance != null) {
+        out.newBalance = formatPoints(result.newBalance);
+      }
+      if ('actualAmount' in result && result.actualAmount != null) {
+        out.actualAmount = formatPoints(result.actualAmount);
+      }
+      return out as { status: string; message?: string; newBalance?: number; actualAmount?: number };
     }
     return result;
   }
