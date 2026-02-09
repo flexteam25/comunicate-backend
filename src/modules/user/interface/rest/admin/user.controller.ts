@@ -1126,6 +1126,7 @@ export class AdminUserController {
     const response: AdminUserAttendanceResponse = {
       data: mappedData,
       nextCursor: result.nextCursor,
+      previousCursor: result.previousCursor ?? null,
       hasMore: result.hasMore,
     };
 

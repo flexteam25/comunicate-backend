@@ -23,6 +23,7 @@ export interface IAttendanceRepository {
   ): Promise<{
     data: Attendance[];
     nextCursor: string | null;
+    previousCursor?: string | null;
     hasMore: boolean;
   }>;
   findByUserIdAndDateRange(
@@ -34,6 +35,7 @@ export interface IAttendanceRepository {
   ): Promise<{
     data: Attendance[];
     nextCursor: string | null;
+    previousCursor?: string | null;
     hasMore: boolean;
   }>;
 }
