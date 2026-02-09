@@ -7,6 +7,17 @@ const MAINTENANCE_DEFAULT_VALUE = {
   allowed_ips: [] as string[],
 };
 
+const GAME_BET_LIMITS_KEY = 'game_bet_limits';
+const GAME_BET_LIMITS_INIT_VALUE = {
+  crash: { minBet: 1, maxBet: 1000, maxPayoutAmount: 0 },
+  dice: { minBet: 1, maxBet: 1000, maxPayoutAmount: 34200 },
+  mines: { minBet: 1, maxBet: 1000, maxPayoutAmount: 297000 },
+  plinko: { minBet: 1, maxBet: 1000, maxPayoutAmount: 1000000 },
+  scissors: { minBet: 0.005, maxBet: 1000, maxPayoutAmount: 1980 },
+  slot: { minBet: 1, maxBet: 1000, maxPayoutAmount: 250000 },
+  turtle: { minBet: 1, maxBet: 1000, maxPayoutAmount: 2940 },
+};
+
 export class SystemSettingsSeeder {
   constructor(private dataSource: DataSource) {}
 
@@ -17,21 +28,33 @@ export class SystemSettingsSeeder {
 
     try {
       const repo = queryRunner.manager.getRepository(SystemSetting);
-      const existing = await repo.findOne({ where: { key: MAINTENANCE_KEY } });
 
-      if (existing) {
-        console.log('Maintenance system setting already exists, skipping.');
-        await queryRunner.commitTransaction();
-        return;
+      const existingMaintenance = await repo.findOne({ where: { key: MAINTENANCE_KEY } });
+      if (!existingMaintenance) {
+        await repo.insert({
+          key: MAINTENANCE_KEY,
+          value: MAINTENANCE_DEFAULT_VALUE,
+        });
+        console.log('  - maintenance: inserted');
+      } else {
+        console.log('  - maintenance: already exists, skipping');
       }
 
-      await repo.insert({
-        key: MAINTENANCE_KEY,
-        value: MAINTENANCE_DEFAULT_VALUE,
+      const existingGameBetLimits = await repo.findOne({
+        where: { key: GAME_BET_LIMITS_KEY },
       });
+      if (!existingGameBetLimits) {
+        await repo.insert({
+          key: GAME_BET_LIMITS_KEY,
+          value: GAME_BET_LIMITS_INIT_VALUE,
+        });
+        console.log('  - game_bet_limits: inserted');
+      } else {
+        console.log('  - game_bet_limits: already exists, skipping');
+      }
 
       await queryRunner.commitTransaction();
-      console.log('✅ System settings (maintenance) seeder completed successfully.');
+      console.log('✅ System settings seeder completed successfully.');
     } catch (error) {
       await queryRunner.rollbackTransaction();
       console.error('❌ System settings seeder failed:', error);

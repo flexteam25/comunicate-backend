@@ -12,6 +12,7 @@ import { RedisService } from '../../../../shared/redis/redis.service';
 import { RedisChannel } from '../../../../shared/socket/socket-channels';
 import { LoggerService } from '../../../../shared/logger/logger.service';
 import { formatPoints } from '../../../../shared/utils/point.util';
+import { GetGameBetLimitsService } from '../../../system-settings/application/services/get-game-bet-limits.service';
 
 export type GameCallbackResult =
   | { status: 'OK'; newBalance?: number }
@@ -42,6 +43,7 @@ export class HandleGameCallbackUseCase {
     private readonly createPointTransactionUseCase: CreatePointTransactionUseCase,
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
+    private readonly getGameBetLimitsService: GetGameBetLimitsService,
   ) {}
 
   private publishPointUpdated(
@@ -108,6 +110,23 @@ export class HandleGameCallbackUseCase {
 
     switch (type) {
       case 'bet': {
+        // Enforce game bet limits: read from cache, fallback database
+        const limits = await this.getGameBetLimitsService.get();
+        const key = gameType && limits[gameType] ? gameType : undefined;
+        if (!key) {
+          return {
+            status: 'REJECT',
+            message: 'Bet limits not configured for gameType',
+          };
+        }
+        const limit = limits[key];
+        if (amountNum < limit.minBet || amountNum > limit.maxBet) {
+          return {
+            status: 'REJECT',
+            message: 'Bet amount out of allowed range',
+          };
+        }
+
         if (balanceBefore < amountNum) {
           return { status: 'InsufficientPlayerBalance' };
         }

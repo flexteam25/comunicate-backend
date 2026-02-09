@@ -37,6 +37,7 @@ function buildCanonical(method: string, pathStr: string, query: Record<string, s
 const DEFAULT_PATH_SYNC_POINT = '/api/partner/sync-point';
 const DEFAULT_PATH_REVOKE = '/api/auth/partner/revoke';
 const DEFAULT_PATH_AUTHENTICATE = '/api/auth/partner/authenticate';
+const DEFAULT_PATH_NOTIFY_BET_LIMITS_CHANGED = '/api/auth/partner/notify-bet-limits-changed';
 
 @Injectable()
 export class GameBackendClientService {
@@ -50,6 +51,7 @@ export class GameBackendClientService {
   private readonly pathAuthenticate: string;
   private readonly pathSyncPoint: string;
   private readonly pathRevoke: string;
+  private readonly pathNotifyBetLimitsChanged: string;
   /** Client for auth (launch) and revoke (GAME_BASE_URL). */
   private readonly client: AxiosInstance;
   /** Client for sync-point only (GAME_MANAGEMENT_URL). */
@@ -66,6 +68,9 @@ export class GameBackendClientService {
       this.configService.get<string>('GAME_PARTNER_SYNC_POINT_PATH') || DEFAULT_PATH_SYNC_POINT;
     this.pathRevoke =
       this.configService.get<string>('GAME_PARTNER_REVOKE_PATH') || DEFAULT_PATH_REVOKE;
+    this.pathNotifyBetLimitsChanged =
+      this.configService.get<string>('GAME_PARTNER_NOTIFY_BET_LIMITS_CHANGED_PATH') ||
+      DEFAULT_PATH_NOTIFY_BET_LIMITS_CHANGED;
     const keyPath = this.configService.get<string>('GAME_PARTNER_PRIVATE_KEY') || '';
     if (keyPath.trim()) {
       const resolved = path.isAbsolute(keyPath) ? keyPath : path.join(process.cwd(), keyPath);
@@ -95,6 +100,38 @@ export class GameBackendClientService {
   /** Whether sync-point can be called (GAME_MANAGEMENT_URL + keys). */
   isSyncPointConfigured(): boolean {
     return !!(this.managementBaseUrl && this.apiKey && this.apiSecret && this.privateKeyPem);
+  }
+
+  /**
+   * Notify game backend that bet limits have changed. Called after admin updates game_bet_limits.
+   * POST /api/auth/partner/notify-bet-limits-changed with body { limits }. Uses GAME_BASE_URL.
+   */
+  async notifyBetLimitsChanged(limits: Record<string, unknown>): Promise<void> {
+    if (!this.isConfigured()) {
+      return;
+    }
+    const method = 'POST';
+    const pathStr = this.pathNotifyBetLimitsChanged;
+    const query: Record<string, string> = {};
+    const body: Record<string, unknown> = { limits };
+
+    const timestamp = String(Date.now());
+    const canonical = buildCanonical(method, pathStr, query, body, timestamp);
+    const sign = crypto.createSign('RSA-SHA256');
+    sign.update(canonical);
+    const signature = sign.sign({ key: this.privateKeyPem! }, 'base64');
+
+    await this.client.request({
+      method: 'POST',
+      url: pathStr,
+      data: body,
+      headers: {
+        'x-key': this.apiKey,
+        'x-sec': this.apiSecret,
+        'x-signature': signature,
+        'x-timestamp': timestamp,
+      },
+    });
   }
 
   /**

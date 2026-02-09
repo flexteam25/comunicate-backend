@@ -607,5 +607,10 @@
   "MAINTENANCE_MODE": "System is under maintenance",
   "SYSTEM_SETTING_NOT_FOUND": "System setting not found",
   "SYSTEM_SETTING_RETRIEVED_SUCCESS": "System setting retrieved successfully",
-  "SYSTEM_SETTING_UPDATED_SUCCESS": "System setting updated successfully"
+  "SYSTEM_SETTING_UPDATED_SUCCESS": "System setting updated successfully",
+  "GAME_BET_LIMITS_INVALID_GAME_TYPE": "Invalid game type: {{gameType}}",
+  "GAME_BET_LIMITS_MIN_BET_OUT_OF_RANGE": "minBet for {{gameType}} must be between 0.001 and 100,000",
+  "GAME_BET_LIMITS_MAX_BET_OUT_OF_RANGE": "maxBet for {{gameType}} must be between 10 and 10,000,000",
+  "GAME_BET_LIMITS_MAX_PAYOUT_OUT_OF_RANGE": "maxPayoutAmount for {{gameType}} must be between 0 and 50,000,000",
+  "GAME_BET_LIMITS_MIN_BET_MUST_BE_LTE_MAX_BET": "minBet must be less than or equal to maxBet for {{gameType}}"
 }

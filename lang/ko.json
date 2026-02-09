@@ -607,5 +607,10 @@
   "MAINTENANCE_MODE": "시스템 점검 중입니다",
   "SYSTEM_SETTING_NOT_FOUND": "시스템 설정을 찾을 수 없습니다",
   "SYSTEM_SETTING_RETRIEVED_SUCCESS": "시스템 설정 조회 성공",
-  "SYSTEM_SETTING_UPDATED_SUCCESS": "시스템 설정 수정 성공"
+  "SYSTEM_SETTING_UPDATED_SUCCESS": "시스템 설정 수정 성공",
+  "GAME_BET_LIMITS_INVALID_GAME_TYPE": "잘못된 게임 유형: {{gameType}}",
+  "GAME_BET_LIMITS_MIN_BET_OUT_OF_RANGE": "{{gameType}}의 minBet은 0.001~100,000 사이여야 합니다",
+  "GAME_BET_LIMITS_MAX_BET_OUT_OF_RANGE": "{{gameType}}의 maxBet은 10~10,000,000 사이여야 합니다",
+  "GAME_BET_LIMITS_MAX_PAYOUT_OUT_OF_RANGE": "{{gameType}}의 maxPayoutAmount는 0~50,000,000 사이여야 합니다",
+  "GAME_BET_LIMITS_MIN_BET_MUST_BE_LTE_MAX_BET": "{{gameType}}의 minBet은 maxBet 이하여야 합니다"
 }

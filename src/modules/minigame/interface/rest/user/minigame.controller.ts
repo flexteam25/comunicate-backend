@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 import {
   CurrentUser,
@@ -12,13 +20,22 @@ import { GameCallbackGuard } from '../../../infrastructure/guards/game-callback.
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { formatPoints } from '../../../../../shared/utils/point.util';
+import { GetGameBetLimitsService } from '../../../../system-settings/application/services/get-game-bet-limits.service';
 
 @Controller('api/game')
 export class MinigameController {
   constructor(
     private readonly launchGameUseCase: LaunchGameUseCase,
     private readonly handleGameCallbackUseCase: HandleGameCallbackUseCase,
+    private readonly getGameBetLimitsService: GetGameBetLimitsService,
   ) {}
+
+  @Get('bet-limits')
+  @UseGuards(GameCallbackGuard)
+  async getBetLimits(): Promise<{ limits: Record<string, { minBet: number; maxBet: number; maxPayoutAmount: number }>; status: boolean }> {
+    const limits = await this.getGameBetLimitsService.get();
+    return { limits, status: true };
+  }
 
   @Post('launch')
   @UseGuards(JwtAuthGuard)

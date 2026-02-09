@@ -115,10 +115,16 @@ export class ApiThrottleMiddleware implements NestMiddleware {
 
   /**
    * Check if path should skip throttle
-   * - /api/game/callback: server-to-server from game backend, do not rate limit
+   * - /api/game/callback, /api/game/bet-limits: server-to-server from game backend, do not rate limit
    */
   private shouldSkipThrottle(path: string): boolean {
-    const skipPaths = ['/health', '/metrics', '/favicon.ico', '/api/game/callback'];
+    const skipPaths = [
+      '/health',
+      '/metrics',
+      '/favicon.ico',
+      '/api/game/callback',
+      '/api/game/bet-limits',
+    ];
     return skipPaths.some((skipPath) => path.startsWith(skipPath));
   }
 
