@@ -603,5 +603,9 @@
   "VERIFYCODE_REQUIRED": "필수 항목이 누락되었습니다",
   "MINIGAME_LAUNCH_SUCCESS": "게임 실행 URL이 생성되었습니다",
   "MINIGAME_NOT_CONFIGURED": "미니게임이 설정되지 않았습니다",
-  "MINIGAME_LAUNCH_FAILED": "게임 실행에 실패했습니다"
+  "MINIGAME_LAUNCH_FAILED": "게임 실행에 실패했습니다",
+  "MAINTENANCE_MODE": "시스템 점검 중입니다",
+  "SYSTEM_SETTING_NOT_FOUND": "시스템 설정을 찾을 수 없습니다",
+  "SYSTEM_SETTING_RETRIEVED_SUCCESS": "시스템 설정 조회 성공",
+  "SYSTEM_SETTING_UPDATED_SUCCESS": "시스템 설정 수정 성공"
 }

@@ -603,5 +603,9 @@
   "VERIFYCODE_REQUIRED": "Required field is missing",
   "MINIGAME_LAUNCH_SUCCESS": "Game launch URL generated successfully",
   "MINIGAME_NOT_CONFIGURED": "Minigame is not configured",
-  "MINIGAME_LAUNCH_FAILED": "Failed to launch game"
+  "MINIGAME_LAUNCH_FAILED": "Failed to launch game",
+  "MAINTENANCE_MODE": "System is under maintenance",
+  "SYSTEM_SETTING_NOT_FOUND": "System setting not found",
+  "SYSTEM_SETTING_RETRIEVED_SUCCESS": "System setting retrieved successfully",
+  "SYSTEM_SETTING_UPDATED_SUCCESS": "System setting updated successfully"
 }

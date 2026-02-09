@@ -49,7 +49,7 @@ import * as dotenv from 'dotenv';
 import { SiteReviewCommentImage } from '../src/modules/site-review/domain/entities/site-review-comment-image.entity';
 import { Attendance } from '../src/modules/attendance/domain/entities/attendance.entity';
 import { AttendanceStatistic } from '../src/modules/attendance/domain/entities/attendance-statistic.entity';
-
+import { SystemSetting } from '../src/modules/system-settings/domain/entities/system-setting.entity';
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
@@ -130,6 +130,7 @@ function createDataSource(): DataSource {
       SiteReviewCommentImage,
       Attendance,
       AttendanceStatistic,
+      SystemSetting,
     ],
     synchronize: false,
     logging: true,

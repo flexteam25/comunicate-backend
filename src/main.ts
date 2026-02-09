@@ -9,6 +9,7 @@ import { LoggerService } from './shared/logger/logger.service';
 import { ApiThrottleMiddleware } from './shared/middleware/api-throttle.middleware';
 import { CorsTrustMiddleware } from './shared/middleware/cors-trust.middleware';
 import { IpTrackingMiddleware } from './shared/middleware/ip-tracking.middleware';
+import { MaintenanceMiddleware } from './shared/middleware/maintenance.middleware';
 import { IpTrackingInterceptor } from './shared/interceptors/ip-tracking.interceptor';
 import { validationExceptionFactory } from './shared/pipes/validation-exception.factory';
 import { RedisService } from './shared/redis/redis.service';
@@ -38,6 +39,9 @@ async function bootstrap() {
   const redisService = app.get(RedisService);
   const ipTrackingMiddleware = new IpTrackingMiddleware(redisService, loggerService);
   app.use((req, res, next) => ipTrackingMiddleware.use(req, res, next));
+
+  const maintenanceMiddleware = app.get(MaintenanceMiddleware);
+  app.use((req, res, next) => maintenanceMiddleware.use(req, res, next));
 
   // Enable validation pipe
   app.useGlobalPipes(

@@ -95,6 +95,8 @@ import { PointSetting } from './modules/point/domain/entities/point-setting.enti
 import { SiteRequestModule } from './modules/site-request/site-request.module';
 import { SiteRequest } from './modules/site-request/domain/entities/site-request.entity';
 import { MinigameModule } from './modules/minigame/minigame.module';
+import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
+import { SystemSetting } from './modules/system-settings/domain/entities/system-setting.entity';
 
 @Module({
   imports: [
@@ -177,6 +179,7 @@ import { MinigameModule } from './modules/minigame/minigame.module';
         UserBadgeRequestImage,
         PointSetting,
         SiteRequest,
+        SystemSetting,
       ],
       synchronize: false,
       logging: false,
@@ -205,6 +208,7 @@ import { MinigameModule } from './modules/minigame/minigame.module';
     EditorModule,
     SiteRequestModule,
     MinigameModule,
+    SystemSettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

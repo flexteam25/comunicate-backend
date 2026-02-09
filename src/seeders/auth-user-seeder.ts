@@ -7,7 +7,6 @@ import {
 } from '../modules/user/domain/entities/permission.entity';
 import { Badge, BadgeType } from '../modules/badge/domain/entities/badge.entity';
 import { UserRole } from '../modules/user/domain/entities/user-role.entity';
-import { UserPermission } from '../modules/user/domain/entities/user-permission.entity';
 import { UserBadge } from '../modules/user/domain/entities/user-badge.entity';
 import * as bcrypt from 'bcrypt';
 
