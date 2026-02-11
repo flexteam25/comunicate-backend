@@ -113,5 +113,5 @@ export class CursorPaginatedSitesResponse {
     sites: SiteResponse[];
   }[];
   nextCursor: string | null;
-  hasMore: boolean;
+  prevCursor: string | null;
 }

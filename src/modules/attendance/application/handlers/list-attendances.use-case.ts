@@ -39,6 +39,7 @@ export interface ListAttendancesResult {
   totalCount?: number; // Only when filter = 'today'
   data: AttendanceListItem[];
   nextCursor: string | null;
+  previousCursor: string | null;
   hasMore: boolean;
 }
 
@@ -71,7 +72,8 @@ export class ListAttendancesUseCase {
 
     if (command.filter === 'today') {
       // Query from attendances table
-      const result = await this.attendanceRepository.findByDate(
+      const result = await this.attendanceRepository.findByDateRange(
+        today,
         today,
         command.cursor,
         realLimit,
@@ -131,6 +133,7 @@ export class ListAttendancesUseCase {
         attended,
         data,
         nextCursor: result.nextCursor,
+        previousCursor: result.previousCursor ?? null,
         hasMore: result.hasMore,
       };
     } else {
@@ -160,6 +163,7 @@ export class ListAttendancesUseCase {
       return {
         data,
         nextCursor: null, // Ranking doesn't need pagination (fixed top 30)
+        previousCursor: null,
         hasMore: false,
         attended: null,
       };

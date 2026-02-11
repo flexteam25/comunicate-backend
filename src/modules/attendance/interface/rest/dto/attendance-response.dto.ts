@@ -14,7 +14,7 @@ export class ListAttendancesResponse {
   totalCount?: number;
   data: AttendanceResponse[];
   nextCursor: string | null;
-  hasMore: boolean;
+  prevCursor: string | null;
   /**
    * Current user's attendance status for today (when auth token is provided):
    * - true: current user has attended today

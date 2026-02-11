@@ -239,108 +239,187 @@ export class SiteRepository implements ISiteRepository {
       }
     }
 
-    // Handle tier sorting (sort by tier.order)
-    if (actualSortBy === 'tier') {
-      // Apply cursor pagination for tier sorting
-      if (cursor) {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue !== null && sortValue !== undefined) {
-          const tierOrder = parseFloat(sortValue);
-          if (actualSortOrder === 'ASC') {
+    const realLimit = limit > 50 ? 50 : limit;
+    const filterKey = JSON.stringify({
+      categoryId: filters?.categoryId ?? null,
+      tierId: filters?.tierId ?? null,
+      status: filters?.status ?? null,
+      search: filters?.search ?? null,
+      categoryType: filters?.categoryType ?? null,
+      tether: filters?.tether ?? null,
+      filterBy: filters?.filterBy ?? null,
+      sortBy: actualSortBy,
+      sortOrder: actualSortOrder,
+    });
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          decodedSortValue = sortValue;
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
+    const sortField =
+      actualSortBy === 'tier' ? 'tier.order' : `site.${actualSortBy}`;
+    const sortDefinition = `${sortField}:${actualSortOrder},id:${actualSortOrder}`;
+
+    if (!decodedId || direction === 'forward') {
+      queryBuilder
+        .addOrderBy(sortField, actualSortOrder, 'NULLS LAST')
+        .addOrderBy('site.id', actualSortOrder);
+    }
+
+    if (decodedId) {
+      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
+      if (decodedSortValue != null) {
+        if (actualSortBy === 'createdAt') {
+          parsedSortValue = new Date(decodedSortValue);
+        } else if (actualSortBy === 'tier') {
+          const parsed = parseFloat(decodedSortValue);
+          parsedSortValue = Number.isNaN(parsed) ? undefined : parsed;
+        }
+      }
+
+      if (direction === 'forward') {
+        if (parsedSortValue !== null && parsedSortValue !== undefined) {
+          if (actualSortOrder === 'DESC') {
             queryBuilder.andWhere(
-              '(tier.order > :tierOrder OR (tier.order = :tierOrder AND site.id > :cursorId) OR (tier.order IS NULL AND site.id > :cursorId))',
-              { tierOrder, cursorId: id },
+              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND site.id < :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
             );
           } else {
             queryBuilder.andWhere(
-              '(tier.order < :tierOrder OR (tier.order = :tierOrder AND site.id < :cursorId) OR (tier.order IS NULL AND site.id < :cursorId))',
-              { tierOrder, cursorId: id },
+              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND site.id > :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
             );
           }
         } else {
-          if (actualSortOrder === 'ASC') {
-            queryBuilder.andWhere('site.id > :cursorId', { cursorId: id });
+          if (actualSortOrder === 'DESC') {
+            queryBuilder.andWhere('site.id < :cursorId', { cursorId: decodedId });
           } else {
-            queryBuilder.andWhere('site.id < :cursorId', { cursorId: id });
+            queryBuilder.andWhere('site.id > :cursorId', { cursorId: decodedId });
           }
         }
-      }
-      if (actualSortOrder === 'DESC') {
-        queryBuilder.addOrderBy(`site.${actualSortBy}`, 'DESC', 'NULLS LAST');
       } else {
-        queryBuilder.orderBy('tier.order', 'ASC');
-      }
-      queryBuilder.addOrderBy('site.id', actualSortOrder);
-    } else if (actualSortBy === 'tether') {
-      // Filter by tether deposit/withdrawal status
-      queryBuilder.andWhere('site.tetherDepositWithdrawalStatus = :tether', {
-        tether: TetherDepositWithdrawalStatus.POSSIBLE,
-      });
-    } else {
-      // Apply cursor pagination
-      if (cursor) {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = `site.${actualSortBy}`;
-
-        if (sortValue !== null && sortValue !== undefined) {
-          if (actualSortOrder === 'ASC') {
+        if (parsedSortValue !== null && parsedSortValue !== undefined) {
+          if (actualSortOrder === 'DESC') {
             queryBuilder.andWhere(
               `(${sortField} > :sortValue OR (${sortField} = :sortValue AND site.id > :cursorId))`,
-              { sortValue, cursorId: id },
+              { sortValue: parsedSortValue, cursorId: decodedId },
             );
           } else {
             queryBuilder.andWhere(
               `(${sortField} < :sortValue OR (${sortField} = :sortValue AND site.id < :cursorId))`,
-              { sortValue, cursorId: id },
+              { sortValue: parsedSortValue, cursorId: decodedId },
             );
           }
         } else {
-          if (actualSortOrder === 'ASC') {
-            queryBuilder.andWhere('site.id > :cursorId', { cursorId: id });
+          if (actualSortOrder === 'DESC') {
+            queryBuilder.andWhere('site.id > :cursorId', { cursorId: decodedId });
           } else {
-            queryBuilder.andWhere('site.id < :cursorId', { cursorId: id });
+            queryBuilder.andWhere('site.id < :cursorId', { cursorId: decodedId });
           }
         }
-      }
 
-      // Apply sorting with NULLS LAST for DESC
-      if (actualSortOrder === 'DESC') {
-        queryBuilder.addOrderBy(`site.${actualSortBy}`, 'DESC', 'NULLS LAST');
-      } else {
-        queryBuilder.orderBy(`site.${actualSortBy}`, 'ASC');
+        queryBuilder
+          .orderBy(sortField, actualSortOrder === 'DESC' ? 'ASC' : 'DESC', 'NULLS LAST')
+          .addOrderBy('site.id', actualSortOrder === 'DESC' ? 'ASC' : 'DESC');
       }
-      queryBuilder.addOrderBy('site.id', actualSortOrder);
     }
 
-    // Fetch one extra to check if there's more
-    queryBuilder.take(limit + 1);
+    queryBuilder.take(realLimit + 1);
+    const rows = await queryBuilder.getMany();
 
-    const sites = await queryBuilder.getMany();
-
-    // issueCount is automatically loaded by loadRelationCountAndMap
-    // Check if there's more data
-    const hasMore = sites.length > limit;
-    const data = hasMore ? sites.slice(0, limit) : sites;
-
-    // Generate next cursor
+    const hasMore = rows.length > realLimit;
+    let data: Site[];
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      let sortValue: string | number | Date | null = null;
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: Site): string | number | Date | null => {
       if (actualSortBy === 'tier') {
-        sortValue = lastItem.tier?.order ?? null;
-      } else {
-        const fieldValue = (lastItem as unknown as Record<string, unknown>)[actualSortBy];
-        if (fieldValue !== null && fieldValue !== undefined) {
-          sortValue = fieldValue as string | number | Date;
-        }
+        return item.tier?.order ?? null;
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+      const fieldValue = (item as unknown as Record<string, unknown>)[actualSortBy];
+      return fieldValue != null ? (fieldValue as string | number | Date) : null;
+    };
+
+    if (!decodedId || direction === 'forward') {
+      data = rows.slice(0, realLimit);
+
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+
+      if (decodedId && cursor) {
+        let prevSortValue: string | number | Date | undefined = decodedSortValue;
+        if (decodedSortValue != null) {
+          if (actualSortBy === 'createdAt') {
+            prevSortValue = new Date(decodedSortValue);
+          } else if (actualSortBy === 'tier') {
+            const parsed = parseFloat(decodedSortValue);
+            prevSortValue = Number.isNaN(parsed) ? undefined : parsed;
+          }
+        }
+
+        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, prevSortValue, {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      const pageItems = rows.slice(0, realLimit);
+      data = actualSortOrder === 'DESC' ? pageItems.reverse() : pageItems.slice().reverse();
+
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
     }
 
     return {
       data,
       nextCursor,
+      previousCursor: previousCursor ?? null,
       hasMore,
     };
   }

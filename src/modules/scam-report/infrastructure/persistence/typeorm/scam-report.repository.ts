@@ -170,6 +170,11 @@ export class ScamReportRepository implements IScamReportRepository {
     limit = 20,
   ): Promise<CursorPaginationResult<ScamReport>> {
     const realLimit = limit > 50 ? 50 : limit;
+    const filterKey = JSON.stringify({
+      siteId,
+      status: status ?? null,
+    });
+
     const queryBuilder = this.repository
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.user', 'user')
@@ -212,28 +217,71 @@ export class ScamReportRepository implements IScamReportRepository {
       queryBuilder.andWhere('report.status = :status', { status });
     }
 
-    // Apply cursor pagination
+    let decodedId: string | undefined;
+    let decodedSortCreatedAt: Date | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
     if (cursor) {
       try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue) {
-          const sortDate = new Date(sortValue);
-          queryBuilder.andWhere(
-            '(report.createdAt < :sortDate OR (report.createdAt = :sortDate AND report.id < :cursorId))',
-            { sortDate, cursorId: id },
-          );
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortCreatedAt = undefined;
         } else {
-          queryBuilder.andWhere('report.id < :cursorId', { cursorId: id });
+          decodedId = id;
+          if (sortValue) {
+            decodedSortCreatedAt = new Date(sortValue);
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
         }
       } catch {
         // Invalid cursor, ignore
       }
     }
 
-    queryBuilder
-      .orderBy('report.createdAt', 'DESC')
-      .addOrderBy('report.id', 'DESC')
-      .take(realLimit + 1);
+    const sortDefinition = 'createdAt:DESC,id:DESC';
+
+    if (!decodedId || direction === 'forward') {
+      queryBuilder
+        .orderBy('report.createdAt', 'DESC')
+        .addOrderBy('report.id', 'DESC');
+    }
+
+    if (decodedId) {
+      if (direction === 'forward') {
+        if (decodedSortCreatedAt) {
+          queryBuilder.andWhere(
+            '(report.createdAt < :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id < :cursorId))',
+            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
+        }
+      } else {
+        if (decodedSortCreatedAt) {
+          queryBuilder.andWhere(
+            '(report.createdAt > :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id > :cursorId))',
+            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('report.id > :cursorId', { cursorId: decodedId });
+        }
+
+        queryBuilder
+          .orderBy('report.createdAt', 'ASC')
+          .addOrderBy('report.id', 'ASC');
+      }
+    }
+
+    queryBuilder.take(realLimit + 1);
 
     const { entities, raw } = await queryBuilder.getRawAndEntities();
     const hasMore = entities.length > realLimit;
@@ -269,14 +317,81 @@ export class ScamReportRepository implements IScamReportRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt);
+    let previousCursor: string | null = null;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt, {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+
+      if (decodedId && decodedSortCreatedAt && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          decodedId,
+          decodedSortCreatedAt,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+    } else {
+      const pageItemsAsc = data;
+      const sortedDesc = pageItemsAsc.sort((a, b) => {
+        const aTime =
+          a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+        const bTime =
+          b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+        if (aTime !== bTime) {
+          return bTime - aTime;
+        }
+        return b.id.localeCompare(a.id);
+      });
+      const finalData = sortedDesc;
+
+      if (finalData.length > 0) {
+        const oldestInPage = finalData[finalData.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id,
+          oldestInPage.createdAt,
+          {
+            direction: 'forward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+
+      if (hasMore && finalData.length > 0) {
+        const newestInPage = finalData[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          newestInPage.createdAt,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+
+      return {
+        data: finalData,
+        nextCursor,
+        previousCursor: previousCursor ?? null,
+        hasMore,
+      };
     }
 
     return {
       data,
       nextCursor,
+      previousCursor: previousCursor ?? null,
       hasMore,
     };
   }
@@ -288,6 +403,11 @@ export class ScamReportRepository implements IScamReportRepository {
     limit = 20,
   ): Promise<CursorPaginationResult<ScamReport>> {
     const realLimit = limit > 50 ? 50 : limit;
+    const filterKey = JSON.stringify({
+      userId,
+      status: status ?? null,
+    });
+
     const queryBuilder = this.repository
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.site', 'site')
@@ -330,28 +450,71 @@ export class ScamReportRepository implements IScamReportRepository {
       queryBuilder.andWhere('report.status = :status', { status });
     }
 
-    // Apply cursor pagination
+    let decodedId: string | undefined;
+    let decodedSortCreatedAt: Date | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
     if (cursor) {
       try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue) {
-          const sortDate = new Date(sortValue);
-          queryBuilder.andWhere(
-            '(report.createdAt < :sortDate OR (report.createdAt = :sortDate AND report.id < :cursorId))',
-            { sortDate, cursorId: id },
-          );
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortCreatedAt = undefined;
         } else {
-          queryBuilder.andWhere('report.id < :cursorId', { cursorId: id });
+          decodedId = id;
+          if (sortValue) {
+            decodedSortCreatedAt = new Date(sortValue);
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
         }
       } catch {
         // Invalid cursor, ignore
       }
     }
 
-    queryBuilder
-      .orderBy('report.createdAt', 'DESC')
-      .addOrderBy('report.id', 'DESC')
-      .take(realLimit + 1);
+    const sortDefinition = 'createdAt:DESC,id:DESC';
+
+    if (!decodedId || direction === 'forward') {
+      queryBuilder
+        .orderBy('report.createdAt', 'DESC')
+        .addOrderBy('report.id', 'DESC');
+    }
+
+    if (decodedId) {
+      if (direction === 'forward') {
+        if (decodedSortCreatedAt) {
+          queryBuilder.andWhere(
+            '(report.createdAt < :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id < :cursorId))',
+            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
+        }
+      } else {
+        if (decodedSortCreatedAt) {
+          queryBuilder.andWhere(
+            '(report.createdAt > :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id > :cursorId))',
+            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('report.id > :cursorId', { cursorId: decodedId });
+        }
+
+        queryBuilder
+          .orderBy('report.createdAt', 'ASC')
+          .addOrderBy('report.id', 'ASC');
+      }
+    }
+
+    queryBuilder.take(realLimit + 1);
 
     const { entities, raw } = await queryBuilder.getRawAndEntities();
     const hasMore = entities.length > realLimit;
@@ -387,14 +550,81 @@ export class ScamReportRepository implements IScamReportRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt);
+    let previousCursor: string | null = null;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt, {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+
+      if (decodedId && decodedSortCreatedAt && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          decodedId,
+          decodedSortCreatedAt,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+    } else {
+      const pageItemsAsc = data;
+      const sortedDesc = pageItemsAsc.sort((a, b) => {
+        const aTime =
+          a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+        const bTime =
+          b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+        if (aTime !== bTime) {
+          return bTime - aTime;
+        }
+        return b.id.localeCompare(a.id);
+      });
+      const finalData = sortedDesc;
+
+      if (finalData.length > 0) {
+        const oldestInPage = finalData[finalData.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id,
+          oldestInPage.createdAt,
+          {
+            direction: 'forward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+
+      if (hasMore && finalData.length > 0) {
+        const newestInPage = finalData[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          newestInPage.createdAt,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+
+      return {
+        data: finalData,
+        nextCursor,
+        previousCursor: previousCursor ?? null,
+        hasMore,
+      };
     }
 
     return {
       data,
       nextCursor,
+      previousCursor: previousCursor ?? null,
       hasMore,
     };
   }
@@ -407,6 +637,12 @@ export class ScamReportRepository implements IScamReportRepository {
     limit = 20,
   ): Promise<CursorPaginationResult<ScamReport>> {
     const realLimit = limit > 50 ? 50 : limit;
+    const filterKey = JSON.stringify({
+      status: status ?? null,
+      siteId: siteId ?? null,
+      siteName: siteName ?? null,
+    });
+
     const queryBuilder = this.repository
       .createQueryBuilder('report')
       .leftJoinAndSelect('report.user', 'user')
@@ -473,28 +709,71 @@ export class ScamReportRepository implements IScamReportRepository {
       );
     }
 
-    // Apply cursor pagination
+    let decodedId: string | undefined;
+    let decodedSortCreatedAt: Date | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
     if (cursor) {
       try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue) {
-          const sortDate = new Date(sortValue);
-          queryBuilder.andWhere(
-            '(report.createdAt < :sortDate OR (report.createdAt = :sortDate AND report.id < :cursorId))',
-            { sortDate, cursorId: id },
-          );
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortCreatedAt = undefined;
         } else {
-          queryBuilder.andWhere('report.id < :cursorId', { cursorId: id });
+          decodedId = id;
+          if (sortValue) {
+            decodedSortCreatedAt = new Date(sortValue);
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
         }
       } catch {
         // Invalid cursor, ignore
       }
     }
 
-    queryBuilder
-      .orderBy('report.createdAt', 'DESC')
-      .addOrderBy('report.id', 'DESC')
-      .take(realLimit + 1);
+    const sortDefinition = 'createdAt:DESC,id:DESC';
+
+    if (!decodedId || direction === 'forward') {
+      queryBuilder
+        .orderBy('report.createdAt', 'DESC')
+        .addOrderBy('report.id', 'DESC');
+    }
+
+    if (decodedId) {
+      if (direction === 'forward') {
+        if (decodedSortCreatedAt) {
+          queryBuilder.andWhere(
+            '(report.createdAt < :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id < :cursorId))',
+            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
+        }
+      } else {
+        if (decodedSortCreatedAt) {
+          queryBuilder.andWhere(
+            '(report.createdAt > :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id > :cursorId))',
+            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('report.id > :cursorId', { cursorId: decodedId });
+        }
+
+        queryBuilder
+          .orderBy('report.createdAt', 'ASC')
+          .addOrderBy('report.id', 'ASC');
+      }
+    }
+
+    queryBuilder.take(realLimit + 1);
 
     const { entities, raw } = await queryBuilder.getRawAndEntities();
     const hasMore = entities.length > realLimit;
@@ -530,14 +809,81 @@ export class ScamReportRepository implements IScamReportRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt);
+    let previousCursor: string | null = null;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt, {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+
+      if (decodedId && decodedSortCreatedAt && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          decodedId,
+          decodedSortCreatedAt,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+    } else {
+      const pageItemsAsc = data;
+      const sortedDesc = pageItemsAsc.sort((a, b) => {
+        const aTime =
+          a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+        const bTime =
+          b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+        if (aTime !== bTime) {
+          return bTime - aTime;
+        }
+        return b.id.localeCompare(a.id);
+      });
+      const finalData = sortedDesc;
+
+      if (finalData.length > 0) {
+        const oldestInPage = finalData[finalData.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id,
+          oldestInPage.createdAt,
+          {
+            direction: 'forward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+
+      if (hasMore && finalData.length > 0) {
+        const newestInPage = finalData[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          newestInPage.createdAt,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+
+      return {
+        data: finalData,
+        nextCursor,
+        previousCursor: previousCursor ?? null,
+        hasMore,
+      };
     }
 
     return {
       data,
       nextCursor,
+      previousCursor: previousCursor ?? null,
       hasMore,
     };
   }
