@@ -381,7 +381,7 @@ export class PostRepository implements IPostRepository {
       nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
     }
 
-    return { data, nextCursor, hasMore };
+    return { data, nextCursor };
   }
 
   async findPublished(
@@ -399,6 +399,37 @@ export class PostRepository implements IPostRepository {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = filters?.sortBy || 'publishedAt';
     const sortOrder = filters?.sortOrder || 'DESC';
+    const filterKey = JSON.stringify({ ...filters, sortBy, sortOrder });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | number | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue as string | number;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     // Check if sortBy is a computed field (from subquery)
     const computedFields = ['likeCount', 'dislikeCount', 'commentCount'];
@@ -503,30 +534,52 @@ export class PostRepository implements IPostRepository {
       sortFieldForWhere = `post.${sortBy}`;
     }
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue !== null && sortValue !== undefined) {
+    if (decodedId) {
+      queryBuilder.andWhere('post.id != :cursorId', { cursorId: decodedId });
+      const cursorParams = { sortValue: decodedSortValue, cursorId: decodedId };
+      const addCursorCondition = (expr: string) => {
+        if (isComputedField) {
+          queryBuilder.andHaving(expr, cursorParams);
+        } else {
+          queryBuilder.andWhere(expr, cursorParams);
+        }
+      };
+      if (decodedSortValue !== undefined && decodedSortValue !== null) {
+        if (direction === 'forward') {
           if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
+            addCursorCondition(
               `(${sortFieldForWhere} > :sortValue OR (${sortFieldForWhere} = :sortValue AND post.id > :cursorId))`,
-              { sortValue, cursorId: id },
             );
           } else {
-            queryBuilder.andWhere(
+            addCursorCondition(
               `(${sortFieldForWhere} < :sortValue OR (${sortFieldForWhere} = :sortValue AND post.id < :cursorId))`,
-              { sortValue, cursorId: id },
             );
           }
         } else {
           if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('post.id > :cursorId', { cursorId: id });
+            addCursorCondition(
+              `(${sortFieldForWhere} < :sortValue OR (${sortFieldForWhere} = :sortValue AND post.id < :cursorId))`,
+            );
           } else {
-            queryBuilder.andWhere('post.id < :cursorId', { cursorId: id });
+            addCursorCondition(
+              `(${sortFieldForWhere} > :sortValue OR (${sortFieldForWhere} = :sortValue AND post.id > :cursorId))`,
+            );
           }
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (direction === 'forward') {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere('post.id > :cursorId', { cursorId: decodedId });
+          } else {
+            queryBuilder.andWhere('post.id < :cursorId', { cursorId: decodedId });
+          }
+        } else {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere('post.id < :cursorId', { cursorId: decodedId });
+          } else {
+            queryBuilder.andWhere('post.id > :cursorId', { cursorId: decodedId });
+          }
+        }
       }
     }
 
@@ -553,7 +606,7 @@ export class PostRepository implements IPostRepository {
       const rawResults = await this.repository.manager.query(modifiedSql, parameters);
 
       if (rawResults.length === 0) {
-        return { data: [], nextCursor: null, hasMore: false };
+        return { data: [], nextCursor: null };
       }
 
       // Single pass: extract IDs and create result map
@@ -568,7 +621,7 @@ export class PostRepository implements IPostRepository {
       }
 
       if (entityIds.length === 0) {
-        return { data: [], nextCursor: null, hasMore: false };
+        return { data: [], nextCursor: null };
       }
 
       // Fetch entities with relations (1 query)
@@ -620,20 +673,52 @@ export class PostRepository implements IPostRepository {
       const data = orderedEntities.slice(0, realLimit);
 
       let nextCursor: string | null = null;
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        const rawData = resultMap.get(lastItem.id);
-        const fieldValue = rawData
-          ? (rawData[sortBy] as string | number | Date | null)
-          : null;
-        let sortValue: string | number | Date | null = null;
-        if (fieldValue !== null && fieldValue !== undefined) {
-          sortValue = fieldValue;
+      let previousCursor: string | null = null;
+
+      const getSortValueFromRaw = (item: Post, map: Map<string, Record<string, unknown>>): string | number | Date | undefined => {
+        const rawData = map.get(item.id);
+        const fieldValue = rawData ? (rawData[sortBy] as string | number | Date | null) : null;
+        if (fieldValue !== null && fieldValue !== undefined) return fieldValue as string | number | Date;
+        return undefined;
+      };
+
+      if (!decodedId || direction === 'forward') {
+        if (hasMore && data.length > 0) {
+          const lastItem = data[data.length - 1];
+          nextCursor = CursorPaginationUtil.encodeCursor(
+            lastItem.id,
+            getSortValueFromRaw(lastItem, resultMap as Map<string, Record<string, unknown>>),
+            { direction: 'forward', sort: sortDefinition, filterKey },
+          );
         }
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+        if (decodedId && cursor && data.length > 0) {
+          const firstItem = data[0];
+          previousCursor = CursorPaginationUtil.encodeCursor(
+            firstItem.id,
+            getSortValueFromRaw(firstItem, resultMap as Map<string, Record<string, unknown>>),
+            { direction: 'backward', sort: sortDefinition, filterKey },
+          );
+        }
+      } else {
+        if (data.length > 0) {
+          const oldestInPage = data[data.length - 1];
+          nextCursor = CursorPaginationUtil.encodeCursor(
+            oldestInPage.id,
+            getSortValueFromRaw(oldestInPage, resultMap as Map<string, Record<string, unknown>>),
+            { direction: 'forward', sort: sortDefinition, filterKey },
+          );
+        }
+        if (hasMore && data.length > 0) {
+          const newestInPage = data[0];
+          previousCursor = CursorPaginationUtil.encodeCursor(
+            newestInPage.id,
+            getSortValueFromRaw(newestInPage, resultMap as Map<string, Record<string, unknown>>),
+            { direction: 'backward', sort: sortDefinition, filterKey },
+          );
+        }
       }
 
-      return { data, nextCursor, hasMore };
+      return { data, nextCursor, previousCursor: previousCursor ?? null };
     } else {
       // For regular fields, use TypeORM's orderBy
       if (sortOrder === 'DESC') {
@@ -679,26 +764,59 @@ export class PostRepository implements IPostRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      // For computed fields, get value from raw data map
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: Post): string | number | Date | undefined => {
       let fieldValue: unknown;
       if (isComputedField) {
-        const rawData = rawDataMap.get(lastItem.id);
+        const rawData = rawDataMap.get(item.id);
         if (rawData && typeof rawData === 'object') {
           fieldValue = (rawData as Record<string, unknown>)[sortBy];
         }
       } else {
-        fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
+        fieldValue = (item as unknown as Record<string, unknown>)[sortBy];
       }
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue as string | number | Date;
+      if (fieldValue !== null && fieldValue !== undefined) return fieldValue as string | number | Date;
+      return undefined;
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
     }
 
-    return { data, nextCursor, hasMore };
+    return { data, nextCursor, previousCursor: previousCursor ?? null };
   }
 
   async create(post: Partial<Post>): Promise<Post> {

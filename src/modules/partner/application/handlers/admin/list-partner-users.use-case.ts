@@ -39,7 +39,7 @@ export class ListPartnerUsersUseCase {
     });
 
     if (!partnerRole) {
-      return { data: [], nextCursor: null, hasMore: false, sitesByUserId: {} };
+      return { data: [], nextCursor: null, sitesByUserId: {} };
     }
 
     const queryBuilder = this.userRepository
@@ -112,6 +112,6 @@ export class ListPartnerUsersUseCase {
       nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
     }
 
-    return { data, nextCursor, hasMore, sitesByUserId };
+    return { data, nextCursor, sitesByUserId };
   }
 }

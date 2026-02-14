@@ -47,7 +47,6 @@ export class UserFavoriteSiteRepository implements IUserFavoriteSiteRepository {
       createdAt: Date;
     }[];
     nextCursor: string | null;
-    hasMore: boolean;
   }> {
     const realLimit = limit > 50 ? 50 : limit;
 
@@ -79,7 +78,6 @@ export class UserFavoriteSiteRepository implements IUserFavoriteSiteRepository {
     return {
       data,
       nextCursor,
-      hasMore,
     };
   }
 }

@@ -100,7 +100,6 @@ export class ManagerPointExchangeController {
     return ApiResponseUtil.success({
       data: result.data.map((exchange) => this.mapExchangeToResponse(exchange)),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
     });
   }
 

@@ -373,7 +373,6 @@ export class AdminUserController {
         };
       }),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
     });
   }
 
@@ -543,7 +542,6 @@ export class AdminUserController {
       return ApiResponseUtil.success({
         data: [],
         nextCursor: null,
-        hasMore: false,
       });
     }
 
@@ -627,7 +625,6 @@ export class AdminUserController {
     return ApiResponseUtil.success({
       data,
       nextCursor,
-      hasMore,
     });
   }
 
@@ -681,7 +678,6 @@ export class AdminUserController {
       return ApiResponseUtil.success({
         data: [],
         nextCursor: null,
-        hasMore: false,
       });
     }
 
@@ -742,7 +738,6 @@ export class AdminUserController {
     return ApiResponseUtil.success({
       data,
       nextCursor,
-      hasMore,
     });
   }
 
@@ -1127,7 +1122,6 @@ export class AdminUserController {
       data: mappedData,
       nextCursor: result.nextCursor,
       previousCursor: result.previousCursor ?? null,
-      hasMore: result.hasMore,
     };
 
     return ApiResponseUtil.success(response);

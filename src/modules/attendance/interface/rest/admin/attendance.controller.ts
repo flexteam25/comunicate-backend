@@ -70,7 +70,6 @@ export class AdminAttendanceController {
       data: mappedData,
       nextCursor: result.nextCursor,
       previousCursor: result.previousCursor ?? null,
-      hasMore: result.hasMore,
     };
 
     return ApiResponseUtil.success(response);

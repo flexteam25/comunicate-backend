@@ -70,7 +70,7 @@ export class PointController {
         createdAt: transaction.createdAt,
       })),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
+      previousCursor: result.previousCursor ?? null,
     });
   }
 
@@ -145,7 +145,7 @@ export class PointController {
         updatedAt: exchange.updatedAt,
       })),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
+      previousCursor: result.previousCursor ?? null,
     });
   }
 

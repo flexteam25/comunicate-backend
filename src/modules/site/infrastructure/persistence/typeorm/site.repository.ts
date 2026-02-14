@@ -420,7 +420,6 @@ export class SiteRepository implements ISiteRepository {
       data,
       nextCursor,
       previousCursor: previousCursor ?? null,
-      hasMore,
     };
   }
 
@@ -597,7 +596,6 @@ export class SiteRepository implements ISiteRepository {
     return {
       data,
       nextCursor,
-      hasMore,
     };
   }
 

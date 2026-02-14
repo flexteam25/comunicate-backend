@@ -30,13 +30,47 @@ export class InquiryRepository implements IInquiryRepository {
     sortBy: string = 'createdAt',
     sortOrder: 'ASC' | 'DESC' = 'DESC',
   ): Promise<CursorPaginationResult<Inquiry>> {
+    const realLimit = limit > 50 ? 50 : limit;
+    const filterKey = JSON.stringify({
+      ...(filters || {}),
+      sortBy,
+      sortOrder,
+    });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) decodedSortValue = sortValue;
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
     const queryBuilder = this.repository
       .createQueryBuilder('inquiry')
       .leftJoinAndSelect('inquiry.user', 'user')
       .leftJoinAndSelect('inquiry.admin', 'admin')
       .where('inquiry.deletedAt IS NULL');
 
-    // Apply filters
     if (filters?.userName) {
       queryBuilder.andWhere('LOWER(user.displayName) LIKE LOWER(:userName)', {
         userName: `%${filters.userName}%`,
@@ -58,57 +92,129 @@ export class InquiryRepository implements IInquiryRepository {
       });
     }
 
-    // Apply cursor pagination
-    if (cursor) {
-      const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-      const sortField = `inquiry.${sortBy}`;
+    const sortField = `inquiry.${sortBy}`;
 
-      if (sortValue) {
-        if (sortOrder === 'ASC') {
-          queryBuilder.andWhere(
-            `(${sortField} > :sortValue OR (${sortField} = :sortValue AND inquiry.id > :cursorId))`,
-            { sortValue, cursorId: id },
-          );
+    if (!decodedId || direction === 'forward') {
+      queryBuilder.orderBy(`inquiry.${sortBy}`, sortOrder);
+      queryBuilder.addOrderBy('inquiry.id', sortOrder);
+    }
+
+    if (decodedId) {
+      if (direction === 'forward') {
+        queryBuilder.andWhere('inquiry.id != :cursorId', { cursorId: decodedId });
+        if (decodedSortValue !== undefined) {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere(
+              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND inquiry.id > :cursorId))`,
+              { sortValue: decodedSortValue, cursorId: decodedId },
+            );
+          } else {
+            queryBuilder.andWhere(
+              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND inquiry.id < :cursorId))`,
+              { sortValue: decodedSortValue, cursorId: decodedId },
+            );
+          }
         } else {
-          queryBuilder.andWhere(
-            `(${sortField} < :sortValue OR (${sortField} = :sortValue AND inquiry.id < :cursorId))`,
-            { sortValue, cursorId: id },
-          );
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere('inquiry.id > :cursorId', { cursorId: decodedId });
+          } else {
+            queryBuilder.andWhere('inquiry.id < :cursorId', { cursorId: decodedId });
+          }
         }
       } else {
-        if (sortOrder === 'ASC') {
-          queryBuilder.andWhere('inquiry.id > :cursorId', { cursorId: id });
+        if (decodedSortValue !== undefined) {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere(
+              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND inquiry.id < :cursorId))`,
+              { sortValue: decodedSortValue, cursorId: decodedId },
+            );
+          } else {
+            queryBuilder.andWhere(
+              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND inquiry.id > :cursorId))`,
+              { sortValue: decodedSortValue, cursorId: decodedId },
+            );
+          }
         } else {
-          queryBuilder.andWhere('inquiry.id < :cursorId', { cursorId: id });
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere('inquiry.id < :cursorId', { cursorId: decodedId });
+          } else {
+            queryBuilder.andWhere('inquiry.id > :cursorId', { cursorId: decodedId });
+          }
         }
+        const revOrder = sortOrder === 'DESC' ? 'ASC' : 'DESC';
+        queryBuilder.orderBy(`inquiry.${sortBy}`, revOrder);
+        queryBuilder.addOrderBy('inquiry.id', revOrder);
       }
     }
 
-    // Apply sorting
-    queryBuilder.orderBy(`inquiry.${sortBy}`, sortOrder);
-    queryBuilder.addOrderBy('inquiry.id', sortOrder);
-
-    // Fetch one extra to check if there's more
-    queryBuilder.take(limit + 1);
+    queryBuilder.take(realLimit + 1);
 
     const inquiries = await queryBuilder.getMany();
+    const hasMore = inquiries.length > realLimit;
+    let data = inquiries.slice(0, realLimit);
 
-    // Check if there's more data
-    const hasMore = inquiries.length > limit;
-    const data = hasMore ? inquiries.slice(0, limit) : inquiries;
-
-    // Generate next cursor
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const sortValue = (lastItem as any)[sortBy];
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+    let previousCursor: string | null = null;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1] as unknown as Record<string, unknown>;
+        const sortVal = lastItem[sortBy];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          lastItem.id as string,
+          sortVal !== null && sortVal !== undefined ? (sortVal as string | number | Date) : undefined,
+          {
+            direction: 'forward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+      if (decodedId && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          decodedId,
+          decodedSortValue,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+    } else {
+      data = data.slice().reverse();
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1] as unknown as Record<string, unknown>;
+        const sortVal = oldestInPage[sortBy];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id as string,
+          sortVal !== null && sortVal !== undefined ? (sortVal as string | number | Date) : undefined,
+          {
+            direction: 'forward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0] as unknown as Record<string, unknown>;
+        const sortVal = newestInPage[sortBy];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id as string,
+          sortVal !== null && sortVal !== undefined ? (sortVal as string | number | Date) : undefined,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
     }
 
     return {
       data,
       nextCursor,
-      hasMore,
+      previousCursor: previousCursor ?? null,
     };
   }
 

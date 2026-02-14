@@ -40,7 +40,6 @@ export interface ListAttendancesResult {
   data: AttendanceListItem[];
   nextCursor: string | null;
   previousCursor: string | null;
-  hasMore: boolean;
 }
 
 @Injectable()
@@ -134,7 +133,6 @@ export class ListAttendancesUseCase {
         data,
         nextCursor: result.nextCursor,
         previousCursor: result.previousCursor ?? null,
-        hasMore: result.hasMore,
       };
     } else {
       // Query latest statistics for all users (ranking)
@@ -164,7 +162,6 @@ export class ListAttendancesUseCase {
         data,
         nextCursor: null, // Ranking doesn't need pagination (fixed top 30)
         previousCursor: null,
-        hasMore: false,
         attended: null,
       };
     }

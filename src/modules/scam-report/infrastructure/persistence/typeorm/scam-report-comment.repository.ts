@@ -192,7 +192,6 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
       data,
       nextCursor,
       previousCursor: previousCursor ?? null,
-      hasMore,
     };
   }
 

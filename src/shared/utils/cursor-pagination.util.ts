@@ -13,7 +13,6 @@ export interface CursorPaginationResult<T> {
    * Optional so existing usages that don't support backward pagination remain valid.
    */
   previousCursor?: string | null;
-  hasMore: boolean;
 }
 
 export interface CursorMeta {

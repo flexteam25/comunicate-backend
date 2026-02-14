@@ -17,6 +17,5 @@ export interface IUserFavoriteSiteRepository {
       createdAt: Date;
     }[];
     nextCursor: string | null;
-    hasMore: boolean;
   }>;
 }

@@ -137,7 +137,6 @@ export class AdminSiteEventController {
     return ApiResponseUtil.success({
       data: result.data.map((event) => this.mapSiteEventToResponse(event)),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
     });
   }
 

@@ -94,7 +94,7 @@ export class UserSupportController {
         updatedAt: inquiry.updatedAt,
       })),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
+      prevCursor: result.previousCursor ?? null,
     });
   }
 

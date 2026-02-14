@@ -218,7 +218,7 @@ export class UserRepository implements IUserRepository {
         await this.repository.manager.query(modifiedSql, parameters);
 
       if (rawResults.length === 0) {
-        return { data: [], nextCursor: null, hasMore: false };
+        return { data: [], nextCursor: null };
       }
 
       // Extract user IDs from raw results
@@ -237,7 +237,7 @@ export class UserRepository implements IUserRepository {
       }
 
       if (userIds.length === 0) {
-        return { data: [], nextCursor: null, hasMore: false };
+        return { data: [], nextCursor: null };
       }
 
       // Fetch entities with relations
@@ -267,7 +267,7 @@ export class UserRepository implements IUserRepository {
         nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, pointsValue);
       }
 
-      return { data, nextCursor, hasMore };
+      return { data, nextCursor };
     }
 
     // For other sort fields, use normal query
@@ -291,6 +291,6 @@ export class UserRepository implements IUserRepository {
       nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
     }
 
-    return { data, nextCursor, hasMore };
+    return { data, nextCursor };
   }
 }

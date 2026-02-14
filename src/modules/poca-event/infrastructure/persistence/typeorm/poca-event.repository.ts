@@ -99,6 +99,49 @@ export class PocaEventRepository implements IPocaEventRepository {
     const sortBy = 'startsAt';
     const sortOrder = 'DESC' as 'ASC' | 'DESC';
     const now = new Date();
+     const filterKey = JSON.stringify({ scope: 'visible_poca_events' });
+     const sortDefinition = 'startsAt:DESC,createdAt:DESC,id:DESC';
+
+     let decodedId: string | undefined;
+     let decodedSortValue: string | undefined;
+     /** Parsed composite sort for (startsAt, createdAt, id) to avoid duplicate rows across pages */
+     let boundStartsAt: string | null | undefined;
+     let boundCreatedAt: string | undefined;
+     let direction: 'forward' | 'backward' = 'forward';
+
+     if (cursor) {
+       try {
+         const {
+           id,
+           sortValue,
+           direction: decodedDirection,
+           filterKey: cursorFilterKey,
+         } = CursorPaginationUtil.decodeCursor(cursor);
+         if (cursorFilterKey && cursorFilterKey !== filterKey) {
+           decodedId = undefined;
+           decodedSortValue = undefined;
+         } else {
+           decodedId = id;
+           if (sortValue !== null && sortValue !== undefined) {
+             decodedSortValue = sortValue;
+             try {
+               const parsed = JSON.parse(sortValue) as { s?: string | null; c?: string };
+               if (typeof parsed === 'object' && ('s' in parsed || 'c' in parsed)) {
+                 boundStartsAt = parsed.s;
+                 boundCreatedAt = parsed.c;
+               }
+             } catch {
+               // Legacy single sortValue, keep decodedSortValue only
+             }
+           }
+           if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+             direction = decodedDirection;
+           }
+         }
+       } catch {
+         // Invalid cursor, ignore
+       }
+     }
 
     const queryBuilder = this.repository
       .createQueryBuilder('event')
@@ -115,37 +158,94 @@ export class PocaEventRepository implements IPocaEventRepository {
       'viewCount',
     );
 
-    // Sort by startsAt DESC, then createdAt DESC
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = `event.${sortBy}`;
-        if (sortValue !== null && sortValue !== undefined) {
+    const sortField = `event.${sortBy}`;
+
+    // Base ordering: newest first when going forward
+    if (!decodedId || direction === 'forward') {
+      queryBuilder
+        .addOrderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST')
+        .addOrderBy('event.createdAt', 'DESC')
+        .addOrderBy('event.id', 'DESC');
+    }
+
+    // Apply cursor pagination (full sort key: startsAt, createdAt, id to avoid duplicates)
+    if (decodedId) {
+      queryBuilder.andWhere('event.id != :cursorId', { cursorId: decodedId });
+      if (direction === 'forward') {
+        // Next page: events strictly before boundary in (startsAt DESC, createdAt DESC, id DESC)
+        if (boundStartsAt !== undefined && boundCreatedAt !== undefined) {
+          if (boundStartsAt !== null) {
+            queryBuilder.andWhere(
+              `(event.startsAt < :boundStartsAt OR (event.startsAt = :boundStartsAt AND event.createdAt < :boundCreatedAt) OR (event.startsAt = :boundStartsAt AND event.createdAt = :boundCreatedAt AND event.id < :cursorId))`,
+              {
+                boundStartsAt,
+                boundCreatedAt,
+                cursorId: decodedId,
+              },
+            );
+          } else {
+            queryBuilder.andWhere(
+              `(event.startsAt IS NOT NULL OR (event.startsAt IS NULL AND (event.createdAt < :boundCreatedAt OR (event.createdAt = :boundCreatedAt AND event.id < :cursorId))))`,
+              { boundCreatedAt, cursorId: decodedId },
+            );
+          }
+        } else if (decodedSortValue !== undefined) {
           queryBuilder.andWhere(
             `(${sortField} < :sortValue OR (${sortField} = :sortValue AND event.id < :cursorId) OR (${sortField} IS NULL AND event.createdAt < :createdAtValue))`,
             {
-              sortValue,
-              cursorId: id,
-              createdAtValue: sortValue,
+              sortValue: decodedSortValue,
+              cursorId: decodedId,
+              createdAtValue: decodedSortValue,
             },
           );
         } else {
-          queryBuilder.andWhere('event.id < :cursorId', { cursorId: id });
+          queryBuilder.andWhere('event.id < :cursorId', { cursorId: decodedId });
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        // Previous page: events strictly after boundary
+        if (boundStartsAt !== undefined && boundCreatedAt !== undefined) {
+          if (boundStartsAt !== null) {
+            queryBuilder.andWhere(
+              `(event.startsAt > :boundStartsAt OR (event.startsAt = :boundStartsAt AND event.createdAt > :boundCreatedAt) OR (event.startsAt = :boundStartsAt AND event.createdAt = :boundCreatedAt AND event.id > :cursorId))`,
+              {
+                boundStartsAt,
+                boundCreatedAt,
+                cursorId: decodedId,
+              },
+            );
+          } else {
+            // Boundary startsAt = NULL: previous page = all rows with startsAt NOT NULL plus NULL rows where (createdAt, id) > boundary
+            queryBuilder.andWhere(
+              `(event.startsAt IS NOT NULL OR (event.startsAt IS NULL AND (event.createdAt > :boundCreatedAt OR (event.createdAt = :boundCreatedAt AND event.id > :cursorId))))`,
+              { boundCreatedAt, cursorId: decodedId },
+            );
+          }
+        } else if (decodedSortValue !== undefined) {
+          queryBuilder.andWhere(
+            `(${sortField} > :sortValue OR (${sortField} = :sortValue AND event.id > :cursorId) OR (${sortField} IS NULL AND event.createdAt > :createdAtValue))`,
+            {
+              sortValue: decodedSortValue,
+              cursorId: decodedId,
+              createdAtValue: decodedSortValue,
+            },
+          );
+        } else {
+          queryBuilder.andWhere('event.id > :cursorId', { cursorId: decodedId });
+        }
+
+        // Use same ORDER DESC as display so result order is correct without reversing
+        queryBuilder
+          .addOrderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST')
+          .addOrderBy('event.createdAt', 'DESC')
+          .addOrderBy('event.id', 'DESC');
       }
     }
 
-    queryBuilder
-      .addOrderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST')
-      .addOrderBy('event.createdAt', 'DESC')
-      .addOrderBy('event.id', 'DESC')
-      .take(realLimit + 1);
+    queryBuilder.take(realLimit + 1);
 
     const result = await queryBuilder.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
-    const data = result.entities.slice(0, realLimit);
+    let data = result.entities.slice(0, realLimit);
 
     // Create a map of event.id -> raw data to handle cases where joins create multiple rows per event
     const rawDataMap = new Map<string, Record<string, unknown>>();
@@ -171,22 +271,59 @@ export class PocaEventRepository implements IPocaEventRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue as string | number | Date;
-      } else {
-        sortValue = lastItem.createdAt;
+    let previousCursor: string | null = null;
+
+    // Composite sort value for (startsAt, createdAt, id) so cursor boundary matches full order
+    const getCompositeSortValue = (event: PocaEvent): string => {
+      const s =
+        event.startsAt != null ? event.startsAt.toISOString() : null;
+      const c =
+        event.createdAt != null ? event.createdAt.toISOString() : null;
+      return JSON.stringify({ s, c });
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          lastItem.id,
+          getCompositeSortValue(lastItem),
+          { direction: 'forward', sort: sortDefinition, filterKey },
+        );
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+      // prevCursor must use first item of current page so "previous" returns the full page before
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          firstItem.id,
+          getCompositeSortValue(firstItem),
+          { direction: 'backward', sort: sortDefinition, filterKey },
+        );
+      }
+    } else {
+      // Backward: ORDER DESC already applied, data is in correct display order
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id,
+          getCompositeSortValue(oldestInPage),
+          { direction: 'forward', sort: sortDefinition, filterKey },
+        );
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          getCompositeSortValue(newestInPage),
+          { direction: 'backward', sort: sortDefinition, filterKey },
+        );
+      }
     }
 
     return {
       data,
       nextCursor,
-      hasMore,
+      previousCursor: previousCursor ?? null,
     };
   }
 
@@ -272,7 +409,6 @@ export class PocaEventRepository implements IPocaEventRepository {
     return {
       data,
       nextCursor,
-      hasMore,
     };
   }
 

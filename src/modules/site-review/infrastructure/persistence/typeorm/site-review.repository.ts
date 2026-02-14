@@ -113,6 +113,14 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = filters?.sortBy || 'createdAt';
     const sortOrder = filters?.sortOrder || 'DESC';
+    const filterKey = JSON.stringify({
+      siteId,
+      isPublished: filters?.isPublished ?? null,
+      rating: filters?.rating ?? null,
+      search: filters?.search ?? null,
+      sortBy,
+      sortOrder,
+    });
 
     const queryBuilder = this.repository
       .createQueryBuilder('review')
@@ -174,27 +182,29 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       });
     }
 
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
     if (cursor) {
       try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = `review.${sortBy}`;
-        if (sortValue !== null && sortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND review.id > :cursorId))`,
-              { sortValue, cursorId: id },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND review.id < :cursorId))`,
-              { sortValue, cursorId: id },
-            );
-          }
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
         } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('review.id > :cursorId', { cursorId: id });
-          } else {
-            queryBuilder.andWhere('review.id < :cursorId', { cursorId: id });
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
           }
         }
       } catch {
@@ -202,17 +212,82 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       }
     }
 
-    if (sortOrder === 'DESC') {
-      queryBuilder.addOrderBy(`review.${sortBy}`, 'DESC', 'NULLS LAST');
-    } else {
-      queryBuilder.orderBy(`review.${sortBy}`, 'ASC');
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    if (!decodedId || direction === 'forward') {
+      if (sortOrder === 'DESC') {
+        queryBuilder.addOrderBy(`review.${sortBy}`, 'DESC', 'NULLS LAST');
+      } else {
+        queryBuilder.orderBy(`review.${sortBy}`, 'ASC');
+      }
+      queryBuilder.addOrderBy('review.id', sortOrder);
     }
-    queryBuilder.addOrderBy('review.id', sortOrder);
+
+    if (decodedId) {
+      const sortField = `review.${sortBy}`;
+      if (direction === 'forward') {
+        // Move forward (next page): fetch rows after the cursor, exclude the cursor row itself
+        queryBuilder.andWhere('review.id != :cursorId', { cursorId: decodedId });
+
+        if (decodedSortValue !== undefined) {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere(
+              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND review.id > :cursorId))`,
+              { sortValue: decodedSortValue, cursorId: decodedId },
+            );
+          } else {
+            queryBuilder.andWhere(
+              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND review.id < :cursorId))`,
+              { sortValue: decodedSortValue, cursorId: decodedId },
+            );
+          }
+        } else {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere('review.id > :cursorId', { cursorId: decodedId });
+          } else {
+            queryBuilder.andWhere('review.id < :cursorId', { cursorId: decodedId });
+          }
+        }
+      } else {
+        // Move backward (previous page): fetch rows before the cursor using reversed sort
+        if (decodedSortValue !== undefined) {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere(
+              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND review.id < :cursorId))`,
+              { sortValue: decodedSortValue, cursorId: decodedId },
+            );
+          } else {
+            queryBuilder.andWhere(
+              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND review.id > :cursorId))`,
+              { sortValue: decodedSortValue, cursorId: decodedId },
+            );
+          }
+        } else {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere('review.id < :cursorId', { cursorId: decodedId });
+          } else {
+            queryBuilder.andWhere('review.id > :cursorId', { cursorId: decodedId });
+          }
+        }
+
+        // For backward pagination, reverse the sorting so we can later flip the page items
+        if (sortOrder === 'DESC') {
+          queryBuilder
+            .orderBy(`review.${sortBy}`, 'ASC')
+            .addOrderBy('review.id', 'ASC');
+        } else {
+          queryBuilder
+            .orderBy(`review.${sortBy}`, 'DESC')
+            .addOrderBy('review.id', 'DESC');
+        }
+      }
+    }
+
     queryBuilder.take(realLimit + 1);
 
     const { entities, raw } = await queryBuilder.getRawAndEntities();
     const hasMore = entities.length > realLimit;
-    const data = entities.slice(0, realLimit);
+    let data = entities.slice(0, realLimit);
 
     // Create a map of review.id -> raw data to handle cases where joins create multiple rows per review
     const rawDataMap = new Map<string, Record<string, unknown>>();
@@ -239,20 +314,78 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue as string | number | Date;
+    let previousCursor: string | null = null;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1] as unknown as Record<string, unknown>;
+        const fieldValue = lastItem[sortBy];
+        const sortValue =
+          fieldValue !== null && fieldValue !== undefined ? (fieldValue as string | number | Date) : null;
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id as string, sortValue ?? undefined, {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+
+      if (decodedId && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          decodedId,
+          decodedSortValue,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+    } else {
+      // Backward pagination: entities are in reversed order; normalize back to requested sort order
+      const pageItems = data;
+      data = pageItems.slice().reverse();
+
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1] as unknown as Record<string, unknown>;
+        const oldestFieldValue = oldestInPage[sortBy];
+        const oldestSortValue =
+          oldestFieldValue !== null && oldestFieldValue !== undefined
+            ? (oldestFieldValue as string | number | Date)
+            : null;
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id as string,
+          oldestSortValue ?? undefined,
+          {
+            direction: 'forward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0] as unknown as Record<string, unknown>;
+        const newestFieldValue = newestInPage[sortBy];
+        const newestSortValue =
+          newestFieldValue !== null && newestFieldValue !== undefined
+            ? (newestFieldValue as string | number | Date)
+            : null;
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id as string,
+          newestSortValue ?? undefined,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
     }
 
     return {
       data,
       nextCursor,
-      hasMore,
+      previousCursor: previousCursor ?? null,
     };
   }
 
@@ -428,7 +561,6 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     return {
       data,
       nextCursor,
-      hasMore,
     };
   }
 
@@ -438,6 +570,36 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     limit = 20,
   ): Promise<CursorPaginationResult<SiteReview>> {
     const realLimit = limit > 50 ? 50 : limit;
+    const filterKey = JSON.stringify({ userId });
+    const sortDefinition = 'createdAt:DESC,id:DESC';
+
+    let decodedId: string | undefined;
+    let decodedSortCreatedAt: Date | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortCreatedAt = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue) decodedSortCreatedAt = new Date(sortValue);
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
     const queryBuilder = this.repository
       .createQueryBuilder('review')
       .leftJoinAndSelect('review.site', 'site')
@@ -472,33 +634,44 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       .where('review.userId = :userId', { userId })
       .andWhere('review.deletedAt IS NULL');
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue) {
-          const sortDate = new Date(sortValue);
+    if (!decodedId || direction === 'forward') {
+      queryBuilder
+        .orderBy('review.createdAt', 'DESC')
+        .addOrderBy('review.id', 'DESC');
+    }
+
+    if (decodedId) {
+      if (direction === 'forward') {
+        queryBuilder.andWhere('review.id != :cursorId', { cursorId: decodedId });
+        if (decodedSortCreatedAt) {
           queryBuilder.andWhere(
-            '(review.createdAt < :sortDate OR (review.createdAt = :sortDate AND review.id < :cursorId))',
-            { sortDate, cursorId: id },
+            '(review.createdAt < :sortCreatedAt OR (review.createdAt = :sortCreatedAt AND review.id < :cursorId))',
+            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere('review.id < :cursorId', { cursorId: id });
+          queryBuilder.andWhere('review.id < :cursorId', { cursorId: decodedId });
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (decodedSortCreatedAt) {
+          queryBuilder.andWhere(
+            '(review.createdAt > :sortCreatedAt OR (review.createdAt = :sortCreatedAt AND review.id > :cursorId))',
+            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('review.id > :cursorId', { cursorId: decodedId });
+        }
+        queryBuilder
+          .orderBy('review.createdAt', 'ASC')
+          .addOrderBy('review.id', 'ASC');
       }
     }
 
-    queryBuilder
-      .orderBy('review.createdAt', 'DESC')
-      .addOrderBy('review.id', 'DESC')
-      .take(realLimit + 1);
+    queryBuilder.take(realLimit + 1);
 
     const { entities, raw } = await queryBuilder.getRawAndEntities();
     const hasMore = entities.length > realLimit;
-    const data = entities.slice(0, realLimit);
+    let data = entities.slice(0, realLimit);
 
-    // Create a map of review.id -> raw data to handle cases where joins create multiple rows per review
     const rawDataMap = new Map<string, Record<string, unknown>>();
     raw.forEach((rawRow: Record<string, unknown>) => {
       const reviewId =
@@ -523,15 +696,52 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt);
+    let previousCursor: string | null = null;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt, {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (decodedId && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      data = data.slice().reverse();
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, oldestInPage.createdAt, {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          newestInPage.createdAt,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
     }
 
     return {
       data,
       nextCursor,
-      hasMore,
+      previousCursor: previousCursor ?? null,
     };
   }
 

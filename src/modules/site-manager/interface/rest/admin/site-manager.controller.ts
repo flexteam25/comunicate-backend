@@ -82,7 +82,6 @@ export class AdminSiteManagerController {
     return ApiResponseUtil.success({
       data: result.data.map((app) => this.mapApplicationToResponse(app)),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
     });
   }
 

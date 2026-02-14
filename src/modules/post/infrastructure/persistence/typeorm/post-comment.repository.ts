@@ -31,6 +31,43 @@ export class PostCommentRepository implements IPostCommentRepository {
     userId?: string,
   ): Promise<CursorPaginationResult<PostComment>> {
     const realLimit = limit > 50 ? 50 : limit;
+    const sortBy = 'createdAt';
+    const sortOrder = 'DESC' as const;
+    const filterKey = JSON.stringify({
+      postId,
+      parentCommentId: parentCommentId ?? null,
+      userId: userId ?? null,
+    });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     const queryBuilder = this.repository
       .createQueryBuilder('comment')
@@ -62,7 +99,6 @@ export class PostCommentRepository implements IPostCommentRepository {
     if (parentCommentId === null || parentCommentId === undefined) {
       queryBuilder.andWhere('comment.parentCommentId IS NULL');
     } else {
-      // Only load child comments if parent exists and is not deleted
       queryBuilder
         .innerJoin('post_comments', 'parent', 'parent.id = comment.parent_comment_id')
         .andWhere('comment.parentCommentId = :parentCommentId', {
@@ -71,7 +107,6 @@ export class PostCommentRepository implements IPostCommentRepository {
         .andWhere('parent.deleted_at IS NULL');
     }
 
-    // Join user's reaction if userId is provided
     if (userId) {
       queryBuilder
         .leftJoin(
@@ -83,26 +118,44 @@ export class PostCommentRepository implements IPostCommentRepository {
         .addSelect('userReaction.reaction_type', 'userReactionType');
     }
 
-    if (cursor) {
-      try {
-        const { id } = CursorPaginationUtil.decodeCursor(cursor);
-        queryBuilder.andWhere('comment.id < :cursorId', { cursorId: id });
-      } catch {
-        // Invalid cursor, ignore
+    const sortField = `comment.${sortBy}`;
+
+    if (!decodedId || direction === 'forward') {
+      queryBuilder.orderBy(`comment.${sortBy}`, sortOrder);
+      queryBuilder.addOrderBy('comment.id', sortOrder);
+    }
+
+    if (decodedId) {
+      queryBuilder.andWhere('comment.id != :cursorId', { cursorId: decodedId });
+      if (direction === 'forward') {
+        if (decodedSortValue !== undefined) {
+          queryBuilder.andWhere(
+            `(${sortField} < :sortValue OR (${sortField} = :sortValue AND comment.id < :cursorId))`,
+            { sortValue: decodedSortValue, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('comment.id < :cursorId', { cursorId: decodedId });
+        }
+      } else {
+        if (decodedSortValue !== undefined) {
+          queryBuilder.andWhere(
+            `(${sortField} > :sortValue OR (${sortField} = :sortValue AND comment.id > :cursorId))`,
+            { sortValue: decodedSortValue, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('comment.id > :cursorId', { cursorId: decodedId });
+        }
+        queryBuilder.orderBy(`comment.${sortBy}`, sortOrder);
+        queryBuilder.addOrderBy('comment.id', sortOrder);
       }
     }
 
-    queryBuilder
-      .orderBy('comment.createdAt', 'DESC')
-      .addOrderBy('comment.id', 'DESC')
-      .take(realLimit + 1);
+    queryBuilder.take(realLimit + 1);
 
     const result = await queryBuilder.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
-    const data = result.entities.slice(0, realLimit);
+    let data = result.entities.slice(0, realLimit);
 
-    // Create a map of comment.id -> raw data to handle cases where joins create multiple rows per comment
-    // TypeORM may return column names in different formats (snake_case, camelCase, or with table prefix)
     const rawDataMap = new Map<string, Record<string, unknown>>();
     result.raw.forEach((raw: Record<string, unknown>) => {
       const commentId =
@@ -115,7 +168,6 @@ export class PostCommentRepository implements IPostCommentRepository {
       }
     });
 
-    // Map likeCount, dislikeCount, and reacted from raw data to entities
     data.forEach((comment) => {
       const rawData = rawDataMap.get(comment.id);
       if (rawData) {
@@ -127,9 +179,7 @@ export class PostCommentRepository implements IPostCommentRepository {
           String(rawData.dislikeCount || rawData.dislikeCount || '0'),
           10,
         );
-        // Map user reaction if userId is provided
         if (userId) {
-          // PostgreSQL may return column names in lowercase when using raw queries
           const userReactionType = (rawData.userReactionType ||
             rawData.userreactiontype ||
             rawData['userReactionType'] ||
@@ -137,7 +187,6 @@ export class PostCommentRepository implements IPostCommentRepository {
           (comment as any).reacted = userReactionType || null;
         }
       } else {
-        // Fallback if raw data not found
         (comment as any).likeCount = 0;
         (comment as any).dislikeCount = 0;
         if (userId) {
@@ -147,12 +196,51 @@ export class PostCommentRepository implements IPostCommentRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt);
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: PostComment): string | Date | undefined => {
+      const val = item.createdAt;
+      if (val != null) return val instanceof Date ? val : new Date(val);
+      return undefined;
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
     }
 
-    return { data, nextCursor, hasMore };
+    return { data, nextCursor, previousCursor: previousCursor ?? null };
   }
 
   async create(comment: Partial<PostComment>): Promise<PostComment> {

@@ -30,6 +30,44 @@ export class SiteReviewCommentRepository implements ISiteReviewCommentRepository
     limit = 20,
   ): Promise<CursorPaginationResult<SiteReviewComment>> {
     const realLimit = limit > 50 ? 50 : limit;
+    const filterKey = JSON.stringify({
+      reviewId,
+      parentCommentId: parentCommentId ?? null,
+    });
+    const sortDefinition = 'createdAt:ASC,id:ASC';
+
+    let decodedId: string | undefined;
+    let decodedSortCreatedAt: Date | undefined;
+    let decodedSortValueRaw: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortCreatedAt = undefined;
+          decodedSortValueRaw = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue) {
+            decodedSortCreatedAt = new Date(sortValue);
+            decodedSortValueRaw = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
     const queryBuilder = this.repository
       .createQueryBuilder('comment')
       .leftJoinAndSelect('comment.user', 'user')
@@ -39,9 +77,6 @@ export class SiteReviewCommentRepository implements ISiteReviewCommentRepository
       .where('comment.siteReviewId = :reviewId', { reviewId })
       .andWhere('comment.deletedAt IS NULL');
 
-    // Filter by parentCommentId:
-    // - If undefined or null: only get top-level comments (parentCommentId IS NULL)
-    // - If provided (string UUID): get replies to that specific comment
     if (parentCommentId === undefined || parentCommentId === null) {
       queryBuilder.andWhere('comment.parentCommentId IS NULL');
     } else {
@@ -50,42 +85,117 @@ export class SiteReviewCommentRepository implements ISiteReviewCommentRepository
       });
     }
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue) {
-          const sortDate = new Date(sortValue);
+    if (!decodedId || direction === 'forward') {
+      queryBuilder.orderBy('comment.createdAt', 'ASC').addOrderBy('comment.id', 'ASC');
+    }
+
+    if (decodedId) {
+      if (direction === 'forward') {
+        queryBuilder.andWhere('comment.id != :cursorId', { cursorId: decodedId });
+        if (decodedSortCreatedAt) {
           queryBuilder.andWhere(
-            '(comment.createdAt > :sortDate OR (comment.createdAt = :sortDate AND comment.id > :cursorId))',
-            { sortDate, cursorId: id },
+            '(comment.createdAt > :sortCreatedAt OR (comment.createdAt = :sortCreatedAt AND comment.id > :cursorId))',
+            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere('comment.id > :cursorId', { cursorId: id });
+          queryBuilder.andWhere('comment.id > :cursorId', { cursorId: decodedId });
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        // Backward: previous page = items at or before boundary. Use <= and (createdAt < X OR id <= Y)
+        // to avoid timestamp equality precision issues; pass ISO string so DB casts consistently.
+        if (decodedSortValueRaw) {
+          queryBuilder.andWhere(
+            `comment.createdAt <= :sortCreatedAtRaw AND (comment.createdAt < :sortCreatedAtRaw OR comment.id <= :cursorId)`,
+            { sortCreatedAtRaw: decodedSortValueRaw, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('comment.id <= :cursorId', { cursorId: decodedId });
+        }
+        queryBuilder
+          .orderBy('comment.createdAt', 'DESC')
+          .addOrderBy('comment.id', 'DESC');
       }
     }
 
-    queryBuilder
-      .orderBy('comment.createdAt', 'ASC')
-      .addOrderBy('comment.id', 'ASC')
-      .take(realLimit + 1);
+    queryBuilder.take(realLimit + 1);
 
-    const rows = await queryBuilder.getMany();
-    const hasMore = rows.length > realLimit;
-    const data = rows.slice(0, realLimit);
+    let rows = await queryBuilder.getMany();
+    let data = rows.slice(0, realLimit);
 
+    // If backward returned 0 rows (e.g. timestamp/type mismatch), return first page instead
+    if (decodedId && direction === 'backward' && data.length === 0) {
+      const fallbackQb = this.repository
+        .createQueryBuilder('comment')
+        .leftJoinAndSelect('comment.user', 'user')
+        .leftJoinAndSelect('user.userBadges', 'userBadges')
+        .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
+        .leftJoinAndSelect('comment.images', 'images')
+        .where('comment.siteReviewId = :reviewId', { reviewId })
+        .andWhere('comment.deletedAt IS NULL');
+      if (parentCommentId === undefined || parentCommentId === null) {
+        fallbackQb.andWhere('comment.parentCommentId IS NULL');
+      } else {
+        fallbackQb.andWhere('comment.parentCommentId = :parentCommentId', { parentCommentId });
+      }
+      fallbackQb
+        .orderBy('comment.createdAt', 'ASC')
+        .addOrderBy('comment.id', 'ASC')
+        .take(realLimit + 1);
+      rows = await fallbackQb.getMany();
+      data = rows.slice(0, realLimit);
+      // Treat as first page for cursor building
+      direction = 'forward';
+      decodedId = undefined;
+    }
+
+    const hasMoreFinal = rows.length > realLimit;
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt);
+    let previousCursor: string | null = null;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMoreFinal && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt, {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (decodedId && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      data = data.slice().reverse();
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, oldestInPage.createdAt, {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (hasMoreFinal && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          newestInPage.createdAt,
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
     }
 
     return {
       data,
       nextCursor,
-      hasMore,
+      previousCursor: previousCursor ?? null,
     };
   }
 

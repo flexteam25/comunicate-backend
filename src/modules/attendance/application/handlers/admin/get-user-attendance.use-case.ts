@@ -43,7 +43,7 @@ export class AdminGetUserAttendanceUseCase {
     let endDate: Date | undefined;
 
     if (command.startDate && command.endDate) {
-      // startDate/endDate đến từ query dạng yyyy-MM-dd → dùng đúng date, convert sang KST date
+      // startDate/endDate from query as yyyy-MM-dd: use as-is date, convert to KST
       startDate = getDateInKST(new Date(command.startDate));
       endDate = getDateInKST(new Date(command.endDate));
     } else {

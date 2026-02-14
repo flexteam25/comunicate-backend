@@ -254,7 +254,6 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
       data,
       nextCursor,
       previousCursor: previousCursor ?? null,
-      hasMore,
     };
   }
 

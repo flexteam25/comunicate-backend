@@ -21,7 +21,6 @@ export interface IAttendanceStatisticRepository {
   ): Promise<{
     data: AttendanceStatistic[];
     nextCursor: string | null;
-    hasMore: boolean;
   }>;
   countByDate(date: Date): Promise<number>;
   findByUserIds(userIds: string[]): Promise<AttendanceStatistic[]>;

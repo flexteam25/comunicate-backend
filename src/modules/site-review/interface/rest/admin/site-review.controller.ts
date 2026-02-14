@@ -99,7 +99,6 @@ export class AdminSiteReviewController {
     return ApiResponseUtil.success({
       data: result.data.map((review) => this.mapSiteReviewToResponse(review)),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
     });
   }
 

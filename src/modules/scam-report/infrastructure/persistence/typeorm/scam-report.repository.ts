@@ -384,7 +384,6 @@ export class ScamReportRepository implements IScamReportRepository {
         data: finalData,
         nextCursor,
         previousCursor: previousCursor ?? null,
-        hasMore,
       };
     }
 
@@ -392,7 +391,6 @@ export class ScamReportRepository implements IScamReportRepository {
       data,
       nextCursor,
       previousCursor: previousCursor ?? null,
-      hasMore,
     };
   }
 
@@ -617,7 +615,6 @@ export class ScamReportRepository implements IScamReportRepository {
         data: finalData,
         nextCursor,
         previousCursor: previousCursor ?? null,
-        hasMore,
       };
     }
 
@@ -625,7 +622,6 @@ export class ScamReportRepository implements IScamReportRepository {
       data,
       nextCursor,
       previousCursor: previousCursor ?? null,
-      hasMore,
     };
   }
 
@@ -876,7 +872,6 @@ export class ScamReportRepository implements IScamReportRepository {
         data: finalData,
         nextCursor,
         previousCursor: previousCursor ?? null,
-        hasMore,
       };
     }
 
@@ -884,7 +879,6 @@ export class ScamReportRepository implements IScamReportRepository {
       data,
       nextCursor,
       previousCursor: previousCursor ?? null,
-      hasMore,
     };
   }
 

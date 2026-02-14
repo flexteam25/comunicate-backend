@@ -97,7 +97,6 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
   ): Promise<{
     data: AttendanceStatistic[];
     nextCursor: string | null;
-    hasMore: boolean;
   }> {
     const realLimit = limit > 50 ? 50 : limit;
     const queryBuilder = this.repository
@@ -168,7 +167,6 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
     return {
       data,
       nextCursor,
-      hasMore,
     };
   }
 

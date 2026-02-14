@@ -34,14 +34,46 @@ export class PointExchangeRepository implements IPointExchangeRepository {
   ): Promise<CursorPaginationResult<PointExchange>> {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = 'createdAt';
-    const sortOrder: 'ASC' | 'DESC' = 'DESC';
+    const sortOrder = 'DESC' as const;
+    const filterKey = JSON.stringify({
+      userId,
+      status: filters?.status ?? null,
+    });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     const queryBuilder = this.repository
       .createQueryBuilder('exchange')
       .leftJoinAndSelect('exchange.site', 'site')
-      .where('exchange.userId = :userId', { userId })
-      .orderBy('exchange.createdAt', 'DESC')
-      .addOrderBy('exchange.id', 'DESC');
+      .where('exchange.userId = :userId', { userId });
 
     if (filters?.status) {
       queryBuilder.andWhere('exchange.status = :status', {
@@ -49,22 +81,37 @@ export class PointExchangeRepository implements IPointExchangeRepository {
       });
     }
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = `exchange.${sortBy}`;
-        if (sortValue !== null && sortValue !== undefined) {
+    const sortField = `exchange.${sortBy}`;
+
+    if (!decodedId || direction === 'forward') {
+      queryBuilder.orderBy(`exchange.${sortBy}`, sortOrder);
+      queryBuilder.addOrderBy('exchange.id', sortOrder);
+    }
+
+    if (decodedId) {
+      queryBuilder.andWhere('exchange.id != :cursorId', { cursorId: decodedId });
+      if (decodedSortValue !== undefined) {
+        if (direction === 'forward') {
           queryBuilder.andWhere(
             `(${sortField} < :sortValue OR (${sortField} = :sortValue AND exchange.id < :cursorId))`,
-            { sortValue, cursorId: id },
+            { sortValue: decodedSortValue, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere('exchange.id < :cursorId', {
-            cursorId: id,
-          });
+          queryBuilder.andWhere(
+            `(${sortField} > :sortValue OR (${sortField} = :sortValue AND exchange.id > :cursorId))`,
+            { sortValue: decodedSortValue, cursorId: decodedId },
+          );
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (direction === 'forward') {
+          queryBuilder.andWhere('exchange.id < :cursorId', { cursorId: decodedId });
+        } else {
+          queryBuilder.andWhere('exchange.id > :cursorId', { cursorId: decodedId });
+        }
+      }
+      if (direction === 'backward') {
+        queryBuilder.orderBy(`exchange.${sortBy}`, sortOrder);
+        queryBuilder.addOrderBy('exchange.id', sortOrder);
       }
     }
 
@@ -75,17 +122,51 @@ export class PointExchangeRepository implements IPointExchangeRepository {
     const data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue as string | number | Date;
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: PointExchange): string | Date | undefined => {
+      const val = item.createdAt;
+      if (val != null) return val instanceof Date ? val : new Date(val);
+      return undefined;
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
     }
 
-    return { data, nextCursor, hasMore };
+    return { data, nextCursor, previousCursor: previousCursor ?? null };
   }
 
   async findAllWithCursor(
@@ -190,7 +271,7 @@ export class PointExchangeRepository implements IPointExchangeRepository {
       nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
     }
 
-    return { data, nextCursor, hasMore };
+    return { data, nextCursor };
   }
 
   async create(exchange: Partial<PointExchange>): Promise<PointExchange> {

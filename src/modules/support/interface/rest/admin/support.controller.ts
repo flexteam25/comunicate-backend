@@ -95,7 +95,7 @@ export class AdminSupportController {
     return ApiResponseUtil.success({
       data: result.data.map((inquiry) => this.mapInquiryToResponse(inquiry)),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
+      prevCursor: result.previousCursor ?? null,
     });
   }
 

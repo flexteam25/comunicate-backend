@@ -55,6 +55,39 @@ export class SiteEventRepository implements ISiteEventRepository {
   ): Promise<CursorPaginationResult<SiteEvent>> {
     const realLimit = limit > 50 ? 50 : limit;
     const now = new Date();
+    const sortBy = 'startDate';
+    const sortOrder = 'DESC' as const;
+    const filterKey = JSON.stringify({ siteId });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     const queryBuilder = this.repository
       .createQueryBuilder('event')
@@ -70,42 +103,52 @@ export class SiteEventRepository implements ISiteEventRepository {
       .andWhere('event.isActive = :isActive', { isActive: true })
       .andWhere('event.endDate >= :now', { now });
 
-    // Filter by siteId (UUID or slug)
     if (isUuid(siteId)) {
-      // Filter by site UUID
       queryBuilder.andWhere('event.siteId = :siteId', { siteId });
     } else {
-      // Filter by site slug
       queryBuilder.andWhere('site.slug = :siteSlug', { siteSlug: siteId });
     }
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = 'event.startDate';
-        if (sortValue !== null && sortValue !== undefined) {
+    const sortField = `event.${sortBy}`;
+
+    if (!decodedId || direction === 'forward') {
+      queryBuilder.orderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST');
+      queryBuilder.addOrderBy('event.id', 'DESC');
+    }
+
+    if (decodedId) {
+      queryBuilder.andWhere('event.id != :cursorId', { cursorId: decodedId });
+      if (decodedSortValue !== undefined) {
+        if (direction === 'forward') {
           queryBuilder.andWhere(
             `(${sortField} < :sortValue OR (${sortField} = :sortValue AND event.id < :cursorId))`,
-            { sortValue, cursorId: id },
+            { sortValue: decodedSortValue, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere('event.id < :cursorId', { cursorId: id });
+          queryBuilder.andWhere(
+            `(${sortField} > :sortValue OR (${sortField} = :sortValue AND event.id > :cursorId))`,
+            { sortValue: decodedSortValue, cursorId: decodedId },
+          );
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (direction === 'forward') {
+          queryBuilder.andWhere('event.id < :cursorId', { cursorId: decodedId });
+        } else {
+          queryBuilder.andWhere('event.id > :cursorId', { cursorId: decodedId });
+        }
+      }
+      if (direction === 'backward') {
+        queryBuilder.orderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST');
+        queryBuilder.addOrderBy('event.id', 'DESC');
       }
     }
 
-    queryBuilder
-      .orderBy('event.startDate', 'DESC')
-      .addOrderBy('event.id', 'DESC')
-      .take(realLimit + 1);
+    queryBuilder.take(realLimit + 1);
 
     const result = await queryBuilder.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
     const data = result.entities.slice(0, realLimit);
 
-    // Create a map of event.id -> raw data to handle cases where joins create multiple rows per event
     const rawDataMap = new Map<string, Record<string, unknown>>();
     result.raw.forEach((rawRow: Record<string, unknown>) => {
       const eventId =
@@ -120,7 +163,6 @@ export class SiteEventRepository implements ISiteEventRepository {
       }
     });
 
-    // Map viewCount from raw data to entities
     data.forEach((event) => {
       const rawData = rawDataMap.get(event.id);
       if (rawData) {
@@ -131,16 +173,54 @@ export class SiteEventRepository implements ISiteEventRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const sortValue = lastItem.startDate;
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: SiteEvent): string | Date | undefined => {
+      const val = item.startDate;
+      if (val != null) return val instanceof Date ? val : new Date(val);
+      return undefined;
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
     }
 
     return {
       data,
       nextCursor,
-      hasMore,
+      previousCursor: previousCursor ?? null,
     };
   }
 
@@ -272,7 +352,6 @@ export class SiteEventRepository implements ISiteEventRepository {
     return {
       data,
       nextCursor,
-      hasMore,
     };
   }
 

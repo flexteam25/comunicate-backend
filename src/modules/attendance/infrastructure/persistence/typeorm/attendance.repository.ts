@@ -33,7 +33,6 @@ export class AttendanceRepository implements IAttendanceRepository {
   ): Promise<{
     data: Attendance[];
     nextCursor: string | null;
-    hasMore: boolean;
   }> {
     const realLimit = limit > 50 ? 50 : limit;
     const queryBuilder = this.repository
@@ -75,7 +74,6 @@ export class AttendanceRepository implements IAttendanceRepository {
     return {
       data,
       nextCursor,
-      hasMore,
     };
   }
 
@@ -109,7 +107,6 @@ export class AttendanceRepository implements IAttendanceRepository {
     data: Attendance[];
     nextCursor: string | null;
     previousCursor: string | null;
-    hasMore: boolean;
   }> {
     const realLimit = limit > 50 ? 50 : limit;
     const filterKey = JSON.stringify({
@@ -285,7 +282,6 @@ export class AttendanceRepository implements IAttendanceRepository {
       data,
       nextCursor,
       previousCursor,
-      hasMore,
     };
   }
 
@@ -299,7 +295,6 @@ export class AttendanceRepository implements IAttendanceRepository {
     data: Attendance[];
     nextCursor: string | null;
     previousCursor: string | null;
-    hasMore: boolean;
   }> {
     const realLimit = limit > 50 ? 50 : limit;
     const filterKey = JSON.stringify({
@@ -461,7 +456,6 @@ export class AttendanceRepository implements IAttendanceRepository {
       data,
       nextCursor,
       previousCursor,
-      hasMore,
     };
   }
 }

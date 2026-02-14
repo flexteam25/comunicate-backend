@@ -10,7 +10,6 @@ export interface IAttendanceRepository {
   ): Promise<{
     data: Attendance[];
     nextCursor: string | null;
-    hasMore: boolean;
   }>;
   findAllByDate(date: Date): Promise<Attendance[]>; // Get all attendances for a date (for statistics calculation)
   countByDate(date: Date): Promise<number>;
@@ -24,7 +23,6 @@ export interface IAttendanceRepository {
     data: Attendance[];
     nextCursor: string | null;
     previousCursor?: string | null;
-    hasMore: boolean;
   }>;
   findByUserIdAndDateRange(
     userId: string,
@@ -36,6 +34,5 @@ export interface IAttendanceRepository {
     data: Attendance[];
     nextCursor: string | null;
     previousCursor?: string | null;
-    hasMore: boolean;
   }>;
 }

@@ -72,7 +72,6 @@ export class AdminPartnerController {
         updatedAt: request.updatedAt,
       })),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
     });
   }
 
@@ -202,7 +201,6 @@ export class AdminPartnerController {
         createdAt: user.createdAt,
       })),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
     });
   }
 }

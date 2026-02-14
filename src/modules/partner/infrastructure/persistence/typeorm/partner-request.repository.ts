@@ -120,7 +120,7 @@ export class PartnerRequestRepository implements IPartnerRequestRepository {
       nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
     }
 
-    return { data, nextCursor, hasMore };
+    return { data, nextCursor };
   }
 
   async create(partnerRequest: Partial<PartnerRequest>): Promise<PartnerRequest> {

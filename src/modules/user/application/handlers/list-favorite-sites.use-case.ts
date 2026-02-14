@@ -18,7 +18,6 @@ export interface FavoriteSiteItem {
 export interface ListFavoriteSitesResult {
   data: FavoriteSiteItem[];
   nextCursor: string | null;
-  hasMore: boolean;
 }
 
 @Injectable()
@@ -65,7 +64,6 @@ export class ListFavoriteSitesUseCase {
     return {
       data,
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
     };
   }
 }

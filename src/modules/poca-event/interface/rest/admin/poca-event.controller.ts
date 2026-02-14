@@ -235,7 +235,6 @@ export class AdminPocaEventController {
     return ApiResponseUtil.success({
       data: result.data.map((event) => this.mapPocaEventToResponse(event)),
       nextCursor: result.nextCursor,
-      hasMore: result.hasMore,
     });
   }
 
