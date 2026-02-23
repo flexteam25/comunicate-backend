@@ -91,7 +91,50 @@ export class UserRepository implements IUserRepository {
   ): Promise<CursorPaginationResult<User>> {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = filters?.sortBy || 'createdAt';
-    const sortDir = filters?.sortDir || 'DESC';
+    const sortDir = (filters?.sortDir || 'DESC') as 'ASC' | 'DESC';
+    const filterKey = JSON.stringify({
+      search: filters?.search ?? null,
+      email: filters?.search ? null : (filters?.email ?? null),
+      displayName: filters?.search ? null : (filters?.displayName ?? null),
+      searchIp: filters?.searchIp ?? null,
+      status: filters?.status ?? null,
+      isActive: filters?.isActive ?? null,
+      sortBy,
+      sortDir,
+    });
+    const sortDefinition =
+      sortBy === 'points'
+        ? `points:${sortDir},id:${sortDir}`
+        : `${sortBy}:${sortDir},id:${sortDir}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     const queryBuilder = this.repository
       .createQueryBuilder('user')
@@ -111,13 +154,11 @@ export class UserRepository implements IUserRepository {
         },
       );
     } else {
-      // Only apply email and displayName filters if search is not provided
       if (filters?.email) {
         queryBuilder.andWhere('LOWER(user.email) LIKE LOWER(:email)', {
           email: `%${filters.email}%`,
         });
       }
-
       if (filters?.displayName) {
         queryBuilder.andWhere('LOWER(user.displayName) LIKE LOWER(:displayName)', {
           displayName: `%${filters.displayName}%`,
@@ -125,7 +166,6 @@ export class UserRepository implements IUserRepository {
       }
     }
 
-    // Search IP filter - search in user_profile (3 columns: registerIp, lastLoginIp, lastRequestIp)
     if (filters?.searchIp) {
       queryBuilder.andWhere(
         '(LOWER(userProfile.registerIp) LIKE LOWER(:searchIp) OR LOWER(userProfile.lastLoginIp) LIKE LOWER(:searchIp) OR LOWER(userProfile.lastRequestIp) LIKE LOWER(:searchIp))',
@@ -135,9 +175,7 @@ export class UserRepository implements IUserRepository {
       );
     }
 
-    // Status filter (if provided and not empty)
     if (filters?.status && filters.status.trim() !== '') {
-      // Assuming status maps to isActive, but can be extended
       if (filters.status.toLowerCase() === 'active' || filters.status === 'true') {
         queryBuilder.andWhere('user.isActive = :isActive', { isActive: true });
       } else if (
@@ -154,57 +192,77 @@ export class UserRepository implements IUserRepository {
       });
     }
 
-    // Determine sort field and apply sorting
-    if (sortBy === 'points') {
-      // Use COALESCE to handle NULL values (treat NULL as 0) for proper sorting
-      // Add as select with alias, then order by the alias
-      queryBuilder
-        .addSelect('COALESCE(userProfile.points, 0)', 'pointsValue')
-        .orderBy('pointsValue', sortDir)
-        .addOrderBy('user.id', sortDir);
-    } else {
-      queryBuilder.orderBy(`user.${sortBy}`, sortDir).addOrderBy('user.id', sortDir);
+    const cursorSortField =
+      sortBy === 'points'
+        ? 'COALESCE(userProfile.points, 0)'
+        : `user.${sortBy}`;
+
+    if (!decodedId || direction === 'forward') {
+      if (sortBy === 'points') {
+        queryBuilder
+          .addSelect('COALESCE(userProfile.points, 0)', 'pointsValue')
+          .orderBy('pointsValue', sortDir)
+          .addOrderBy('user.id', sortDir);
+      } else {
+        queryBuilder.orderBy(`user.${sortBy}`, sortDir).addOrderBy('user.id', sortDir);
+      }
     }
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        // Determine sort field for cursor (same as above)
-        let cursorSortField: string;
-        if (sortBy === 'points') {
-          // Use COALESCE to handle NULL values (treat NULL as 0)
-          cursorSortField = 'COALESCE(userProfile.points, 0)';
-        } else {
-          cursorSortField = `user.${sortBy}`;
-        }
-
-        // For DESC order, use < comparison; for ASC, use >
-        const comparisonOp = sortDir === 'DESC' ? '<' : '>';
-        const idComparisonOp = sortDir === 'DESC' ? '<' : '>';
-
-        if (sortValue !== null && sortValue !== undefined) {
+    if (decodedId) {
+      queryBuilder.andWhere('user.id != :cursorId', { cursorId: decodedId });
+      const parsedSortValue =
+        decodedSortValue != null
+          ? sortBy === 'createdAt'
+            ? new Date(decodedSortValue)
+            : sortBy === 'points'
+              ? Number(decodedSortValue)
+              : decodedSortValue
+          : undefined;
+      if (parsedSortValue !== null && parsedSortValue !== undefined) {
+        if (direction === 'forward') {
+          const comparisonOp = sortDir === 'DESC' ? '<' : '>';
+          const idOp = sortDir === 'DESC' ? '<' : '>';
           queryBuilder.andWhere(
-            `(${cursorSortField} ${comparisonOp} :sortValue OR (${cursorSortField} = :sortValue AND user.id ${idComparisonOp} :cursorId))`,
-            { sortValue, cursorId: id },
+            `(${cursorSortField} ${comparisonOp} :sortValue OR (${cursorSortField} = :sortValue AND user.id ${idOp} :cursorId))`,
+            { sortValue: parsedSortValue, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere(`user.id ${idComparisonOp} :cursorId`, {
-            cursorId: id,
-          });
+          const comparisonOp = sortDir === 'DESC' ? '>' : '<';
+          const idOp = sortDir === 'DESC' ? '>' : '<';
+          queryBuilder.andWhere(
+            `(${cursorSortField} ${comparisonOp} :sortValue OR (${cursorSortField} = :sortValue AND user.id ${idOp} :cursorId))`,
+            { sortValue: parsedSortValue, cursorId: decodedId },
+          );
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (direction === 'forward') {
+          const idOp = sortDir === 'DESC' ? '<' : '>';
+          queryBuilder.andWhere(`user.id ${idOp} :cursorId`, { cursorId: decodedId });
+        } else {
+          const idOp = sortDir === 'DESC' ? '>' : '<';
+          queryBuilder.andWhere(`user.id ${idOp} :cursorId`, { cursorId: decodedId });
+        }
+      }
+      if (direction === 'backward') {
+        if (sortBy === 'points') {
+          queryBuilder
+            .addSelect('COALESCE(userProfile.points, 0)', 'pointsValue')
+            .orderBy('pointsValue', sortDir)
+            .addOrderBy('user.id', sortDir);
+        } else {
+          queryBuilder.orderBy(`user.${sortBy}`, sortDir).addOrderBy('user.id', sortDir);
+        }
       }
     }
 
     queryBuilder.take(realLimit + 1);
 
+    const meta = { direction: 'forward' as const, sort: sortDefinition, filterKey };
+    const metaBackward = { direction: 'backward' as const, sort: sortDefinition, filterKey };
+
     // For points sorting, we need to use raw SQL to handle COALESCE properly
     if (sortBy === 'points') {
-      // Get the SQL and parameters
       const [sql, parameters] = queryBuilder.getQueryAndParameters();
-
-      // Modify ORDER BY to use COALESCE expression directly
       const orderByExpression = `ORDER BY COALESCE("userProfile"."points", 0) ${sortDir}, "user"."id" ${sortDir}`;
       let modifiedSql = sql;
       if (sql.match(/ORDER BY/i)) {
@@ -213,15 +271,13 @@ export class UserRepository implements IUserRepository {
         modifiedSql = `${sql} ${orderByExpression}`;
       }
 
-      // Execute the modified query
       const rawResults: Array<Record<string, unknown>> =
         await this.repository.manager.query(modifiedSql, parameters);
 
       if (rawResults.length === 0) {
-        return { data: [], nextCursor: null };
+        return { data: [], nextCursor: null, previousCursor: null };
       }
 
-      // Extract user IDs from raw results
       const userIds: string[] = [];
       const pointsMap = new Map<string, number>();
       for (const row of rawResults) {
@@ -237,10 +293,9 @@ export class UserRepository implements IUserRepository {
       }
 
       if (userIds.length === 0) {
-        return { data: [], nextCursor: null };
+        return { data: [], nextCursor: null, previousCursor: null };
       }
 
-      // Fetch entities with relations
       const entities = await this.repository
         .createQueryBuilder('user')
         .leftJoinAndSelect('user.userProfile', 'userProfile')
@@ -251,7 +306,6 @@ export class UserRepository implements IUserRepository {
         .where('user.id IN (:...ids)', { ids: userIds })
         .getMany();
 
-      // Sort entities by pointsValue (maintain order from raw query)
       const entityMap = new Map(entities.map((e) => [e.id, e]));
       const sortedEntities = userIds
         .map((id) => entityMap.get(id))
@@ -261,36 +315,98 @@ export class UserRepository implements IUserRepository {
       const data = sortedEntities.slice(0, realLimit);
 
       let nextCursor: string | null = null;
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        const pointsValue = pointsMap.get(lastItem.id) ?? 0;
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, pointsValue);
+      let previousCursor: string | null = null;
+      const getPointsSortValue = (item: User) => pointsMap.get(item.id) ?? 0;
+
+      if (!decodedId || direction === 'forward') {
+        if (hasMore && data.length > 0) {
+          const lastItem = data[data.length - 1];
+          nextCursor = CursorPaginationUtil.encodeCursor(
+            lastItem.id,
+            getPointsSortValue(lastItem),
+            { ...meta },
+          );
+        }
+        if (decodedId && cursor && data.length > 0) {
+          const firstItem = data[0];
+          previousCursor = CursorPaginationUtil.encodeCursor(
+            firstItem.id,
+            getPointsSortValue(firstItem),
+            { ...metaBackward },
+          );
+        }
+      } else {
+        if (data.length > 0) {
+          const oldestInPage = data[data.length - 1];
+          nextCursor = CursorPaginationUtil.encodeCursor(
+            oldestInPage.id,
+            getPointsSortValue(oldestInPage),
+            { ...meta },
+          );
+        }
+        if (hasMore && data.length > 0) {
+          const newestInPage = data[0];
+          previousCursor = CursorPaginationUtil.encodeCursor(
+            newestInPage.id,
+            getPointsSortValue(newestInPage),
+            { ...metaBackward },
+          );
+        }
       }
 
-      return { data, nextCursor };
+      return { data, nextCursor, previousCursor: previousCursor ?? null };
     }
 
-    // For other sort fields, use normal query
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      let fieldValue: unknown = null;
-      if (sortBy === 'points') {
-        fieldValue = lastItem.userProfile?.points ?? null;
-      } else {
-        fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: User): string | number | Date | undefined => {
+      if (sortBy === 'points') return item.userProfile?.points ?? 0;
+      const val = (item as unknown as Record<string, unknown>)[sortBy];
+      if (val == null) return undefined;
+      return val instanceof Date ? val : (val as string | number);
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          lastItem.id,
+          getSortValue(lastItem),
+          { ...meta },
+        );
       }
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue as string | number | Date;
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          firstItem.id,
+          getSortValue(firstItem),
+          { ...metaBackward },
+        );
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+    } else {
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id,
+          getSortValue(oldestInPage),
+          { ...meta },
+        );
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          getSortValue(newestInPage),
+          { ...metaBackward },
+        );
+      }
     }
 
-    return { data, nextCursor };
+    return { data, nextCursor, previousCursor: previousCursor ?? null };
   }
 }

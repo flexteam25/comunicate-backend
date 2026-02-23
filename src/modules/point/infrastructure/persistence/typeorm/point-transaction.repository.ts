@@ -187,12 +187,47 @@ export class PointTransactionRepository implements IPointTransactionRepository {
   ): Promise<CursorPaginationResult<PointTransaction>> {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = 'createdAt';
+    const sortOrder = 'DESC' as const;
+    const filterKey = JSON.stringify({
+      userName: filters?.userName ?? null,
+      type: filters?.type ?? null,
+      startDate: filters?.startDate?.toISOString() ?? null,
+      endDate: filters?.endDate?.toISOString() ?? null,
+    });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     const queryBuilder = this.repository
       .createQueryBuilder('transaction')
-      .leftJoinAndSelect('transaction.user', 'user')
-      .orderBy('transaction.createdAt', 'DESC')
-      .addOrderBy('transaction.id', 'DESC');
+      .leftJoinAndSelect('transaction.user', 'user');
 
     if (filters?.userName) {
       queryBuilder.andWhere('LOWER(user.displayName) LIKE LOWER(:userName)', {
@@ -218,22 +253,41 @@ export class PointTransactionRepository implements IPointTransactionRepository {
       });
     }
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = `transaction.${sortBy}`;
-        if (sortValue !== null && sortValue !== undefined) {
+    const sortField = `transaction.${sortBy}`;
+
+    if (!decodedId || direction === 'forward') {
+      queryBuilder.orderBy(`transaction.${sortBy}`, sortOrder);
+      queryBuilder.addOrderBy('transaction.id', sortOrder);
+    }
+
+    if (decodedId) {
+      queryBuilder.andWhere('transaction.id != :cursorId', { cursorId: decodedId });
+      const parsedSortValue =
+        decodedSortValue != null && sortBy === 'createdAt'
+          ? new Date(decodedSortValue)
+          : decodedSortValue;
+      if (parsedSortValue !== null && parsedSortValue !== undefined) {
+        if (direction === 'forward') {
           queryBuilder.andWhere(
             `(${sortField} < :sortValue OR (${sortField} = :sortValue AND transaction.id < :cursorId))`,
-            { sortValue, cursorId: id },
+            { sortValue: parsedSortValue, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere('transaction.id < :cursorId', {
-            cursorId: id,
-          });
+          queryBuilder.andWhere(
+            `(${sortField} > :sortValue OR (${sortField} = :sortValue AND transaction.id > :cursorId))`,
+            { sortValue: parsedSortValue, cursorId: decodedId },
+          );
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (direction === 'forward') {
+          queryBuilder.andWhere('transaction.id < :cursorId', { cursorId: decodedId });
+        } else {
+          queryBuilder.andWhere('transaction.id > :cursorId', { cursorId: decodedId });
+        }
+      }
+      if (direction === 'backward') {
+        queryBuilder.orderBy(`transaction.${sortBy}`, sortOrder);
+        queryBuilder.addOrderBy('transaction.id', sortOrder);
       }
     }
 
@@ -244,17 +298,51 @@ export class PointTransactionRepository implements IPointTransactionRepository {
     const data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue as string | number | Date;
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: PointTransaction): string | Date | undefined => {
+      const val = item.createdAt;
+      if (val != null) return val instanceof Date ? val : new Date(val);
+      return undefined;
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
     }
 
-    return { data, nextCursor };
+    return { data, nextCursor, previousCursor: previousCursor ?? null };
   }
 
   async create(transaction: Partial<PointTransaction>): Promise<PointTransaction> {

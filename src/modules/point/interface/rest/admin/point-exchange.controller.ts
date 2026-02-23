@@ -103,6 +103,7 @@ export class AdminPointExchangeController {
     return ApiResponseUtil.success({
       data: result.data.map((exchange) => this.mapExchangeToResponse(exchange)),
       nextCursor: result.nextCursor,
+      previousCursor: result.previousCursor ?? null,
     });
   }
 

@@ -373,6 +373,7 @@ export class AdminUserController {
         };
       }),
       nextCursor: result.nextCursor,
+      previousCursor: result.previousCursor ?? null,
     });
   }
 
@@ -479,6 +480,37 @@ export class AdminUserController {
     @Query('limit') limit?: string,
   ): Promise<ApiResponse<any>> {
     const realLimit = limit ? Math.min(parseInt(limit, 10), 50) : 20;
+    const sortBy = 'createdAt';
+    const sortOrder = 'DESC' as const;
+    const filterKey = JSON.stringify({ userId: id });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id: cursorId,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = cursorId;
+          if (sortValue != null) decodedSortValue = sortValue;
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     // Get user_posts with posts joined (including aggregates)
     const userPostsQuery = this.userPostRepository
@@ -512,23 +544,41 @@ export class AdminUserController {
         `(SELECT COUNT(DISTINCT user_id) FROM post_views WHERE post_id = post.id AND user_id IS NOT NULL)`,
         'viewCount',
       )
-      .where('userPost.userId = :userId', { userId: id })
-      .orderBy('userPost.createdAt', 'DESC')
-      .addOrderBy('userPost.id', 'DESC');
+      .where('userPost.userId = :userId', { userId: id });
 
-    if (cursor) {
-      try {
-        const { id: cursorId, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue) {
+    if (!decodedId || direction === 'forward') {
+      userPostsQuery
+        .orderBy('userPost.createdAt', sortOrder)
+        .addOrderBy('userPost.id', sortOrder);
+    }
+
+    if (decodedId) {
+      userPostsQuery.andWhere('userPost.id != :cursorId', { cursorId: decodedId });
+      const parsedSortValue =
+        decodedSortValue != null ? new Date(decodedSortValue) : undefined;
+      if (parsedSortValue != null) {
+        if (direction === 'forward') {
           userPostsQuery.andWhere(
             `(userPost.createdAt < :sortValue OR (userPost.createdAt = :sortValue AND userPost.id < :cursorId))`,
-            { sortValue: new Date(sortValue), cursorId },
+            { sortValue: parsedSortValue, cursorId: decodedId },
           );
         } else {
-          userPostsQuery.andWhere('userPost.id < :cursorId', { cursorId });
+          userPostsQuery.andWhere(
+            `(userPost.createdAt > :sortValue OR (userPost.createdAt = :sortValue AND userPost.id > :cursorId))`,
+            { sortValue: parsedSortValue, cursorId: decodedId },
+          );
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (direction === 'forward') {
+          userPostsQuery.andWhere('userPost.id < :cursorId', { cursorId: decodedId });
+        } else {
+          userPostsQuery.andWhere('userPost.id > :cursorId', { cursorId: decodedId });
+        }
+      }
+      if (direction === 'backward') {
+        userPostsQuery
+          .orderBy('userPost.createdAt', sortOrder)
+          .addOrderBy('userPost.id', sortOrder);
       }
     }
 
@@ -542,6 +592,7 @@ export class AdminUserController {
       return ApiResponseUtil.success({
         data: [],
         nextCursor: null,
+        previousCursor: null,
       });
     }
 
@@ -613,18 +664,60 @@ export class AdminUserController {
       })
       .filter((item) => item !== null);
 
+    const meta = {
+      direction: 'forward' as const,
+      sort: sortDefinition,
+      filterKey,
+    };
+    const metaBackward = {
+      direction: 'backward' as const,
+      sort: sortDefinition,
+      filterKey,
+    };
+
     let nextCursor: string | null = null;
-    if (hasMore && userPostsData.length > 0) {
-      const lastUserPost = userPostsData[userPostsData.length - 1];
-      nextCursor = CursorPaginationUtil.encodeCursor(
-        lastUserPost.id,
-        lastUserPost.createdAt,
-      );
+    let previousCursor: string | null = null;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && userPostsData.length > 0) {
+        const lastUserPost = userPostsData[userPostsData.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          lastUserPost.id,
+          lastUserPost.createdAt,
+          { ...meta },
+        );
+      }
+      if (decodedId && cursor && userPostsData.length > 0) {
+        const firstUserPost = userPostsData[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          firstUserPost.id,
+          firstUserPost.createdAt,
+          { ...metaBackward },
+        );
+      }
+    } else {
+      if (userPostsData.length > 0) {
+        const oldestInPage = userPostsData[userPostsData.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id,
+          oldestInPage.createdAt,
+          { ...meta },
+        );
+      }
+      if (hasMore && userPostsData.length > 0) {
+        const newestInPage = userPostsData[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          newestInPage.createdAt,
+          { ...metaBackward },
+        );
+      }
     }
 
     return ApiResponseUtil.success({
       data,
       nextCursor,
+      previousCursor: previousCursor ?? null,
     });
   }
 
@@ -637,34 +730,86 @@ export class AdminUserController {
     @Query('limit') limit?: string,
   ): Promise<ApiResponse<any>> {
     const realLimit = limit ? Math.min(parseInt(limit, 10), 50) : 20;
+    const sortBy = 'createdAt';
+    const sortOrder = 'DESC' as const;
+    const filterKey = JSON.stringify({ userId: id });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id: cursorId,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = cursorId;
+          if (sortValue != null) decodedSortValue = sortValue;
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     // Get user_comments with post_comments joined (only post_comment type)
-    // Note: user_comments doesn't have direct relation to PostComment, so we need to query separately
     const userCommentsQuery = this.userCommentRepository
       .createQueryBuilder('userComment')
       .where('userComment.userId = :userId', { userId: id })
       .andWhere('userComment.commentType = :commentType', {
         commentType: CommentType.POST_COMMENT,
       })
-      .orderBy('userComment.createdAt', 'DESC')
-      .addOrderBy('userComment.id', 'DESC')
       .select('userComment.commentId', 'commentId')
       .addSelect('userComment.id', 'userCommentId')
       .addSelect('userComment.createdAt', 'userCommentCreatedAt');
 
-    if (cursor) {
-      try {
-        const { id: cursorId, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue) {
+    if (!decodedId || direction === 'forward') {
+      userCommentsQuery
+        .orderBy('userComment.createdAt', sortOrder)
+        .addOrderBy('userComment.id', sortOrder);
+    }
+
+    if (decodedId) {
+      userCommentsQuery.andWhere('userComment.id != :cursorId', { cursorId: decodedId });
+      const parsedSortValue =
+        decodedSortValue != null ? new Date(decodedSortValue) : undefined;
+      if (parsedSortValue != null) {
+        if (direction === 'forward') {
           userCommentsQuery.andWhere(
             `(userComment.createdAt < :sortValue OR (userComment.createdAt = :sortValue AND userComment.id < :cursorId))`,
-            { sortValue: new Date(sortValue), cursorId },
+            { sortValue: parsedSortValue, cursorId: decodedId },
           );
         } else {
-          userCommentsQuery.andWhere('userComment.id < :cursorId', { cursorId });
+          userCommentsQuery.andWhere(
+            `(userComment.createdAt > :sortValue OR (userComment.createdAt = :sortValue AND userComment.id > :cursorId))`,
+            { sortValue: parsedSortValue, cursorId: decodedId },
+          );
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (direction === 'forward') {
+          userCommentsQuery.andWhere('userComment.id < :cursorId', {
+            cursorId: decodedId,
+          });
+        } else {
+          userCommentsQuery.andWhere('userComment.id > :cursorId', {
+            cursorId: decodedId,
+          });
+        }
+      }
+      if (direction === 'backward') {
+        userCommentsQuery
+          .orderBy('userComment.createdAt', sortOrder)
+          .addOrderBy('userComment.id', sortOrder);
       }
     }
 
@@ -678,6 +823,7 @@ export class AdminUserController {
       return ApiResponseUtil.success({
         data: [],
         nextCursor: null,
+        previousCursor: null,
       });
     }
 
@@ -724,20 +870,64 @@ export class AdminUserController {
       })
       .filter((item) => item !== null);
 
+    const meta = {
+      direction: 'forward' as const,
+      sort: sortDefinition,
+      filterKey,
+    };
+    const metaBackward = {
+      direction: 'backward' as const,
+      sort: sortDefinition,
+      filterKey,
+    };
+
     let nextCursor: string | null = null;
-    if (hasMore && userCommentsData.length > 0) {
-      const lastUserComment = userCommentsData[
-        userCommentsData.length - 1
-      ] as UserCommentRaw;
-      nextCursor = CursorPaginationUtil.encodeCursor(
-        lastUserComment.userCommentId,
-        lastUserComment.userCommentCreatedAt,
-      );
+    let previousCursor: string | null = null;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && userCommentsData.length > 0) {
+        const lastUserComment = userCommentsData[
+          userCommentsData.length - 1
+        ] as UserCommentRaw;
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          lastUserComment.userCommentId,
+          lastUserComment.userCommentCreatedAt,
+          { ...meta },
+        );
+      }
+      if (decodedId && cursor && userCommentsData.length > 0) {
+        const firstUserComment = userCommentsData[0] as UserCommentRaw;
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          firstUserComment.userCommentId,
+          firstUserComment.userCommentCreatedAt,
+          { ...metaBackward },
+        );
+      }
+    } else {
+      if (userCommentsData.length > 0) {
+        const oldestInPage = userCommentsData[
+          userCommentsData.length - 1
+        ] as UserCommentRaw;
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.userCommentId,
+          oldestInPage.userCommentCreatedAt,
+          { ...meta },
+        );
+      }
+      if (hasMore && userCommentsData.length > 0) {
+        const newestInPage = userCommentsData[0] as UserCommentRaw;
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.userCommentId,
+          newestInPage.userCommentCreatedAt,
+          { ...metaBackward },
+        );
+      }
     }
 
     return ApiResponseUtil.success({
       data,
       nextCursor,
+      previousCursor: previousCursor ?? null,
     });
   }
 

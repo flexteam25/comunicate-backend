@@ -130,6 +130,7 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
     }
 
     if (decodedId) {
+      queryBuilder.andWhere('request.id != :cursorId', { cursorId: decodedId });
       const parsedSortValue =
         decodedSortValue != null && sortBy === 'createdAt'
           ? new Date(decodedSortValue)
@@ -176,8 +177,8 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
           }
         }
         queryBuilder
-          .orderBy(sortField, sortOrder === 'DESC' ? 'ASC' : 'DESC', 'NULLS LAST')
-          .addOrderBy('request.id', sortOrder === 'DESC' ? 'ASC' : 'DESC');
+          .addOrderBy(sortField, sortOrder, 'NULLS LAST')
+          .addOrderBy('request.id', sortOrder);
       }
     }
 
@@ -206,20 +207,21 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
         });
       }
 
-      if (decodedId && cursor) {
-        const prevSortValue =
-          decodedSortValue != null && sortBy === 'createdAt'
-            ? new Date(decodedSortValue)
-            : decodedSortValue;
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, prevSortValue, {
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
+        const fieldValue = (firstItem as unknown as Record<string, unknown>)[sortBy];
+        const sortValue =
+          fieldValue !== null && fieldValue !== undefined
+            ? (fieldValue as string | number | Date)
+            : undefined;
+        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, sortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
         });
       }
     } else {
-      const pageItems = rows.slice(0, realLimit);
-      data = sortOrder === 'DESC' ? pageItems.reverse() : pageItems.slice().reverse();
+      data = rows.slice(0, realLimit);
 
       if (data.length > 0) {
         const oldestInPage = data[data.length - 1];

@@ -219,6 +219,7 @@ export class AdminGifticonController {
         updatedAt: redemption.updatedAt,
       })),
       nextCursor: result.nextCursor,
+      previousCursor: result.previousCursor ?? null,
     });
   }
 

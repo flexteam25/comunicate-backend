@@ -51,6 +51,7 @@ export class AdminPointTransactionController {
         createdAt: transaction.createdAt,
       })),
       nextCursor: result.nextCursor,
+      previousCursor: result.previousCursor ?? null,
     });
   }
 }
