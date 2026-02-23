@@ -6,6 +6,7 @@ import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.m
 import { SystemSetting } from './domain/entities/system-setting.entity';
 import { SystemSettingRepository } from './infrastructure/persistence/typeorm/system-setting.repository';
 import { GetSystemSettingByKeyUseCase } from './application/handlers/get-system-setting-by-key.use-case';
+import { GetAllSystemSettingsUseCase } from './application/handlers/get-all-system-settings.use-case';
 import { UpdateSystemSettingValueUseCase } from './application/handlers/admin/update-system-setting-value.use-case';
 import { MaintenanceCheckService } from './application/services/maintenance-check.service';
 import { GetGameBetLimitsService } from './application/services/get-game-bet-limits.service';
@@ -27,6 +28,7 @@ import { SystemSettingAdminController } from './interface/rest/admin/system-sett
     },
     SystemSettingRepository,
     GetSystemSettingByKeyUseCase,
+    GetAllSystemSettingsUseCase,
     UpdateSystemSettingValueUseCase,
     MaintenanceCheckService,
     GetGameBetLimitsService,

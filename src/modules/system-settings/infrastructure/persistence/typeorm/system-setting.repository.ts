@@ -15,6 +15,10 @@ export class SystemSettingRepository implements ISystemSettingRepository {
     private readonly repository: Repository<SystemSetting>,
   ) {}
 
+  async findAll(): Promise<SystemSetting[]> {
+    return this.repository.find({ order: { key: 'ASC' } });
+  }
+
   async findByKey(key: string): Promise<SystemSetting | null> {
     return this.repository.findOne({ where: { key } });
   }
