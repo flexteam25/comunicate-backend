@@ -6,6 +6,14 @@ export interface ListTrashBadgesCommand {
   badgeType?: string;
   sortBy?: string;
   sortDir?: 'ASC' | 'DESC';
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListTrashBadgesResult {
+  badges: Badge[];
+  nextCursor: string | null;
+  previousCursor: string | null;
 }
 
 @Injectable()
@@ -15,17 +23,25 @@ export class ListTrashBadgesUseCase {
     private readonly badgeRepository: IBadgeRepository,
   ) {}
 
-  async execute(command: ListTrashBadgesCommand | string): Promise<Badge[]> {
-    // Backward compatibility: if string is passed, treat as badgeType
+  async execute(command: ListTrashBadgesCommand | string): Promise<Badge[] | ListTrashBadgesResult> {
+    // Backward compatibility: if string is passed, treat as badgeType (no cursor)
     if (typeof command === 'string') {
       return this.badgeRepository.findAllDeleted(null, command);
     }
 
-    return this.badgeRepository.findAllDeleted(
-      null,
-      command.badgeType,
-      command.sortBy || 'name',
-      command.sortDir || 'ASC',
+    const result = await this.badgeRepository.findAllDeletedWithCursor(
+      {
+        badgeType: command.badgeType,
+        sortBy: command.sortBy || 'name',
+        sortDir: command.sortDir || 'ASC',
+      },
+      command.cursor,
+      command.limit ?? 20,
     );
+    return {
+      badges: result.data,
+      nextCursor: result.nextCursor,
+      previousCursor: result.previousCursor ?? null,
+    };
   }
 }

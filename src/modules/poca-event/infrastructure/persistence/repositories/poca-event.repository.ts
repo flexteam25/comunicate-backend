@@ -20,5 +20,4 @@ export interface IPocaEventRepository {
   create(event: Partial<PocaEvent>): Promise<PocaEvent>;
   update(id: string, data: Partial<PocaEvent>): Promise<PocaEvent>;
   softDelete(id: string): Promise<void>;
-  incrementViewCount(id: string): Promise<void>;
 }

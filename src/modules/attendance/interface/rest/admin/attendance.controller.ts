@@ -69,7 +69,7 @@ export class AdminAttendanceController {
     const response: AdminListAttendancesResponse = {
       data: mappedData,
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.previousCursor ?? null,
     };
 
     return ApiResponseUtil.success(response);

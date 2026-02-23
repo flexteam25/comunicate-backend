@@ -21,6 +21,7 @@ export interface ListSiteRequestsCommand {
 export interface ListSiteRequestsResult {
   requests: SiteRequest[];
   nextCursor: string | null;
+  previousCursor: string | null;
 }
 
 @Injectable()
@@ -47,6 +48,7 @@ export class ListSiteRequestsUseCase {
     return {
       requests: result.data,
       nextCursor: result.nextCursor,
+      previousCursor: result.previousCursor ?? null,
     };
   }
 }

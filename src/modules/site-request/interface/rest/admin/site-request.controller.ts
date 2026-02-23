@@ -51,6 +51,7 @@ export class AdminSiteRequestController {
     ApiResponse<{
       requests: SiteRequestResponseDto[];
       nextCursor: string | null;
+      prevCursor: string | null;
     }>
   > {
     // Parse dates if provided
@@ -87,6 +88,7 @@ export class AdminSiteRequestController {
     return ApiResponseUtil.success({
       requests: result.requests.map((r) => this.mapSiteRequestToResponse(r)),
       nextCursor: result.nextCursor,
+      prevCursor: result.previousCursor ?? null,
     });
   }
 

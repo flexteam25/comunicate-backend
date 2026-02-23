@@ -231,6 +231,45 @@ export class PostRepository implements IPostRepository {
     const realLimit = limit > 50 ? 50 : limit;
     const sortBy = filters?.sortBy || 'createdAt';
     const sortOrder = filters?.sortOrder || 'DESC';
+    const filterKey = JSON.stringify({
+      isPublished: filters?.isPublished ?? null,
+      isPointBanner: filters?.isPointBanner ?? null,
+      categoryId: filters?.categoryId ?? null,
+      userId: filters?.userId ?? null,
+      search: filters?.search ?? null,
+      sortBy,
+      sortOrder,
+    });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     const queryBuilder = this.repository
       .createQueryBuilder('post')
@@ -310,45 +349,83 @@ export class PostRepository implements IPostRepository {
       );
     }
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = `post.${sortBy}`;
-        if (sortValue !== null && sortValue !== undefined) {
+    const sortField = `post.${sortBy}`;
+
+    if (!decodedId || direction === 'forward') {
+      if (sortOrder === 'DESC') {
+        queryBuilder.addOrderBy(`post.${sortBy}`, 'DESC', 'NULLS LAST');
+      } else {
+        queryBuilder.orderBy(`post.${sortBy}`, 'ASC');
+      }
+      queryBuilder.addOrderBy('post.id', sortOrder);
+    }
+
+    if (decodedId) {
+      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
+      if (decodedSortValue != null && sortBy === 'createdAt') {
+        parsedSortValue = new Date(decodedSortValue);
+      } else if (decodedSortValue != null) {
+        parsedSortValue = decodedSortValue;
+      }
+
+      if (direction === 'forward') {
+        queryBuilder.andWhere('post.id != :cursorId', { cursorId: decodedId });
+        if (parsedSortValue !== undefined) {
           if (sortOrder === 'ASC') {
             queryBuilder.andWhere(
               `(${sortField} > :sortValue OR (${sortField} = :sortValue AND post.id > :cursorId))`,
-              { sortValue, cursorId: id },
+              { sortValue: parsedSortValue, cursorId: decodedId },
             );
           } else {
             queryBuilder.andWhere(
               `(${sortField} < :sortValue OR (${sortField} = :sortValue AND post.id < :cursorId))`,
-              { sortValue, cursorId: id },
+              { sortValue: parsedSortValue, cursorId: decodedId },
             );
           }
         } else {
           if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('post.id > :cursorId', { cursorId: id });
+            queryBuilder.andWhere('post.id > :cursorId', { cursorId: decodedId });
           } else {
-            queryBuilder.andWhere('post.id < :cursorId', { cursorId: id });
+            queryBuilder.andWhere('post.id < :cursorId', { cursorId: decodedId });
           }
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (parsedSortValue !== undefined) {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere(
+              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND post.id < :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
+            );
+          } else {
+            queryBuilder.andWhere(
+              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND post.id > :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
+            );
+          }
+        } else {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere('post.id < :cursorId', { cursorId: decodedId });
+          } else {
+            queryBuilder.andWhere('post.id > :cursorId', { cursorId: decodedId });
+          }
+        }
+        if (sortOrder === 'DESC') {
+          queryBuilder
+            .orderBy(`post.${sortBy}`, 'ASC')
+            .addOrderBy('post.id', 'ASC');
+        } else {
+          queryBuilder
+            .orderBy(`post.${sortBy}`, 'DESC')
+            .addOrderBy('post.id', 'DESC');
+        }
       }
     }
 
-    if (sortOrder === 'DESC') {
-      queryBuilder.addOrderBy(`post.${sortBy}`, 'DESC', 'NULLS LAST');
-    } else {
-      queryBuilder.orderBy(`post.${sortBy}`, 'ASC');
-    }
-    queryBuilder.addOrderBy('post.id', sortOrder);
     queryBuilder.take(realLimit + 1);
 
     const result = await queryBuilder.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
-    const data = result.entities.slice(0, realLimit);
+    let data = result.entities.slice(0, realLimit);
 
     // Create a map of post.id -> raw data to handle cases where subqueries might create multiple rows
     const rawDataMap = new Map<string, any>();
@@ -371,17 +448,60 @@ export class PostRepository implements IPostRepository {
     });
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue as string | number | Date;
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: Post): string | number | Date | undefined => {
+      const val = (item as unknown as Record<string, unknown>)[sortBy];
+      if (val instanceof Date) return val;
+      if (val !== null && val !== undefined) return val as string | number;
+      return undefined;
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+      if (decodedId && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      data = data.slice().reverse();
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id,
+          getSortValue(oldestInPage),
+          {
+            direction: 'forward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          getSortValue(newestInPage),
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
     }
 
-    return { data, nextCursor };
+    return { data, nextCursor, previousCursor: previousCursor ?? null };
   }
 
   async findPublished(

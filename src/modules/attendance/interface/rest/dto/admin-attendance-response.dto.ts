@@ -13,11 +13,11 @@ export class AdminAttendanceResponse {
 export class AdminListAttendancesResponse {
   data: AdminAttendanceResponse[];
   nextCursor: string | null;
-  previousCursor: string | null;
+  prevCursor: string | null;
 }
 
 export class AdminUserAttendanceResponse {
   data: AdminAttendanceResponse[];
   nextCursor: string | null;
-  previousCursor: string | null;
+  prevCursor: string | null;
 }

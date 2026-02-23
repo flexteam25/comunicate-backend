@@ -166,6 +166,7 @@ export class AdminGifticonController {
     return ApiResponseUtil.success({
       data: result.data.map((gifticon) => this.mapGifticonToResponse(gifticon)),
       nextCursor: result.nextCursor,
+      prevCursor: result.previousCursor ?? null,
     });
   }
 

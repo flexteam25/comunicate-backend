@@ -129,13 +129,28 @@ export class AdminBadgeController {
     @Query('badgeType') badgeType?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortDir') sortDir?: string,
-  ): Promise<ApiResponse<AdminBadgeResponse[]>> {
-    const badges = await this.listBadgesUseCase.execute({
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+  ): Promise<
+    ApiResponse<{
+      badges: AdminBadgeResponse[];
+      nextCursor: string | null;
+      prevCursor: string | null;
+    }>
+  > {
+    const result = await this.listBadgesUseCase.execute({
       badgeType,
       sortBy: sortBy || 'name',
       sortDir: (sortDir?.toUpperCase() as 'ASC' | 'DESC') || 'ASC',
+      cursor,
+      limit: limit != null ? parseInt(String(limit), 10) || 20 : 20,
     });
-    return ApiResponseUtil.success(badges.map((badge) => this.mapBadgeToResponse(badge)));
+    const paginated = result as { badges: Badge[]; nextCursor: string | null; previousCursor: string | null };
+    return ApiResponseUtil.success({
+      badges: paginated.badges.map((badge) => this.mapBadgeToResponse(badge)),
+      nextCursor: paginated.nextCursor,
+      prevCursor: paginated.previousCursor ?? null,
+    });
   }
 
   @Get('trash')
@@ -145,13 +160,28 @@ export class AdminBadgeController {
     @Query('badgeType') badgeType?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortDir') sortDir?: string,
-  ): Promise<ApiResponse<AdminBadgeResponse[]>> {
-    const badges = await this.listTrashBadgesUseCase.execute({
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+  ): Promise<
+    ApiResponse<{
+      badges: AdminBadgeResponse[];
+      nextCursor: string | null;
+      prevCursor: string | null;
+    }>
+  > {
+    const result = await this.listTrashBadgesUseCase.execute({
       badgeType,
       sortBy: sortBy || 'name',
       sortDir: (sortDir?.toUpperCase() as 'ASC' | 'DESC') || 'ASC',
+      cursor,
+      limit: limit != null ? parseInt(String(limit), 10) || 20 : 20,
     });
-    return ApiResponseUtil.success(badges.map((badge) => this.mapBadgeToResponse(badge)));
+    const paginated = result as { badges: Badge[]; nextCursor: string | null; previousCursor: string | null };
+    return ApiResponseUtil.success({
+      badges: paginated.badges.map((badge) => this.mapBadgeToResponse(badge)),
+      nextCursor: paginated.nextCursor,
+      prevCursor: paginated.previousCursor ?? null,
+    });
   }
 
   @Get(':id')

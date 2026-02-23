@@ -335,47 +335,40 @@ export class PocaEventRepository implements IPocaEventRepository {
     cursor?: string,
     limit = 20,
   ): Promise<CursorPaginationResult<PocaEvent>> {
-    const realLimit = limit > 50 ? 50 : limit;
+    const limitNum = typeof limit === 'number' ? limit : parseInt(String(limit), 10) || 20;
+    const realLimit = limitNum > 50 ? 50 : Math.max(1, limitNum);
     const sortBy = 'createdAt';
     const sortOrder = 'DESC' as 'ASC' | 'DESC';
+    const filterKey = JSON.stringify({
+      status: filters?.status ?? null,
+      search: filters?.search ?? null,
+      sortBy,
+      sortOrder,
+    });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
 
-    const queryBuilder = this.repository
-      .createQueryBuilder('event')
-      .leftJoinAndSelect('event.banners', 'banner')
-      .where('event.deletedAt IS NULL')
-      .orderBy('banner.order', 'ASC');
-
-    if (filters?.status) {
-      queryBuilder.andWhere('event.status = :status', { status: filters.status });
-    }
-
-    if (filters?.search) {
-      queryBuilder.andWhere('LOWER(event.title) LIKE LOWER(:search)', {
-        search: `%${filters.search}%`,
-      });
-    }
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
 
     if (cursor) {
       try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = `event.${sortBy}`;
-        if (sortValue !== null && sortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND event.id > :cursorId))`,
-              { sortValue, cursorId: id },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND event.id < :cursorId))`,
-              { sortValue, cursorId: id },
-            );
-          }
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
         } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('event.id > :cursorId', { cursorId: id });
-          } else {
-            queryBuilder.andWhere('event.id < :cursorId', { cursorId: id });
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
           }
         }
       } catch {
@@ -383,32 +376,180 @@ export class PocaEventRepository implements IPocaEventRepository {
       }
     }
 
+    // Step 1: Paginate by event IDs only (no banners join) so limit applies to events, not rows.
+    const idQb = this.repository
+      .createQueryBuilder('event')
+      .select('event.id')
+      .where('event.deletedAt IS NULL');
+
+    if (filters?.status) {
+      idQb.andWhere('event.status = :status', { status: filters.status });
+    }
+    if (filters?.search) {
+      idQb.andWhere('LOWER(event.title) LIKE LOWER(:search)', {
+        search: `%${filters.search}%`,
+      });
+    }
+
+    const sortField = `event.${sortBy}`;
+
+    if (!decodedId || direction === 'forward') {
+      if (sortOrder === 'DESC') {
+        idQb.addOrderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST');
+      } else {
+        idQb.orderBy(`event.${sortBy}`, 'ASC');
+      }
+      idQb.addOrderBy('event.id', sortOrder);
+    }
+
+    if (decodedId) {
+      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
+      if (decodedSortValue != null && sortBy === 'createdAt') {
+        parsedSortValue = new Date(decodedSortValue);
+      } else if (decodedSortValue != null) {
+        parsedSortValue = decodedSortValue;
+      }
+
+      if (direction === 'forward') {
+        idQb.andWhere('event.id != :cursorId', { cursorId: decodedId });
+        if (parsedSortValue !== undefined) {
+          if (sortOrder === 'ASC') {
+            idQb.andWhere(
+              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND event.id > :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
+            );
+          } else {
+            idQb.andWhere(
+              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND event.id < :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
+            );
+          }
+        } else {
+          if (sortOrder === 'ASC') {
+            idQb.andWhere('event.id > :cursorId', { cursorId: decodedId });
+          } else {
+            idQb.andWhere('event.id < :cursorId', { cursorId: decodedId });
+          }
+        }
+      } else {
+        if (parsedSortValue !== undefined) {
+          if (sortOrder === 'ASC') {
+            idQb.andWhere(
+              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND event.id < :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
+            );
+          } else {
+            idQb.andWhere(
+              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND event.id > :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
+            );
+          }
+        } else {
+          if (sortOrder === 'ASC') {
+            idQb.andWhere('event.id < :cursorId', { cursorId: decodedId });
+          } else {
+            idQb.andWhere('event.id > :cursorId', { cursorId: decodedId });
+          }
+        }
+        if (sortOrder === 'DESC') {
+          idQb.orderBy(`event.${sortBy}`, 'ASC').addOrderBy('event.id', 'ASC');
+        } else {
+          idQb.orderBy(`event.${sortBy}`, 'DESC').addOrderBy('event.id', 'DESC');
+        }
+      }
+    }
+
+    idQb.take(realLimit + 1);
+    // Use getMany() so we get entities with .id - avoids raw result key differences across drivers
+    const idEntities = await idQb.getMany();
+    const orderedIds = idEntities.map((e) => e.id);
+    const hasMore = orderedIds.length > realLimit;
+    const pageIds = orderedIds.slice(0, realLimit);
+
+    if (pageIds.length === 0) {
+      return {
+        data: [],
+        nextCursor: null,
+        previousCursor: null,
+      };
+    }
+
+    // Step 2: Load full events with banners for this page of IDs, preserving order.
+    const queryBuilder = this.repository
+      .createQueryBuilder('event')
+      .leftJoinAndSelect('event.banners', 'banner')
+      .where('event.deletedAt IS NULL')
+      .andWhere('event.id IN (:...pageIds)', { pageIds })
+      .orderBy('banner.order', 'ASC');
+
+    // Preserve pagination order (same as id query)
     if (sortOrder === 'DESC') {
       queryBuilder.addOrderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST');
     } else {
-      queryBuilder.orderBy(`event.${sortBy}`, 'ASC');
+      queryBuilder.addOrderBy(`event.${sortBy}`, 'ASC');
     }
     queryBuilder.addOrderBy('event.id', sortOrder);
-    queryBuilder.take(realLimit + 1);
 
     const entities = await queryBuilder.getMany();
-    const hasMore = entities.length > realLimit;
-    const data = entities.slice(0, realLimit);
+
+    // Restore order to match pageIds (getMany() may not preserve IN order in all DBs)
+    const idToEvent = new Map(entities.map((e) => [e.id, e]));
+    let data = pageIds.map((id) => idToEvent.get(id)).filter((e): e is PocaEvent => e != null);
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue as string | number | Date;
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: PocaEvent): string | number | Date | undefined => {
+      const val = (item as unknown as Record<string, unknown>)[sortBy];
+      if (val instanceof Date) return val;
+      if (val !== null && val !== undefined) return val as string | number;
+      return undefined;
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+      if (decodedId && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      data = data.slice().reverse();
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          getSortValue(newestInPage),
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
     }
 
     return {
       data,
       nextCursor,
+      previousCursor: previousCursor ?? null,
     };
   }
 
@@ -428,9 +569,5 @@ export class PocaEventRepository implements IPocaEventRepository {
 
   async softDelete(id: string): Promise<void> {
     await this.repository.softDelete(id);
-  }
-
-  async incrementViewCount(id: string): Promise<void> {
-    await this.repository.increment({ id }, 'viewCount', 1);
   }
 }

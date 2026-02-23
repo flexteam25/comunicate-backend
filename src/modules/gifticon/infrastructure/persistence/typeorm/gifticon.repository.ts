@@ -256,6 +256,42 @@ export class GifticonRepository implements IGifticonRepository {
     const realLimit = limit > 100 ? 100 : limit;
     const sortBy = 'createdAt';
     const sortOrder = 'DESC' as 'ASC' | 'DESC';
+    const filterKey = JSON.stringify({
+      status: filters?.status ?? null,
+      search: filters?.search ?? null,
+      sortBy,
+      sortOrder,
+    });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     const queryBuilder = this.repository
       .createQueryBuilder('gifticon')
@@ -271,60 +307,142 @@ export class GifticonRepository implements IGifticonRepository {
       });
     }
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = `gifticon.${sortBy}`;
-        if (sortValue !== null && sortValue !== undefined) {
+    const sortField = `gifticon.${sortBy}`;
+
+    if (!decodedId || direction === 'forward') {
+      if (sortOrder === 'DESC') {
+        queryBuilder.addOrderBy(`gifticon.${sortBy}`, 'DESC', 'NULLS LAST');
+      } else {
+        queryBuilder.orderBy(`gifticon.${sortBy}`, 'ASC');
+      }
+      queryBuilder.addOrderBy('gifticon.id', sortOrder);
+    }
+
+    if (decodedId) {
+      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
+      if (decodedSortValue != null && sortBy === 'createdAt') {
+        parsedSortValue = new Date(decodedSortValue);
+      } else if (decodedSortValue != null) {
+        parsedSortValue = decodedSortValue;
+      }
+
+      if (direction === 'forward') {
+        queryBuilder.andWhere('gifticon.id != :cursorId', { cursorId: decodedId });
+        if (parsedSortValue !== undefined) {
           if (sortOrder === 'ASC') {
             queryBuilder.andWhere(
               `(${sortField} > :sortValue OR (${sortField} = :sortValue AND gifticon.id > :cursorId))`,
-              { sortValue, cursorId: id },
+              { sortValue: parsedSortValue, cursorId: decodedId },
             );
           } else {
             queryBuilder.andWhere(
               `(${sortField} < :sortValue OR (${sortField} = :sortValue AND gifticon.id < :cursorId))`,
-              { sortValue, cursorId: id },
+              { sortValue: parsedSortValue, cursorId: decodedId },
             );
           }
         } else {
           if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('gifticon.id > :cursorId', { cursorId: id });
+            queryBuilder.andWhere('gifticon.id > :cursorId', { cursorId: decodedId });
           } else {
-            queryBuilder.andWhere('gifticon.id < :cursorId', { cursorId: id });
+            queryBuilder.andWhere('gifticon.id < :cursorId', { cursorId: decodedId });
           }
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        if (parsedSortValue !== undefined) {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere(
+              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND gifticon.id < :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
+            );
+          } else {
+            queryBuilder.andWhere(
+              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND gifticon.id > :cursorId))`,
+              { sortValue: parsedSortValue, cursorId: decodedId },
+            );
+          }
+        } else {
+          if (sortOrder === 'ASC') {
+            queryBuilder.andWhere('gifticon.id < :cursorId', { cursorId: decodedId });
+          } else {
+            queryBuilder.andWhere('gifticon.id > :cursorId', { cursorId: decodedId });
+          }
+        }
+        if (sortOrder === 'DESC') {
+          queryBuilder
+            .orderBy(`gifticon.${sortBy}`, 'ASC')
+            .addOrderBy('gifticon.id', 'ASC');
+        } else {
+          queryBuilder
+            .orderBy(`gifticon.${sortBy}`, 'DESC')
+            .addOrderBy('gifticon.id', 'DESC');
+        }
       }
     }
 
-    if (sortOrder === 'DESC') {
-      queryBuilder.addOrderBy(`gifticon.${sortBy}`, 'DESC', 'NULLS LAST');
-    } else {
-      queryBuilder.orderBy(`gifticon.${sortBy}`, 'ASC');
-    }
-    queryBuilder.addOrderBy('gifticon.id', sortOrder);
     queryBuilder.take(realLimit + 1);
 
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
-    const data = entities.slice(0, realLimit);
+    let data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue as string | number | Date;
+    let previousCursor: string | null = null;
+
+    const getSortValue = (item: Gifticon): string | number | Date | undefined => {
+      const val = (item as unknown as Record<string, unknown>)[sortBy];
+      if (val instanceof Date) return val;
+      if (val !== null && val !== undefined) return val as string | number;
+      return undefined;
+    };
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
+          direction: 'forward',
+          sort: sortDefinition,
+          filterKey,
+        });
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+      if (decodedId && cursor) {
+        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
+    } else {
+      data = data.slice().reverse();
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id,
+          getSortValue(oldestInPage),
+          {
+            direction: 'forward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        previousCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          getSortValue(newestInPage),
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
     }
 
     return {
       data,
       nextCursor,
+      previousCursor: previousCursor ?? null,
     };
   }
 

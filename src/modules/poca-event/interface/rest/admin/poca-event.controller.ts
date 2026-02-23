@@ -12,15 +12,15 @@ import {
   HttpStatus,
   ParseUUIDPipe,
   UseInterceptors,
+  UsePipes,
   UploadedFiles,
   BadRequestException,
+  ValidationPipe,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { AdminJwtAuthGuard } from '../../../../admin/infrastructure/guards/admin-jwt-auth.guard';
 import { AdminPermissionGuard } from '../../../../admin/infrastructure/guards/admin-permission.guard';
 import { RequirePermission } from '../../../../admin/infrastructure/decorators/require-permission.decorator';
-import { ListPocaEventsUseCase } from '../../../application/handlers/user/list-poca-events.use-case';
-import { GetPocaEventUseCase } from '../../../application/handlers/user/get-poca-event.use-case';
 import { CreatePocaEventUseCase } from '../../../application/handlers/admin/create-poca-event.use-case';
 import { UpdatePocaEventUseCase } from '../../../application/handlers/admin/update-poca-event.use-case';
 import { DeletePocaEventUseCase } from '../../../application/handlers/admin/delete-poca-event.use-case';
@@ -222,6 +222,7 @@ export class AdminPocaEventController {
   @Get()
   @RequirePermission('poca-events.manage')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async listPocaEvents(
     @Query() query: ListAdminPocaEventsQueryDto,
   ): Promise<ApiResponse<any>> {
@@ -235,6 +236,7 @@ export class AdminPocaEventController {
     return ApiResponseUtil.success({
       data: result.data.map((event) => this.mapPocaEventToResponse(event)),
       nextCursor: result.nextCursor,
+      prevCursor: result.previousCursor ?? null,
     });
   }
 
