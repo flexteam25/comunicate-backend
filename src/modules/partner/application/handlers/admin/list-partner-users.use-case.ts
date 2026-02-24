@@ -112,6 +112,6 @@ export class ListPartnerUsersUseCase {
       nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
     }
 
-    return { data, nextCursor, sitesByUserId };
+    return { data, nextCursor, prevCursor: null, sitesByUserId };
   }
 }

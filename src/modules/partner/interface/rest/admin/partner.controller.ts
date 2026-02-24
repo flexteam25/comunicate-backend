@@ -48,7 +48,13 @@ export class AdminPartnerController {
   @HttpCode(HttpStatus.OK)
   async listPartnerRequests(
     @Query() query: ListPartnerRequestsQueryDto,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<
+    ApiResponse<{
+      data: any[];
+      nextCursor: string | null;
+      prevCursor: string | null;
+    }>
+  > {
     const result = await this.listPartnerRequestsUseCase.execute({
       status: query.status,
       userId: query.userId,
@@ -72,6 +78,7 @@ export class AdminPartnerController {
         updatedAt: request.updatedAt,
       })),
       nextCursor: result.nextCursor,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -153,7 +160,13 @@ export class AdminPartnerController {
   @HttpCode(HttpStatus.OK)
   async listPartnerUsers(
     @Query() query: ListPartnerUsersQueryDto,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<
+    ApiResponse<{
+      data: any[];
+      nextCursor: string | null;
+      prevCursor: string | null;
+    }>
+  > {
     const result = await this.listPartnerUsersUseCase.execute({
       cursor: query.cursor,
       limit: query.limit,
@@ -201,6 +214,7 @@ export class AdminPartnerController {
         createdAt: user.createdAt,
       })),
       nextCursor: result.nextCursor,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 }
