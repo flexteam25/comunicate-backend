@@ -242,6 +242,7 @@
                     <li><strong>site-request:cancelled</strong> - Site request cancelled</li>
                     <li><strong>user-badge-request:approved</strong> - User badge request approved</li>
                     <li><strong>user-badge-request:rejected</strong> - User badge request rejected</li>
+                    <li><strong>minigame:playing:created</strong> - New minigame playing user (same format as admin/minigame/playing)</li>
                 </ul>
             </div>
             <input type="text" id="token-user" placeholder="User JWT Access Token">
@@ -846,6 +847,15 @@
                 const adminName = data.admin?.displayName || data.admin?.email || 'Admin';
                 const note = data.note || 'No reason provided';
                 log('log-admin', `❌ User Badge Request Rejected - Badge: "${badgeName}", User: ${userName}, Admin: ${adminName}, Note: ${note}`, 'event', data);
+            });
+
+            socketAdmin.on('minigame:playing:created', (data) => {
+                const user = data.user || {};
+                const userId = user.id || 'Unknown';
+                const email = user.email || 'Unknown';
+                const displayName = user.displayName || email;
+                const gameType = data.gameType || 'Unknown';
+                log('log-admin', `🎮 Minigame Playing Created - User: ${displayName} (${email}, ${userId}), Game: ${gameType}`, 'event', data);
             });
         }
 

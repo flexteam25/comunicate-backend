@@ -247,6 +247,101 @@ export class AuthUserSeeder {
           description: 'Reject site requests',
           type: PermissionType.ADMIN,
         },
+        // Minigame / bet history
+        {
+          name: 'bet-history.read',
+          description: 'View user bet histories',
+          type: PermissionType.ADMIN,
+        },
+        // Scam report additional permissions
+        {
+          name: 'scam-reports.read',
+          description: 'View scam reports',
+          type: PermissionType.ADMIN,
+        },
+        // User & badge management
+        {
+          name: 'users.manage',
+          description: 'Manage users and their related resources',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'user.badge.assign',
+          description: 'Assign badges to users',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'user.badge.remove',
+          description: 'Remove badges from users',
+          type: PermissionType.ADMIN,
+        },
+        // Point & exchange permissions
+        {
+          name: 'points.manage',
+          description: 'Manage point settings',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'points.transaction.view',
+          description: 'View point transactions',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'points.exchange.manage',
+          description: 'Manage point exchanges',
+          type: PermissionType.ADMIN,
+        },
+        // Gifticon permissions
+        {
+          name: 'gifticons.manage',
+          description: 'Manage gifticons and redemptions',
+          type: PermissionType.ADMIN,
+        },
+        // Attendance permissions
+        {
+          name: 'attendances.read',
+          description: 'View attendance records',
+          type: PermissionType.ADMIN,
+        },
+        // Site review moderation (admin API)
+        {
+          name: 'site-reviews.moderate',
+          description: 'Moderate site reviews',
+          type: PermissionType.ADMIN,
+        },
+        // Post management (admin API)
+        {
+          name: 'posts.manage',
+          description: 'Manage posts and comments',
+          type: PermissionType.ADMIN,
+        },
+        // POCA event management
+        {
+          name: 'poca-events.manage',
+          description: 'Manage POCA events',
+          type: PermissionType.ADMIN,
+        },
+        // Badge management
+        {
+          name: 'badge.create',
+          description: 'Create badges',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'badge.read',
+          description: 'View badges',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'badge.update',
+          description: 'Update badges',
+          type: PermissionType.ADMIN,
+        },
+        {
+          name: 'badge.delete',
+          description: 'Delete badges',
+          type: PermissionType.ADMIN,
+        },
       ];
 
       // Create permissions - User permissions (if needed in future)

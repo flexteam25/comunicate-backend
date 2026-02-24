@@ -431,6 +431,14 @@ export class SocketGateway
           this.server.to(SocketRoom.ADMIN).emit(SocketEvent.SITE_BADGE_REQUEST_CANCELLED, data);
         },
       );
+
+      // Subscribe to minigame:playing:created (notify admins when a new playing user appears)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.MINIGAME_PLAYING_CREATED,
+        (data) => {
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.MINIGAME_PLAYING_CREATED, data);
+        },
+      );
     } catch (error) {
       this.logger.error(
         'Failed to setup Redis subscriptions',

@@ -135,6 +135,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.set(`minigame:session:${userId}`, gameType, { EX: ttlSeconds });
   }
 
+  async getMinigamePlaying(userId: string): Promise<string | null> {
+    return (await this.client.get(`minigame:session:${userId}`)) as string | null;
+  }
+
   /** Returns list of { userId, gameType } for all users currently in minigame (cache). */
   async getMinigamePlayingList(): Promise<{ userId: string; gameType: string }[]> {
     const keys = await this.client.keys('minigame:session:*');
