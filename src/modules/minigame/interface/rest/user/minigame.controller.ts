@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Body,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -16,7 +17,9 @@ import { LaunchGameDto } from '../dto/launch-game.dto';
 import { GameCallbackDto } from '../dto/game-callback.dto';
 import { LaunchGameUseCase } from '../../../application/handlers/launch-game.use-case';
 import { HandleGameCallbackUseCase } from '../../../application/handlers/handle-game-callback.use-case';
+import { GetSelfBetHistoryUseCase } from '../../../application/handlers/get-self-bet-history.use-case';
 import { GameCallbackGuard } from '../../../infrastructure/guards/game-callback.guard';
+import { BetHistoryItemDto } from '../dto/bet-history-response.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { formatPoints } from '../../../../../shared/utils/point.util';
@@ -28,9 +31,36 @@ export class MinigameController {
   constructor(
     private readonly launchGameUseCase: LaunchGameUseCase,
     private readonly handleGameCallbackUseCase: HandleGameCallbackUseCase,
+    private readonly getSelfBetHistoryUseCase: GetSelfBetHistoryUseCase,
     private readonly getGameBetLimitsService: GetGameBetLimitsService,
     private readonly logger: LoggerService,
   ) {}
+
+  @Get('bet-history')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getSelfBetHistory(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+  ): Promise<
+    ApiResponse<{
+      items: BetHistoryItemDto[];
+      nextCursor: string | null;
+      prevCursor: string | null;
+    }>
+  > {
+    const result = await this.getSelfBetHistoryUseCase.execute({
+      userId: user.userId,
+      cursor,
+      limit: limit != null ? parseInt(String(limit), 10) || 20 : 20,
+    });
+    return ApiResponseUtil.success({
+      items: result.items,
+      nextCursor: result.nextCursor,
+      prevCursor: result.previousCursor ?? null,
+    });
+  }
 
   @Get('bet-limits')
   @UseGuards(GameCallbackGuard)
