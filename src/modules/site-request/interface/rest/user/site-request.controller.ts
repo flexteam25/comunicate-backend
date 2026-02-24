@@ -105,7 +105,7 @@ export class SiteRequestController {
     ApiResponse<{
       requests: SiteRequestResponseDto[];
       nextCursor: string | null;
-      previousCursor: string | null;
+      prevCursor: string | null;
     }>
   > {
     // Parse dates if provided
@@ -140,7 +140,7 @@ export class SiteRequestController {
     return ApiResponseUtil.success({
       requests: result.requests.map((r) => this.mapSiteRequestToResponse(r)),
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

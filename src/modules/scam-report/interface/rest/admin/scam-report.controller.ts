@@ -164,7 +164,7 @@ export class AdminScamReportController {
     return ApiResponseUtil.success({
       data: result.data.map((report) => this.mapScamReportToResponse(report)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

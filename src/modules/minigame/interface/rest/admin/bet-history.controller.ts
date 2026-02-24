@@ -47,6 +47,9 @@ export class AdminBetHistoryController {
   async list(
     @Query('userId') userId?: string,
     @Query('gameType') gameType?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('userName') userName?: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
   ): Promise<
@@ -59,6 +62,9 @@ export class AdminBetHistoryController {
     const result = await this.listAdminBetHistoriesUseCase.execute({
       userId,
       gameType,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      userName,
       cursor,
       limit: limit != null ? parseInt(String(limit), 10) || 20 : 20,
     });
@@ -71,7 +77,7 @@ export class AdminBetHistoryController {
     return ApiResponseUtil.success({
       data,
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -81,6 +87,8 @@ export class AdminBetHistoryController {
   async listByUser(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query('gameType') gameType?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
   ): Promise<
@@ -93,6 +101,8 @@ export class AdminBetHistoryController {
     const result = await this.listAdminBetHistoriesUseCase.execute({
       userId,
       gameType,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
       cursor,
       limit: limit != null ? parseInt(String(limit), 10) || 20 : 20,
     });
@@ -105,7 +115,7 @@ export class AdminBetHistoryController {
     return ApiResponseUtil.success({
       data,
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 }

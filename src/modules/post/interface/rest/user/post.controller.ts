@@ -204,7 +204,7 @@ export class PostController {
     return ApiResponseUtil.success({
       data: result.data.map((post) => this.mapPostToResponse(post)),
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -348,7 +348,7 @@ export class PostController {
     return ApiResponseUtil.success({
       data: result.data.map((comment) => this.mapCommentToResponse(comment)),
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

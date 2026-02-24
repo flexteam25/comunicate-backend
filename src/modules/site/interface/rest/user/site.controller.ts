@@ -176,7 +176,7 @@ export class UserSiteController {
       data: sites,
       groupedByTier,
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -259,7 +259,7 @@ export class UserSiteController {
     return ApiResponseUtil.success({
       data: result.data.map((report) => mapScamReportToResponse(report)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

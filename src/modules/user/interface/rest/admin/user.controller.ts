@@ -373,7 +373,7 @@ export class AdminUserController {
         };
       }),
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -592,7 +592,7 @@ export class AdminUserController {
       return ApiResponseUtil.success({
         data: [],
         nextCursor: null,
-        previousCursor: null,
+        prevCursor: null,
       });
     }
 
@@ -676,7 +676,7 @@ export class AdminUserController {
     };
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMore && userPostsData.length > 0) {
@@ -689,7 +689,7 @@ export class AdminUserController {
       }
       if (decodedId && cursor && userPostsData.length > 0) {
         const firstUserPost = userPostsData[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           firstUserPost.id,
           firstUserPost.createdAt,
           { ...metaBackward },
@@ -706,7 +706,7 @@ export class AdminUserController {
       }
       if (hasMore && userPostsData.length > 0) {
         const newestInPage = userPostsData[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
           { ...metaBackward },
@@ -717,7 +717,7 @@ export class AdminUserController {
     return ApiResponseUtil.success({
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     });
   }
 
@@ -823,7 +823,7 @@ export class AdminUserController {
       return ApiResponseUtil.success({
         data: [],
         nextCursor: null,
-        previousCursor: null,
+        prevCursor: null,
       });
     }
 
@@ -882,7 +882,7 @@ export class AdminUserController {
     };
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMore && userCommentsData.length > 0) {
@@ -897,7 +897,7 @@ export class AdminUserController {
       }
       if (decodedId && cursor && userCommentsData.length > 0) {
         const firstUserComment = userCommentsData[0] as UserCommentRaw;
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           firstUserComment.userCommentId,
           firstUserComment.userCommentCreatedAt,
           { ...metaBackward },
@@ -916,7 +916,7 @@ export class AdminUserController {
       }
       if (hasMore && userCommentsData.length > 0) {
         const newestInPage = userCommentsData[0] as UserCommentRaw;
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.userCommentId,
           newestInPage.userCommentCreatedAt,
           { ...metaBackward },
@@ -927,7 +927,7 @@ export class AdminUserController {
     return ApiResponseUtil.success({
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     });
   }
 
@@ -1311,7 +1311,7 @@ export class AdminUserController {
     const response: AdminUserAttendanceResponse = {
       data: mappedData,
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     };
 
     return ApiResponseUtil.success(response);

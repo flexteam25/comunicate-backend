@@ -227,7 +227,7 @@ export class SiteReviewController {
     return ApiResponseUtil.success({
       data: result.data.map((review) => this.mapSiteReviewToResponse(review)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -248,7 +248,7 @@ export class SiteReviewController {
     return ApiResponseUtil.success({
       data: result.data.map((review) => this.mapSiteReviewToResponse(review)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -396,7 +396,7 @@ export class SiteReviewController {
     return ApiResponseUtil.success({
       data: result.data.map((comment) => this.mapCommentToResponse(comment)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

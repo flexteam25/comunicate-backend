@@ -257,7 +257,7 @@ export class AdminSiteController {
     return ApiResponseUtil.success({
       data: result.data.map((site) => this.mapSiteToResponse(site)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -285,7 +285,7 @@ export class AdminSiteController {
     return ApiResponseUtil.success({
       data: result.data.map((site) => this.mapSiteToResponse(site)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -333,7 +333,7 @@ export class AdminSiteController {
     return ApiResponseUtil.success({
       data: result.data.map((request) => this.mapBadgeRequestToResponse(request)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

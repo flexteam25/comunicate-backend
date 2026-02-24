@@ -206,7 +206,7 @@ export class ScamReportController {
     return ApiResponseUtil.success({
       data: result.data.map((report) => this.mapScamReportToResponse(report)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -227,7 +227,7 @@ export class ScamReportController {
     return ApiResponseUtil.success({
       data: result.data.map((report) => this.mapScamReportToResponse(report)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -368,7 +368,7 @@ export class ScamReportController {
         updatedAt: comment.updatedAt,
       })),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

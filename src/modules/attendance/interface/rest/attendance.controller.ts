@@ -115,7 +115,7 @@ export class AttendanceController {
       ...(result.totalCount !== undefined ? { totalCount: result.totalCount } : {}),
       data: mappedData,
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     };
 
     return ApiResponseUtil.success(response);

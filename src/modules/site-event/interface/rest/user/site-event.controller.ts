@@ -140,7 +140,7 @@ export class SiteEventController {
     return ApiResponseUtil.success({
       data: result.data.map((event) => this.mapSiteEventToResponse(event)),
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

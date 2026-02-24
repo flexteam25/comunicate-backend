@@ -354,7 +354,7 @@ export class SiteRepository implements ISiteRepository {
     const hasMore = rows.length > realLimit;
     let data: Site[];
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: Site): string | number | Date | null => {
       if (actualSortBy === 'tier') {
@@ -387,7 +387,7 @@ export class SiteRepository implements ISiteRepository {
           }
         }
 
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, prevSortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, prevSortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -408,7 +408,7 @@ export class SiteRepository implements ISiteRepository {
 
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -419,7 +419,7 @@ export class SiteRepository implements ISiteRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 
@@ -676,7 +676,7 @@ export class SiteRepository implements ISiteRepository {
     const hasMore = rows.length > realLimit;
     let data: Site[];
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: Site): string | number | Date | null => {
       if (actualSortBy === 'tier') {
@@ -709,7 +709,7 @@ export class SiteRepository implements ISiteRepository {
           }
         }
 
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, prevSortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, prevSortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -730,7 +730,7 @@ export class SiteRepository implements ISiteRepository {
 
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -741,7 +741,7 @@ export class SiteRepository implements ISiteRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

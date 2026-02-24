@@ -101,7 +101,7 @@ export class AdminUserBadgeRequestController {
     return ApiResponseUtil.success({
       data: result.data.map((request) => this.mapBadgeRequestToResponse(request)),
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

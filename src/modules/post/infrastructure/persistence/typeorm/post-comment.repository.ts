@@ -196,7 +196,7 @@ export class PostCommentRepository implements IPostCommentRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: PostComment): string | Date | undefined => {
       const val = item.createdAt;
@@ -215,7 +215,7 @@ export class PostCommentRepository implements IPostCommentRepository {
       }
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -232,7 +232,7 @@ export class PostCommentRepository implements IPostCommentRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -240,7 +240,7 @@ export class PostCommentRepository implements IPostCommentRepository {
       }
     }
 
-    return { data, nextCursor, previousCursor: previousCursor ?? null };
+    return { data, nextCursor, prevCursor: prevCursor ?? null };
   }
 
   async create(comment: Partial<PostComment>): Promise<PostComment> {

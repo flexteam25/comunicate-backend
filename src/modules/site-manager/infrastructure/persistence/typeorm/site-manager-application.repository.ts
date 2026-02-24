@@ -241,7 +241,7 @@ export class SiteManagerApplicationRepository implements ISiteManagerApplication
     let data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMore && data.length > 0) {
@@ -258,7 +258,7 @@ export class SiteManagerApplicationRepository implements ISiteManagerApplication
         });
       }
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -290,7 +290,7 @@ export class SiteManagerApplicationRepository implements ISiteManagerApplication
           fieldValue !== null && fieldValue !== undefined
             ? (fieldValue as string | number | Date)
             : undefined;
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id as string,
           sortValue,
           {
@@ -305,7 +305,7 @@ export class SiteManagerApplicationRepository implements ISiteManagerApplication
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 
@@ -445,7 +445,7 @@ export class SiteManagerApplicationRepository implements ISiteManagerApplication
     let data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: SiteManagerApplication): string | number | Date | undefined => {
       const val = (item as unknown as Record<string, unknown>)[sortBy];
@@ -464,7 +464,7 @@ export class SiteManagerApplicationRepository implements ISiteManagerApplication
         });
       }
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -482,7 +482,7 @@ export class SiteManagerApplicationRepository implements ISiteManagerApplication
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getSortValue(newestInPage),
           {
@@ -497,7 +497,7 @@ export class SiteManagerApplicationRepository implements ISiteManagerApplication
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

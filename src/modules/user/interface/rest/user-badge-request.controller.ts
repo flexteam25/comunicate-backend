@@ -121,7 +121,7 @@ export class UserBadgeRequestController {
     return ApiResponseUtil.success({
       data: result.data.map((request) => this.mapBadgeRequestToResponse(request)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

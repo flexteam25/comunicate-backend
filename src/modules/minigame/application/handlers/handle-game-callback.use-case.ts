@@ -8,6 +8,7 @@ import {
   PointTransactionType,
 } from '../../../point/domain/entities/point-transaction.entity';
 import { GetGameBetLimitsService } from '../../../system-settings/application/services/get-game-bet-limits.service';
+import { MinigamePlayingStateService } from '../services/minigame-playing-state.service';
 import { QueueService } from '../../../../shared/queue/queue.service';
 import { GamePointLogJobData } from '../../../../shared/queue/processors/game-point-log.processor';
 
@@ -44,6 +45,7 @@ export class HandleGameCallbackUseCase {
     private readonly userProfileRepo: Repository<UserProfile>,
     private readonly queueService: QueueService,
     private readonly getGameBetLimitsService: GetGameBetLimitsService,
+    private readonly minigamePlayingStateService: MinigamePlayingStateService,
   ) {}
 
   async execute(command: GameCallbackCommand): Promise<GameCallbackResult> {
@@ -85,6 +87,9 @@ export class HandleGameCallbackUseCase {
       case 'bet': {
         if (isGameInMaintenance(gameType)) {
           return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
+        if (gameType) {
+          await this.minigamePlayingStateService.setPlaying(userUuid, gameType);
         }
         // type=bet with negative amount: treat as cancel_bet (refund)
         if (amountNum < 0) {
@@ -179,6 +184,9 @@ export class HandleGameCallbackUseCase {
         if (isGameInMaintenance(gameType)) {
           return { status: 'REJECT', message: 'Game is under maintenance' };
         }
+        if (gameType) {
+          await this.minigamePlayingStateService.setPlaying(userUuid, gameType);
+        }
         const balanceAfter = balanceBefore + amountNum;
         profile.points = balanceAfter;
         await this.userProfileRepo.save(profile);
@@ -209,6 +217,9 @@ export class HandleGameCallbackUseCase {
       case 'win': {
         if (isGameInMaintenance(gameType)) {
           return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
+        if (gameType) {
+          await this.minigamePlayingStateService.setPlaying(userUuid, gameType);
         }
         const gameTypeVal = gameType || 'game';
         const limit = limits[gameTypeVal];
@@ -294,6 +305,9 @@ export class HandleGameCallbackUseCase {
         if (isGameInMaintenance(gameType)) {
           return { status: 'REJECT', message: 'Game is under maintenance' };
         }
+        if (gameType) {
+          await this.minigamePlayingStateService.setPlaying(userUuid, gameType);
+        }
         const gameTypeVal = gameType || 'game';
         const createdAt = new Date().toISOString();
         const jobData: GamePointLogJobData = {
@@ -328,6 +342,9 @@ export class HandleGameCallbackUseCase {
       case 'draw': {
         if (isGameInMaintenance(gameType)) {
           return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
+        if (gameType) {
+          await this.minigamePlayingStateService.setPlaying(userUuid, gameType);
         }
         const gameTypeVal = gameType || 'game';
         const balanceAfter = balanceBefore + amountNum;
@@ -366,6 +383,9 @@ export class HandleGameCallbackUseCase {
       case 'refund': {
         if (isGameInMaintenance(gameType)) {
           return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
+        if (gameType) {
+          await this.minigamePlayingStateService.setPlaying(userUuid, gameType);
         }
         const balanceAfter = balanceBefore + amountNum;
         profile.points = balanceAfter;

@@ -15,6 +15,7 @@ export interface UserFilters {
 export interface IUserRepository {
   findByEmail(email: string, relations?: string[]): Promise<User | null>;
   findById(id: string, relations?: string[]): Promise<User | null>;
+  findByIds(ids: string[], relations?: string[]): Promise<User[]>;
   findByIdWithBadges(id: string): Promise<User | null>;
   findAllWithCursor(
     filters?: UserFilters,

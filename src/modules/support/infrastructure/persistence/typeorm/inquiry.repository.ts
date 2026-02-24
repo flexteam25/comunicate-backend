@@ -154,7 +154,7 @@ export class InquiryRepository implements IInquiryRepository {
     let data = inquiries.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMore && data.length > 0) {
@@ -171,7 +171,7 @@ export class InquiryRepository implements IInquiryRepository {
         );
       }
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           decodedId,
           decodedSortValue,
           {
@@ -199,7 +199,7 @@ export class InquiryRepository implements IInquiryRepository {
       if (hasMore && data.length > 0) {
         const newestInPage = data[0] as unknown as Record<string, unknown>;
         const sortVal = newestInPage[sortBy];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id as string,
           sortVal !== null && sortVal !== undefined ? (sortVal as string | number | Date) : undefined,
           {
@@ -214,7 +214,7 @@ export class InquiryRepository implements IInquiryRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

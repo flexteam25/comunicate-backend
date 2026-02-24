@@ -166,7 +166,7 @@ export class AdminGifticonController {
     return ApiResponseUtil.success({
       data: result.data.map((gifticon) => this.mapGifticonToResponse(gifticon)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -219,7 +219,7 @@ export class AdminGifticonController {
         updatedAt: redemption.updatedAt,
       })),
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

@@ -150,7 +150,7 @@ export class SiteReviewCommentRepository implements ISiteReviewCommentRepository
 
     const hasMoreFinal = rows.length > realLimit;
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMoreFinal && data.length > 0) {
@@ -162,7 +162,7 @@ export class SiteReviewCommentRepository implements ISiteReviewCommentRepository
         });
       }
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -180,7 +180,7 @@ export class SiteReviewCommentRepository implements ISiteReviewCommentRepository
       }
       if (hasMoreFinal && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
           {
@@ -195,7 +195,7 @@ export class SiteReviewCommentRepository implements ISiteReviewCommentRepository
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

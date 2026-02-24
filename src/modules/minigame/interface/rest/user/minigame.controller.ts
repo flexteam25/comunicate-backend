@@ -41,6 +41,9 @@ export class MinigameController {
   @HttpCode(HttpStatus.OK)
   async getSelfBetHistory(
     @CurrentUser() user: CurrentUserPayload,
+    @Query('gameType') gameType?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
   ): Promise<
@@ -52,13 +55,16 @@ export class MinigameController {
   > {
     const result = await this.getSelfBetHistoryUseCase.execute({
       userId: user.userId,
+      gameType,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
       cursor,
       limit: limit != null ? parseInt(String(limit), 10) || 20 : 20,
     });
     return ApiResponseUtil.success({
       items: result.items,
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

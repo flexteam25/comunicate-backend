@@ -193,7 +193,7 @@ export class GifticonRepository implements IGifticonRepository {
     let data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getCompositeSortValue = (item: Gifticon): string => {
       const s = item.startsAt != null ? item.startsAt.toISOString() : null;
@@ -212,7 +212,7 @@ export class GifticonRepository implements IGifticonRepository {
       }
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           firstItem.id,
           getCompositeSortValue(firstItem),
           { direction: 'backward', sort: sortDefinition, filterKey },
@@ -230,7 +230,7 @@ export class GifticonRepository implements IGifticonRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getCompositeSortValue(newestInPage),
           { direction: 'backward', sort: sortDefinition, filterKey },
@@ -241,7 +241,7 @@ export class GifticonRepository implements IGifticonRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 
@@ -386,7 +386,7 @@ export class GifticonRepository implements IGifticonRepository {
     let data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: Gifticon): string | number | Date | undefined => {
       const val = (item as unknown as Record<string, unknown>)[sortBy];
@@ -405,7 +405,7 @@ export class GifticonRepository implements IGifticonRepository {
         });
       }
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -427,7 +427,7 @@ export class GifticonRepository implements IGifticonRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getSortValue(newestInPage),
           {
@@ -442,7 +442,7 @@ export class GifticonRepository implements IGifticonRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

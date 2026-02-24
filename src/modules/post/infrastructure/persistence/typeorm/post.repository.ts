@@ -448,7 +448,7 @@ export class PostRepository implements IPostRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: Post): string | number | Date | undefined => {
       const val = (item as unknown as Record<string, unknown>)[sortBy];
@@ -467,7 +467,7 @@ export class PostRepository implements IPostRepository {
         });
       }
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -489,7 +489,7 @@ export class PostRepository implements IPostRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getSortValue(newestInPage),
           {
@@ -501,7 +501,7 @@ export class PostRepository implements IPostRepository {
       }
     }
 
-    return { data, nextCursor, previousCursor: previousCursor ?? null };
+    return { data, nextCursor, prevCursor: prevCursor ?? null };
   }
 
   async findPublished(
@@ -793,7 +793,7 @@ export class PostRepository implements IPostRepository {
       const data = orderedEntities.slice(0, realLimit);
 
       let nextCursor: string | null = null;
-      let previousCursor: string | null = null;
+      let prevCursor: string | null = null;
 
       const getSortValueFromRaw = (item: Post, map: Map<string, Record<string, unknown>>): string | number | Date | undefined => {
         const rawData = map.get(item.id);
@@ -813,7 +813,7 @@ export class PostRepository implements IPostRepository {
         }
         if (decodedId && cursor && data.length > 0) {
           const firstItem = data[0];
-          previousCursor = CursorPaginationUtil.encodeCursor(
+          prevCursor = CursorPaginationUtil.encodeCursor(
             firstItem.id,
             getSortValueFromRaw(firstItem, resultMap as Map<string, Record<string, unknown>>),
             { direction: 'backward', sort: sortDefinition, filterKey },
@@ -830,7 +830,7 @@ export class PostRepository implements IPostRepository {
         }
         if (hasMore && data.length > 0) {
           const newestInPage = data[0];
-          previousCursor = CursorPaginationUtil.encodeCursor(
+          prevCursor = CursorPaginationUtil.encodeCursor(
             newestInPage.id,
             getSortValueFromRaw(newestInPage, resultMap as Map<string, Record<string, unknown>>),
             { direction: 'backward', sort: sortDefinition, filterKey },
@@ -838,7 +838,7 @@ export class PostRepository implements IPostRepository {
         }
       }
 
-      return { data, nextCursor, previousCursor: previousCursor ?? null };
+      return { data, nextCursor, prevCursor: prevCursor ?? null };
     } else {
       // For regular fields, use TypeORM's orderBy
       if (sortOrder === 'DESC') {
@@ -884,7 +884,7 @@ export class PostRepository implements IPostRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: Post): string | number | Date | undefined => {
       let fieldValue: unknown;
@@ -911,7 +911,7 @@ export class PostRepository implements IPostRepository {
       }
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -928,7 +928,7 @@ export class PostRepository implements IPostRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -936,7 +936,7 @@ export class PostRepository implements IPostRepository {
       }
     }
 
-    return { data, nextCursor, previousCursor: previousCursor ?? null };
+    return { data, nextCursor, prevCursor: prevCursor ?? null };
   }
 
   async create(post: Partial<Post>): Promise<Post> {

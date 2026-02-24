@@ -237,7 +237,7 @@ export class AdminPostController {
     return ApiResponseUtil.success({
       data: result.data.map((post) => this.mapPostToResponse(post)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

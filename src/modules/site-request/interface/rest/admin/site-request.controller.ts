@@ -88,7 +88,7 @@ export class AdminSiteRequestController {
     return ApiResponseUtil.success({
       requests: result.requests.map((r) => this.mapSiteRequestToResponse(r)),
       nextCursor: result.nextCursor,
-      prevCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

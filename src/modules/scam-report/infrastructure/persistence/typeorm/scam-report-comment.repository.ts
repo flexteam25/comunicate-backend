@@ -128,7 +128,7 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
     const hasMore = rows.length > realLimit;
     let data: ScamReportComment[];
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       data = rows.slice(0, realLimit);
@@ -147,7 +147,7 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
       // previous window without losing boundary items.
       if (decodedId && data.length > 0 && cursor) {
         const firstItemInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           firstItemInPage.id,
           firstItemInPage.createdAt,
           {
@@ -176,7 +176,7 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
 
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
           {
@@ -191,7 +191,7 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

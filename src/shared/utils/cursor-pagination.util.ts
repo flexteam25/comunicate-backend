@@ -12,7 +12,7 @@ export interface CursorPaginationResult<T> {
    * Cursor to load the previous page.
    * Optional so existing usages that don't support backward pagination remain valid.
    */
-  previousCursor?: string | null;
+  prevCursor?: string | null;
 }
 
 export interface CursorMeta {

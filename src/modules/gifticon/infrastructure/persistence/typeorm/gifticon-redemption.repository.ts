@@ -109,7 +109,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
     const data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: GifticonRedemption): string | Date | undefined => {
       const val = item.createdAt;
@@ -128,7 +128,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
       }
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -145,7 +145,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -153,7 +153,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
       }
     }
 
-    return { data, nextCursor, previousCursor: previousCursor ?? null };
+    return { data, nextCursor, prevCursor: prevCursor ?? null };
   }
 
   async findAllWithCursor(
@@ -273,7 +273,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
     const data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: GifticonRedemption): string | Date | undefined => {
       const val = item.createdAt;
@@ -292,7 +292,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
       }
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -309,7 +309,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -317,7 +317,7 @@ export class GifticonRedemptionRepository implements IGifticonRedemptionReposito
       }
     }
 
-    return { data, nextCursor, previousCursor: previousCursor ?? null };
+    return { data, nextCursor, prevCursor: prevCursor ?? null };
   }
 
   async create(redemption: Partial<GifticonRedemption>): Promise<GifticonRedemption> {

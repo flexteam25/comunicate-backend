@@ -314,7 +314,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMore && data.length > 0) {
@@ -330,7 +330,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       }
 
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           decodedId,
           decodedSortValue,
           {
@@ -370,7 +370,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
           newestFieldValue !== null && newestFieldValue !== undefined
             ? (newestFieldValue as string | number | Date)
             : null;
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id as string,
           newestSortValue ?? undefined,
           {
@@ -385,7 +385,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 
@@ -619,7 +619,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: SiteReview): string | number | Date | undefined => {
       const val = (item as unknown as Record<string, unknown>)[sortBy];
@@ -638,7 +638,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
         });
       }
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -656,7 +656,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getSortValue(newestInPage),
           {
@@ -671,7 +671,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 
@@ -807,7 +807,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMore && data.length > 0) {
@@ -819,7 +819,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
         });
       }
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -837,7 +837,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
           {
@@ -852,7 +852,7 @@ export class SiteReviewRepository implements ISiteReviewRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

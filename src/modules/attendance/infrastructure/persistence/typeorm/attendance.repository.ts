@@ -106,7 +106,7 @@ export class AttendanceRepository implements IAttendanceRepository {
   ): Promise<{
     data: Attendance[];
     nextCursor: string | null;
-    previousCursor: string | null;
+    prevCursor: string | null;
   }> {
     const realLimit = limit > 50 ? 50 : limit;
     const filterKey = JSON.stringify({
@@ -204,7 +204,7 @@ export class AttendanceRepository implements IAttendanceRepository {
     const hasMore = rows.length > realLimit;
     let data: Attendance[];
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       // First page or moving forward: rows already in DESC order
@@ -221,7 +221,7 @@ export class AttendanceRepository implements IAttendanceRepository {
 
       // If we had a cursor, it represents the boundary to go back to
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -264,9 +264,9 @@ export class AttendanceRepository implements IAttendanceRepository {
       }
 
       if (hasMore && data.length > 0) {
-        // There are more newer records before this page → compute previousCursor from the newest item in this page
+        // There are more newer records before this page → compute prevCursor from the newest item in this page
         const newestItemInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestItemInPage.id,
           newestItemInPage.createdAt,
           {
@@ -281,7 +281,7 @@ export class AttendanceRepository implements IAttendanceRepository {
     return {
       data,
       nextCursor,
-      previousCursor,
+      prevCursor,
     };
   }
 
@@ -294,7 +294,7 @@ export class AttendanceRepository implements IAttendanceRepository {
   ): Promise<{
     data: Attendance[];
     nextCursor: string | null;
-    previousCursor: string | null;
+    prevCursor: string | null;
   }> {
     const realLimit = limit > 50 ? 50 : limit;
     const filterKey = JSON.stringify({
@@ -380,7 +380,7 @@ export class AttendanceRepository implements IAttendanceRepository {
     const hasMore = rows.length > realLimit;
     let data: Attendance[];
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       // First page or moving forward: rows already in DESC order
@@ -396,7 +396,7 @@ export class AttendanceRepository implements IAttendanceRepository {
       }
 
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortCreatedAt, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -440,7 +440,7 @@ export class AttendanceRepository implements IAttendanceRepository {
 
       if (hasMore && data.length > 0) {
         const newestItemInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestItemInPage.id,
           newestItemInPage.createdAt,
           {
@@ -455,7 +455,7 @@ export class AttendanceRepository implements IAttendanceRepository {
     return {
       data,
       nextCursor,
-      previousCursor,
+      prevCursor,
     };
   }
 }

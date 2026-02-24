@@ -317,7 +317,7 @@ export class ScamReportRepository implements IScamReportRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMore && data.length > 0) {
@@ -330,7 +330,7 @@ export class ScamReportRepository implements IScamReportRepository {
       }
 
       if (decodedId && decodedSortCreatedAt && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           decodedId,
           decodedSortCreatedAt,
           {
@@ -369,7 +369,7 @@ export class ScamReportRepository implements IScamReportRepository {
 
       if (hasMore && finalData.length > 0) {
         const newestInPage = finalData[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
           {
@@ -383,14 +383,14 @@ export class ScamReportRepository implements IScamReportRepository {
       return {
         data: finalData,
         nextCursor,
-        previousCursor: previousCursor ?? null,
+        prevCursor: prevCursor ?? null,
       };
     }
 
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 
@@ -548,7 +548,7 @@ export class ScamReportRepository implements IScamReportRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMore && data.length > 0) {
@@ -561,7 +561,7 @@ export class ScamReportRepository implements IScamReportRepository {
       }
 
       if (decodedId && decodedSortCreatedAt && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           decodedId,
           decodedSortCreatedAt,
           {
@@ -600,7 +600,7 @@ export class ScamReportRepository implements IScamReportRepository {
 
       if (hasMore && finalData.length > 0) {
         const newestInPage = finalData[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
           {
@@ -614,14 +614,14 @@ export class ScamReportRepository implements IScamReportRepository {
       return {
         data: finalData,
         nextCursor,
-        previousCursor: previousCursor ?? null,
+        prevCursor: prevCursor ?? null,
       };
     }
 
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 
@@ -805,7 +805,7 @@ export class ScamReportRepository implements IScamReportRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       if (hasMore && data.length > 0) {
@@ -818,7 +818,7 @@ export class ScamReportRepository implements IScamReportRepository {
       }
 
       if (decodedId && decodedSortCreatedAt && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           decodedId,
           decodedSortCreatedAt,
           {
@@ -857,7 +857,7 @@ export class ScamReportRepository implements IScamReportRepository {
 
       if (hasMore && finalData.length > 0) {
         const newestInPage = finalData[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
           {
@@ -871,14 +871,14 @@ export class ScamReportRepository implements IScamReportRepository {
       return {
         data: finalData,
         nextCursor,
-        previousCursor: previousCursor ?? null,
+        prevCursor: prevCursor ?? null,
       };
     }
 
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

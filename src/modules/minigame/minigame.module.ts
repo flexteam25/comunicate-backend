@@ -20,7 +20,10 @@ import { GetSelfBetHistoryUseCase } from './application/handlers/get-self-bet-hi
 import { MinigameController } from './interface/rest/user/minigame.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { AdminBetHistoryController } from './interface/rest/admin/bet-history.controller';
+import { AdminMinigamePlayingController } from './interface/rest/admin/minigame-playing.controller';
 import { ListAdminBetHistoriesUseCase } from './application/handlers/admin/list-admin-bet-histories.use-case';
+import { GetPlayingUsersUseCase } from './application/handlers/admin/get-playing-users.use-case';
+import { MinigamePlayingStateService } from './application/services/minigame-playing-state.service';
 
 @Module({
   imports: [
@@ -36,13 +39,15 @@ import { ListAdminBetHistoriesUseCase } from './application/handlers/admin/list-
     AdminGuardsModule,
     TypeOrmModule.forFeature([PointTransaction, UserProfile, BetHistory]),
   ],
-  controllers: [MinigameController, AdminBetHistoryController],
+  controllers: [MinigameController, AdminBetHistoryController, AdminMinigamePlayingController],
   providers: [
+    MinigamePlayingStateService,
     LaunchGameUseCase,
     GameCallbackGuard,
     HandleGameCallbackUseCase,
     GetSelfBetHistoryUseCase,
     ListAdminBetHistoriesUseCase,
+    GetPlayingUsersUseCase,
     GameSyncPointSubscriber,
   ],
   exports: [],

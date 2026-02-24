@@ -13,7 +13,7 @@ export interface ListBadgesCommand {
 export interface ListBadgesResult {
   badges: Badge[];
   nextCursor: string | null;
-  previousCursor: string | null;
+  prevCursor: string | null;
 }
 
 @Injectable()
@@ -41,7 +41,7 @@ export class ListBadgesUseCase {
     return {
       badges: result.data,
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     };
   }
 }

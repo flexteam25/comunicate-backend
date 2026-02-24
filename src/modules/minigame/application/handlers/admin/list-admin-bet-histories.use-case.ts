@@ -11,6 +11,9 @@ import {
 export interface ListAdminBetHistoriesCommand {
   userId?: string;
   gameType?: string;
+  startDate?: Date;
+  endDate?: Date;
+  userName?: string;
   cursor?: string;
   limit?: number;
 }
@@ -18,7 +21,7 @@ export interface ListAdminBetHistoriesCommand {
 export interface ListAdminBetHistoriesResult {
   data: AdminBetHistoryItemDto[];
   nextCursor: string | null;
-  previousCursor: string | null;
+  prevCursor: string | null;
 }
 
 const SORT_BY = 'createdAt';
@@ -54,9 +57,15 @@ export class ListAdminBetHistoriesUseCase {
   ) {}
 
   async execute(command: ListAdminBetHistoriesCommand): Promise<ListAdminBetHistoriesResult> {
-    const { userId, gameType, cursor, limit = 20 } = command;
+    const { userId, gameType, startDate, endDate, userName, cursor, limit = 20 } = command;
     const realLimit = Math.min(Math.max(1, limit), 50);
-    const filterKey = JSON.stringify({ userId: userId ?? null, gameType: gameType ?? null });
+    const filterKey = JSON.stringify({
+      userId: userId ?? null,
+      gameType: gameType ?? null,
+      startDate: startDate ? startDate.toISOString() : null,
+      endDate: endDate ? endDate.toISOString() : null,
+      userName: userName ? userName.toLowerCase() : null,
+    });
     const sortDefinition = `${SORT_BY}:${SORT_ORDER},id:${SORT_ORDER}`;
 
     let decodedId: string | undefined;
@@ -95,8 +104,23 @@ export class ListAdminBetHistoriesUseCase {
     if (userId) {
       qb.andWhere('bh.userId = :userId', { userId });
     }
-    if (gameType) {
-      qb.andWhere('bh.gameType = :gameType', { gameType });
+    if (gameType && gameType.trim() !== '') {
+      qb.andWhere('bh.gameType ILIKE :gameType', {
+        gameType: `%${gameType.trim()}%`,
+      });
+    }
+    if (startDate) {
+      qb.andWhere('bh.createdAt >= :startDate', { startDate });
+    }
+    if (endDate) {
+      qb.andWhere('bh.createdAt <= :endDate', { endDate });
+    }
+    if (userName && userName.trim() !== '') {
+      const term = `%${userName.trim().toLowerCase()}%`;
+      qb.andWhere(
+        '(user.deletedAt IS NULL AND (LOWER(user.email) LIKE :userName OR LOWER(user.displayName) LIKE :userName))',
+        { userName: term },
+      );
     }
 
     if (!decodedId || direction === 'forward') {
@@ -139,7 +163,7 @@ export class ListAdminBetHistoriesUseCase {
     const data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: BetHistory): Date => item.createdAt;
 
@@ -154,7 +178,7 @@ export class ListAdminBetHistoriesUseCase {
       }
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -171,7 +195,7 @@ export class ListAdminBetHistoriesUseCase {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getSortValue(newestInPage),
           { direction: 'backward', sort: sortDefinition, filterKey },
@@ -182,7 +206,7 @@ export class ListAdminBetHistoriesUseCase {
     return {
       data: data.map(toItemDto),
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 }

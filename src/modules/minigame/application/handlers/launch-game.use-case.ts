@@ -8,6 +8,7 @@ import {
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
 import { LoggerService } from '../../../../shared/logger/logger.service';
+import { MinigamePlayingStateService } from '../services/minigame-playing-state.service';
 
 export interface LaunchGameCommand {
   userId: string;
@@ -21,6 +22,7 @@ export class LaunchGameUseCase {
     private readonly userRepository: IUserRepository,
     private readonly gameBackendClient: GameBackendClientService,
     private readonly logger: LoggerService,
+    private readonly minigamePlayingStateService: MinigamePlayingStateService,
   ) {}
 
   async execute(command: LaunchGameCommand): Promise<{ url: string }> {
@@ -33,7 +35,12 @@ export class LaunchGameUseCase {
     }
     try {
       const payload = this.buildPayload(user);
-      return await this.gameBackendClient.launchGame(payload);
+      const result = await this.gameBackendClient.launchGame(payload);
+      await this.minigamePlayingStateService.setPlaying(
+        command.userId,
+        command.gameType,
+      );
+      return result;
     } catch (err) {
       this.logger.error('Failed to launch game', { error: err instanceof Error ? err.message : String(err) }, 'minigame');
       throw badRequest(MessageKeys.MINIGAME_LAUNCH_FAILED);

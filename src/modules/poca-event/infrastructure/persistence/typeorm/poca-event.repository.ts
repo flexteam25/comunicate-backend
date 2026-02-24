@@ -271,7 +271,7 @@ export class PocaEventRepository implements IPocaEventRepository {
     });
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     // Composite sort value for (startsAt, createdAt, id) so cursor boundary matches full order
     const getCompositeSortValue = (event: PocaEvent): string => {
@@ -294,7 +294,7 @@ export class PocaEventRepository implements IPocaEventRepository {
       // prevCursor must use first item of current page so "previous" returns the full page before
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           firstItem.id,
           getCompositeSortValue(firstItem),
           { direction: 'backward', sort: sortDefinition, filterKey },
@@ -312,7 +312,7 @@ export class PocaEventRepository implements IPocaEventRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getCompositeSortValue(newestInPage),
           { direction: 'backward', sort: sortDefinition, filterKey },
@@ -323,7 +323,7 @@ export class PocaEventRepository implements IPocaEventRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 
@@ -470,7 +470,7 @@ export class PocaEventRepository implements IPocaEventRepository {
       return {
         data: [],
         nextCursor: null,
-        previousCursor: null,
+        prevCursor: null,
       };
     }
 
@@ -497,7 +497,7 @@ export class PocaEventRepository implements IPocaEventRepository {
     let data = pageIds.map((id) => idToEvent.get(id)).filter((e): e is PocaEvent => e != null);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: PocaEvent): string | number | Date | undefined => {
       const val = (item as unknown as Record<string, unknown>)[sortBy];
@@ -516,7 +516,7 @@ export class PocaEventRepository implements IPocaEventRepository {
         });
       }
       if (decodedId && cursor) {
-        previousCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -534,7 +534,7 @@ export class PocaEventRepository implements IPocaEventRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getSortValue(newestInPage),
           {
@@ -549,7 +549,7 @@ export class PocaEventRepository implements IPocaEventRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

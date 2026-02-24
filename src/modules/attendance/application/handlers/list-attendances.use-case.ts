@@ -39,7 +39,7 @@ export interface ListAttendancesResult {
   totalCount?: number; // Only when filter = 'today'
   data: AttendanceListItem[];
   nextCursor: string | null;
-  previousCursor: string | null;
+  prevCursor: string | null;
 }
 
 @Injectable()
@@ -132,7 +132,7 @@ export class ListAttendancesUseCase {
         attended,
         data,
         nextCursor: result.nextCursor,
-        previousCursor: result.previousCursor ?? null,
+        prevCursor: result.prevCursor ?? null,
       };
     } else {
       // Query latest statistics for all users (ranking)
@@ -161,7 +161,7 @@ export class ListAttendancesUseCase {
       return {
         data,
         nextCursor: null, // Ranking doesn't need pagination (fixed top 30)
-        previousCursor: null,
+        prevCursor: null,
         attended: null,
       };
     }

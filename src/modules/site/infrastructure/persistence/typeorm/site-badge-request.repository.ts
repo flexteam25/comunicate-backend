@@ -194,7 +194,7 @@ export class SiteBadgeRequestRepository implements ISiteBadgeRequestRepository {
     let data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: SiteBadgeRequest): string | number | Date | undefined => {
       const val = (item as unknown as Record<string, unknown>)[sortBy];
@@ -214,7 +214,7 @@ export class SiteBadgeRequestRepository implements ISiteBadgeRequestRepository {
       }
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -231,7 +231,7 @@ export class SiteBadgeRequestRepository implements ISiteBadgeRequestRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
+        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -242,7 +242,7 @@ export class SiteBadgeRequestRepository implements ISiteBadgeRequestRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

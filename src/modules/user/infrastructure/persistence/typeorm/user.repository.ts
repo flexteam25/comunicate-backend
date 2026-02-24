@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { User } from '../../../domain/entities/user.entity';
 import { IUserRepository, UserFilters } from '../repositories/user.repository';
 import {
@@ -18,6 +18,14 @@ export class UserRepository implements IUserRepository {
   async findByEmail(email: string, relations?: string[]): Promise<User | null> {
     return this.repository.findOne({
       where: { email, deletedAt: null },
+      ...(relations && relations.length > 0 ? { relations } : {}),
+    });
+  }
+
+  async findByIds(ids: string[], relations?: string[]): Promise<User[]> {
+    if (ids.length === 0) return [];
+    return this.repository.find({
+      where: { id: In(ids), deletedAt: null },
       ...(relations && relations.length > 0 ? { relations } : {}),
     });
   }
@@ -275,7 +283,7 @@ export class UserRepository implements IUserRepository {
         await this.repository.manager.query(modifiedSql, parameters);
 
       if (rawResults.length === 0) {
-        return { data: [], nextCursor: null, previousCursor: null };
+        return { data: [], nextCursor: null, prevCursor: null };
       }
 
       const userIds: string[] = [];
@@ -293,7 +301,7 @@ export class UserRepository implements IUserRepository {
       }
 
       if (userIds.length === 0) {
-        return { data: [], nextCursor: null, previousCursor: null };
+        return { data: [], nextCursor: null, prevCursor: null };
       }
 
       const entities = await this.repository
@@ -315,7 +323,7 @@ export class UserRepository implements IUserRepository {
       const data = sortedEntities.slice(0, realLimit);
 
       let nextCursor: string | null = null;
-      let previousCursor: string | null = null;
+      let prevCursor: string | null = null;
       const getPointsSortValue = (item: User) => pointsMap.get(item.id) ?? 0;
 
       if (!decodedId || direction === 'forward') {
@@ -329,7 +337,7 @@ export class UserRepository implements IUserRepository {
         }
         if (decodedId && cursor && data.length > 0) {
           const firstItem = data[0];
-          previousCursor = CursorPaginationUtil.encodeCursor(
+          prevCursor = CursorPaginationUtil.encodeCursor(
             firstItem.id,
             getPointsSortValue(firstItem),
             { ...metaBackward },
@@ -346,7 +354,7 @@ export class UserRepository implements IUserRepository {
         }
         if (hasMore && data.length > 0) {
           const newestInPage = data[0];
-          previousCursor = CursorPaginationUtil.encodeCursor(
+          prevCursor = CursorPaginationUtil.encodeCursor(
             newestInPage.id,
             getPointsSortValue(newestInPage),
             { ...metaBackward },
@@ -354,7 +362,7 @@ export class UserRepository implements IUserRepository {
         }
       }
 
-      return { data, nextCursor, previousCursor: previousCursor ?? null };
+      return { data, nextCursor, prevCursor: prevCursor ?? null };
     }
 
     const entities = await queryBuilder.getMany();
@@ -362,7 +370,7 @@ export class UserRepository implements IUserRepository {
     const data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: User): string | number | Date | undefined => {
       if (sortBy === 'points') return item.userProfile?.points ?? 0;
@@ -382,7 +390,7 @@ export class UserRepository implements IUserRepository {
       }
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           firstItem.id,
           getSortValue(firstItem),
           { ...metaBackward },
@@ -399,7 +407,7 @@ export class UserRepository implements IUserRepository {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getSortValue(newestInPage),
           { ...metaBackward },
@@ -407,6 +415,6 @@ export class UserRepository implements IUserRepository {
       }
     }
 
-    return { data, nextCursor, previousCursor: previousCursor ?? null };
+    return { data, nextCursor, prevCursor: prevCursor ?? null };
   }
 }

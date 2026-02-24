@@ -145,11 +145,11 @@ export class AdminBadgeController {
       cursor,
       limit: limit != null ? parseInt(String(limit), 10) || 20 : 20,
     });
-    const paginated = result as { badges: Badge[]; nextCursor: string | null; previousCursor: string | null };
+    const paginated = result as { badges: Badge[]; nextCursor: string | null; prevCursor: string | null };
     return ApiResponseUtil.success({
       badges: paginated.badges.map((badge) => this.mapBadgeToResponse(badge)),
       nextCursor: paginated.nextCursor,
-      prevCursor: paginated.previousCursor ?? null,
+      prevCursor: paginated.prevCursor ?? null,
     });
   }
 
@@ -176,11 +176,11 @@ export class AdminBadgeController {
       cursor,
       limit: limit != null ? parseInt(String(limit), 10) || 20 : 20,
     });
-    const paginated = result as { badges: Badge[]; nextCursor: string | null; previousCursor: string | null };
+    const paginated = result as { badges: Badge[]; nextCursor: string | null; prevCursor: string | null };
     return ApiResponseUtil.success({
       badges: paginated.badges.map((badge) => this.mapBadgeToResponse(badge)),
       nextCursor: paginated.nextCursor,
-      prevCursor: paginated.previousCursor ?? null,
+      prevCursor: paginated.prevCursor ?? null,
     });
   }
 

@@ -126,6 +126,30 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.del(`partner:api:${partnerId}`);
   }
 
+  /** Minigame playing state: key = minigame:session:{userId}, value = gameType, TTL 2 min by default. */
+  async setMinigamePlaying(
+    userId: string,
+    gameType: string,
+    ttlSeconds: number = 120,
+  ): Promise<void> {
+    await this.client.set(`minigame:session:${userId}`, gameType, { EX: ttlSeconds });
+  }
+
+  /** Returns list of { userId, gameType } for all users currently in minigame (cache). */
+  async getMinigamePlayingList(): Promise<{ userId: string; gameType: string }[]> {
+    const keys = await this.client.keys('minigame:session:*');
+    if (keys.length === 0) return [];
+    const prefix = 'minigame:session:';
+    const values = await this.client.mGet(keys);
+    return keys
+      .map((key, i) => {
+        const userId = key.startsWith(prefix) ? key.slice(prefix.length) : key;
+        const gameType = values[i];
+        return gameType != null && gameType !== '' ? { userId, gameType } : null;
+      })
+      .filter((x): x is { userId: string; gameType: string } => x != null);
+  }
+
   // Rate Limiting
   async checkRateLimit(key: string, limit: number, window: number): Promise<boolean> {
     const current = await this.client.incr(`rate_limit:${key}`);

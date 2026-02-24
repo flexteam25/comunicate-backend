@@ -188,7 +188,7 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
     const hasMore = rows.length > realLimit;
     let data: UserBadgeRequest[];
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     if (!decodedId || direction === 'forward') {
       data = rows.slice(0, realLimit);
@@ -214,7 +214,7 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
           fieldValue !== null && fieldValue !== undefined
             ? (fieldValue as string | number | Date)
             : undefined;
-        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, sortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, sortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -244,7 +244,7 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
           fieldValue !== null && fieldValue !== undefined
             ? (fieldValue as string | number | Date)
             : undefined;
-        previousCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, sortValue, {
+        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, sortValue, {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -255,7 +255,7 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
     return {
       data,
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 

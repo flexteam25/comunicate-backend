@@ -79,7 +79,7 @@ export class GifticonController {
     return ApiResponseUtil.success({
       data: result.data.map((gifticon) => this.mapGifticonToResponse(gifticon)),
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 
@@ -119,7 +119,7 @@ export class GifticonController {
         updatedAt: redemption.updatedAt,
       })),
       nextCursor: result.nextCursor,
-      previousCursor: result.previousCursor ?? null,
+      prevCursor: result.prevCursor ?? null,
     });
   }
 

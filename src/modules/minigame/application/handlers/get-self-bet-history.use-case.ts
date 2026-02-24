@@ -7,6 +7,9 @@ import { BetHistoryItemDto } from '../../../minigame/interface/rest/dto/bet-hist
 
 export interface GetSelfBetHistoryCommand {
   userId: string;
+  gameType?: string;
+  startDate?: Date;
+  endDate?: Date;
   cursor?: string;
   limit?: number;
 }
@@ -14,7 +17,7 @@ export interface GetSelfBetHistoryCommand {
 export interface GetSelfBetHistoryResult {
   items: BetHistoryItemDto[];
   nextCursor: string | null;
-  previousCursor: string | null;
+  prevCursor: string | null;
 }
 
 const SORT_BY = 'createdAt';
@@ -40,9 +43,14 @@ export class GetSelfBetHistoryUseCase {
   ) {}
 
   async execute(command: GetSelfBetHistoryCommand): Promise<GetSelfBetHistoryResult> {
-    const { userId, cursor, limit = 20 } = command;
+    const { userId, gameType, startDate, endDate, cursor, limit = 20 } = command;
     const realLimit = Math.min(Math.max(1, limit), 50);
-    const filterKey = userId;
+    const filterKey = JSON.stringify({
+      userId,
+      gameType: gameType ?? null,
+      startDate: startDate ? startDate.toISOString() : null,
+      endDate: endDate ? endDate.toISOString() : null,
+    });
     const sortDefinition = `${SORT_BY}:${SORT_ORDER},id:${SORT_ORDER}`;
 
     let decodedId: string | undefined;
@@ -88,6 +96,18 @@ export class GetSelfBetHistoryUseCase {
         'bh.createdAt',
       ]);
 
+    if (gameType && gameType.trim() !== '') {
+      qb.andWhere('bh.gameType ILIKE :gameType', {
+        gameType: `%${gameType.trim()}%`,
+      });
+    }
+    if (startDate) {
+      qb.andWhere('bh.createdAt >= :startDate', { startDate });
+    }
+    if (endDate) {
+      qb.andWhere('bh.createdAt <= :endDate', { endDate });
+    }
+
     if (!decodedId || direction === 'forward') {
       qb.orderBy(`bh.${SORT_BY}`, SORT_ORDER).addOrderBy('bh.id', SORT_ORDER);
     }
@@ -129,7 +149,7 @@ export class GetSelfBetHistoryUseCase {
     const data = entities.slice(0, realLimit);
 
     let nextCursor: string | null = null;
-    let previousCursor: string | null = null;
+    let prevCursor: string | null = null;
 
     const getSortValue = (item: BetHistory): Date => item.createdAt;
 
@@ -145,7 +165,7 @@ export class GetSelfBetHistoryUseCase {
       // prevCursor = first item of current page so "back" returns the full previous page
       if (decodedId && cursor && data.length > 0) {
         const firstItem = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
+        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
           direction: 'backward',
           sort: sortDefinition,
           filterKey,
@@ -163,7 +183,7 @@ export class GetSelfBetHistoryUseCase {
       }
       if (hasMore && data.length > 0) {
         const newestInPage = data[0];
-        previousCursor = CursorPaginationUtil.encodeCursor(
+        prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           getSortValue(newestInPage),
           { direction: 'backward', sort: sortDefinition, filterKey },
@@ -174,7 +194,7 @@ export class GetSelfBetHistoryUseCase {
     return {
       items: data.map(toItemDto),
       nextCursor,
-      previousCursor: previousCursor ?? null,
+      prevCursor: prevCursor ?? null,
     };
   }
 }
