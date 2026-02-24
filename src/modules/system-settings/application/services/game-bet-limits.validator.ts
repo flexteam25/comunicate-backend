@@ -23,6 +23,7 @@ export interface GameBetLimitEntry {
   minBet: number;
   maxBet: number;
   maxPayoutAmount: number;
+  maintenance: 0 | 1;
 }
 
 export type GameBetLimitsValue = Record<string, GameBetLimitEntry>;
@@ -43,7 +44,11 @@ export function validateAndMergeGameBetLimits(
   currentValue: GameBetLimitsValue,
   incomingValue: Record<string, unknown>,
 ): GameBetLimitsValue {
-  if (!incomingValue || typeof incomingValue !== 'object' || Array.isArray(incomingValue)) {
+  if (
+    !incomingValue ||
+    typeof incomingValue !== 'object' ||
+    Array.isArray(incomingValue)
+  ) {
     throw badRequest(MessageKeys.VALIDATION_FAILED);
   }
 
@@ -62,6 +67,7 @@ export function validateAndMergeGameBetLimits(
     const minBet = (raw as Record<string, unknown>).minBet;
     const maxBet = (raw as Record<string, unknown>).maxBet;
     const maxPayoutAmount = (raw as Record<string, unknown>).maxPayoutAmount;
+    const maintenance = (raw as Record<string, unknown>).maintenance;
 
     if (!isNumber(minBet)) {
       throw badRequest(MessageKeys.VALIDATION_FAILED, { gameType });
@@ -70,6 +76,9 @@ export function validateAndMergeGameBetLimits(
       throw badRequest(MessageKeys.VALIDATION_FAILED, { gameType });
     }
     if (!isNumber(maxPayoutAmount)) {
+      throw badRequest(MessageKeys.VALIDATION_FAILED, { gameType });
+    }
+    if (maintenance !== 0 && maintenance !== 1) {
       throw badRequest(MessageKeys.VALIDATION_FAILED, { gameType });
     }
 
@@ -83,10 +92,20 @@ export function validateAndMergeGameBetLimits(
       throw badRequest(MessageKeys.GAME_BET_LIMITS_MAX_PAYOUT_OUT_OF_RANGE, { gameType });
     }
     if (minBet > maxBet) {
-      throw badRequest(MessageKeys.GAME_BET_LIMITS_MIN_BET_MUST_BE_LTE_MAX_BET, { gameType });
+      throw badRequest(MessageKeys.GAME_BET_LIMITS_MIN_BET_MUST_BE_LTE_MAX_BET, {
+        gameType,
+      });
     }
 
-    merged[gameType] = { minBet, maxBet, maxPayoutAmount };
+    merged[gameType] = { minBet, maxBet, maxPayoutAmount, maintenance };
+  }
+
+  // Ensure every entry has maintenance (default 0) for consistent stored shape
+  for (const k of Object.keys(merged)) {
+    const e = merged[k];
+    if (e && e.maintenance !== 0 && e.maintenance !== 1) {
+      merged[k] = { ...e, maintenance: 0 };
+    }
   }
 
   return merged;

@@ -77,9 +77,15 @@ export class HandleGameCallbackUseCase {
     const profile = user.userProfile;
     const balanceBefore = Number(profile.points ?? 0);
     const amountNum = Number(amount);
+    const limits = await this.getGameBetLimitsService.get();
+    const isGameInMaintenance = (gt: string | undefined) =>
+      gt != null && limits[gt]?.maintenance === 1;
 
     switch (type) {
       case 'bet': {
+        if (isGameInMaintenance(gameType)) {
+          return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
         // type=bet with negative amount: treat as cancel_bet (refund)
         if (amountNum < 0) {
           const refundAmount = Math.abs(amountNum);
@@ -117,8 +123,7 @@ export class HandleGameCallbackUseCase {
           return { status: 'OK', newBalance: balanceAfter };
         }
 
-        // Enforce game bet limits: read from cache, fallback database
-        const limits = await this.getGameBetLimitsService.get();
+        // Enforce game bet limits
         const key = gameType && limits[gameType] ? gameType : undefined;
         if (!key) {
           return {
@@ -171,6 +176,9 @@ export class HandleGameCallbackUseCase {
         return { status: 'OK', newBalance: balanceAfter };
       }
       case 'cancel_bet': {
+        if (isGameInMaintenance(gameType)) {
+          return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
         const balanceAfter = balanceBefore + amountNum;
         profile.points = balanceAfter;
         await this.userProfileRepo.save(profile);
@@ -199,8 +207,10 @@ export class HandleGameCallbackUseCase {
         return { status: 'OK', newBalance: balanceAfter };
       }
       case 'win': {
+        if (isGameInMaintenance(gameType)) {
+          return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
         const gameTypeVal = gameType || 'game';
-        const limits = await this.getGameBetLimitsService.get();
         const limit = limits[gameTypeVal];
         const maxPayoutAmount = limit
           ? Number(limit.maxPayoutAmount)
@@ -281,6 +291,9 @@ export class HandleGameCallbackUseCase {
         return { status: 'OK', newBalance: balanceAfter, actualAmount };
       }
       case 'lose': {
+        if (isGameInMaintenance(gameType)) {
+          return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
         const gameTypeVal = gameType || 'game';
         const createdAt = new Date().toISOString();
         const jobData: GamePointLogJobData = {
@@ -313,6 +326,9 @@ export class HandleGameCallbackUseCase {
         return { status: 'OK', newBalance: balanceBefore };
       }
       case 'draw': {
+        if (isGameInMaintenance(gameType)) {
+          return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
         const gameTypeVal = gameType || 'game';
         const balanceAfter = balanceBefore + amountNum;
         profile.points = balanceAfter;
@@ -348,6 +364,9 @@ export class HandleGameCallbackUseCase {
         return { status: 'OK', newBalance: balanceAfter };
       }
       case 'refund': {
+        if (isGameInMaintenance(gameType)) {
+          return { status: 'REJECT', message: 'Game is under maintenance' };
+        }
         const balanceAfter = balanceBefore + amountNum;
         profile.points = balanceAfter;
         await this.userProfileRepo.save(profile);

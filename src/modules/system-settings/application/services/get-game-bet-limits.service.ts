@@ -43,8 +43,9 @@ export class GetGameBetLimitsService {
         const minBet = Number(o.minBet);
         const maxBet = Number(o.maxBet);
         const maxPayoutAmount = Number(o.maxPayoutAmount);
+        const maintenance = o.maintenance === 1 ? 1 : 0;
         if (!Number.isNaN(minBet) && !Number.isNaN(maxBet) && !Number.isNaN(maxPayoutAmount)) {
-          result[key] = { minBet, maxBet, maxPayoutAmount };
+          result[key] = { minBet, maxBet, maxPayoutAmount, maintenance };
         }
       }
     }

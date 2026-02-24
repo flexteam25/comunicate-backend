@@ -34,7 +34,13 @@ export class MinigameController {
 
   @Get('bet-limits')
   @UseGuards(GameCallbackGuard)
-  async getBetLimits(): Promise<{ limits: Record<string, { minBet: number; maxBet: number; maxPayoutAmount: number }>; status: boolean }> {
+  async getBetLimits(): Promise<{
+    limits: Record<
+      string,
+      { minBet: number; maxBet: number; maxPayoutAmount: number; maintenance: 0 | 1 }
+    >;
+    status: boolean;
+  }> {
     const limits = await this.getGameBetLimitsService.get();
     return { limits, status: true };
   }
@@ -82,7 +88,12 @@ export class MinigameController {
       if ('actualAmount' in result && result.actualAmount != null) {
         out.actualAmount = formatPoints(result.actualAmount);
       }
-      return out as { status: string; message?: string; newBalance?: number; actualAmount?: number };
+      return out as {
+        status: string;
+        message?: string;
+        newBalance?: number;
+        actualAmount?: number;
+      };
     }
     return result;
   }
