@@ -15,6 +15,10 @@ export interface ListPartnerUsersCommand {
   limit?: number;
 }
 
+const SORT_BY = 'createdAt';
+const SORT_ORDER = 'DESC' as const;
+const FILTER_KEY = 'partner-users';
+
 @Injectable()
 export class ListPartnerUsersUseCase {
   constructor(
@@ -32,6 +36,42 @@ export class ListPartnerUsersUseCase {
     }
   > {
     const realLimit = command.limit && command.limit > 100 ? 100 : command.limit || 20;
+    const hasCursor =
+      command.cursor != null &&
+      command.cursor !== '' &&
+      command.cursor !== 'null' &&
+      command.cursor !== 'undefined';
+    const filterKey = FILTER_KEY;
+    const sortDefinition = `${SORT_BY}:${SORT_ORDER},id:${SORT_ORDER}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (hasCursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(command.cursor);
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     // Find partner role
     const partnerRole = await this.roleRepository.findOne({
@@ -39,7 +79,7 @@ export class ListPartnerUsersUseCase {
     });
 
     if (!partnerRole) {
-      return { data: [], nextCursor: null, sitesByUserId: {} };
+      return { data: [], nextCursor: null, prevCursor: null, sitesByUserId: {} };
     }
 
     const queryBuilder = this.userRepository
@@ -52,31 +92,59 @@ export class ListPartnerUsersUseCase {
       .leftJoinAndSelect('user.userRoles', 'userRoles')
       .leftJoinAndSelect('userRoles.role', 'role');
 
-    if (command.cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(command.cursor);
-        const sortField = 'user.createdAt';
-        if (sortValue !== null && sortValue !== undefined) {
+    if (decodedId) {
+      let parsedSortValue: Date | undefined;
+      if (decodedSortValue != null) {
+        parsedSortValue = new Date(decodedSortValue);
+      }
+
+      if (direction === 'forward') {
+        queryBuilder
+          .orderBy(`user.${SORT_BY}`, SORT_ORDER, 'NULLS LAST')
+          .addOrderBy('user.id', SORT_ORDER);
+        queryBuilder.andWhere('user.id != :cursorId', { cursorId: decodedId });
+        if (parsedSortValue !== undefined) {
           queryBuilder.andWhere(
-            `(${sortField} < :sortValue OR (${sortField} = :sortValue AND user.id < :cursorId))`,
-            { sortValue, cursorId: id },
+            `(user.${SORT_BY} < :sortValue OR (user.${SORT_BY} = :sortValue AND user.id < :cursorId))`,
+            { sortValue: parsedSortValue, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere('user.id < :cursorId', { cursorId: id });
+          queryBuilder.andWhere('user.id < :cursorId', { cursorId: decodedId });
         }
-      } catch {
-        // Invalid cursor, ignore
+      } else {
+        // Always exclude the cursor row itself to avoid boundary glitches
+        // (e.g., timestamp precision differences making the cursor row re-appear).
+        queryBuilder.andWhere('user.id != :cursorId', { cursorId: decodedId });
+        if (parsedSortValue !== undefined) {
+          queryBuilder.andWhere(
+            `(user.${SORT_BY} > :sortValue OR (user.${SORT_BY} = :sortValue AND user.id > :cursorId))`,
+            { sortValue: parsedSortValue, cursorId: decodedId },
+          );
+        } else {
+          queryBuilder.andWhere('user.id > :cursorId', { cursorId: decodedId });
+        }
+        // For backward paging (previous page / newer records), query ASC and reverse the page
+        // so that API output stays consistently sorted DESC.
+        queryBuilder
+          .orderBy(`user.${SORT_BY}`, 'ASC', 'NULLS LAST')
+          .addOrderBy('user.id', 'ASC');
       }
     }
 
-    queryBuilder
-      .orderBy('user.createdAt', 'DESC', 'NULLS LAST')
-      .addOrderBy('user.id', 'DESC')
-      .take(realLimit + 1);
+    if (!decodedId) {
+      queryBuilder
+        .orderBy(`user.${SORT_BY}`, SORT_ORDER, 'NULLS LAST')
+        .addOrderBy('user.id', SORT_ORDER);
+    }
+
+    queryBuilder.take(realLimit + 1);
 
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
-    const data = entities.slice(0, realLimit);
+    let data = entities.slice(0, realLimit);
+    if (decodedId && direction === 'backward') {
+      data = data.reverse();
+    }
 
     // Load managed sites for the returned partner users (batch, no N+1)
     const sitesByUserId: Record<string, Site[]> = {};
@@ -100,18 +168,54 @@ export class ListPartnerUsersUseCase {
     }
 
     let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const fieldValue = lastItem.createdAt;
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        // Use ISO string to ensure PostgreSQL can parse the timestamp correctly
-        sortValue =
-          fieldValue instanceof Date ? fieldValue.toISOString() : String(fieldValue);
+    let prevCursor: string | null = null;
+
+    const getSortValue = (item: User): Date => item.createdAt;
+
+    if (!decodedId || direction === 'forward') {
+      if (hasMore && data.length > 0) {
+        const lastItem = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          lastItem.id,
+          getSortValue(lastItem),
+          {
+            direction: 'forward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
       }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
+      if (decodedId && hasCursor && data.length > 0) {
+        const firstItem = data[0];
+        prevCursor = CursorPaginationUtil.encodeCursor(
+          firstItem.id,
+          getSortValue(firstItem),
+          {
+            direction: 'backward',
+            sort: sortDefinition,
+            filterKey,
+          },
+        );
+      }
+    } else {
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          oldestInPage.id,
+          getSortValue(oldestInPage),
+          { direction: 'forward', sort: sortDefinition, filterKey },
+        );
+      }
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
+        prevCursor = CursorPaginationUtil.encodeCursor(
+          newestInPage.id,
+          getSortValue(newestInPage),
+          { direction: 'backward', sort: sortDefinition, filterKey },
+        );
+      }
     }
 
-    return { data, nextCursor, prevCursor: null, sitesByUserId };
+    return { data, nextCursor, prevCursor, sitesByUserId };
   }
 }
