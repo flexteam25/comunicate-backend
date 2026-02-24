@@ -45,7 +45,6 @@ export class AdminBetHistoryController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission('bet-history.read')
   async list(
-    @Query('userId') userId?: string,
     @Query('gameType') gameType?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -60,7 +59,6 @@ export class AdminBetHistoryController {
     }>
   > {
     const result = await this.listAdminBetHistoriesUseCase.execute({
-      userId,
       gameType,
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
