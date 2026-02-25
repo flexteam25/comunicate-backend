@@ -10,6 +10,10 @@ import {
   CursorPaginationResult,
   CursorPaginationUtil,
 } from '../../../../../shared/utils/cursor-pagination.util';
+import {
+  buildPageCursors,
+  decodeCursorWithFilterKey,
+} from '../../../../../shared/utils/cursor-pagination-helpers';
 import { isUuid } from '../../../../../shared/utils/uuid.util';
 import {
   notFound,
@@ -217,35 +221,12 @@ export class ScamReportRepository implements IScamReportRepository {
       queryBuilder.andWhere('report.status = :status', { status });
     }
 
-    let decodedId: string | undefined;
-    let decodedSortCreatedAt: Date | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortCreatedAt = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue) {
-            decodedSortCreatedAt = new Date(sortValue);
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { decodedId, decodedSortValue, direction } = decodeCursorWithFilterKey({
+      cursor,
+      filterKey,
+    });
+    const decodedSortCreatedAt =
+      decodedSortValue !== undefined ? new Date(decodedSortValue) : undefined;
 
     const sortDefinition = 'createdAt:DESC,id:DESC';
 
@@ -285,6 +266,14 @@ export class ScamReportRepository implements IScamReportRepository {
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
+    if (data.length === 0) {
+      return {
+        data: [],
+        nextCursor: null,
+        prevCursor: null,
+      };
+    }
+
     // Create a map of report.id -> raw data to handle cases where joins create multiple rows per report
     const rawDataMap = new Map<string, Record<string, unknown>>();
     raw.forEach((rawRow: Record<string, unknown>) => {
@@ -314,58 +303,17 @@ export class ScamReportRepository implements IScamReportRepository {
       }
     });
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt, {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          firstItem.id,
-          firstItem.createdAt,
-          {
-            direction: 'backward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-    } else {
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          oldestInPage.createdAt,
-          {
-            direction: 'forward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          newestInPage.createdAt,
-          {
-            direction: 'backward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-    }
+    const { nextCursor, prevCursor } = buildPageCursors({
+      data,
+      hasMore,
+      decodedId,
+      direction,
+      cursor,
+      getId: (report) => report.id,
+      getSortValue: (report) => report.createdAt,
+      sortDefinition,
+      filterKey,
+    });
 
     return {
       data,
@@ -428,35 +376,12 @@ export class ScamReportRepository implements IScamReportRepository {
       queryBuilder.andWhere('report.status = :status', { status });
     }
 
-    let decodedId: string | undefined;
-    let decodedSortCreatedAt: Date | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortCreatedAt = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue) {
-            decodedSortCreatedAt = new Date(sortValue);
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { decodedId, decodedSortValue, direction } = decodeCursorWithFilterKey({
+      cursor,
+      filterKey,
+    });
+    const decodedSortCreatedAt =
+      decodedSortValue !== undefined ? new Date(decodedSortValue) : undefined;
 
     const sortDefinition = 'createdAt:DESC,id:DESC';
 
@@ -496,6 +421,14 @@ export class ScamReportRepository implements IScamReportRepository {
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
+    if (data.length === 0) {
+      return {
+        data: [],
+        nextCursor: null,
+        prevCursor: null,
+      };
+    }
+
     // Create a map of report.id -> raw data to handle cases where joins create multiple rows per report
     const rawDataMap = new Map<string, Record<string, unknown>>();
     raw.forEach((rawRow: Record<string, unknown>) => {
@@ -525,58 +458,17 @@ export class ScamReportRepository implements IScamReportRepository {
       }
     });
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt, {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          firstItem.id,
-          firstItem.createdAt,
-          {
-            direction: 'backward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-    } else {
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          oldestInPage.createdAt,
-          {
-            direction: 'forward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          newestInPage.createdAt,
-          {
-            direction: 'backward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-    }
+    const { nextCursor, prevCursor } = buildPageCursors({
+      data,
+      hasMore,
+      decodedId,
+      direction,
+      cursor,
+      getId: (report) => report.id,
+      getSortValue: (report) => report.createdAt,
+      sortDefinition,
+      filterKey,
+    });
 
     return {
       data,
@@ -593,11 +485,47 @@ export class ScamReportRepository implements IScamReportRepository {
     limit = 20,
   ): Promise<CursorPaginationResult<ScamReport>> {
     const realLimit = limit > 50 ? 50 : limit;
+    const sortBy = 'createdAt';
+    const sortOrder = 'DESC';
+
     const filterKey = JSON.stringify({
       status: status ?? null,
       siteId: siteId ?? null,
       siteName: siteName ?? null,
+      sortBy,
+      sortOrder,
     });
+    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+
+    let decodedId: string | undefined;
+    let decodedSortValue: string | undefined;
+    let direction: 'forward' | 'backward' = 'forward';
+
+    if (cursor) {
+      try {
+        const {
+          id,
+          sortValue,
+          direction: decodedDirection,
+          filterKey: cursorFilterKey,
+        } = CursorPaginationUtil.decodeCursor(cursor);
+
+        if (cursorFilterKey && cursorFilterKey !== filterKey) {
+          decodedId = undefined;
+          decodedSortValue = undefined;
+        } else {
+          decodedId = id;
+          if (sortValue !== null && sortValue !== undefined) {
+            decodedSortValue = sortValue;
+          }
+          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
+            direction = decodedDirection;
+          }
+        }
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
 
     const queryBuilder = this.repository
       .createQueryBuilder('report')
@@ -665,65 +593,41 @@ export class ScamReportRepository implements IScamReportRepository {
       );
     }
 
-    let decodedId: string | undefined;
-    let decodedSortCreatedAt: Date | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortCreatedAt = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue) {
-            decodedSortCreatedAt = new Date(sortValue);
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
-
-    const sortDefinition = 'createdAt:DESC,id:DESC';
+    const sortField = `report.${sortBy}`;
 
     if (!decodedId || direction === 'forward') {
-      queryBuilder.orderBy('report.createdAt', 'DESC').addOrderBy('report.id', 'DESC');
+      queryBuilder.orderBy(sortField, 'DESC').addOrderBy('report.id', 'DESC');
     }
 
     if (decodedId) {
-      queryBuilder.andWhere('report.id != :cursorId', { cursorId: decodedId });
-      if (decodedSortCreatedAt) {
-        if (direction === 'forward') {
+      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
+      if (decodedSortValue != null && sortBy === 'createdAt') {
+        parsedSortValue = new Date(decodedSortValue);
+      } else if (decodedSortValue != null) {
+        parsedSortValue = decodedSortValue;
+      }
+
+      if (direction === 'forward') {
+        queryBuilder.andWhere('report.id != :cursorId', { cursorId: decodedId });
+        if (parsedSortValue !== undefined) {
           queryBuilder.andWhere(
-            '(report.createdAt < :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id < :cursorId))',
-            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
+            `(${sortField} < :sortValue OR (${sortField} = :sortValue AND report.id < :cursorId))`,
+            { sortValue: parsedSortValue, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere(
-            '(report.createdAt > :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id > :cursorId))',
-            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
-          );
+          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
         }
       } else {
-        if (direction === 'forward') {
-          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
+        if (parsedSortValue !== undefined) {
+          queryBuilder.andWhere(
+            `(${sortField} > :sortValue OR (${sortField} = :sortValue AND report.id > :cursorId))`,
+            { sortValue: parsedSortValue, cursorId: decodedId },
+          );
         } else {
           queryBuilder.andWhere('report.id > :cursorId', { cursorId: decodedId });
         }
-      }
-      if (direction === 'backward') {
-        queryBuilder.orderBy('report.createdAt', 'DESC').addOrderBy('report.id', 'DESC');
+
+        queryBuilder.orderBy(sortField, 'ASC').addOrderBy('report.id', 'ASC');
       }
     }
 
@@ -731,7 +635,15 @@ export class ScamReportRepository implements IScamReportRepository {
 
     const { entities, raw } = await queryBuilder.getRawAndEntities();
     const hasMore = entities.length > realLimit;
-    const data = entities.slice(0, realLimit);
+    let data = entities.slice(0, realLimit);
+
+    if (data.length === 0) {
+      return {
+        data: [],
+        nextCursor: null,
+        prevCursor: null,
+      };
+    }
 
     // Create a map of report.id -> raw data to handle cases where joins create multiple rows per report
     const rawDataMap = new Map<string, Record<string, unknown>>();
@@ -765,34 +677,44 @@ export class ScamReportRepository implements IScamReportRepository {
     let nextCursor: string | null = null;
     let prevCursor: string | null = null;
 
+    const getSortValue = (report: ScamReport): string | number | Date | undefined => {
+      const value = (report as unknown as Record<string, unknown>)[sortBy];
+      if (value instanceof Date) return value;
+      if (value !== null && value !== undefined) {
+        return value as string | number;
+      }
+      return undefined;
+    };
+
     if (!decodedId || direction === 'forward') {
       if (hasMore && data.length > 0) {
         const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt, {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          firstItem.id,
-          firstItem.createdAt,
+        nextCursor = CursorPaginationUtil.encodeCursor(
+          lastItem.id,
+          getSortValue(lastItem),
           {
-            direction: 'backward',
+            direction: 'forward',
             sort: sortDefinition,
             filterKey,
           },
         );
       }
+
+      if (decodedId && cursor) {
+        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
+          direction: 'backward',
+          sort: sortDefinition,
+          filterKey,
+        });
+      }
     } else {
+      data = data.slice().reverse();
+
       if (data.length > 0) {
         const oldestInPage = data[data.length - 1];
         nextCursor = CursorPaginationUtil.encodeCursor(
           oldestInPage.id,
-          oldestInPage.createdAt,
+          getSortValue(oldestInPage),
           {
             direction: 'forward',
             sort: sortDefinition,
@@ -805,7 +727,7 @@ export class ScamReportRepository implements IScamReportRepository {
         const newestInPage = data[0];
         prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
-          newestInPage.createdAt,
+          getSortValue(newestInPage),
           {
             direction: 'backward',
             sort: sortDefinition,
