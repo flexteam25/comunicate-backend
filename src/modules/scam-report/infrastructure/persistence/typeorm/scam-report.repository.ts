@@ -250,34 +250,32 @@ export class ScamReportRepository implements IScamReportRepository {
     const sortDefinition = 'createdAt:DESC,id:DESC';
 
     if (!decodedId || direction === 'forward') {
-      queryBuilder
-        .orderBy('report.createdAt', 'DESC')
-        .addOrderBy('report.id', 'DESC');
+      queryBuilder.orderBy('report.createdAt', 'DESC').addOrderBy('report.id', 'DESC');
     }
 
     if (decodedId) {
-      if (direction === 'forward') {
-        if (decodedSortCreatedAt) {
+      queryBuilder.andWhere('report.id != :cursorId', { cursorId: decodedId });
+      if (decodedSortCreatedAt) {
+        if (direction === 'forward') {
           queryBuilder.andWhere(
             '(report.createdAt < :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id < :cursorId))',
             { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
-        }
-      } else {
-        if (decodedSortCreatedAt) {
           queryBuilder.andWhere(
             '(report.createdAt > :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id > :cursorId))',
             { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
           );
+        }
+      } else {
+        if (direction === 'forward') {
+          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
         } else {
           queryBuilder.andWhere('report.id > :cursorId', { cursorId: decodedId });
         }
-
-        queryBuilder
-          .orderBy('report.createdAt', 'ASC')
-          .addOrderBy('report.id', 'ASC');
+      }
+      if (direction === 'backward') {
+        queryBuilder.orderBy('report.createdAt', 'DESC').addOrderBy('report.id', 'DESC');
       }
     }
 
@@ -329,10 +327,11 @@ export class ScamReportRepository implements IScamReportRepository {
         });
       }
 
-      if (decodedId && decodedSortCreatedAt && cursor) {
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
         prevCursor = CursorPaginationUtil.encodeCursor(
-          decodedId,
-          decodedSortCreatedAt,
+          firstItem.id,
+          firstItem.createdAt,
           {
             direction: 'backward',
             sort: sortDefinition,
@@ -341,21 +340,8 @@ export class ScamReportRepository implements IScamReportRepository {
         );
       }
     } else {
-      const pageItemsAsc = data;
-      const sortedDesc = pageItemsAsc.sort((a, b) => {
-        const aTime =
-          a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
-        const bTime =
-          b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-        if (aTime !== bTime) {
-          return bTime - aTime;
-        }
-        return b.id.localeCompare(a.id);
-      });
-      const finalData = sortedDesc;
-
-      if (finalData.length > 0) {
-        const oldestInPage = finalData[finalData.length - 1];
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
         nextCursor = CursorPaginationUtil.encodeCursor(
           oldestInPage.id,
           oldestInPage.createdAt,
@@ -367,8 +353,8 @@ export class ScamReportRepository implements IScamReportRepository {
         );
       }
 
-      if (hasMore && finalData.length > 0) {
-        const newestInPage = finalData[0];
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
         prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
@@ -379,12 +365,6 @@ export class ScamReportRepository implements IScamReportRepository {
           },
         );
       }
-
-      return {
-        data: finalData,
-        nextCursor,
-        prevCursor: prevCursor ?? null,
-      };
     }
 
     return {
@@ -481,34 +461,32 @@ export class ScamReportRepository implements IScamReportRepository {
     const sortDefinition = 'createdAt:DESC,id:DESC';
 
     if (!decodedId || direction === 'forward') {
-      queryBuilder
-        .orderBy('report.createdAt', 'DESC')
-        .addOrderBy('report.id', 'DESC');
+      queryBuilder.orderBy('report.createdAt', 'DESC').addOrderBy('report.id', 'DESC');
     }
 
     if (decodedId) {
-      if (direction === 'forward') {
-        if (decodedSortCreatedAt) {
+      queryBuilder.andWhere('report.id != :cursorId', { cursorId: decodedId });
+      if (decodedSortCreatedAt) {
+        if (direction === 'forward') {
           queryBuilder.andWhere(
             '(report.createdAt < :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id < :cursorId))',
             { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
-        }
-      } else {
-        if (decodedSortCreatedAt) {
           queryBuilder.andWhere(
             '(report.createdAt > :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id > :cursorId))',
             { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
           );
+        }
+      } else {
+        if (direction === 'forward') {
+          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
         } else {
           queryBuilder.andWhere('report.id > :cursorId', { cursorId: decodedId });
         }
-
-        queryBuilder
-          .orderBy('report.createdAt', 'ASC')
-          .addOrderBy('report.id', 'ASC');
+      }
+      if (direction === 'backward') {
+        queryBuilder.orderBy('report.createdAt', 'DESC').addOrderBy('report.id', 'DESC');
       }
     }
 
@@ -560,10 +538,11 @@ export class ScamReportRepository implements IScamReportRepository {
         });
       }
 
-      if (decodedId && decodedSortCreatedAt && cursor) {
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
         prevCursor = CursorPaginationUtil.encodeCursor(
-          decodedId,
-          decodedSortCreatedAt,
+          firstItem.id,
+          firstItem.createdAt,
           {
             direction: 'backward',
             sort: sortDefinition,
@@ -572,21 +551,8 @@ export class ScamReportRepository implements IScamReportRepository {
         );
       }
     } else {
-      const pageItemsAsc = data;
-      const sortedDesc = pageItemsAsc.sort((a, b) => {
-        const aTime =
-          a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
-        const bTime =
-          b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-        if (aTime !== bTime) {
-          return bTime - aTime;
-        }
-        return b.id.localeCompare(a.id);
-      });
-      const finalData = sortedDesc;
-
-      if (finalData.length > 0) {
-        const oldestInPage = finalData[finalData.length - 1];
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
         nextCursor = CursorPaginationUtil.encodeCursor(
           oldestInPage.id,
           oldestInPage.createdAt,
@@ -598,8 +564,8 @@ export class ScamReportRepository implements IScamReportRepository {
         );
       }
 
-      if (hasMore && finalData.length > 0) {
-        const newestInPage = finalData[0];
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
         prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
@@ -610,12 +576,6 @@ export class ScamReportRepository implements IScamReportRepository {
           },
         );
       }
-
-      return {
-        data: finalData,
-        nextCursor,
-        prevCursor: prevCursor ?? null,
-      };
     }
 
     return {
@@ -738,34 +698,32 @@ export class ScamReportRepository implements IScamReportRepository {
     const sortDefinition = 'createdAt:DESC,id:DESC';
 
     if (!decodedId || direction === 'forward') {
-      queryBuilder
-        .orderBy('report.createdAt', 'DESC')
-        .addOrderBy('report.id', 'DESC');
+      queryBuilder.orderBy('report.createdAt', 'DESC').addOrderBy('report.id', 'DESC');
     }
 
     if (decodedId) {
-      if (direction === 'forward') {
-        if (decodedSortCreatedAt) {
+      queryBuilder.andWhere('report.id != :cursorId', { cursorId: decodedId });
+      if (decodedSortCreatedAt) {
+        if (direction === 'forward') {
           queryBuilder.andWhere(
             '(report.createdAt < :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id < :cursorId))',
             { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
           );
         } else {
-          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
-        }
-      } else {
-        if (decodedSortCreatedAt) {
           queryBuilder.andWhere(
             '(report.createdAt > :sortCreatedAt OR (report.createdAt = :sortCreatedAt AND report.id > :cursorId))',
             { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
           );
+        }
+      } else {
+        if (direction === 'forward') {
+          queryBuilder.andWhere('report.id < :cursorId', { cursorId: decodedId });
         } else {
           queryBuilder.andWhere('report.id > :cursorId', { cursorId: decodedId });
         }
-
-        queryBuilder
-          .orderBy('report.createdAt', 'ASC')
-          .addOrderBy('report.id', 'ASC');
+      }
+      if (direction === 'backward') {
+        queryBuilder.orderBy('report.createdAt', 'DESC').addOrderBy('report.id', 'DESC');
       }
     }
 
@@ -817,10 +775,11 @@ export class ScamReportRepository implements IScamReportRepository {
         });
       }
 
-      if (decodedId && decodedSortCreatedAt && cursor) {
+      if (decodedId && cursor && data.length > 0) {
+        const firstItem = data[0];
         prevCursor = CursorPaginationUtil.encodeCursor(
-          decodedId,
-          decodedSortCreatedAt,
+          firstItem.id,
+          firstItem.createdAt,
           {
             direction: 'backward',
             sort: sortDefinition,
@@ -829,21 +788,8 @@ export class ScamReportRepository implements IScamReportRepository {
         );
       }
     } else {
-      const pageItemsAsc = data;
-      const sortedDesc = pageItemsAsc.sort((a, b) => {
-        const aTime =
-          a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
-        const bTime =
-          b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
-        if (aTime !== bTime) {
-          return bTime - aTime;
-        }
-        return b.id.localeCompare(a.id);
-      });
-      const finalData = sortedDesc;
-
-      if (finalData.length > 0) {
-        const oldestInPage = finalData[finalData.length - 1];
+      if (data.length > 0) {
+        const oldestInPage = data[data.length - 1];
         nextCursor = CursorPaginationUtil.encodeCursor(
           oldestInPage.id,
           oldestInPage.createdAt,
@@ -855,8 +801,8 @@ export class ScamReportRepository implements IScamReportRepository {
         );
       }
 
-      if (hasMore && finalData.length > 0) {
-        const newestInPage = finalData[0];
+      if (hasMore && data.length > 0) {
+        const newestInPage = data[0];
         prevCursor = CursorPaginationUtil.encodeCursor(
           newestInPage.id,
           newestInPage.createdAt,
@@ -867,12 +813,6 @@ export class ScamReportRepository implements IScamReportRepository {
           },
         );
       }
-
-      return {
-        data: finalData,
-        nextCursor,
-        prevCursor: prevCursor ?? null,
-      };
     }
 
     return {
