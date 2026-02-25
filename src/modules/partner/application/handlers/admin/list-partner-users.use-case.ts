@@ -5,10 +5,11 @@ import { User } from '../../../../user/domain/entities/user.entity';
 import { Role } from '../../../../user/domain/entities/role.entity';
 import { SiteManager } from '../../../../site-manager/domain/entities/site-manager.entity';
 import { Site } from '../../../../site/domain/entities/site.entity';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import {
-  CursorPaginationResult,
-  CursorPaginationUtil,
-} from '../../../../../shared/utils/cursor-pagination.util';
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 
 export interface ListPartnerUsersCommand {
   cursor?: string;
@@ -36,42 +37,8 @@ export class ListPartnerUsersUseCase {
     }
   > {
     const realLimit = command.limit && command.limit > 100 ? 100 : command.limit || 20;
-    const hasCursor =
-      command.cursor != null &&
-      command.cursor !== '' &&
-      command.cursor !== 'null' &&
-      command.cursor !== 'undefined';
     const filterKey = FILTER_KEY;
-    const sortDefinition = `${SORT_BY}:${SORT_ORDER},id:${SORT_ORDER}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (hasCursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(command.cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue !== null && sortValue !== undefined) {
-            decodedSortValue = sortValue;
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor: command.cursor, filterKey });
 
     // Find partner role
     const partnerRole = await this.roleRepository.findOne({
@@ -90,61 +57,15 @@ export class ListPartnerUsersUseCase {
       .andWhere('userRole.createdAt IS NOT NULL')
       .leftJoinAndSelect('user.userProfile', 'userProfile')
       .leftJoinAndSelect('user.userRoles', 'userRoles')
-      .leftJoinAndSelect('userRoles.role', 'role');
-
-    if (decodedId) {
-      let parsedSortValue: Date | undefined;
-      if (decodedSortValue != null) {
-        parsedSortValue = new Date(decodedSortValue);
-      }
-
-      if (direction === 'forward') {
-        queryBuilder
-          .orderBy(`user.${SORT_BY}`, SORT_ORDER, 'NULLS LAST')
-          .addOrderBy('user.id', SORT_ORDER);
-        queryBuilder.andWhere('user.id != :cursorId', { cursorId: decodedId });
-        if (parsedSortValue !== undefined) {
-          queryBuilder.andWhere(
-            `(user.${SORT_BY} < :sortValue OR (user.${SORT_BY} = :sortValue AND user.id < :cursorId))`,
-            { sortValue: parsedSortValue, cursorId: decodedId },
-          );
-        } else {
-          queryBuilder.andWhere('user.id < :cursorId', { cursorId: decodedId });
-        }
-      } else {
-        // Always exclude the cursor row itself to avoid boundary glitches
-        // (e.g., timestamp precision differences making the cursor row re-appear).
-        queryBuilder.andWhere('user.id != :cursorId', { cursorId: decodedId });
-        if (parsedSortValue !== undefined) {
-          queryBuilder.andWhere(
-            `(user.${SORT_BY} > :sortValue OR (user.${SORT_BY} = :sortValue AND user.id > :cursorId))`,
-            { sortValue: parsedSortValue, cursorId: decodedId },
-          );
-        } else {
-          queryBuilder.andWhere('user.id > :cursorId', { cursorId: decodedId });
-        }
-        // For backward paging (previous page / newer records), query ASC and reverse the page
-        // so that API output stays consistently sorted DESC.
-        queryBuilder
-          .orderBy(`user.${SORT_BY}`, 'ASC', 'NULLS LAST')
-          .addOrderBy('user.id', 'ASC');
-      }
-    }
-
-    if (!decodedId) {
-      queryBuilder
-        .orderBy(`user.${SORT_BY}`, SORT_ORDER, 'NULLS LAST')
-        .addOrderBy('user.id', SORT_ORDER);
-    }
-
-    queryBuilder.take(realLimit + 1);
+      .leftJoinAndSelect('userRoles.role', 'role')
+      .orderBy(`user.${SORT_BY}`, SORT_ORDER, 'NULLS LAST')
+      .addOrderBy('user.id', SORT_ORDER)
+      .skip(offset)
+      .take(realLimit + 1);
 
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
-    let data = entities.slice(0, realLimit);
-    if (decodedId && direction === 'backward') {
-      data = data.reverse();
-    }
+    const data = entities.slice(0, realLimit);
 
     // Load managed sites for the returned partner users (batch, no N+1)
     const sitesByUserId: Record<string, Site[]> = {};
@@ -167,54 +88,13 @@ export class ListPartnerUsersUseCase {
       }
     }
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    const getSortValue = (item: User): Date => item.createdAt;
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          lastItem.id,
-          getSortValue(lastItem),
-          {
-            direction: 'forward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-      if (decodedId && hasCursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          firstItem.id,
-          getSortValue(firstItem),
-          {
-            direction: 'backward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-    } else {
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          getSortValue(oldestInPage),
-          { direction: 'forward', sort: sortDefinition, filterKey },
-        );
-      }
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          getSortValue(newestInPage),
-          { direction: 'backward', sort: sortDefinition, filterKey },
-        );
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return { data, nextCursor, prevCursor, sitesByUserId };
   }

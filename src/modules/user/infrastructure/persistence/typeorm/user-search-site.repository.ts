@@ -3,6 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserSearchSite } from '../../../domain/entities/user-search-site.entity';
 import { IUserSearchSiteRepository } from '../repositories/user-search-site.repository';
+import {
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 
 @Injectable()
 export class UserSearchSiteRepository implements IUserSearchSiteRepository {
@@ -42,18 +46,39 @@ export class UserSearchSiteRepository implements IUserSearchSiteRepository {
 
   async findRecentSearchHistory(
     userId: string,
-    limit: number,
-  ): Promise<{ searchQuery: string; createdAt: Date }[]> {
-    const histories = await this.repository.find({
+    cursor?: string,
+    limit = 20,
+  ): Promise<{
+    data: { searchQuery: string; createdAt: Date }[];
+    nextCursor: string | null;
+    prevCursor: string | null;
+  }> {
+    const realLimit = limit > 50 ? 50 : limit;
+    const filterKey = JSON.stringify({ userId });
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
+
+    const rows = await this.repository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
-      take: limit,
+      skip: offset,
+      take: realLimit + 1,
     });
 
-    return histories.map((h) => ({
+    const hasMore = rows.length > realLimit;
+    const data = rows.slice(0, realLimit).map((h) => ({
       searchQuery: h.searchQuery,
       createdAt: h.createdAt,
     }));
+
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
+
+    return { data, nextCursor, prevCursor };
   }
 
   async findRecentSearchHistoryWithIds(

@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In, Between } from 'typeorm';
 import { AttendanceStatistic } from '../../../domain/entities/attendance-statistic.entity';
 import { IAttendanceStatisticRepository } from '../repositories/attendance-statistic.repository';
-import { CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
+import {
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 import { badRequest, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
@@ -99,12 +102,17 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
     nextCursor: string | null;
   }> {
     const realLimit = limit > 50 ? 50 : limit;
+    const filterKey = JSON.stringify({
+      date: date.toISOString().split('T')[0],
+      sortBy,
+    });
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
+
     const queryBuilder = this.repository
       .createQueryBuilder('stat')
       .leftJoinAndSelect('stat.user', 'user')
       .where('stat.statisticDate = :date', { date });
 
-    // Apply sorting based on sortBy
     if (sortBy === 'streak') {
       queryBuilder
         .orderBy('stat.currentStreak', 'DESC')
@@ -117,52 +125,15 @@ export class AttendanceStatisticRepository implements IAttendanceStatisticReposi
         .addOrderBy('stat.attendanceRank', 'ASC');
     }
 
-    // Apply cursor pagination
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        if (sortValue) {
-          const sortNum = parseFloat(sortValue);
-          if (sortBy === 'streak') {
-            queryBuilder.andWhere(
-              '(stat.currentStreak < :sortNum OR (stat.currentStreak = :sortNum AND stat.id > :cursorId))',
-              { sortNum, cursorId: id },
-            );
-          } else if (sortBy === 'total') {
-            queryBuilder.andWhere(
-              '(stat.totalAttendanceDays < :sortNum OR (stat.totalAttendanceDays = :sortNum AND stat.currentStreak < :sortStreak OR (stat.totalAttendanceDays = :sortNum AND stat.currentStreak = :sortStreak AND stat.id > :cursorId)))',
-              {
-                sortNum,
-                sortStreak: parseFloat(sortValue.split(',')[1] || '0'),
-                cursorId: id,
-              },
-            );
-          }
-        } else {
-          queryBuilder.andWhere('stat.id > :cursorId', { cursorId: id });
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    queryBuilder.skip(offset).take(realLimit + 1);
 
-    queryBuilder.take(realLimit + 1);
     const rows = await queryBuilder.getMany();
-
     const hasMore = rows.length > realLimit;
     const data = rows.slice(0, realLimit);
 
-    let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      let sortValue: string | undefined;
-      if (sortBy === 'streak') {
-        sortValue = String(lastItem.currentStreak);
-      } else if (sortBy === 'total') {
-        sortValue = `${lastItem.totalAttendanceDays},${lastItem.currentStreak}`;
-      }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
 
     return {
       data,

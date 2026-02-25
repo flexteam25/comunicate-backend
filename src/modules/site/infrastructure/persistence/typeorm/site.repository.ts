@@ -3,10 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Site, TetherDepositWithdrawalStatus } from '../../../domain/entities/site.entity';
 import { ISiteRepository, SiteFilters } from '../repositories/site.repository';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import {
-  CursorPaginationResult,
-  CursorPaginationUtil,
-} from '../../../../../shared/utils/cursor-pagination.util';
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
@@ -251,170 +252,28 @@ export class SiteRepository implements ISiteRepository {
       sortBy: actualSortBy,
       sortOrder: actualSortOrder,
     });
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          decodedSortValue = sortValue;
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const sortField =
       actualSortBy === 'tier' ? 'tier.order' : `site.${actualSortBy}`;
-    const sortDefinition = `${sortField}:${actualSortOrder},id:${actualSortOrder}`;
 
-    if (!decodedId || direction === 'forward') {
-      queryBuilder
-        .addOrderBy(sortField, actualSortOrder, 'NULLS LAST')
-        .addOrderBy('site.id', actualSortOrder);
-    }
+    queryBuilder
+      .addOrderBy(sortField, actualSortOrder, 'NULLS LAST')
+      .addOrderBy('site.id', actualSortOrder)
+      .skip(offset)
+      .take(realLimit + 1);
 
-    if (decodedId) {
-      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
-      if (decodedSortValue != null) {
-        if (actualSortBy === 'createdAt') {
-          parsedSortValue = new Date(decodedSortValue);
-        } else if (actualSortBy === 'tier') {
-          const parsed = parseFloat(decodedSortValue);
-          parsedSortValue = Number.isNaN(parsed) ? undefined : parsed;
-        }
-      }
-
-      if (direction === 'forward') {
-        if (parsedSortValue !== null && parsedSortValue !== undefined) {
-          if (actualSortOrder === 'DESC') {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND site.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND site.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (actualSortOrder === 'DESC') {
-            queryBuilder.andWhere('site.id < :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('site.id > :cursorId', { cursorId: decodedId });
-          }
-        }
-      } else {
-        if (parsedSortValue !== null && parsedSortValue !== undefined) {
-          if (actualSortOrder === 'DESC') {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND site.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND site.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (actualSortOrder === 'DESC') {
-            queryBuilder.andWhere('site.id > :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('site.id < :cursorId', { cursorId: decodedId });
-          }
-        }
-
-        queryBuilder
-          .orderBy(sortField, actualSortOrder === 'DESC' ? 'ASC' : 'DESC', 'NULLS LAST')
-          .addOrderBy('site.id', actualSortOrder === 'DESC' ? 'ASC' : 'DESC');
-      }
-    }
-
-    queryBuilder.take(realLimit + 1);
     const rows = await queryBuilder.getMany();
-
     const hasMore = rows.length > realLimit;
-    let data: Site[];
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
+    const data = rows.slice(0, realLimit);
 
-    const getSortValue = (item: Site): string | number | Date | null => {
-      if (actualSortBy === 'tier') {
-        return item.tier?.order ?? null;
-      }
-      const fieldValue = (item as unknown as Record<string, unknown>)[actualSortBy];
-      return fieldValue != null ? (fieldValue as string | number | Date) : null;
-    };
-
-    if (!decodedId || direction === 'forward') {
-      data = rows.slice(0, realLimit);
-
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      if (decodedId && cursor) {
-        let prevSortValue: string | number | Date | undefined = decodedSortValue;
-        if (decodedSortValue != null) {
-          if (actualSortBy === 'createdAt') {
-            prevSortValue = new Date(decodedSortValue);
-          } else if (actualSortBy === 'tier') {
-            const parsed = parseFloat(decodedSortValue);
-            prevSortValue = Number.isNaN(parsed) ? undefined : parsed;
-          }
-        }
-
-        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, prevSortValue, {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    } else {
-      const pageItems = rows.slice(0, realLimit);
-      data = actualSortOrder === 'DESC' ? pageItems.reverse() : pageItems.slice().reverse();
-
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return {
       data,
@@ -552,191 +411,34 @@ export class SiteRepository implements ISiteRepository {
       sortBy: actualSortBy,
       sortOrder: actualSortOrder,
     });
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          decodedSortValue = sortValue;
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
-
-    const sortField =
-      actualSortBy === 'tier' ? 'tier.order' : `site.${actualSortBy}`;
-    const sortDefinition = `${sortField}:${actualSortOrder},id:${actualSortOrder}`;
-
-    if (!decodedId || direction === 'forward') {
-      if (actualSortBy === 'tier') {
-        if (actualSortOrder === 'DESC') {
-          queryBuilder.addOrderBy('tier.order', 'DESC', 'NULLS LAST');
-        } else {
-          queryBuilder.addOrderBy('tier.order', 'ASC', 'NULLS FIRST');
-        }
+    if (actualSortBy === 'tier') {
+      if (actualSortOrder === 'DESC') {
+        queryBuilder.addOrderBy('tier.order', 'DESC', 'NULLS LAST');
       } else {
-        if (actualSortOrder === 'DESC') {
-          queryBuilder.addOrderBy(`site.${actualSortBy}`, 'DESC', 'NULLS LAST');
-        } else {
-          queryBuilder.addOrderBy(`site.${actualSortBy}`, 'ASC', 'NULLS FIRST');
-        }
+        queryBuilder.addOrderBy('tier.order', 'ASC', 'NULLS FIRST');
       }
-      queryBuilder.addOrderBy('site.id', actualSortOrder);
-    }
-
-    if (decodedId) {
-      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
-      if (decodedSortValue != null) {
-        if (actualSortBy === 'createdAt') {
-          parsedSortValue = new Date(decodedSortValue);
-        } else if (actualSortBy === 'tier') {
-          const parsed = parseFloat(decodedSortValue);
-          parsedSortValue = Number.isNaN(parsed) ? undefined : parsed;
-        }
-      }
-
-      if (direction === 'forward') {
-        if (parsedSortValue !== null && parsedSortValue !== undefined) {
-          if (actualSortOrder === 'DESC') {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND site.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND site.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (actualSortOrder === 'DESC') {
-            queryBuilder.andWhere('site.id < :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('site.id > :cursorId', { cursorId: decodedId });
-          }
-        }
+    } else {
+      if (actualSortOrder === 'DESC') {
+        queryBuilder.addOrderBy(`site.${actualSortBy}`, 'DESC', 'NULLS LAST');
       } else {
-        if (parsedSortValue !== null && parsedSortValue !== undefined) {
-          if (actualSortOrder === 'DESC') {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND site.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND site.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (actualSortOrder === 'DESC') {
-            queryBuilder.andWhere('site.id > :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('site.id < :cursorId', { cursorId: decodedId });
-          }
-        }
-
-        if (actualSortBy === 'tier') {
-          queryBuilder
-            .orderBy('tier.order', actualSortOrder === 'DESC' ? 'ASC' : 'DESC', 'NULLS LAST')
-            .addOrderBy('site.id', actualSortOrder === 'DESC' ? 'ASC' : 'DESC');
-        } else {
-          queryBuilder
-            .orderBy(
-              `site.${actualSortBy}`,
-              actualSortOrder === 'DESC' ? 'ASC' : 'DESC',
-              'NULLS LAST',
-            )
-            .addOrderBy('site.id', actualSortOrder === 'DESC' ? 'ASC' : 'DESC');
-        }
+        queryBuilder.addOrderBy(`site.${actualSortBy}`, 'ASC', 'NULLS FIRST');
       }
     }
-
-    queryBuilder.take(realLimit + 1);
+    queryBuilder.addOrderBy('site.id', actualSortOrder).skip(offset).take(realLimit + 1);
 
     const rows = await queryBuilder.getMany();
     const hasMore = rows.length > realLimit;
-    let data: Site[];
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
+    const data = rows.slice(0, realLimit);
 
-    const getSortValue = (item: Site): string | number | Date | null => {
-      if (actualSortBy === 'tier') {
-        return item.tier?.order ?? null;
-      }
-      const fieldValue = (item as unknown as Record<string, unknown>)[actualSortBy];
-      return fieldValue != null ? (fieldValue as string | number | Date) : null;
-    };
-
-    if (!decodedId || direction === 'forward') {
-      data = rows.slice(0, realLimit);
-
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      if (decodedId && cursor) {
-        let prevSortValue: string | number | Date | undefined = decodedSortValue;
-        if (decodedSortValue != null) {
-          if (actualSortBy === 'createdAt') {
-            prevSortValue = new Date(decodedSortValue);
-          } else if (actualSortBy === 'tier') {
-            const parsed = parseFloat(decodedSortValue);
-            prevSortValue = Number.isNaN(parsed) ? undefined : parsed;
-          }
-        }
-
-        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, prevSortValue, {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    } else {
-      const pageItems = rows.slice(0, realLimit);
-      data = actualSortOrder === 'DESC' ? pageItems.reverse() : pageItems.slice().reverse();
-
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return {
       data,

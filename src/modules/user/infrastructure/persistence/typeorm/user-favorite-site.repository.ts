@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository } from 'typeorm';
 import {
   IUserFavoriteSiteRepository,
   UserFavoriteSiteFilters,
 } from '../repositories/user-favorite-site.repository';
 import { UserFavoriteSite } from '../../../domain/entities/user-favorite-site.entity';
+import {
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 
 @Injectable()
 export class UserFavoriteSiteRepository implements IUserFavoriteSiteRepository {
@@ -49,18 +53,13 @@ export class UserFavoriteSiteRepository implements IUserFavoriteSiteRepository {
     nextCursor: string | null;
   }> {
     const realLimit = limit > 50 ? 50 : limit;
-
-    const where: any = {
-      userId: filters.userId,
-    };
-
-    if (cursor) {
-      where.createdAt = LessThan(new Date(cursor));
-    }
+    const filterKey = JSON.stringify({ userId: filters.userId });
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const rows = await this.repository.find({
-      where,
+      where: { userId: filters.userId },
       order: { createdAt: 'DESC' },
+      skip: offset,
       take: realLimit + 1,
     });
 
@@ -72,7 +71,7 @@ export class UserFavoriteSiteRepository implements IUserFavoriteSiteRepository {
     }));
 
     const nextCursor = hasMore
-      ? (data[data.length - 1]?.createdAt.toISOString() ?? null)
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
       : null;
 
     return {

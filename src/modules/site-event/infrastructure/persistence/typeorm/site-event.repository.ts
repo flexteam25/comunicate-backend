@@ -3,10 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SiteEvent } from '../../../domain/entities/site-event.entity';
 import { ISiteEventRepository } from '../repositories/site-event.repository';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import {
-  CursorPaginationResult,
-  CursorPaginationUtil,
-} from '../../../../../shared/utils/cursor-pagination.util';
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 import { isUuid } from '../../../../../shared/utils/uuid.util';
 
 @Injectable()
@@ -55,39 +56,8 @@ export class SiteEventRepository implements ISiteEventRepository {
   ): Promise<CursorPaginationResult<SiteEvent>> {
     const realLimit = limit > 50 ? 50 : limit;
     const now = new Date();
-    const sortBy = 'startDate';
-    const sortOrder = 'DESC' as const;
     const filterKey = JSON.stringify({ siteId });
-    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue !== null && sortValue !== undefined) {
-            decodedSortValue = sortValue;
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const queryBuilder = this.repository
       .createQueryBuilder('event')
@@ -109,41 +79,11 @@ export class SiteEventRepository implements ISiteEventRepository {
       queryBuilder.andWhere('site.slug = :siteSlug', { siteSlug: siteId });
     }
 
-    const sortField = `event.${sortBy}`;
-
-    if (!decodedId || direction === 'forward') {
-      queryBuilder.orderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST');
-      queryBuilder.addOrderBy('event.id', 'DESC');
-    }
-
-    if (decodedId) {
-      queryBuilder.andWhere('event.id != :cursorId', { cursorId: decodedId });
-      if (decodedSortValue !== undefined) {
-        if (direction === 'forward') {
-          queryBuilder.andWhere(
-            `(${sortField} < :sortValue OR (${sortField} = :sortValue AND event.id < :cursorId))`,
-            { sortValue: decodedSortValue, cursorId: decodedId },
-          );
-        } else {
-          queryBuilder.andWhere(
-            `(${sortField} > :sortValue OR (${sortField} = :sortValue AND event.id > :cursorId))`,
-            { sortValue: decodedSortValue, cursorId: decodedId },
-          );
-        }
-      } else {
-        if (direction === 'forward') {
-          queryBuilder.andWhere('event.id < :cursorId', { cursorId: decodedId });
-        } else {
-          queryBuilder.andWhere('event.id > :cursorId', { cursorId: decodedId });
-        }
-      }
-      if (direction === 'backward') {
-        queryBuilder.orderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST');
-        queryBuilder.addOrderBy('event.id', 'DESC');
-      }
-    }
-
-    queryBuilder.take(realLimit + 1);
+    queryBuilder
+      .orderBy('event.startDate', 'DESC', 'NULLS LAST')
+      .addOrderBy('event.id', 'DESC')
+      .skip(offset)
+      .take(realLimit + 1);
 
     const result = await queryBuilder.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
@@ -172,50 +112,13 @@ export class SiteEventRepository implements ISiteEventRepository {
       }
     });
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    const getSortValue = (item: SiteEvent): string | Date | undefined => {
-      const val = item.startDate;
-      if (val != null) return val instanceof Date ? val : new Date(val);
-      return undefined;
-    };
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    } else {
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return {
       data,
@@ -226,12 +129,12 @@ export class SiteEventRepository implements ISiteEventRepository {
 
   async findAll(
     filters?: {
-      siteId?: string; // For exact match by UUID
-      siteName?: string; // For LIKE search by site name
-      userName?: string; // For LIKE search by user display name
-      adminName?: string; // For LIKE search by admin display name
+      siteId?: string;
+      siteName?: string;
+      userName?: string;
+      adminName?: string;
       isActive?: boolean;
-      search?: string; // Search in title
+      search?: string;
       sortBy?: string;
       sortOrder?: 'ASC' | 'DESC';
     },
@@ -251,36 +154,7 @@ export class SiteEventRepository implements ISiteEventRepository {
       sortBy,
       sortOrder,
     });
-    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue !== null && sortValue !== undefined) {
-            decodedSortValue = sortValue;
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const queryBuilder = this.repository
       .createQueryBuilder('event')
@@ -294,32 +168,26 @@ export class SiteEventRepository implements ISiteEventRepository {
       )
       .where('event.deletedAt IS NULL');
 
-    // Filter by siteId (UUID or slug)
     if (filters?.siteId) {
       if (isUuid(filters.siteId)) {
-        // Filter by site UUID
         queryBuilder.andWhere('event.siteId = :siteId', { siteId: filters.siteId });
       } else {
-        // Filter by site slug
         queryBuilder.andWhere('site.slug = :siteSlug', { siteSlug: filters.siteId });
       }
     }
 
-    // Filter by siteName (LIKE search - for admin API)
     if (filters?.siteName) {
       queryBuilder.andWhere('LOWER(site.name) LIKE LOWER(:siteName)', {
         siteName: `%${filters.siteName}%`,
       });
     }
 
-    // Filter by userName (LIKE search - for admin API)
     if (filters?.userName) {
       queryBuilder.andWhere('LOWER(user.displayName) LIKE LOWER(:userName)', {
         userName: `%${filters.userName}%`,
       });
     }
 
-    // Filter by adminName (LIKE search - for admin API)
     if (filters?.adminName) {
       queryBuilder.andWhere('LOWER(admin.displayName) LIKE LOWER(:adminName)', {
         adminName: `%${filters.adminName}%`,
@@ -338,135 +206,24 @@ export class SiteEventRepository implements ISiteEventRepository {
       });
     }
 
-    const sortField = `event.${sortBy}`;
-
-    if (!decodedId || direction === 'forward') {
-      if (sortOrder === 'DESC') {
-        queryBuilder.addOrderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST');
-      } else {
-        queryBuilder.addOrderBy(`event.${sortBy}`, 'ASC');
-      }
-      queryBuilder.addOrderBy('event.id', sortOrder);
+    if (sortOrder === 'DESC') {
+      queryBuilder.addOrderBy(`event.${sortBy}`, 'DESC', 'NULLS LAST');
+    } else {
+      queryBuilder.addOrderBy(`event.${sortBy}`, 'ASC');
     }
-
-    if (decodedId) {
-      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
-      if (decodedSortValue != null && (sortBy === 'startDate' || sortBy === 'createdAt')) {
-        parsedSortValue = new Date(decodedSortValue);
-      } else if (decodedSortValue != null) {
-        parsedSortValue = decodedSortValue;
-      }
-
-      if (direction === 'forward') {
-        queryBuilder.andWhere('event.id != :cursorId', { cursorId: decodedId });
-        if (parsedSortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND event.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND event.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('event.id > :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('event.id < :cursorId', { cursorId: decodedId });
-          }
-        }
-      } else {
-        if (parsedSortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND event.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND event.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('event.id < :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('event.id > :cursorId', { cursorId: decodedId });
-          }
-        }
-        if (sortOrder === 'DESC') {
-          queryBuilder.orderBy(`event.${sortBy}`, 'ASC').addOrderBy('event.id', 'ASC');
-        } else {
-          queryBuilder.orderBy(`event.${sortBy}`, 'DESC').addOrderBy('event.id', 'DESC');
-        }
-      }
-    }
-
-    queryBuilder.take(realLimit + 1);
+    queryBuilder.addOrderBy('event.id', sortOrder).skip(offset).take(realLimit + 1);
 
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
-    let data = entities.slice(0, realLimit);
+    const data = entities.slice(0, realLimit);
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    const getSortValue = (item: SiteEvent): string | number | Date | undefined => {
-      const val = (item as unknown as Record<string, unknown>)[sortBy];
-      if (val instanceof Date) return val;
-      if (val !== null && val !== undefined) return val as string | number;
-      return undefined;
-    };
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-      // prevCursor must use first item of current page so "previous" returns the full page before
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    } else {
-      data = data.slice().reverse();
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          getSortValue(oldestInPage),
-          {
-            direction: 'forward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          getSortValue(newestInPage),
-          {
-            direction: 'backward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return {
       data,

@@ -8,10 +8,11 @@ import {
 import { IPartnerRequestRepository } from '../repositories/partner-request.repository';
 import { UserRole } from '../../../../user/domain/entities/user-role.entity';
 import { Role } from '../../../../user/domain/entities/role.entity';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import {
-  CursorPaginationResult,
-  CursorPaginationUtil,
-} from '../../../../../shared/utils/cursor-pagination.util';
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
@@ -57,16 +58,19 @@ export class PartnerRequestRepository implements IPartnerRequestRepository {
     limit = 20,
   ): Promise<CursorPaginationResult<PartnerRequest>> {
     const realLimit = limit > 100 ? 100 : limit;
+    const filterKey = JSON.stringify({
+      status: filters?.status ?? null,
+      userId: filters?.userId ?? null,
+    });
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const queryBuilder = this.repository
       .createQueryBuilder('partner_request')
       .leftJoinAndSelect('partner_request.user', 'user')
       .leftJoinAndSelect('partner_request.admin', 'admin')
-      // Join current user role to filter out users who are currently partners
       .leftJoin(UserRole, 'user_role', 'user_role.userId = partner_request.userId')
       .leftJoin(Role, 'role', 'role.id = user_role.roleId AND role.deletedAt IS NULL')
       .where('partner_request.deletedAt IS NULL')
-      // Exclude requests where the user currently has the "partner" role
       .andWhere('(role.name IS NULL OR role.name != :partnerRole)', {
         partnerRole: 'partner',
       });
@@ -83,44 +87,25 @@ export class PartnerRequestRepository implements IPartnerRequestRepository {
       });
     }
 
-    if (cursor) {
-      try {
-        const { id, sortValue } = CursorPaginationUtil.decodeCursor(cursor);
-        const sortField = 'partner_request.createdAt';
-        if (sortValue !== null && sortValue !== undefined) {
-          queryBuilder.andWhere(
-            `(${sortField} < :sortValue OR (${sortField} = :sortValue AND partner_request.id < :cursorId))`,
-            { sortValue, cursorId: id },
-          );
-        } else {
-          queryBuilder.andWhere('partner_request.id < :cursorId', { cursorId: id });
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
-
     queryBuilder
       .orderBy('partner_request.createdAt', 'DESC', 'NULLS LAST')
       .addOrderBy('partner_request.id', 'DESC')
+      .skip(offset)
       .take(realLimit + 1);
 
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
-    let nextCursor: string | null = null;
-    if (hasMore && data.length > 0) {
-      const lastItem = data[data.length - 1];
-      const fieldValue = lastItem.createdAt;
-      let sortValue: string | number | Date | null = null;
-      if (fieldValue !== null && fieldValue !== undefined) {
-        sortValue = fieldValue;
-      }
-      nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue);
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
-    return { data, nextCursor };
+    return { data, nextCursor, prevCursor: prevCursor ?? null };
   }
 
   async create(partnerRequest: Partial<PartnerRequest>): Promise<PartnerRequest> {

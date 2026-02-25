@@ -3,10 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ScamReportComment } from '../../../domain/entities/scam-report-comment.entity';
 import { IScamReportCommentRepository } from '../repositories/scam-report-comment.repository';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import {
-  CursorPaginationResult,
-  CursorPaginationUtil,
-} from '../../../../../shared/utils/cursor-pagination.util';
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 import {
   notFound,
   MessageKeys,
@@ -37,6 +38,7 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
       reportId,
       parentCommentId: parentCommentId ?? null,
     });
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const queryBuilder = this.repository
       .createQueryBuilder('comment')
@@ -47,7 +49,6 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
       .where('comment.scamReportId = :reportId', { reportId })
       .andWhere('comment.deletedAt IS NULL');
 
-    // Filter by parentCommentId: if not provided, only get top-level comments (parentCommentId IS NULL)
     if (parentCommentId === undefined) {
       queryBuilder.andWhere('comment.parentCommentId IS NULL');
     } else if (parentCommentId !== null) {
@@ -56,137 +57,23 @@ export class ScamReportCommentRepository implements IScamReportCommentRepository
       });
     }
 
-    let decodedId: string | undefined;
-    let decodedSortCreatedAt: Date | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortCreatedAt = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue) {
-            decodedSortCreatedAt = new Date(sortValue);
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
-
-    const sortDefinition = 'createdAt:ASC,id:ASC';
-
-    if (!decodedId || direction === 'forward') {
-      queryBuilder.orderBy('comment.createdAt', 'ASC').addOrderBy('comment.id', 'ASC');
-    }
-
-    if (decodedId) {
-      if (direction === 'forward') {
-        // When moving forward (next page), exclude the cursor row to avoid duplicates across pages
-        queryBuilder.andWhere('comment.id != :cursorId', { cursorId: decodedId });
-
-        if (decodedSortCreatedAt) {
-          queryBuilder.andWhere(
-            '(comment.createdAt > :sortCreatedAt OR (comment.createdAt = :sortCreatedAt AND comment.id > :cursorId))',
-            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
-          );
-        } else {
-          queryBuilder.andWhere('comment.id > :cursorId', { cursorId: decodedId });
-        }
-      } else {
-        // When moving backward (previous page), keep the full previous window (do not exclude cursorId)
-        if (decodedSortCreatedAt) {
-          queryBuilder.andWhere(
-            '(comment.createdAt < :sortCreatedAt OR (comment.createdAt = :sortCreatedAt AND comment.id < :cursorId))',
-            { sortCreatedAt: decodedSortCreatedAt, cursorId: decodedId },
-          );
-        } else {
-          queryBuilder.andWhere('comment.id < :cursorId', { cursorId: decodedId });
-        }
-
-        queryBuilder
-          .orderBy('comment.createdAt', 'DESC')
-          .addOrderBy('comment.id', 'DESC');
-      }
-    }
-
-    queryBuilder.take(realLimit + 1);
+    queryBuilder
+      .orderBy('comment.createdAt', 'ASC')
+      .addOrderBy('comment.id', 'ASC')
+      .skip(offset)
+      .take(realLimit + 1);
 
     const rows = await queryBuilder.getMany();
     const hasMore = rows.length > realLimit;
-    let data: ScamReportComment[];
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
+    const data = rows.slice(0, realLimit);
 
-    if (!decodedId || direction === 'forward') {
-      data = rows.slice(0, realLimit);
-
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, lastItem.createdAt, {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      // When we have a cursor (we are not on the first page), build prevCursor from
-      // the first item in the current page. This allows navigating back to the
-      // previous window without losing boundary items.
-      if (decodedId && data.length > 0 && cursor) {
-        const firstItemInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          firstItemInPage.id,
-          firstItemInPage.createdAt,
-          {
-            direction: 'backward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-    } else {
-      const pageItemsDesc = rows.slice(0, realLimit);
-      data = pageItemsDesc.reverse();
-
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          oldestInPage.createdAt,
-          {
-            direction: 'forward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          newestInPage.createdAt,
-          {
-            direction: 'backward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return {
       data,

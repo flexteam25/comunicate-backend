@@ -47,7 +47,10 @@ import { UserComment, CommentType } from '../../../domain/entities/user-comment.
 import { IPostRepository } from '../../../../post/infrastructure/persistence/repositories/post.repository';
 import { IPostCommentRepository } from '../../../../post/infrastructure/persistence/repositories/post-comment.repository';
 import { PostComment } from '../../../../post/domain/entities/post-comment.entity';
-import { CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
+import {
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 import { IUserIpRepository } from '../../../infrastructure/persistence/repositories/user-ip.repository.interface';
 import { IBlockedIpRepository } from '../../../infrastructure/persistence/repositories/blocked-ip.repository.interface';
 import { RedisService } from '../../../../../shared/redis/redis.service';
@@ -480,37 +483,9 @@ export class AdminUserController {
     @Query('limit') limit?: string,
   ): Promise<ApiResponse<any>> {
     const realLimit = limit ? Math.min(parseInt(limit, 10), 50) : 20;
-    const sortBy = 'createdAt';
     const sortOrder = 'DESC' as const;
     const filterKey = JSON.stringify({ userId: id });
-    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id: cursorId,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = cursorId;
-          if (sortValue != null) decodedSortValue = sortValue;
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     // Get user_posts with posts joined (including aggregates)
     const userPostsQuery = this.userPostRepository
@@ -544,45 +519,11 @@ export class AdminUserController {
         `(SELECT COUNT(DISTINCT user_id) FROM post_views WHERE post_id = post.id AND user_id IS NOT NULL)`,
         'viewCount',
       )
-      .where('userPost.userId = :userId', { userId: id });
-
-    if (!decodedId || direction === 'forward') {
-      userPostsQuery
-        .orderBy('userPost.createdAt', sortOrder)
-        .addOrderBy('userPost.id', sortOrder);
-    }
-
-    if (decodedId) {
-      userPostsQuery.andWhere('userPost.id != :cursorId', { cursorId: decodedId });
-      const parsedSortValue =
-        decodedSortValue != null ? new Date(decodedSortValue) : undefined;
-      if (parsedSortValue != null) {
-        if (direction === 'forward') {
-          userPostsQuery.andWhere(
-            `(userPost.createdAt < :sortValue OR (userPost.createdAt = :sortValue AND userPost.id < :cursorId))`,
-            { sortValue: parsedSortValue, cursorId: decodedId },
-          );
-        } else {
-          userPostsQuery.andWhere(
-            `(userPost.createdAt > :sortValue OR (userPost.createdAt = :sortValue AND userPost.id > :cursorId))`,
-            { sortValue: parsedSortValue, cursorId: decodedId },
-          );
-        }
-      } else {
-        if (direction === 'forward') {
-          userPostsQuery.andWhere('userPost.id < :cursorId', { cursorId: decodedId });
-        } else {
-          userPostsQuery.andWhere('userPost.id > :cursorId', { cursorId: decodedId });
-        }
-      }
-      if (direction === 'backward') {
-        userPostsQuery
-          .orderBy('userPost.createdAt', sortOrder)
-          .addOrderBy('userPost.id', sortOrder);
-      }
-    }
-
-    userPostsQuery.take(realLimit + 1);
+      .where('userPost.userId = :userId', { userId: id })
+      .orderBy('userPost.createdAt', sortOrder)
+      .addOrderBy('userPost.id', sortOrder)
+      .skip(offset)
+      .take(realLimit + 1);
 
     const result = await userPostsQuery.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
@@ -664,55 +605,13 @@ export class AdminUserController {
       })
       .filter((item) => item !== null);
 
-    const meta = {
-      direction: 'forward' as const,
-      sort: sortDefinition,
-      filterKey,
-    };
-    const metaBackward = {
-      direction: 'backward' as const,
-      sort: sortDefinition,
-      filterKey,
-    };
-
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && userPostsData.length > 0) {
-        const lastUserPost = userPostsData[userPostsData.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          lastUserPost.id,
-          lastUserPost.createdAt,
-          { ...meta },
-        );
-      }
-      if (decodedId && cursor && userPostsData.length > 0) {
-        const firstUserPost = userPostsData[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          firstUserPost.id,
-          firstUserPost.createdAt,
-          { ...metaBackward },
-        );
-      }
-    } else {
-      if (userPostsData.length > 0) {
-        const oldestInPage = userPostsData[userPostsData.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          oldestInPage.createdAt,
-          { ...meta },
-        );
-      }
-      if (hasMore && userPostsData.length > 0) {
-        const newestInPage = userPostsData[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          newestInPage.createdAt,
-          { ...metaBackward },
-        );
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return ApiResponseUtil.success({
       data,
@@ -730,37 +629,9 @@ export class AdminUserController {
     @Query('limit') limit?: string,
   ): Promise<ApiResponse<any>> {
     const realLimit = limit ? Math.min(parseInt(limit, 10), 50) : 20;
-    const sortBy = 'createdAt';
     const sortOrder = 'DESC' as const;
     const filterKey = JSON.stringify({ userId: id });
-    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id: cursorId,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = cursorId;
-          if (sortValue != null) decodedSortValue = sortValue;
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     // Get user_comments with post_comments joined (only post_comment type)
     const userCommentsQuery = this.userCommentRepository
@@ -771,49 +642,11 @@ export class AdminUserController {
       })
       .select('userComment.commentId', 'commentId')
       .addSelect('userComment.id', 'userCommentId')
-      .addSelect('userComment.createdAt', 'userCommentCreatedAt');
-
-    if (!decodedId || direction === 'forward') {
-      userCommentsQuery
-        .orderBy('userComment.createdAt', sortOrder)
-        .addOrderBy('userComment.id', sortOrder);
-    }
-
-    if (decodedId) {
-      userCommentsQuery.andWhere('userComment.id != :cursorId', { cursorId: decodedId });
-      const parsedSortValue =
-        decodedSortValue != null ? new Date(decodedSortValue) : undefined;
-      if (parsedSortValue != null) {
-        if (direction === 'forward') {
-          userCommentsQuery.andWhere(
-            `(userComment.createdAt < :sortValue OR (userComment.createdAt = :sortValue AND userComment.id < :cursorId))`,
-            { sortValue: parsedSortValue, cursorId: decodedId },
-          );
-        } else {
-          userCommentsQuery.andWhere(
-            `(userComment.createdAt > :sortValue OR (userComment.createdAt = :sortValue AND userComment.id > :cursorId))`,
-            { sortValue: parsedSortValue, cursorId: decodedId },
-          );
-        }
-      } else {
-        if (direction === 'forward') {
-          userCommentsQuery.andWhere('userComment.id < :cursorId', {
-            cursorId: decodedId,
-          });
-        } else {
-          userCommentsQuery.andWhere('userComment.id > :cursorId', {
-            cursorId: decodedId,
-          });
-        }
-      }
-      if (direction === 'backward') {
-        userCommentsQuery
-          .orderBy('userComment.createdAt', sortOrder)
-          .addOrderBy('userComment.id', sortOrder);
-      }
-    }
-
-    userCommentsQuery.take(realLimit + 1);
+      .addSelect('userComment.createdAt', 'userCommentCreatedAt')
+      .orderBy('userComment.createdAt', sortOrder)
+      .addOrderBy('userComment.id', sortOrder)
+      .skip(offset)
+      .take(realLimit + 1);
 
     const userCommentsRaw = await userCommentsQuery.getRawMany();
     const hasMore = userCommentsRaw.length > realLimit;
@@ -870,59 +703,13 @@ export class AdminUserController {
       })
       .filter((item) => item !== null);
 
-    const meta = {
-      direction: 'forward' as const,
-      sort: sortDefinition,
-      filterKey,
-    };
-    const metaBackward = {
-      direction: 'backward' as const,
-      sort: sortDefinition,
-      filterKey,
-    };
-
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && userCommentsData.length > 0) {
-        const lastUserComment = userCommentsData[
-          userCommentsData.length - 1
-        ] as UserCommentRaw;
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          lastUserComment.userCommentId,
-          lastUserComment.userCommentCreatedAt,
-          { ...meta },
-        );
-      }
-      if (decodedId && cursor && userCommentsData.length > 0) {
-        const firstUserComment = userCommentsData[0] as UserCommentRaw;
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          firstUserComment.userCommentId,
-          firstUserComment.userCommentCreatedAt,
-          { ...metaBackward },
-        );
-      }
-    } else {
-      if (userCommentsData.length > 0) {
-        const oldestInPage = userCommentsData[
-          userCommentsData.length - 1
-        ] as UserCommentRaw;
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.userCommentId,
-          oldestInPage.userCommentCreatedAt,
-          { ...meta },
-        );
-      }
-      if (hasMore && userCommentsData.length > 0) {
-        const newestInPage = userCommentsData[0] as UserCommentRaw;
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.userCommentId,
-          newestInPage.userCommentCreatedAt,
-          { ...metaBackward },
-        );
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return ApiResponseUtil.success({
       data,

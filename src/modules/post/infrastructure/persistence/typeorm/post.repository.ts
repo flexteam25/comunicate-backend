@@ -4,10 +4,11 @@ import { Repository } from 'typeorm';
 import { Post } from '../../../domain/entities/post.entity';
 import { IPostRepository } from '../repositories/post.repository';
 import { IPostCategoryRepository } from '../repositories/post-category.repository';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import {
-  CursorPaginationResult,
-  CursorPaginationUtil,
-} from '../../../../../shared/utils/cursor-pagination.util';
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { isUuid } from '../../../../../shared/utils/uuid.util';
 
@@ -240,36 +241,7 @@ export class PostRepository implements IPostRepository {
       sortBy,
       sortOrder,
     });
-    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue !== null && sortValue !== undefined) {
-            decodedSortValue = sortValue;
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const queryBuilder = this.repository
       .createQueryBuilder('post')
@@ -349,85 +321,17 @@ export class PostRepository implements IPostRepository {
       );
     }
 
-    const sortField = `post.${sortBy}`;
-
-    if (!decodedId || direction === 'forward') {
-      if (sortOrder === 'DESC') {
-        queryBuilder.addOrderBy(`post.${sortBy}`, 'DESC', 'NULLS LAST');
-      } else {
-        queryBuilder.orderBy(`post.${sortBy}`, 'ASC');
-      }
-      queryBuilder.addOrderBy('post.id', sortOrder);
+    if (sortOrder === 'DESC') {
+      queryBuilder.addOrderBy(`post.${sortBy}`, 'DESC', 'NULLS LAST');
+    } else {
+      queryBuilder.orderBy(`post.${sortBy}`, 'ASC');
     }
-
-    if (decodedId) {
-      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
-      if (decodedSortValue != null && sortBy === 'createdAt') {
-        parsedSortValue = new Date(decodedSortValue);
-      } else if (decodedSortValue != null) {
-        parsedSortValue = decodedSortValue;
-      }
-
-      if (direction === 'forward') {
-        queryBuilder.andWhere('post.id != :cursorId', { cursorId: decodedId });
-        if (parsedSortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND post.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND post.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('post.id > :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('post.id < :cursorId', { cursorId: decodedId });
-          }
-        }
-      } else {
-        if (parsedSortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND post.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND post.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('post.id < :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('post.id > :cursorId', { cursorId: decodedId });
-          }
-        }
-        if (sortOrder === 'DESC') {
-          queryBuilder
-            .orderBy(`post.${sortBy}`, 'ASC')
-            .addOrderBy('post.id', 'ASC');
-        } else {
-          queryBuilder
-            .orderBy(`post.${sortBy}`, 'DESC')
-            .addOrderBy('post.id', 'DESC');
-        }
-      }
-    }
-
-    queryBuilder.take(realLimit + 1);
+    queryBuilder.addOrderBy('post.id', sortOrder).skip(offset).take(realLimit + 1);
 
     const result = await queryBuilder.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
-    let data = result.entities.slice(0, realLimit);
+    const data = result.entities.slice(0, realLimit);
 
-    // Create a map of post.id -> raw data to handle cases where subqueries might create multiple rows
     const rawDataMap = new Map<string, any>();
     result.raw.forEach((raw) => {
       const postId = raw.post_id || raw.postId || raw.post_id;
@@ -436,7 +340,6 @@ export class PostRepository implements IPostRepository {
       }
     });
 
-    // Map likeCount, dislikeCount, commentCount, viewCount from raw data to entities
     data.forEach((post) => {
       const rawData = rawDataMap.get(post.id);
       if (rawData) {
@@ -447,59 +350,13 @@ export class PostRepository implements IPostRepository {
       }
     });
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    const getSortValue = (item: Post): string | number | Date | undefined => {
-      const val = (item as unknown as Record<string, unknown>)[sortBy];
-      if (val instanceof Date) return val;
-      if (val !== null && val !== undefined) return val as string | number;
-      return undefined;
-    };
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-      if (decodedId && cursor) {
-        prevCursor = CursorPaginationUtil.encodeCursor(decodedId, decodedSortValue, {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    } else {
-      data = data.slice().reverse();
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          getSortValue(oldestInPage),
-          {
-            direction: 'forward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          getSortValue(newestInPage),
-          {
-            direction: 'backward',
-            sort: sortDefinition,
-            filterKey,
-          },
-        );
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return { data, nextCursor, prevCursor: prevCursor ?? null };
   }
@@ -520,36 +377,7 @@ export class PostRepository implements IPostRepository {
     const sortBy = filters?.sortBy || 'publishedAt';
     const sortOrder = filters?.sortOrder || 'DESC';
     const filterKey = JSON.stringify({ ...filters, sortBy, sortOrder });
-    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | number | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue !== null && sortValue !== undefined) {
-            decodedSortValue = sortValue as string | number;
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     // Check if sortBy is a computed field (from subquery)
     const computedFields = ['likeCount', 'dislikeCount', 'commentCount'];
@@ -636,78 +464,10 @@ export class PostRepository implements IPostRepository {
       );
     }
 
-    // Build sort field expression for WHERE clause (for cursor pagination)
-    let sortFieldForWhere: string;
-    if (isComputedField) {
-      // For computed fields from GROUP BY, use the COUNT expressions
-      if (sortBy === 'likeCount') {
-        sortFieldForWhere = 'COUNT(DISTINCT likeReaction.id)';
-      } else if (sortBy === 'dislikeCount') {
-        sortFieldForWhere = 'COUNT(DISTINCT dislikeReaction.id)';
-      } else if (sortBy === 'commentCount') {
-        // commentCount still uses subquery
-        sortFieldForWhere = `(SELECT COUNT(*) FROM post_comments WHERE post_id = post.id AND deleted_at IS NULL)`;
-      } else {
-        sortFieldForWhere = `post.${sortBy}`;
-      }
-    } else {
-      sortFieldForWhere = `post.${sortBy}`;
-    }
-
-    if (decodedId) {
-      queryBuilder.andWhere('post.id != :cursorId', { cursorId: decodedId });
-      const cursorParams = { sortValue: decodedSortValue, cursorId: decodedId };
-      const addCursorCondition = (expr: string) => {
-        if (isComputedField) {
-          queryBuilder.andHaving(expr, cursorParams);
-        } else {
-          queryBuilder.andWhere(expr, cursorParams);
-        }
-      };
-      if (decodedSortValue !== undefined && decodedSortValue !== null) {
-        if (direction === 'forward') {
-          if (sortOrder === 'ASC') {
-            addCursorCondition(
-              `(${sortFieldForWhere} > :sortValue OR (${sortFieldForWhere} = :sortValue AND post.id > :cursorId))`,
-            );
-          } else {
-            addCursorCondition(
-              `(${sortFieldForWhere} < :sortValue OR (${sortFieldForWhere} = :sortValue AND post.id < :cursorId))`,
-            );
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            addCursorCondition(
-              `(${sortFieldForWhere} < :sortValue OR (${sortFieldForWhere} = :sortValue AND post.id < :cursorId))`,
-            );
-          } else {
-            addCursorCondition(
-              `(${sortFieldForWhere} > :sortValue OR (${sortFieldForWhere} = :sortValue AND post.id > :cursorId))`,
-            );
-          }
-        }
-      } else {
-        if (direction === 'forward') {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('post.id > :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('post.id < :cursorId', { cursorId: decodedId });
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('post.id < :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('post.id > :cursorId', { cursorId: decodedId });
-          }
-        }
-      }
-    }
-
     // For ORDER BY: manually modify SQL to use alias names for computed fields
     // TypeORM's orderBy parser can't handle COUNT(DISTINCT ...) expressions
     if (isComputedField) {
-      // Build query without ORDER BY first
-      queryBuilder.take(realLimit + 1);
+      queryBuilder.skip(offset).take(realLimit + 1);
 
       // Get the SQL and parameters
       const [sql, parameters] = queryBuilder.getQueryAndParameters();
@@ -726,7 +486,7 @@ export class PostRepository implements IPostRepository {
       const rawResults = await this.repository.manager.query(modifiedSql, parameters);
 
       if (rawResults.length === 0) {
-        return { data: [], nextCursor: null };
+        return { data: [], nextCursor: null, prevCursor: null };
       }
 
       // Single pass: extract IDs and create result map
@@ -741,7 +501,7 @@ export class PostRepository implements IPostRepository {
       }
 
       if (entityIds.length === 0) {
-        return { data: [], nextCursor: null };
+        return { data: [], nextCursor: null, prevCursor: null };
       }
 
       // Fetch entities with relations (1 query)
@@ -792,51 +552,13 @@ export class PostRepository implements IPostRepository {
       const hasMore = orderedEntities.length > realLimit;
       const data = orderedEntities.slice(0, realLimit);
 
-      let nextCursor: string | null = null;
-      let prevCursor: string | null = null;
-
-      const getSortValueFromRaw = (item: Post, map: Map<string, Record<string, unknown>>): string | number | Date | undefined => {
-        const rawData = map.get(item.id);
-        const fieldValue = rawData ? (rawData[sortBy] as string | number | Date | null) : null;
-        if (fieldValue !== null && fieldValue !== undefined) return fieldValue as string | number | Date;
-        return undefined;
-      };
-
-      if (!decodedId || direction === 'forward') {
-        if (hasMore && data.length > 0) {
-          const lastItem = data[data.length - 1];
-          nextCursor = CursorPaginationUtil.encodeCursor(
-            lastItem.id,
-            getSortValueFromRaw(lastItem, resultMap as Map<string, Record<string, unknown>>),
-            { direction: 'forward', sort: sortDefinition, filterKey },
-          );
-        }
-        if (decodedId && cursor && data.length > 0) {
-          const firstItem = data[0];
-          prevCursor = CursorPaginationUtil.encodeCursor(
-            firstItem.id,
-            getSortValueFromRaw(firstItem, resultMap as Map<string, Record<string, unknown>>),
-            { direction: 'backward', sort: sortDefinition, filterKey },
-          );
-        }
-      } else {
-        if (data.length > 0) {
-          const oldestInPage = data[data.length - 1];
-          nextCursor = CursorPaginationUtil.encodeCursor(
-            oldestInPage.id,
-            getSortValueFromRaw(oldestInPage, resultMap as Map<string, Record<string, unknown>>),
-            { direction: 'forward', sort: sortDefinition, filterKey },
-          );
-        }
-        if (hasMore && data.length > 0) {
-          const newestInPage = data[0];
-          prevCursor = CursorPaginationUtil.encodeCursor(
-            newestInPage.id,
-            getSortValueFromRaw(newestInPage, resultMap as Map<string, Record<string, unknown>>),
-            { direction: 'backward', sort: sortDefinition, filterKey },
-          );
-        }
-      }
+      const nextCursor = hasMore
+        ? encodeOffsetCursor(offset + realLimit, { filterKey })
+        : null;
+      const prevCursor =
+        offset > 0
+          ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+          : null;
 
       return { data, nextCursor, prevCursor: prevCursor ?? null };
     } else {
@@ -847,14 +569,13 @@ export class PostRepository implements IPostRepository {
         queryBuilder.orderBy(`post.${sortBy}`, 'ASC');
       }
       queryBuilder.addOrderBy('post.id', sortOrder);
-      queryBuilder.take(realLimit + 1);
+      queryBuilder.skip(offset).take(realLimit + 1);
     }
 
     const result = await queryBuilder.getRawAndEntities();
     const hasMore = result.entities.length > realLimit;
     const data = result.entities.slice(0, realLimit);
 
-    // Create a map of post.id -> raw data to handle cases where GROUP BY creates multiple rows per post
     const rawDataMap = new Map<string, any>();
     result.raw.forEach((raw) => {
       const postId = raw.post_id || raw.postId || raw.post_id;
@@ -863,7 +584,6 @@ export class PostRepository implements IPostRepository {
       }
     });
 
-    // Map likeCount, dislikeCount, commentCount, viewCount, and reacted from raw data to entities
     data.forEach((post) => {
       const rawData = rawDataMap.get(post.id);
       if (rawData) {
@@ -871,9 +591,7 @@ export class PostRepository implements IPostRepository {
         (post as any).dislikeCount = parseInt(rawData?.dislikeCount || '0', 10);
         (post as any).commentCount = parseInt(rawData?.commentCount || '0', 10);
         (post as any).viewCount = parseInt(rawData?.viewCount || '0', 10);
-        // Map user reaction if userId is provided
         if (filters?.userId) {
-          // PostgreSQL may return column names in lowercase when using raw queries
           const userReactionType = (rawData?.userReactionType ||
             rawData?.userreactiontype ||
             rawData?.['userReactionType'] ||
@@ -883,58 +601,13 @@ export class PostRepository implements IPostRepository {
       }
     });
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    const getSortValue = (item: Post): string | number | Date | undefined => {
-      let fieldValue: unknown;
-      if (isComputedField) {
-        const rawData = rawDataMap.get(item.id);
-        if (rawData && typeof rawData === 'object') {
-          fieldValue = (rawData as Record<string, unknown>)[sortBy];
-        }
-      } else {
-        fieldValue = (item as unknown as Record<string, unknown>)[sortBy];
-      }
-      if (fieldValue !== null && fieldValue !== undefined) return fieldValue as string | number | Date;
-      return undefined;
-    };
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    } else {
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, getSortValue(oldestInPage), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, getSortValue(newestInPage), {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return { data, nextCursor, prevCursor: prevCursor ?? null };
   }

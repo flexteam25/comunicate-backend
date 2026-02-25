@@ -6,10 +6,11 @@ import {
   IBadgeRepository,
   BadgeListFilters,
 } from '../repositories/badge.repository';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import {
-  CursorPaginationResult,
-  CursorPaginationUtil,
-} from '../../../../../shared/utils/cursor-pagination.util';
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 import {
   notFound,
   MessageKeys,
@@ -76,36 +77,7 @@ export class BadgeRepository implements IBadgeRepository {
       sortBy,
       sortOrder,
     });
-    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue !== null && sortValue !== undefined) {
-            decodedSortValue = sortValue;
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const queryBuilder = this.repository
       .createQueryBuilder('badge')
@@ -117,139 +89,33 @@ export class BadgeRepository implements IBadgeRepository {
       });
     }
 
-    const sortField = `badge.${sortBy}`;
-
-    if (!decodedId || direction === 'forward') {
-      if (sortBy === 'order') {
-        if (sortOrder === 'DESC') {
-          queryBuilder.addOrderBy('badge.order', 'DESC', 'NULLS LAST');
-        } else {
-          queryBuilder.addOrderBy('badge.order', 'ASC', 'NULLS LAST');
-        }
+    if (sortBy === 'order') {
+      if (sortOrder === 'DESC') {
+        queryBuilder.addOrderBy('badge.order', 'DESC', 'NULLS LAST');
       } else {
-        if (sortOrder === 'DESC') {
-          queryBuilder.addOrderBy(sortField, 'DESC', 'NULLS LAST');
-        } else {
-          queryBuilder.addOrderBy(sortField, 'ASC', 'NULLS FIRST');
-        }
+        queryBuilder.addOrderBy('badge.order', 'ASC', 'NULLS LAST');
       }
-      queryBuilder.addOrderBy('badge.id', sortOrder);
-    }
-
-    if (decodedId) {
-      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
-      if (decodedSortValue != null) {
-        if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
-          parsedSortValue = new Date(decodedSortValue);
-        } else if (sortBy === 'order') {
-          const n = parseFloat(decodedSortValue);
-          parsedSortValue = Number.isNaN(n) ? undefined : n;
-        } else {
-          parsedSortValue = decodedSortValue;
-        }
-      }
-
-      if (direction === 'forward') {
-        queryBuilder.andWhere('badge.id != :cursorId', { cursorId: decodedId });
-        if (parsedSortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND badge.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND badge.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('badge.id > :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('badge.id < :cursorId', { cursorId: decodedId });
-          }
-        }
+    } else {
+      const sortField = `badge.${sortBy}`;
+      if (sortOrder === 'DESC') {
+        queryBuilder.addOrderBy(sortField, 'DESC', 'NULLS LAST');
       } else {
-        if (parsedSortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND badge.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND badge.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('badge.id < :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('badge.id > :cursorId', { cursorId: decodedId });
-          }
-        }
-        if (sortOrder === 'DESC') {
-          queryBuilder.orderBy(sortField, 'ASC').addOrderBy('badge.id', 'ASC');
-        } else {
-          queryBuilder.orderBy(sortField, 'DESC').addOrderBy('badge.id', 'DESC');
-        }
+        queryBuilder.addOrderBy(sortField, 'ASC', 'NULLS FIRST');
       }
     }
-
-    queryBuilder.take(realLimit + 1);
+    queryBuilder.addOrderBy('badge.id', sortOrder).skip(offset).take(realLimit + 1);
 
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
-    let data = entities.slice(0, realLimit);
+    const data = entities.slice(0, realLimit);
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    const getSortValue = (item: Badge): string | number | Date | undefined => {
-      const val = (item as unknown as Record<string, unknown>)[sortBy];
-      if (val instanceof Date) return val;
-      if (val !== null && val !== undefined) return val as string | number;
-      return undefined;
-    };
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    } else {
-      data = data.slice().reverse();
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          getSortValue(oldestInPage),
-          { direction: 'forward', sort: sortDefinition, filterKey },
-        );
-      }
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          getSortValue(newestInPage),
-          { direction: 'backward', sort: sortDefinition, filterKey },
-        );
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return {
       data,
@@ -329,36 +195,7 @@ export class BadgeRepository implements IBadgeRepository {
       sortBy,
       sortOrder,
     });
-    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue !== null && sortValue !== undefined) {
-            decodedSortValue = sortValue;
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const queryBuilder = this.repository
       .createQueryBuilder('badge')
@@ -371,139 +208,33 @@ export class BadgeRepository implements IBadgeRepository {
       });
     }
 
-    const sortField = `badge.${sortBy}`;
-
-    if (!decodedId || direction === 'forward') {
-      if (sortBy === 'order') {
-        if (sortOrder === 'DESC') {
-          queryBuilder.addOrderBy('badge.order', 'DESC', 'NULLS LAST');
-        } else {
-          queryBuilder.addOrderBy('badge.order', 'ASC', 'NULLS LAST');
-        }
+    if (sortBy === 'order') {
+      if (sortOrder === 'DESC') {
+        queryBuilder.addOrderBy('badge.order', 'DESC', 'NULLS LAST');
       } else {
-        if (sortOrder === 'DESC') {
-          queryBuilder.addOrderBy(sortField, 'DESC', 'NULLS LAST');
-        } else {
-          queryBuilder.addOrderBy(sortField, 'ASC', 'NULLS FIRST');
-        }
+        queryBuilder.addOrderBy('badge.order', 'ASC', 'NULLS LAST');
       }
-      queryBuilder.addOrderBy('badge.id', sortOrder);
-    }
-
-    if (decodedId) {
-      let parsedSortValue: string | number | Date | undefined = decodedSortValue;
-      if (decodedSortValue != null) {
-        if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
-          parsedSortValue = new Date(decodedSortValue);
-        } else if (sortBy === 'order') {
-          const n = parseFloat(decodedSortValue);
-          parsedSortValue = Number.isNaN(n) ? undefined : n;
-        } else {
-          parsedSortValue = decodedSortValue;
-        }
-      }
-
-      if (direction === 'forward') {
-        queryBuilder.andWhere('badge.id != :cursorId', { cursorId: decodedId });
-        if (parsedSortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND badge.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND badge.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('badge.id > :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('badge.id < :cursorId', { cursorId: decodedId });
-          }
-        }
+    } else {
+      const sortField = `badge.${sortBy}`;
+      if (sortOrder === 'DESC') {
+        queryBuilder.addOrderBy(sortField, 'DESC', 'NULLS LAST');
       } else {
-        if (parsedSortValue !== undefined) {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND badge.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND badge.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'ASC') {
-            queryBuilder.andWhere('badge.id < :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('badge.id > :cursorId', { cursorId: decodedId });
-          }
-        }
-        if (sortOrder === 'DESC') {
-          queryBuilder.orderBy(sortField, 'ASC').addOrderBy('badge.id', 'ASC');
-        } else {
-          queryBuilder.orderBy(sortField, 'DESC').addOrderBy('badge.id', 'DESC');
-        }
+        queryBuilder.addOrderBy(sortField, 'ASC', 'NULLS FIRST');
       }
     }
-
-    queryBuilder.take(realLimit + 1);
+    queryBuilder.addOrderBy('badge.id', sortOrder).skip(offset).take(realLimit + 1);
 
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
-    let data = entities.slice(0, realLimit);
+    const data = entities.slice(0, realLimit);
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    const getSortValue = (item: Badge): string | number | Date | undefined => {
-      const val = (item as unknown as Record<string, unknown>)[sortBy];
-      if (val instanceof Date) return val;
-      if (val !== null && val !== undefined) return val as string | number;
-      return undefined;
-    };
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, getSortValue(lastItem), {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, getSortValue(firstItem), {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    } else {
-      data = data.slice().reverse();
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          getSortValue(oldestInPage),
-          { direction: 'forward', sort: sortDefinition, filterKey },
-        );
-      }
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          getSortValue(newestInPage),
-          { direction: 'backward', sort: sortDefinition, filterKey },
-        );
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return {
       data,

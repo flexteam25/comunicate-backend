@@ -567,10 +567,18 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async getSearchHistory(
     @CurrentUser() user: CurrentUserPayload,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
-  ): Promise<ApiResponse<{ searchQuery: string; createdAt: Date }[]>> {
+  ): Promise<
+    ApiResponse<{
+      data: { searchQuery: string; createdAt: Date }[];
+      nextCursor: string | null;
+      prevCursor: string | null;
+    }>
+  > {
     const result = await this.getSearchHistoryUseCase.execute({
       userId: user.userId,
+      cursor,
       limit: limit ? parseInt(limit, 10) : undefined,
     });
 

@@ -6,10 +6,11 @@ import {
   IUserBadgeRequestRepository,
   UserBadgeRequestFilters,
 } from '../repositories/user-badge-request.repository';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import {
-  CursorPaginationResult,
-  CursorPaginationUtil,
-} from '../../../../../shared/utils/cursor-pagination.util';
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 import { notFound, MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 
 @Injectable()
@@ -59,7 +60,10 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
       status: filters.status ?? null,
       userName: filters.userName ?? null,
       badgeName: filters.badgeName ?? null,
+      sortBy,
+      sortOrder,
     });
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const queryBuilder = this.repository
       .createQueryBuilder('request')
@@ -92,165 +96,24 @@ export class UserBadgeRequestRepository implements IUserBadgeRequestRepository {
       });
     }
 
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          decodedSortValue = sortValue;
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
-
     const sortField = `request.${sortBy}`;
-    const sortDefinition = `${sortBy}:${sortOrder},id:${sortOrder}`;
+    queryBuilder
+      .orderBy(sortField, sortOrder, 'NULLS LAST')
+      .addOrderBy('request.id', sortOrder)
+      .skip(offset)
+      .take(realLimit + 1);
 
-    if (!decodedId || direction === 'forward') {
-      queryBuilder
-        .addOrderBy(sortField, sortOrder, 'NULLS LAST')
-        .addOrderBy('request.id', sortOrder);
-    }
-
-    if (decodedId) {
-      queryBuilder.andWhere('request.id != :cursorId', { cursorId: decodedId });
-      const parsedSortValue =
-        decodedSortValue != null && sortBy === 'createdAt'
-          ? new Date(decodedSortValue)
-          : decodedSortValue;
-
-      if (direction === 'forward') {
-        if (parsedSortValue !== null && parsedSortValue !== undefined) {
-          if (sortOrder === 'DESC') {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND request.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND request.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'DESC') {
-            queryBuilder.andWhere('request.id < :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('request.id > :cursorId', { cursorId: decodedId });
-          }
-        }
-      } else {
-        if (parsedSortValue !== null && parsedSortValue !== undefined) {
-          if (sortOrder === 'DESC') {
-            queryBuilder.andWhere(
-              `(${sortField} > :sortValue OR (${sortField} = :sortValue AND request.id > :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          } else {
-            queryBuilder.andWhere(
-              `(${sortField} < :sortValue OR (${sortField} = :sortValue AND request.id < :cursorId))`,
-              { sortValue: parsedSortValue, cursorId: decodedId },
-            );
-          }
-        } else {
-          if (sortOrder === 'DESC') {
-            queryBuilder.andWhere('request.id > :cursorId', { cursorId: decodedId });
-          } else {
-            queryBuilder.andWhere('request.id < :cursorId', { cursorId: decodedId });
-          }
-        }
-        queryBuilder
-          .addOrderBy(sortField, sortOrder, 'NULLS LAST')
-          .addOrderBy('request.id', sortOrder);
-      }
-    }
-
-    queryBuilder.take(realLimit + 1);
     const rows = await queryBuilder.getMany();
-
     const hasMore = rows.length > realLimit;
-    let data: UserBadgeRequest[];
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
+    const data = rows.slice(0, realLimit);
 
-    if (!decodedId || direction === 'forward') {
-      data = rows.slice(0, realLimit);
-
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        const fieldValue = (lastItem as unknown as Record<string, unknown>)[sortBy];
-        const sortValue =
-          fieldValue !== null && fieldValue !== undefined
-            ? (fieldValue as string | number | Date)
-            : undefined;
-        nextCursor = CursorPaginationUtil.encodeCursor(lastItem.id, sortValue, {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        const fieldValue = (firstItem as unknown as Record<string, unknown>)[sortBy];
-        const sortValue =
-          fieldValue !== null && fieldValue !== undefined
-            ? (fieldValue as string | number | Date)
-            : undefined;
-        prevCursor = CursorPaginationUtil.encodeCursor(firstItem.id, sortValue, {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    } else {
-      data = rows.slice(0, realLimit);
-
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        const fieldValue = (oldestInPage as unknown as Record<string, unknown>)[sortBy];
-        const sortValue =
-          fieldValue !== null && fieldValue !== undefined
-            ? (fieldValue as string | number | Date)
-            : undefined;
-        nextCursor = CursorPaginationUtil.encodeCursor(oldestInPage.id, sortValue, {
-          direction: 'forward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        const fieldValue = (newestInPage as unknown as Record<string, unknown>)[sortBy];
-        const sortValue =
-          fieldValue !== null && fieldValue !== undefined
-            ? (fieldValue as string | number | Date)
-            : undefined;
-        prevCursor = CursorPaginationUtil.encodeCursor(newestInPage.id, sortValue, {
-          direction: 'backward',
-          sort: sortDefinition,
-          filterKey,
-        });
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return {
       data,

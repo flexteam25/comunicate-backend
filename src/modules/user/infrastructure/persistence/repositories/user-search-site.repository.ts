@@ -2,8 +2,13 @@ export interface IUserSearchSiteRepository {
   addSearchHistory(userId: string, searchQuery: string): Promise<void>;
   findRecentSearchHistory(
     userId: string,
-    limit: number,
-  ): Promise<{ searchQuery: string; createdAt: Date }[]>;
+    cursor?: string,
+    limit?: number,
+  ): Promise<{
+    data: { searchQuery: string; createdAt: Date }[];
+    nextCursor: string | null;
+    prevCursor: string | null;
+  }>;
   findRecentSearchHistoryWithIds(
     userId: string,
     limit: number,

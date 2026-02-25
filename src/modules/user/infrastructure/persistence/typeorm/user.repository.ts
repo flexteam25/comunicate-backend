@@ -3,10 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { User } from '../../../domain/entities/user.entity';
 import { IUserRepository, UserFilters } from '../repositories/user.repository';
+import { CursorPaginationResult } from '../../../../../shared/utils/cursor-pagination.util';
 import {
-  CursorPaginationResult,
-  CursorPaginationUtil,
-} from '../../../../../shared/utils/cursor-pagination.util';
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -110,39 +111,7 @@ export class UserRepository implements IUserRepository {
       sortBy,
       sortDir,
     });
-    const sortDefinition =
-      sortBy === 'points'
-        ? `points:${sortDir},id:${sortDir}`
-        : `${sortBy}:${sortDir},id:${sortDir}`;
-
-    let decodedId: string | undefined;
-    let decodedSortValue: string | undefined;
-    let direction: 'forward' | 'backward' = 'forward';
-
-    if (cursor) {
-      try {
-        const {
-          id,
-          sortValue,
-          direction: decodedDirection,
-          filterKey: cursorFilterKey,
-        } = CursorPaginationUtil.decodeCursor(cursor);
-        if (cursorFilterKey && cursorFilterKey !== filterKey) {
-          decodedId = undefined;
-          decodedSortValue = undefined;
-        } else {
-          decodedId = id;
-          if (sortValue !== null && sortValue !== undefined) {
-            decodedSortValue = sortValue;
-          }
-          if (decodedDirection === 'backward' || decodedDirection === 'forward') {
-            direction = decodedDirection;
-          }
-        }
-      } catch {
-        // Invalid cursor, ignore
-      }
-    }
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
     const queryBuilder = this.repository
       .createQueryBuilder('user')
@@ -200,76 +169,14 @@ export class UserRepository implements IUserRepository {
       });
     }
 
-    const cursorSortField =
-      sortBy === 'points'
-        ? 'COALESCE(userProfile.points, 0)'
-        : `user.${sortBy}`;
-
-    if (!decodedId || direction === 'forward') {
-      if (sortBy === 'points') {
-        queryBuilder
-          .addSelect('COALESCE(userProfile.points, 0)', 'pointsValue')
-          .orderBy('pointsValue', sortDir)
-          .addOrderBy('user.id', sortDir);
-      } else {
-        queryBuilder.orderBy(`user.${sortBy}`, sortDir).addOrderBy('user.id', sortDir);
-      }
-    }
-
-    if (decodedId) {
-      queryBuilder.andWhere('user.id != :cursorId', { cursorId: decodedId });
-      const parsedSortValue =
-        decodedSortValue != null
-          ? sortBy === 'createdAt'
-            ? new Date(decodedSortValue)
-            : sortBy === 'points'
-              ? Number(decodedSortValue)
-              : decodedSortValue
-          : undefined;
-      if (parsedSortValue !== null && parsedSortValue !== undefined) {
-        if (direction === 'forward') {
-          const comparisonOp = sortDir === 'DESC' ? '<' : '>';
-          const idOp = sortDir === 'DESC' ? '<' : '>';
-          queryBuilder.andWhere(
-            `(${cursorSortField} ${comparisonOp} :sortValue OR (${cursorSortField} = :sortValue AND user.id ${idOp} :cursorId))`,
-            { sortValue: parsedSortValue, cursorId: decodedId },
-          );
-        } else {
-          const comparisonOp = sortDir === 'DESC' ? '>' : '<';
-          const idOp = sortDir === 'DESC' ? '>' : '<';
-          queryBuilder.andWhere(
-            `(${cursorSortField} ${comparisonOp} :sortValue OR (${cursorSortField} = :sortValue AND user.id ${idOp} :cursorId))`,
-            { sortValue: parsedSortValue, cursorId: decodedId },
-          );
-        }
-      } else {
-        if (direction === 'forward') {
-          const idOp = sortDir === 'DESC' ? '<' : '>';
-          queryBuilder.andWhere(`user.id ${idOp} :cursorId`, { cursorId: decodedId });
-        } else {
-          const idOp = sortDir === 'DESC' ? '>' : '<';
-          queryBuilder.andWhere(`user.id ${idOp} :cursorId`, { cursorId: decodedId });
-        }
-      }
-      if (direction === 'backward') {
-        if (sortBy === 'points') {
-          queryBuilder
-            .addSelect('COALESCE(userProfile.points, 0)', 'pointsValue')
-            .orderBy('pointsValue', sortDir)
-            .addOrderBy('user.id', sortDir);
-        } else {
-          queryBuilder.orderBy(`user.${sortBy}`, sortDir).addOrderBy('user.id', sortDir);
-        }
-      }
-    }
-
-    queryBuilder.take(realLimit + 1);
-
-    const meta = { direction: 'forward' as const, sort: sortDefinition, filterKey };
-    const metaBackward = { direction: 'backward' as const, sort: sortDefinition, filterKey };
-
-    // For points sorting, we need to use raw SQL to handle COALESCE properly
     if (sortBy === 'points') {
+      queryBuilder
+        .addSelect('COALESCE(userProfile.points, 0)', 'pointsValue')
+        .orderBy('pointsValue', sortDir)
+        .addOrderBy('user.id', sortDir)
+        .skip(offset)
+        .take(realLimit + 1);
+
       const [sql, parameters] = queryBuilder.getQueryAndParameters();
       const orderByExpression = `ORDER BY COALESCE("userProfile"."points", 0) ${sortDir}, "user"."id" ${sortDir}`;
       let modifiedSql = sql;
@@ -322,98 +229,31 @@ export class UserRepository implements IUserRepository {
       const hasMore = sortedEntities.length > realLimit;
       const data = sortedEntities.slice(0, realLimit);
 
-      let nextCursor: string | null = null;
-      let prevCursor: string | null = null;
-      const getPointsSortValue = (item: User) => pointsMap.get(item.id) ?? 0;
-
-      if (!decodedId || direction === 'forward') {
-        if (hasMore && data.length > 0) {
-          const lastItem = data[data.length - 1];
-          nextCursor = CursorPaginationUtil.encodeCursor(
-            lastItem.id,
-            getPointsSortValue(lastItem),
-            { ...meta },
-          );
-        }
-        if (decodedId && cursor && data.length > 0) {
-          const firstItem = data[0];
-          prevCursor = CursorPaginationUtil.encodeCursor(
-            firstItem.id,
-            getPointsSortValue(firstItem),
-            { ...metaBackward },
-          );
-        }
-      } else {
-        if (data.length > 0) {
-          const oldestInPage = data[data.length - 1];
-          nextCursor = CursorPaginationUtil.encodeCursor(
-            oldestInPage.id,
-            getPointsSortValue(oldestInPage),
-            { ...meta },
-          );
-        }
-        if (hasMore && data.length > 0) {
-          const newestInPage = data[0];
-          prevCursor = CursorPaginationUtil.encodeCursor(
-            newestInPage.id,
-            getPointsSortValue(newestInPage),
-            { ...metaBackward },
-          );
-        }
-      }
+      const nextCursor = hasMore
+        ? encodeOffsetCursor(offset + realLimit, { filterKey })
+        : null;
+      const prevCursor =
+        offset > 0
+          ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+          : null;
 
       return { data, nextCursor, prevCursor: prevCursor ?? null };
     }
+
+    queryBuilder.orderBy(`user.${sortBy}`, sortDir).addOrderBy('user.id', sortDir);
+    queryBuilder.skip(offset).take(realLimit + 1);
 
     const entities = await queryBuilder.getMany();
     const hasMore = entities.length > realLimit;
     const data = entities.slice(0, realLimit);
 
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    const getSortValue = (item: User): string | number | Date | undefined => {
-      if (sortBy === 'points') return item.userProfile?.points ?? 0;
-      const val = (item as unknown as Record<string, unknown>)[sortBy];
-      if (val == null) return undefined;
-      return val instanceof Date ? val : (val as string | number);
-    };
-
-    if (!decodedId || direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const lastItem = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          lastItem.id,
-          getSortValue(lastItem),
-          { ...meta },
-        );
-      }
-      if (decodedId && cursor && data.length > 0) {
-        const firstItem = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          firstItem.id,
-          getSortValue(firstItem),
-          { ...metaBackward },
-        );
-      }
-    } else {
-      if (data.length > 0) {
-        const oldestInPage = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(
-          oldestInPage.id,
-          getSortValue(oldestInPage),
-          { ...meta },
-        );
-      }
-      if (hasMore && data.length > 0) {
-        const newestInPage = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(
-          newestInPage.id,
-          getSortValue(newestInPage),
-          { ...metaBackward },
-        );
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return { data, nextCursor, prevCursor: prevCursor ?? null };
   }

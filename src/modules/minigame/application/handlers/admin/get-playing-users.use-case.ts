@@ -2,7 +2,10 @@ import { Injectable, Inject } from '@nestjs/common';
 import { IUserRepository } from '../../../../user/infrastructure/persistence/repositories/user.repository';
 import { User } from '../../../../user/domain/entities/user.entity';
 import { MinigamePlayingStateService } from '../../services/minigame-playing-state.service';
-import { CursorPaginationUtil } from '../../../../../shared/utils/cursor-pagination.util';
+import {
+  decodeOffsetCursor,
+  encodeOffsetCursor,
+} from '../../../../../shared/utils/offset-pagination.util';
 
 export interface PlayingUserItem {
   user: {
@@ -27,9 +30,6 @@ export interface GetPlayingUsersResult {
   prevCursor: string | null;
 }
 
-const SORT_EMAIL = 'email';
-const SORT_ORDER = 'ASC' as const;
-const SORT_DEFINITION = `${SORT_EMAIL}:${SORT_ORDER},id:${SORT_ORDER}`;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
@@ -107,91 +107,19 @@ export class GetPlayingUsersUseCase {
       userName: userName?.trim() ?? null,
       gameType: gameType?.trim() ?? null,
     });
-    let startIndex = 0;
-    let direction: 'forward' | 'backward' = 'forward';
+    const { offset } = decodeOffsetCursor({ cursor, filterKey });
 
-    if (cursor) {
-      try {
-        const decoded = CursorPaginationUtil.decodeCursor(cursor);
-        if (decoded.filterKey !== filterKey) {
-          // Cursor from different search, ignore
-        } else {
-          const cursorEmail = (decoded.sortValue ?? '').toLowerCase();
-          const cursorId = decoded.id;
-          direction = decoded.direction ?? 'forward';
-          if (direction === 'forward') {
-            startIndex = items.findIndex(
-              (item) =>
-                item.user.email.toLowerCase() > cursorEmail ||
-                (item.user.email.toLowerCase() === cursorEmail && item.user.id > cursorId),
-            );
-            if (startIndex < 0) startIndex = items.length;
-          } else {
-            // Backward: cursor is first item of current page; we want the page before it
-            const cursorIndex = items.findIndex(
-              (item) =>
-                item.user.email.toLowerCase() > cursorEmail ||
-                (item.user.email.toLowerCase() === cursorEmail && item.user.id >= cursorId),
-            );
-            const endBefore = cursorIndex < 0 ? items.length : cursorIndex;
-            startIndex = Math.max(0, endBefore - realLimit);
-          }
-        }
-      } catch {
-        // Invalid cursor, start from beginning
-      }
-    }
+    const page = items.slice(offset, offset + realLimit + 1);
+    const hasMore = page.length > realLimit;
+    const data = page.slice(0, realLimit);
 
-    let data: PlayingUserItem[];
-    let hasMore: boolean;
-
-    if (direction === 'forward') {
-      const page = items.slice(startIndex, startIndex + realLimit + 1);
-      hasMore = page.length > realLimit;
-      data = page.slice(0, realLimit);
-    } else {
-      data = items.slice(startIndex, startIndex + realLimit);
-      hasMore = startIndex > 0;
-    }
-
-    let nextCursor: string | null = null;
-    let prevCursor: string | null = null;
-
-    if (direction === 'forward') {
-      if (hasMore && data.length > 0) {
-        const last = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(last.user.id, last.user.email, {
-          direction: 'forward',
-          sort: SORT_DEFINITION,
-          filterKey,
-        });
-      }
-      if (cursor && data.length > 0) {
-        const first = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(first.user.id, first.user.email, {
-          direction: 'backward',
-          sort: SORT_DEFINITION,
-          filterKey,
-        });
-      }
-    } else {
-      if (data.length > 0) {
-        const last = data[data.length - 1];
-        nextCursor = CursorPaginationUtil.encodeCursor(last.user.id, last.user.email, {
-          direction: 'forward',
-          sort: SORT_DEFINITION,
-          filterKey,
-        });
-      }
-      if (hasMore && data.length > 0) {
-        const first = data[0];
-        prevCursor = CursorPaginationUtil.encodeCursor(first.user.id, first.user.email, {
-          direction: 'backward',
-          sort: SORT_DEFINITION,
-          filterKey,
-        });
-      }
-    }
+    const nextCursor = hasMore
+      ? encodeOffsetCursor(offset + realLimit, { filterKey })
+      : null;
+    const prevCursor =
+      offset > 0
+        ? encodeOffsetCursor(Math.max(0, offset - realLimit), { filterKey })
+        : null;
 
     return {
       data,
