@@ -7,7 +7,6 @@ const CACHE_KEY_PREFIX = 'system_settings:';
 
 export interface MaintenanceValue {
   status: number;
-  allowed_ips: string[];
 }
 
 @Injectable()
@@ -20,15 +19,14 @@ export class MaintenanceCheckService {
 
   async getMaintenance(): Promise<MaintenanceValue> {
     const cacheKey = `${CACHE_KEY_PREFIX}${MAINTENANCE_KEY}`;
-    const cached = await this.redisService.get(cacheKey);
+    const cached = (await this.redisService.get(cacheKey)) as MaintenanceValue | null;
     if (cached != null && typeof cached === 'object' && 'status' in cached) {
-      return this.normalizeMaintenance(cached as MaintenanceValue);
+      return this.normalizeMaintenance(cached);
     }
 
     const setting = await this.systemSettingRepository.findByKey(MAINTENANCE_KEY);
     const value = (setting?.value as unknown as MaintenanceValue | undefined) ?? {
       status: 0,
-      allowed_ips: [],
     };
     const normalized = this.normalizeMaintenance(value);
     await this.redisService.set(cacheKey, normalized);
@@ -38,9 +36,6 @@ export class MaintenanceCheckService {
   private normalizeMaintenance(v: MaintenanceValue): MaintenanceValue {
     return {
       status: typeof v.status === 'number' ? v.status : 0,
-      allowed_ips: Array.isArray(v.allowed_ips)
-        ? v.allowed_ips.filter((ip) => typeof ip === 'string')
-        : [],
     };
   }
 }

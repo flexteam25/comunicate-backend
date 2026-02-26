@@ -9,6 +9,7 @@ import {
 } from '../../../../shared/exceptions/exception-helpers';
 import { LoggerService } from '../../../../shared/logger/logger.service';
 import { MinigamePlayingStateService } from '../services/minigame-playing-state.service';
+import { MaintenanceCheckService } from '../../../system-settings/application/services/maintenance-check.service';
 
 export interface LaunchGameCommand {
   userId: string;
@@ -23,9 +24,15 @@ export class LaunchGameUseCase {
     private readonly gameBackendClient: GameBackendClientService,
     private readonly logger: LoggerService,
     private readonly minigamePlayingStateService: MinigamePlayingStateService,
+    private readonly maintenanceCheckService: MaintenanceCheckService,
   ) {}
 
   async execute(command: LaunchGameCommand): Promise<{ url: string }> {
+    const maintenance = await this.maintenanceCheckService.getMaintenance();
+    if (maintenance.status === 1) {
+      throw badRequest(MessageKeys.MAINTENANCE_MODE);
+    }
+
     const user = await this.userRepository.findById(command.userId, ['userProfile']);
     if (!user) {
       throw notFound(MessageKeys.PARTNER_USER_NOT_FOUND);

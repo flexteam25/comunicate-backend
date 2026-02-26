@@ -11,6 +11,7 @@ import { GetGameBetLimitsService } from '../../../system-settings/application/se
 import { MinigamePlayingStateService } from '../services/minigame-playing-state.service';
 import { QueueService } from '../../../../shared/queue/queue.service';
 import { GamePointLogJobData } from '../../../../shared/queue/processors/game-point-log.processor';
+import { MaintenanceCheckService } from '../../../system-settings/application/services/maintenance-check.service';
 
 export type GameCallbackResult =
   | { status: 'OK'; newBalance?: number; actualAmount?: number }
@@ -46,6 +47,7 @@ export class HandleGameCallbackUseCase {
     private readonly queueService: QueueService,
     private readonly getGameBetLimitsService: GetGameBetLimitsService,
     private readonly minigamePlayingStateService: MinigamePlayingStateService,
+    private readonly maintenanceCheckService: MaintenanceCheckService,
   ) {}
 
   async execute(command: GameCallbackCommand): Promise<GameCallbackResult> {
@@ -61,6 +63,11 @@ export class HandleGameCallbackUseCase {
       coinType,
       gameType,
     } = command;
+
+    const maintenance = await this.maintenanceCheckService.getMaintenance();
+    if (maintenance.status === 1) {
+      return { status: 'REJECT', message: 'Game is under maintenance' };
+    }
 
     const existing = await this.pointTransactionRepo
       .createQueryBuilder('t')

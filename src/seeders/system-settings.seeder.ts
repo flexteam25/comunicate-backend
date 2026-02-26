@@ -4,7 +4,6 @@ import { SystemSetting } from '../modules/system-settings/domain/entities/system
 const MAINTENANCE_KEY = 'maintenance';
 const MAINTENANCE_DEFAULT_VALUE = {
   status: 0,
-  allowed_ips: [] as string[],
 };
 
 const GAME_BET_LIMITS_KEY = 'game_bet_limits';
