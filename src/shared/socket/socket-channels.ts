@@ -32,6 +32,7 @@ export enum RedisChannel {
   USER_BADGE_REQUEST_APPROVED = 'user-badge-request:approved',
   USER_BADGE_REQUEST_REJECTED = 'user-badge-request:rejected',
   MINIGAME_PLAYING_CREATED = 'minigame:playing:created',
+  MINIGAME_BIG_WIN_CREATED = 'minigame:big-win:created',
 }
 
 /**
@@ -88,6 +89,7 @@ export enum SocketEvent {
   USER_BADGE_REQUEST_APPROVED = 'user-badge-request:approved',
   USER_BADGE_REQUEST_REJECTED = 'user-badge-request:rejected',
   MINIGAME_PLAYING_CREATED = 'minigame:playing:created',
+  MINIGAME_BIG_WIN_CREATED = 'minigame:big-win:created',
 }
 
 /**

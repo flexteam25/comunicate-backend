@@ -3,9 +3,13 @@ import { Injectable } from '@nestjs/common';
 import { ICommand } from './base-command.interface';
 import { SyncUserPostsCommand } from './commands/sync-user-posts.command';
 import { SyncUserCommentsCommand } from './commands/sync-user-comments.command';
+import { BackfillGameDailyStatsCommand } from './commands/backfill-game-daily-stats.command';
 
 interface CliCommandOptions {
   userId?: string;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 /**
@@ -24,6 +28,7 @@ export class CliCommand extends CommandRunner {
   constructor(
     private readonly syncUserPostsCommand: SyncUserPostsCommand,
     private readonly syncUserCommentsCommand: SyncUserCommentsCommand,
+    private readonly backfillGameDailyStatsCommand: BackfillGameDailyStatsCommand,
   ) {
     super();
     this.registerCommands();
@@ -33,6 +38,7 @@ export class CliCommand extends CommandRunner {
     // Register all available commands
     this.commands.set('sync-user-posts', this.syncUserPostsCommand);
     this.commands.set('sync-user-comments', this.syncUserCommentsCommand);
+    this.commands.set('backfill-game-daily-stats', this.backfillGameDailyStatsCommand);
   }
 
   async run(passedParams: string[], options?: CliCommandOptions): Promise<void> {
@@ -75,15 +81,39 @@ export class CliCommand extends CommandRunner {
     return val;
   }
 
+  @Option({
+    flags: '--date <date>',
+    description: 'UTC date (YYYY-MM-DD) for backfill-game-daily-stats',
+  })
+  parseDate(val: string): string {
+    return val;
+  }
+
+  @Option({
+    flags: '--startDate <startDate>',
+    description: 'UTC start date (YYYY-MM-DD) for backfill-game-daily-stats',
+  })
+  parseStartDate(val: string): string {
+    return val;
+  }
+
+  @Option({
+    flags: '--endDate <endDate>',
+    description: 'UTC end date (YYYY-MM-DD) for backfill-game-daily-stats',
+  })
+  parseEndDate(val: string): string {
+    return val;
+  }
+
   private showHelp(): void {
     console.log('\n╔══════════════════════════════════════════════════════════════╗');
     console.log('║                    CLI Commands Help                         ║');
     console.log('╚══════════════════════════════════════════════════════════════╝\n');
-    
+
     console.log('Usage:');
     console.log('  npm run cli:dev -- <command> [options]');
     console.log('  npm run cli -- <command> [options]\n');
-    
+
     console.log('Available commands:');
     console.log('─────────────────────────────────────────────────────────────');
 
@@ -102,6 +132,11 @@ export class CliCommand extends CommandRunner {
     console.log('Examples:');
     console.log('─────────────────────────────────────────────────────────────');
     console.log('  npm run cli:dev -- sync-user-posts --userId=xxx');
-    console.log('  npm run cli:dev -- sync-user-comments --userId=xxx\n');
+    console.log('  npm run cli:dev -- sync-user-comments --userId=xxx');
+    console.log('  npm run cli:dev -- backfill-game-daily-stats --date=2026-02-27');
+    console.log(
+      '  npm run cli:dev -- backfill-game-daily-stats --startDate=2026-02-01 --endDate=2026-02-07',
+    );
+    console.log('');
   }
 }

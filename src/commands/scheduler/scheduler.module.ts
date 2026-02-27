@@ -72,6 +72,10 @@ import { UserIpSyncService } from './user-ip-sync.service';
 import { UserIpRepository } from '../../modules/user/infrastructure/persistence/repositories/user-ip.repository';
 import { BlockedIpRepository } from '../../modules/user/infrastructure/persistence/typeorm/blocked-ip.repository';
 import { RedisModule } from '../../shared/redis/redis.module';
+import { BetHistory } from '../../modules/minigame/domain/entities/bet-history.entity';
+import { GameDailyStats } from '../../modules/minigame/domain/entities/game-daily-stats.entity';
+import { GameDailyStatsRepository } from '../../modules/minigame/infrastructure/persistence/typeorm/game-daily-stats.repository';
+import { MinigameDailyStatsScheduler } from './minigame-daily-stats.service';
 
 @Module({
   imports: [
@@ -176,6 +180,8 @@ import { RedisModule } from '../../shared/redis/redis.module';
         SiteBadgeRequestImage,
         SiteReviewCommentImage,
         SiteReviewCommentImage,
+        BetHistory,
+        GameDailyStats,
       ],
       synchronize: false,
       logging: false,
@@ -198,7 +204,13 @@ import { RedisModule } from '../../shared/redis/redis.module';
       inject: [ConfigService],
     }),
     RedisModule,
-    TypeOrmModule.forFeature([UserIp, UserProfile, BlockedIp]),
+    TypeOrmModule.forFeature([
+      UserIp,
+      UserProfile,
+      BlockedIp,
+      BetHistory,
+      GameDailyStats,
+    ]),
   ],
   providers: [
     SchedulerCommand,
@@ -213,6 +225,8 @@ import { RedisModule } from '../../shared/redis/redis.module';
     },
     UserIpRepository,
     BlockedIpRepository,
+    GameDailyStatsRepository,
+    MinigameDailyStatsScheduler,
   ],
   exports: [UserIpSyncService],
 })

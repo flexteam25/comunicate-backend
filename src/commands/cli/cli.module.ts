@@ -7,6 +7,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { CliCommand } from './cli.command';
 import { SyncUserPostsCommand } from './commands/sync-user-posts.command';
 import { SyncUserCommentsCommand } from './commands/sync-user-comments.command';
+import { BackfillGameDailyStatsCommand } from './commands/backfill-game-daily-stats.command';
 import { LoggerModule } from '../../shared/logger/logger.module';
 import { ALL_ENTITIES } from './entities';
 import { UserPost } from '../../modules/user/domain/entities/user-post.entity';
@@ -16,6 +17,9 @@ import { PostComment } from '../../modules/post/domain/entities/post-comment.ent
 import { SiteReviewComment } from '../../modules/site-review/domain/entities/site-review-comment.entity';
 import { ScamReportComment } from '../../modules/scam-report/domain/entities/scam-report-comment.entity';
 import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
+import { BetHistory } from '../../modules/minigame/domain/entities/bet-history.entity';
+import { GameDailyStats } from '../../modules/minigame/domain/entities/game-daily-stats.entity';
+import { GameDailyStatsRepository } from '../../modules/minigame/infrastructure/persistence/typeorm/game-daily-stats.repository';
 
 @Module({
   imports: [
@@ -69,6 +73,8 @@ import { SiteReviewCommentImage } from '../../modules/site-review/domain/entitie
       SiteReviewComment,
       ScamReportComment,
       SiteReviewCommentImage,
+      BetHistory,
+      GameDailyStats,
     ]),
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -91,6 +97,8 @@ import { SiteReviewCommentImage } from '../../modules/site-review/domain/entitie
     CliCommand,
     SyncUserPostsCommand,
     SyncUserCommentsCommand,
+    BackfillGameDailyStatsCommand,
+    GameDailyStatsRepository,
   ],
 })
 export class CliCommandModule {}

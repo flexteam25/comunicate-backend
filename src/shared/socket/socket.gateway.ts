@@ -439,6 +439,14 @@ export class SocketGateway
           this.server.to(SocketRoom.ADMIN).emit(SocketEvent.MINIGAME_PLAYING_CREATED, data);
         },
       );
+
+      // Subscribe to minigame:big-win:created (notify admins when a big win with deduct happens)
+      await this.redisService.subscribeToChannel(
+        RedisChannel.MINIGAME_BIG_WIN_CREATED,
+        (data) => {
+          this.server.to(SocketRoom.ADMIN).emit(SocketEvent.MINIGAME_BIG_WIN_CREATED, data);
+        },
+      );
     } catch (error) {
       this.logger.error(
         'Failed to setup Redis subscriptions',

@@ -4,3 +4,4 @@
  */
 export { SyncUserPostsCommand } from './sync-user-posts.command';
 export { SyncUserCommentsCommand } from './sync-user-comments.command';
+export { BackfillGameDailyStatsCommand } from './backfill-game-daily-stats.command';

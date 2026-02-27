@@ -243,6 +243,7 @@
                     <li><strong>user-badge-request:approved</strong> - User badge request approved</li>
                     <li><strong>user-badge-request:rejected</strong> - User badge request rejected</li>
                     <li><strong>minigame:playing:created</strong> - New minigame playing user (same format as admin/minigame/playing)</li>
+                    <li><strong>minigame:big-win:created</strong> - Win capped at max payout (AdminBetHistoryItemDto)</li>
                 </ul>
             </div>
             <input type="text" id="token-user" placeholder="User JWT Access Token">
@@ -856,6 +857,23 @@
                 const displayName = user.displayName || email;
                 const gameType = data.gameType || 'Unknown';
                 log('log-admin', `🎮 Minigame Playing Created - User: ${displayName} (${email}, ${userId}), Game: ${gameType}`, 'event', data);
+            });
+
+            socketAdmin.on('minigame:big-win:created', (data) => {
+                const user = data.user || {};
+                const userId = user.id || 'Unknown';
+                const email = user.email || 'Unknown';
+                const displayName = user.displayName || email;
+                const gameType = data.gameType || 'Unknown';
+                const betAmount = data.betAmount ?? 0;
+                const payoutAmount = data.payoutAmount ?? 0;
+                const maxPayoutDeduct = data.maxPayoutDeduct ?? 0;
+                log(
+                  'log-admin',
+                  `💥 Minigame Big Win - User: ${displayName} (${email}, ${userId}), Game: ${gameType}, Bet: ${betAmount}, Payout: ${payoutAmount}, Deduct: ${maxPayoutDeduct}`,
+                  'event',
+                  data
+                );
             });
         }
 

@@ -175,7 +175,48 @@ export class GamePointLogProcessor extends WorkerHost {
 
       await this.pointTransactionRepo.save(tx);
 
-      // 3) Publish POINT_UPDATED unless skipPublish (e.g. deduct audit-only)
+      // 3) Publish BIG WIN event for admins when win is capped (maxPayoutDeduct > 0)
+      if (data.type === 'win' && data.betHistoryUpdate?.maxPayoutDeduct && referenceId) {
+        try {
+          const bet = await this.betHistoryRepo.findOne({
+            where: { id: referenceId },
+            relations: ['user'],
+          });
+          if (bet && bet.user) {
+            const payload = {
+              user: {
+                id: bet.user.id,
+                email: bet.user.email,
+                displayName: bet.user.displayName ?? null,
+                avatarUrl: bet.user.avatarUrl ?? null,
+              },
+              gameType: bet.gameType,
+              roundNumber: bet.roundNumber ?? null,
+              betAmount: bet.betAmount,
+              payoutAmount: bet.payoutAmount,
+              maxPayoutDeduct: bet.maxPayoutDeduct,
+              roundResult: bet.roundResult ?? null,
+              createdAt: bet.createdAt.toISOString(),
+            };
+            await this.redisService.publishEvent(
+              RedisChannel.MINIGAME_BIG_WIN_CREATED as string,
+              payload,
+            );
+          }
+        } catch (e) {
+          this.logger.error(
+            'Failed to publish MINIGAME_BIG_WIN_CREATED event',
+            {
+              userId: data.userId,
+              referenceId,
+              error: e instanceof Error ? e.message : String(e),
+            },
+            'game-point-log',
+          );
+        }
+      }
+
+      // 4) Publish POINT_UPDATED unless skipPublish (e.g. deduct audit-only)
       if (!data.skipPublish) {
         const eventData = {
           userId: data.userId,

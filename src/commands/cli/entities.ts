@@ -62,6 +62,8 @@ import { SiteEvent } from '../../modules/site-event/domain/entities/site-event.e
 import { SiteEventBanner } from '../../modules/site-event/domain/entities/site-event-banner.entity';
 import { SiteEventView } from '../../modules/site-event/domain/entities/site-event-view.entity';
 import { SiteReviewCommentImage } from '../../modules/site-review/domain/entities/site-review-comment-image.entity';
+import { BetHistory } from '../../modules/minigame/domain/entities/bet-history.entity';
+import { GameDailyStats } from '../../modules/minigame/domain/entities/game-daily-stats.entity';
 
 export const ALL_ENTITIES = [
   User,
@@ -124,4 +126,6 @@ export const ALL_ENTITIES = [
   SiteEventBanner,
   SiteEventView,
   SiteReviewCommentImage,
+  BetHistory,
+  GameDailyStats,
 ];
