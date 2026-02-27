@@ -98,6 +98,7 @@ import { MinigameModule } from './modules/minigame/minigame.module';
 import { BetHistory } from './modules/minigame/domain/entities/bet-history.entity';
 import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
 import { SystemSetting } from './modules/system-settings/domain/entities/system-setting.entity';
+import { GameDailyStats } from './modules/minigame/domain/entities/game-daily-stats.entity';
 
 @Module({
   imports: [
@@ -182,6 +183,7 @@ import { SystemSetting } from './modules/system-settings/domain/entities/system-
         SiteRequest,
         BetHistory,
         SystemSetting,
+        GameDailyStats,
       ],
       synchronize: false,
       logging: false,

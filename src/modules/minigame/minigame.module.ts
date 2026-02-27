@@ -16,7 +16,10 @@ import { HandleGameCallbackUseCase } from './application/handlers/handle-game-ca
 import { GameSyncPointSubscriber } from './application/subscribers/game-sync-point.subscriber';
 import { GameCallbackGuard } from './infrastructure/guards/game-callback.guard';
 import { BetHistory } from './domain/entities/bet-history.entity';
+import { GameDailyStats } from './domain/entities/game-daily-stats.entity';
+import { GameDailyStatsRepository } from './infrastructure/persistence/typeorm/game-daily-stats.repository';
 import { GetSelfBetHistoryUseCase } from './application/handlers/get-self-bet-history.use-case';
+import { GetLeaderboardUseCase } from './application/handlers/get-leaderboard.use-case';
 import { MinigameController } from './interface/rest/user/minigame.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { AdminBetHistoryController } from './interface/rest/admin/bet-history.controller';
@@ -37,15 +40,17 @@ import { MinigamePlayingStateService } from './application/services/minigame-pla
     QueueClientModule,
     SystemSettingsModule,
     AdminGuardsModule,
-    TypeOrmModule.forFeature([PointTransaction, UserProfile, BetHistory]),
+    TypeOrmModule.forFeature([PointTransaction, UserProfile, BetHistory, GameDailyStats]),
   ],
   controllers: [MinigameController, AdminBetHistoryController, AdminMinigamePlayingController],
   providers: [
     MinigamePlayingStateService,
+    GameDailyStatsRepository,
     LaunchGameUseCase,
     GameCallbackGuard,
     HandleGameCallbackUseCase,
     GetSelfBetHistoryUseCase,
+    GetLeaderboardUseCase,
     ListAdminBetHistoriesUseCase,
     GetPlayingUsersUseCase,
     GameSyncPointSubscriber,

@@ -20,11 +20,21 @@ export interface GameDailyStatsRow {
   maxSingleWin: number;
 }
 
+export interface LeaderboardEntry {
+  userId: string;
+  totalNetWin: number;
+  rank: number;
+}
+
+export type LeaderboardPeriod = 'day' | 'week' | 'month';
+
 @Injectable()
 export class GameDailyStatsRepository {
   constructor(
     @InjectRepository(BetHistory)
     private readonly betHistoryRepo: Repository<BetHistory>,
+    @InjectRepository(GameDailyStats)
+    private readonly gameDailyStatsRepo: Repository<GameDailyStats>,
     private readonly logger: LoggerService,
   ) {}
 
@@ -184,5 +194,76 @@ export class GameDailyStatsRepository {
         ['date', 'user_id', 'game_type'],
       )
       .execute();
+  }
+
+  getLeaderboardDateRange(period: LeaderboardPeriod): { dateFrom: string; dateTo: string } {
+    // Use Asia/Seoul (UTC+9) as business timezone for "today"
+    const now = new Date();
+    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const y = kst.getUTCFullYear();
+    const m = kst.getUTCMonth();
+    const d = kst.getUTCDate();
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    if (period === 'day') {
+      const dateStr = `${y}-${pad(m + 1)}-${pad(d)}`;
+      return { dateFrom: dateStr, dateTo: dateStr };
+    }
+
+    if (period === 'week') {
+      const dayOfWeek = kst.getUTCDay(); // 0 = Sunday, 1 = Monday, ...
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(Date.UTC(y, m, d + mondayOffset));
+      const sunday = new Date(monday);
+      sunday.setUTCDate(sunday.getUTCDate() + 6);
+      const dateFrom = `${monday.getUTCFullYear()}-${pad(monday.getUTCMonth() + 1)}-${pad(monday.getUTCDate())}`;
+      const dateTo = `${sunday.getUTCFullYear()}-${pad(sunday.getUTCMonth() + 1)}-${pad(sunday.getUTCDate())}`;
+      return { dateFrom, dateTo };
+    }
+
+    // month
+    const lastDay = new Date(Date.UTC(y, m + 1, 0));
+    const dateFrom = `${y}-${pad(m + 1)}-01`;
+    const dateTo = `${y}-${pad(m + 1)}-${pad(lastDay.getUTCDate())}`;
+    return { dateFrom, dateTo };
+  }
+
+  /**
+   * Leaderboard: top N winners (net_win DESC) and top N losers (net_win ASC)
+   * aggregated from game_daily_stats in the given date range.
+   */
+  async getLeaderboard(
+    period: LeaderboardPeriod,
+    limit: number = 30,
+  ): Promise<{ topWinners: LeaderboardEntry[]; topLosers: LeaderboardEntry[] }> {
+    const { dateFrom, dateTo } = this.getLeaderboardDateRange(period);
+
+    const base = () =>
+      this.gameDailyStatsRepo
+        .createQueryBuilder('g')
+        .select('g.user_id', 'userId')
+        .addSelect('SUM(g.net_win::numeric)', 'totalNetWin')
+        .where('g.date >= :dateFrom', { dateFrom })
+        .andWhere('g.date <= :dateTo', { dateTo })
+        .groupBy('g.user_id');
+
+    const [winnersRaw, losersRaw] = await Promise.all([
+      base().orderBy('SUM(g.net_win::numeric)', 'DESC').limit(limit).getRawMany<{ userId: string; totalNetWin: string }>(),
+      base().orderBy('SUM(g.net_win::numeric)', 'ASC').limit(limit).getRawMany<{ userId: string; totalNetWin: string }>(),
+    ]);
+
+    const topWinners: LeaderboardEntry[] = winnersRaw.map((r, i) => ({
+      userId: r.userId,
+      totalNetWin: Number(r.totalNetWin) || 0,
+      rank: i + 1,
+    }));
+
+    const topLosers: LeaderboardEntry[] = losersRaw.map((r, i) => ({
+      userId: r.userId,
+      totalNetWin: Number(r.totalNetWin) || 0,
+      rank: i + 1,
+    }));
+
+    return { topWinners, topLosers };
   }
 }

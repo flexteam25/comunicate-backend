@@ -18,8 +18,10 @@ import { GameCallbackDto } from '../dto/game-callback.dto';
 import { LaunchGameUseCase } from '../../../application/handlers/launch-game.use-case';
 import { HandleGameCallbackUseCase } from '../../../application/handlers/handle-game-callback.use-case';
 import { GetSelfBetHistoryUseCase } from '../../../application/handlers/get-self-bet-history.use-case';
+import { GetLeaderboardUseCase } from '../../../application/handlers/get-leaderboard.use-case';
 import { GameCallbackGuard } from '../../../infrastructure/guards/game-callback.guard';
 import { BetHistoryItemDto } from '../dto/bet-history-response.dto';
+import { LeaderboardResponseDto, LeaderboardPeriodType } from '../dto/leaderboard-response.dto';
 import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-response.dto';
 import { MessageKeys } from '../../../../../shared/exceptions/exception-helpers';
 import { formatPoints } from '../../../../../shared/utils/point.util';
@@ -32,9 +34,23 @@ export class MinigameController {
     private readonly launchGameUseCase: LaunchGameUseCase,
     private readonly handleGameCallbackUseCase: HandleGameCallbackUseCase,
     private readonly getSelfBetHistoryUseCase: GetSelfBetHistoryUseCase,
+    private readonly getLeaderboardUseCase: GetLeaderboardUseCase,
     private readonly getGameBetLimitsService: GetGameBetLimitsService,
     private readonly logger: LoggerService,
   ) {}
+
+  @Get('leaderboard')
+  @HttpCode(HttpStatus.OK)
+  async getLeaderboard(
+    @Query('type') type?: LeaderboardPeriodType,
+    @Query('limit') limit?: number,
+  ): Promise<ApiResponse<LeaderboardResponseDto>> {
+    const result = await this.getLeaderboardUseCase.execute({
+      type: type === 'week' || type === 'month' ? type : 'day',
+      limit: limit != null ? parseInt(String(limit), 10) : undefined,
+    });
+    return ApiResponseUtil.success(result);
+  }
 
   @Get('bet-history')
   @UseGuards(JwtAuthGuard)

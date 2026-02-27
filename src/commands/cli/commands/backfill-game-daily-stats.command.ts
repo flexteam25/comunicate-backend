@@ -122,15 +122,5 @@ export class BackfillGameDailyStatsCommand implements ICommand {
       userId ? [userId] : undefined,
     );
     await this.gameDailyStatsRepository.upsertRows(rows);
-
-    this.logger.info(
-      'Backfilled game_daily_stats',
-      {
-        date: dateLabel,
-        userId: userId || null,
-        rowCount: rows.length,
-      },
-      'BackfillGameDailyStatsCommand',
-    );
   }
 }

@@ -21,8 +21,8 @@ export class MinigameDailyStatsScheduler {
     private readonly logger: LoggerService,
   ) {}
 
-  // @Cron(CronExpression.EVERY_5_MINUTES)
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron('0 */2 * * * *') // every 2 minutes
+  // @Cron(CronExpression.EVERY_10_SECONDS)
   async recomputeToday() {
     try {
       const now = new Date();
@@ -38,7 +38,7 @@ export class MinigameDailyStatsScheduler {
         this.logger.info(
           'No active users with bet_histories for today; skipping recompute',
           { date: dateLabel },
-          MinigameDailyStatsScheduler.name,
+          'minigame-daily-stats-scheduler',
         );
         return;
       }
@@ -54,17 +54,11 @@ export class MinigameDailyStatsScheduler {
           batchSize: BATCH_SIZE,
           totalBatches,
         },
-        MinigameDailyStatsScheduler.name,
+        'minigame-daily-stats-scheduler',
       );
 
       for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
         const batch = userIds.slice(i, i + BATCH_SIZE);
-
-        this.logger.debug(
-          `Recomputing game_daily_stats for today batch ${i / BATCH_SIZE + 1}`,
-          { userIds: batch, batchSize: batch.length },
-          MinigameDailyStatsScheduler.name,
-        );
 
         const allRows: GameDailyStatsRow[] =
           await this.gameDailyStatsRepository.aggregateForDate(todayUtc, batch);
@@ -81,7 +75,7 @@ export class MinigameDailyStatsScheduler {
           userCount: userIds.length,
           totalBatches,
         },
-        MinigameDailyStatsScheduler.name,
+        'minigame-daily-stats-scheduler',
       );
     } catch (error) {
       this.logger.error(
@@ -93,7 +87,7 @@ export class MinigameDailyStatsScheduler {
               ? error.stack.split('\n').map((line) => line.trim())
               : undefined,
         },
-        MinigameDailyStatsScheduler.name,
+        'minigame-daily-stats-scheduler',
       );
     }
   }
@@ -117,7 +111,7 @@ export class MinigameDailyStatsScheduler {
         this.logger.info(
           'No active users with bet_histories for yesterday; skipping finalize',
           { date: dateLabel },
-          MinigameDailyStatsScheduler.name,
+          'minigame-daily-stats-scheduler',
         );
         return;
       }
@@ -133,17 +127,11 @@ export class MinigameDailyStatsScheduler {
           batchSize: BATCH_SIZE,
           totalBatches,
         },
-        MinigameDailyStatsScheduler.name,
+        'minigame-daily-stats-scheduler',
       );
 
       for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
         const batch = userIds.slice(i, i + BATCH_SIZE);
-
-        this.logger.debug(
-          `Finalizing game_daily_stats for yesterday batch ${i / BATCH_SIZE + 1}`,
-          { userIds: batch, batchSize: batch.length },
-          MinigameDailyStatsScheduler.name,
-        );
 
         const allRows: GameDailyStatsRow[] =
           await this.gameDailyStatsRepository.aggregateForDate(yesterdayUtc, batch);
@@ -160,7 +148,7 @@ export class MinigameDailyStatsScheduler {
           userCount: userIds.length,
           totalBatches,
         },
-        MinigameDailyStatsScheduler.name,
+        'minigame-daily-stats-scheduler',
       );
     } catch (error) {
       this.logger.error(
@@ -168,7 +156,7 @@ export class MinigameDailyStatsScheduler {
         {
           error: error instanceof Error ? error.message : String(error),
         },
-        MinigameDailyStatsScheduler.name,
+        'minigame-daily-stats-scheduler',
       );
     }
   }
