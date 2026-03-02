@@ -5,6 +5,7 @@ import { User } from '../../../user/domain/entities/user.entity';
 import {
   notFound,
   badRequest,
+  serviceUnavailable,
   MessageKeys,
 } from '../../../../shared/exceptions/exception-helpers';
 import { LoggerService } from '../../../../shared/logger/logger.service';
@@ -30,7 +31,7 @@ export class LaunchGameUseCase {
   async execute(command: LaunchGameCommand): Promise<{ url: string }> {
     const maintenance = await this.maintenanceCheckService.getMaintenance();
     if (maintenance.status === 1) {
-      throw badRequest(MessageKeys.MAINTENANCE_MODE);
+      throw serviceUnavailable(MessageKeys.MAINTENANCE_MODE);
     }
 
     const user = await this.userRepository.findById(command.userId, ['userProfile']);

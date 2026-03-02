@@ -35,6 +35,13 @@ export function tooManyRequests(
   return new ApiExceptionWithKey(messageKey, HttpStatus.TOO_MANY_REQUESTS, params);
 }
 
+export function serviceUnavailable(
+  messageKey: string,
+  params?: Record<string, string | number>,
+) {
+  return new ApiExceptionWithKey(messageKey, HttpStatus.SERVICE_UNAVAILABLE, params);
+}
+
 /**
  * Common message keys for reuse
  */
