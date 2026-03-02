@@ -612,5 +612,6 @@
   "GAME_BET_LIMITS_MIN_BET_OUT_OF_RANGE": "{{gameType}}의 minBet은 0.001~100,000 사이여야 합니다",
   "GAME_BET_LIMITS_MAX_BET_OUT_OF_RANGE": "{{gameType}}의 maxBet은 10~10,000,000 사이여야 합니다",
   "GAME_BET_LIMITS_MAX_PAYOUT_OUT_OF_RANGE": "{{gameType}}의 maxPayoutAmount는 0~50,000,000 사이여야 합니다",
-  "GAME_BET_LIMITS_MIN_BET_MUST_BE_LTE_MAX_BET": "{{gameType}}의 minBet은 maxBet 이하여야 합니다"
+  "GAME_BET_LIMITS_MIN_BET_MUST_BE_LTE_MAX_BET": "{{gameType}}의 minBet은 maxBet 이하여야 합니다",
+  "LEADERBOARD_DATE_RANGE_TOO_LARGE": "조회 기간은 최대 6개월까지 가능합니다"
 }

@@ -612,5 +612,6 @@
   "GAME_BET_LIMITS_MIN_BET_OUT_OF_RANGE": "minBet for {{gameType}} must be between 0.001 and 100,000",
   "GAME_BET_LIMITS_MAX_BET_OUT_OF_RANGE": "maxBet for {{gameType}} must be between 10 and 10,000,000",
   "GAME_BET_LIMITS_MAX_PAYOUT_OUT_OF_RANGE": "maxPayoutAmount for {{gameType}} must be between 0 and 50,000,000",
-  "GAME_BET_LIMITS_MIN_BET_MUST_BE_LTE_MAX_BET": "minBet must be less than or equal to maxBet for {{gameType}}"
+  "GAME_BET_LIMITS_MIN_BET_MUST_BE_LTE_MAX_BET": "minBet must be less than or equal to maxBet for {{gameType}}",
+  "LEADERBOARD_DATE_RANGE_TOO_LARGE": "Date range cannot exceed 6 months"
 }

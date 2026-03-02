@@ -28,6 +28,20 @@ export interface LeaderboardEntry {
 
 export type LeaderboardPeriod = 'day' | 'week' | 'month';
 
+export type AdminLeaderboardSortBy = 'win' | 'lose' | 'roundsPlayed' | 'countWin' | 'countLose';
+
+export interface AdminLeaderboardRow {
+  userId: string;
+  netWin: number;
+  totalBet: number;
+  totalWin: number;
+  totalDeduct: number;
+  roundsPlayed: number;
+  countWin: number;
+  countLose: number;
+  countDraw: number;
+}
+
 @Injectable()
 export class GameDailyStatsRepository {
   constructor(
@@ -39,29 +53,28 @@ export class GameDailyStatsRepository {
   ) {}
 
   /**
-   * Aggregate bet_histories into per-user, per-game stats for a given UTC day.
+   * Helper: convert a JS Date to KST (Asia/Seoul) calendar date string (YYYY-MM-DD).
+   */
+  private toKstDateString(date: Date): string {
+    const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    const y = kst.getUTCFullYear();
+    const m = kst.getUTCMonth() + 1;
+    const d = kst.getUTCDate();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${y}-${pad(m)}-${pad(d)}`;
+  }
+
+  /**
+   * Aggregate bet_histories into per-user, per-game stats for a given KST (Asia/Seoul) day.
    * Optionally filter by one or more userIds (for CLI backfill / per-user batches).
    */
   async aggregateForDate(date: Date, userIds?: string[]): Promise<GameDailyStatsRow[]> {
-    const start = new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0),
-    );
-    const end = new Date(
-      Date.UTC(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate() + 1,
-        0,
-        0,
-        0,
-        0,
-      ),
-    );
+    const kstDate = this.toKstDateString(date);
 
     const qb = this.betHistoryRepo
       .createQueryBuilder('bh')
       .select([
-        "date_trunc('day', bh.createdAt AT TIME ZONE 'UTC')::date AS date",
+        "date_trunc('day', bh.createdAt AT TIME ZONE 'Asia/Seoul')::date AS date",
         'bh.userId AS "userId"',
         'bh.gameType AS "gameType"',
         'SUM(bh.betAmount) AS "totalBet"',
@@ -73,11 +86,13 @@ export class GameDailyStatsRepository {
         'SUM(CASE WHEN bh.roundResult = \'draw\' THEN 1 ELSE 0 END) AS "countDraw"',
         "MAX(CASE WHEN bh.roundResult = 'win' or bh.roundResult = 'payout' THEN bh.payoutAmount ELSE 0 END) AS \"maxSingleWin\"",
       ])
-      .where('bh.createdAt >= :start', { start })
-      .andWhere('bh.createdAt < :end', { end })
+      .where(
+        "date_trunc('day', bh.createdAt AT TIME ZONE 'Asia/Seoul')::date = :kstDate",
+        { kstDate },
+      )
       .andWhere('bh.userId IS NOT NULL')
       .andWhere('bh.gameType IS NOT NULL')
-      .groupBy("date_trunc('day', bh.createdAt AT TIME ZONE 'UTC')::date")
+      .groupBy("date_trunc('day', bh.createdAt AT TIME ZONE 'Asia/Seoul')::date")
       .addGroupBy('bh.userId')
       .addGroupBy('bh.gameType');
 
@@ -122,30 +137,19 @@ export class GameDailyStatsRepository {
   }
 
   /**
-   * Find distinct userIds that have bet_histories in the given UTC day.
+   * Find distinct userIds that have bet_histories in the given KST (Asia/Seoul) day.
    * Used by scheduler to split work into per-user batches.
    */
   async findActiveUserIdsForDate(date: Date): Promise<string[]> {
-    const start = new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0),
-    );
-    const end = new Date(
-      Date.UTC(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate() + 1,
-        0,
-        0,
-        0,
-        0,
-      ),
-    );
+    const kstDate = this.toKstDateString(date);
 
     const rows = await this.betHistoryRepo
       .createQueryBuilder('bh')
       .select('DISTINCT bh.userId', 'userId')
-      .where('bh.createdAt >= :start', { start })
-      .andWhere('bh.createdAt < :end', { end })
+      .where(
+        "date_trunc('day', bh.createdAt AT TIME ZONE 'Asia/Seoul')::date = :kstDate",
+        { kstDate },
+      )
       .andWhere('bh.userId IS NOT NULL')
       .andWhere('bh.gameType IS NOT NULL')
       .getRawMany<{ userId: string }>();
@@ -265,5 +269,84 @@ export class GameDailyStatsRepository {
     }));
 
     return { topWinners, topLosers };
+  }
+
+  /**
+   * Admin leaderboard: aggregate stats per user in an arbitrary date range
+   * with sorting by win/lose, roundsPlayed, countWin, or countLose.
+   */
+  async getAdminLeaderboard(params: {
+    dateFrom: string;
+    dateTo: string;
+    sortBy: AdminLeaderboardSortBy;
+    orderBy: 'ASC' | 'DESC';
+    limit: number;
+    gameType?: string;
+  }): Promise<AdminLeaderboardRow[]> {
+    const { dateFrom, dateTo, sortBy, orderBy, limit, gameType } = params;
+
+    const qb = this.gameDailyStatsRepo
+      .createQueryBuilder('g')
+      .select('g.user_id', 'userId')
+      .addSelect('SUM(g.net_win::numeric)', 'netWin')
+      .addSelect('SUM(g.total_bet::numeric)', 'totalBet')
+      .addSelect('SUM(g.total_win::numeric)', 'totalWin')
+      .addSelect('SUM(g.total_deduct::numeric)', 'totalDeduct')
+      .addSelect('SUM(g.rounds_played)', 'roundsPlayed')
+      .addSelect('SUM(g.count_win)', 'countWin')
+      .addSelect('SUM(g.count_lose)', 'countLose')
+      .addSelect('SUM(g.count_draw)', 'countDraw')
+      .where('g.date >= :dateFrom', { dateFrom })
+      .andWhere('g.date <= :dateTo', { dateTo })
+      .groupBy('g.user_id');
+
+    if (gameType && gameType.trim() !== '') {
+      qb.andWhere('g.game_type = :gameType', { gameType: gameType.trim() });
+    }
+
+    let orderExpr: string;
+    switch (sortBy) {
+      case 'roundsPlayed':
+        orderExpr = 'SUM(g.rounds_played)';
+        break;
+      case 'countWin':
+        orderExpr = 'SUM(g.count_win)';
+        break;
+      case 'countLose':
+        orderExpr = 'SUM(g.count_lose)';
+        break;
+      case 'win':
+      case 'lose':
+      default:
+        orderExpr = 'SUM(g.net_win::numeric)';
+        break;
+    }
+
+    const raw = await qb
+      .orderBy(orderExpr, orderBy)
+      .limit(limit)
+      .getRawMany<{
+        userId: string;
+        netWin: string;
+        totalBet: string;
+        totalWin: string;
+        totalDeduct: string;
+        roundsPlayed: string;
+        countWin: string;
+        countLose: string;
+        countDraw: string;
+      }>();
+
+    return raw.map((r) => ({
+      userId: r.userId,
+      netWin: Number(r.netWin) || 0,
+      totalBet: Number(r.totalBet) || 0,
+      totalWin: Number(r.totalWin) || 0,
+      totalDeduct: Number(r.totalDeduct) || 0,
+      roundsPlayed: Number(r.roundsPlayed) || 0,
+      countWin: Number(r.countWin) || 0,
+      countLose: Number(r.countLose) || 0,
+      countDraw: Number(r.countDraw) || 0,
+    }));
   }
 }

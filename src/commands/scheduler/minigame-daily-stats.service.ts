@@ -9,9 +9,9 @@ import { LoggerService } from '../../shared/logger/logger.service';
 /**
  * Scheduler for computing game_daily_stats.
  *
- * Strategy:
- * - Every 5 minutes: recompute stats for today (UTC).
- * - At 00:08 UTC: recompute stats for yesterday (finalize).
+ * Strategy (business timezone = Asia/Seoul, UTC+9):
+ * - Every 2 minutes: recompute stats for "today" (KST).
+ * - At 00:08 KST (cron based on server time): recompute stats for "yesterday" (KST).
  * - Any further corrections use manual backfill commands/jobs.
  */
 @Injectable()
@@ -26,13 +26,13 @@ export class MinigameDailyStatsScheduler {
   async recomputeToday() {
     try {
       const now = new Date();
-      const todayUtc = new Date(
+      const today = new Date(
         Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
       );
-      const dateLabel = todayUtc.toISOString().slice(0, 10);
+      const dateLabel = today.toISOString().slice(0, 10);
 
       const userIds =
-        await this.gameDailyStatsRepository.findActiveUserIdsForDate(todayUtc);
+        await this.gameDailyStatsRepository.findActiveUserIdsForDate(today);
 
       if (!userIds.length) {
         this.logger.info(
@@ -61,7 +61,7 @@ export class MinigameDailyStatsScheduler {
         const batch = userIds.slice(i, i + BATCH_SIZE);
 
         const allRows: GameDailyStatsRow[] =
-          await this.gameDailyStatsRepository.aggregateForDate(todayUtc, batch);
+          await this.gameDailyStatsRepository.aggregateForDate(today, batch);
 
         if (allRows.length) {
           await this.gameDailyStatsRepository.upsertRows(allRows);
@@ -99,13 +99,13 @@ export class MinigameDailyStatsScheduler {
   async finalizeYesterday() {
     try {
       const now = new Date();
-      const yesterdayUtc = new Date(
+      const yesterday = new Date(
         Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1),
       );
-      const dateLabel = yesterdayUtc.toISOString().slice(0, 10);
+      const dateLabel = yesterday.toISOString().slice(0, 10);
 
       const userIds =
-        await this.gameDailyStatsRepository.findActiveUserIdsForDate(yesterdayUtc);
+        await this.gameDailyStatsRepository.findActiveUserIdsForDate(yesterday);
 
       if (!userIds.length) {
         this.logger.info(
@@ -134,7 +134,7 @@ export class MinigameDailyStatsScheduler {
         const batch = userIds.slice(i, i + BATCH_SIZE);
 
         const allRows: GameDailyStatsRow[] =
-          await this.gameDailyStatsRepository.aggregateForDate(yesterdayUtc, batch);
+          await this.gameDailyStatsRepository.aggregateForDate(yesterday, batch);
 
         if (allRows.length) {
           await this.gameDailyStatsRepository.upsertRows(allRows);

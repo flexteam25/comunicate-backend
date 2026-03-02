@@ -93,13 +93,6 @@ export class BackfillGameDailyStatsCommand implements ICommand {
     }
   }
 
-  /**
-   * Parse a YYYY-MM-DD string as a UTC calendar day.
-   *
-   * Important: this is intentionally timezone-agnostic. Whatever date
-   * you pass on the CLI is treated as a UTC day boundary, not converted
-   * from the local machine timezone.
-   */
   private parseDateOrExit(dateStr: string): Date {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
 
@@ -112,6 +105,8 @@ export class BackfillGameDailyStatsCommand implements ICommand {
     const month = Number(match[2]) - 1; // JS months are 0-based
     const day = Number(match[3]);
 
+    // We construct a UTC date; GameDailyStatsRepository will interpret this
+    // as a KST (Asia/Seoul) calendar day when aggregating.
     return new Date(Date.UTC(year, month, day));
   }
 

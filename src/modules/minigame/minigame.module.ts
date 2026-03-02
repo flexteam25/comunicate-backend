@@ -26,6 +26,7 @@ import { AdminBetHistoryController } from './interface/rest/admin/bet-history.co
 import { AdminMinigamePlayingController } from './interface/rest/admin/minigame-playing.controller';
 import { ListAdminBetHistoriesUseCase } from './application/handlers/admin/list-admin-bet-histories.use-case';
 import { GetPlayingUsersUseCase } from './application/handlers/admin/get-playing-users.use-case';
+import { GetAdminLeaderboardUseCase } from './application/handlers/admin/get-admin-leaderboard.use-case';
 import { MinigamePlayingStateService } from './application/services/minigame-playing-state.service';
 
 @Module({
@@ -53,6 +54,7 @@ import { MinigamePlayingStateService } from './application/services/minigame-pla
     GetLeaderboardUseCase,
     ListAdminBetHistoriesUseCase,
     GetPlayingUsersUseCase,
+    GetAdminLeaderboardUseCase,
     GameSyncPointSubscriber,
   ],
   exports: [],
