@@ -35,27 +35,11 @@ export class MinigameDailyStatsScheduler {
         await this.gameDailyStatsRepository.findActiveUserIdsForDate(today);
 
       if (!userIds.length) {
-        this.logger.info(
-          'No active users with bet_histories for today; skipping recompute',
-          { date: dateLabel },
-          'minigame-daily-stats-scheduler',
-        );
         return;
       }
 
       const BATCH_SIZE = 10;
       const totalBatches = Math.ceil(userIds.length / BATCH_SIZE);
-
-      this.logger.info(
-        'Recomputing game_daily_stats for today',
-        {
-          date: dateLabel,
-          userCount: userIds.length,
-          batchSize: BATCH_SIZE,
-          totalBatches,
-        },
-        'minigame-daily-stats-scheduler',
-      );
 
       for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
         const batch = userIds.slice(i, i + BATCH_SIZE);
@@ -67,16 +51,6 @@ export class MinigameDailyStatsScheduler {
           await this.gameDailyStatsRepository.upsertRows(allRows);
         }
       }
-
-      this.logger.info(
-        'Finished recomputing game_daily_stats for today',
-        {
-          date: dateLabel,
-          userCount: userIds.length,
-          totalBatches,
-        },
-        'minigame-daily-stats-scheduler',
-      );
     } catch (error) {
       this.logger.error(
         'Failed to recompute game_daily_stats for today',
@@ -108,27 +82,11 @@ export class MinigameDailyStatsScheduler {
         await this.gameDailyStatsRepository.findActiveUserIdsForDate(yesterday);
 
       if (!userIds.length) {
-        this.logger.info(
-          'No active users with bet_histories for yesterday; skipping finalize',
-          { date: dateLabel },
-          'minigame-daily-stats-scheduler',
-        );
         return;
       }
 
       const BATCH_SIZE = 10;
       const totalBatches = Math.ceil(userIds.length / BATCH_SIZE);
-
-      this.logger.info(
-        'Finalizing game_daily_stats for yesterday',
-        {
-          date: dateLabel,
-          userCount: userIds.length,
-          batchSize: BATCH_SIZE,
-          totalBatches,
-        },
-        'minigame-daily-stats-scheduler',
-      );
 
       for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
         const batch = userIds.slice(i, i + BATCH_SIZE);

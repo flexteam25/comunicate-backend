@@ -80,10 +80,11 @@ export class GamePointLogProcessor extends WorkerHost {
   ): Promise<BetHistory | null> {
     const gt = gameType || 'game';
     if (roundNumber) {
-      const byRound = await this.betHistoryRepo.findOne({
-        where: { userId, roundNumber },
+      const pendingWithRound = await this.betHistoryRepo.findOne({
+        where: { userId, gameType: gt, roundNumber, roundResult: 'pending' },
+        order: { createdAt: 'DESC' },
       });
-      if (byRound) return byRound;
+      if (pendingWithRound) return pendingWithRound;
     }
     const pending = await this.betHistoryRepo.findOne({
       where: { userId, gameType: gt, roundResult: 'pending' },

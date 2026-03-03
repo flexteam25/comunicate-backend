@@ -50,6 +50,40 @@ export class HandleGameCallbackUseCase {
     private readonly maintenanceCheckService: MaintenanceCheckService,
   ) {}
 
+  /**
+   * Normalize provider-specific roundResult values into internal canonical values.
+   * We still keep the original raw value in metadata for debugging/analytics.
+   */
+  private normalizeRoundResult(
+    raw: string | undefined,
+    type: GameCallbackCommand['type'],
+  ): string {
+    const normalized = (raw || '').toLowerCase().trim();
+
+    switch (type) {
+      case 'bet':
+        // Bets are always pending until resolved
+        return 'pending';
+      case 'cancel_bet':
+        return 'cancelled';
+      case 'win':
+        // Some games (e.g. mines) send "payout" instead of "win"
+        if (normalized === 'payout' || normalized === 'win') {
+          return 'win';
+        }
+        return 'win';
+      case 'lose':
+        return 'lost';
+      case 'draw':
+        return 'draw';
+      case 'refund':
+        // Currently we don't update bet_histories.round_result on refund
+        return normalized || 'refund';
+      default:
+        return normalized || 'pending';
+    }
+  }
+
   async execute(command: GameCallbackCommand): Promise<GameCallbackResult> {
     const {
       type,
@@ -125,9 +159,9 @@ export class HandleGameCallbackUseCase {
             createdAt,
             betHistoryUpdate: {
               roundNumber,
-              roundResult: 'cancelled',
-              payout: 0,
-              payoutAmount: 0,
+              roundResult: this.normalizeRoundResult(roundResult, 'cancel_bet'),
+              payout: 1,
+              payoutAmount: refundAmount,
               maxPayoutDeduct: 0,
             },
           };
@@ -180,7 +214,7 @@ export class HandleGameCallbackUseCase {
           betHistoryCreate: {
             roundNumber: roundNumber ?? null,
             betAmount: amountNum,
-            roundResult: roundResult || 'pending',
+            roundResult: this.normalizeRoundResult(roundResult, 'bet'),
             coinType: coinType || 'point',
           },
         };
@@ -270,7 +304,7 @@ export class HandleGameCallbackUseCase {
           createdAt,
           betHistoryUpdate: {
             roundNumber,
-            roundResult: roundResult || 'win',
+            roundResult: this.normalizeRoundResult(roundResult, 'win'),
             payout: payout ?? 0,
             payoutAmount: actualAmount,
             maxPayoutDeduct: deductAmount,
@@ -315,7 +349,6 @@ export class HandleGameCallbackUseCase {
         if (gameType) {
           await this.minigamePlayingStateService.setPlaying(userUuid, gameType);
         }
-        const gameTypeVal = gameType || 'game';
         const createdAt = new Date().toISOString();
         const jobData: GamePointLogJobData = {
           userId: userUuid,
@@ -336,7 +369,7 @@ export class HandleGameCallbackUseCase {
           createdAt,
           betHistoryUpdate: {
             roundNumber,
-            roundResult: roundResult || 'lost',
+            roundResult: this.normalizeRoundResult(roundResult, 'lose'),
             payout: payout ?? 0,
             payoutAmount: 0,
             maxPayoutDeduct: 0,
@@ -378,7 +411,7 @@ export class HandleGameCallbackUseCase {
           createdAt,
           betHistoryUpdate: {
             roundNumber,
-            roundResult: roundResult || 'draw',
+            roundResult: this.normalizeRoundResult(roundResult, 'draw'),
             payout: payout ?? 1,
             payoutAmount: amountNum,
             maxPayoutDeduct: 0,
