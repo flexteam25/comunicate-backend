@@ -19,14 +19,17 @@ import { BetHistory } from './domain/entities/bet-history.entity';
 import { GameDailyStats } from './domain/entities/game-daily-stats.entity';
 import { GameDailyStatsRepository } from './infrastructure/persistence/typeorm/game-daily-stats.repository';
 import { GetSelfBetHistoryUseCase } from './application/handlers/get-self-bet-history.use-case';
+import { GetSelfBetHistoryDetailUseCase } from './application/handlers/get-self-bet-history-detail.use-case';
 import { GetLeaderboardUseCase } from './application/handlers/get-leaderboard.use-case';
 import { MinigameController } from './interface/rest/user/minigame.controller';
 import { AdminGuardsModule } from '../admin/infrastructure/guards/admin-guards.module';
 import { AdminBetHistoryController } from './interface/rest/admin/bet-history.controller';
 import { AdminMinigamePlayingController } from './interface/rest/admin/minigame-playing.controller';
 import { ListAdminBetHistoriesUseCase } from './application/handlers/admin/list-admin-bet-histories.use-case';
+import { GetAdminBetHistoryDetailUseCase } from './application/handlers/admin/get-admin-bet-history-detail.use-case';
 import { GetPlayingUsersUseCase } from './application/handlers/admin/get-playing-users.use-case';
 import { GetAdminLeaderboardUseCase } from './application/handlers/admin/get-admin-leaderboard.use-case';
+import { GetAdminGameRevenueUseCase } from './application/handlers/admin/get-admin-game-revenue.use-case';
 import { MinigamePlayingStateService } from './application/services/minigame-playing-state.service';
 
 @Module({
@@ -51,10 +54,13 @@ import { MinigamePlayingStateService } from './application/services/minigame-pla
     GameCallbackGuard,
     HandleGameCallbackUseCase,
     GetSelfBetHistoryUseCase,
+    GetSelfBetHistoryDetailUseCase,
     GetLeaderboardUseCase,
     ListAdminBetHistoriesUseCase,
+    GetAdminBetHistoryDetailUseCase,
     GetPlayingUsersUseCase,
     GetAdminLeaderboardUseCase,
+    GetAdminGameRevenueUseCase,
     GameSyncPointSubscriber,
   ],
   exports: [],

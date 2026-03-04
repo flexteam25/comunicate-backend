@@ -29,17 +29,14 @@ export class MinigameDailyStatsScheduler {
       const today = new Date(
         Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
       );
-      const dateLabel = today.toISOString().slice(0, 10);
 
-      const userIds =
-        await this.gameDailyStatsRepository.findActiveUserIdsForDate(today);
+      const userIds = await this.gameDailyStatsRepository.findActiveUserIdsForDate(today);
 
       if (!userIds.length) {
         return;
       }
 
       const BATCH_SIZE = 10;
-      const totalBatches = Math.ceil(userIds.length / BATCH_SIZE);
 
       for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
         const batch = userIds.slice(i, i + BATCH_SIZE);

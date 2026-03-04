@@ -19,6 +19,8 @@ export interface AdminLeaderboardItemDto {
   countWin: number;
   countLose: number;
   countDraw: number;
+  totalCancel: number;
+  countCancel: number;
 }
 
 export interface AdminLeaderboardResponseDto {

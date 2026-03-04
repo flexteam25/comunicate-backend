@@ -9,6 +9,7 @@ export interface AdminBetHistoryUserDto {
 }
 
 export interface AdminBetHistoryItemDto {
+  id: string;
   user: AdminBetHistoryUserDto;
   gameType: string;
   roundNumber: string | null;

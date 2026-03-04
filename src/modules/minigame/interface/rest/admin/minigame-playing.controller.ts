@@ -6,11 +6,13 @@ import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-resp
 import { GetPlayingUsersUseCase } from '../../../application/handlers/admin/get-playing-users.use-case';
 import { PlayingUserItemDto } from './dto/playing-user-response.dto';
 import { GetAdminLeaderboardUseCase } from '../../../application/handlers/admin/get-admin-leaderboard.use-case';
+import { GetAdminGameRevenueUseCase } from '../../../application/handlers/admin/get-admin-game-revenue.use-case';
 import {
   AdminLeaderboardResponseDto,
   AdminLeaderboardOrderBy,
   AdminLeaderboardSortBy,
 } from './dto/admin-leaderboard-response.dto';
+import { AdminGameRevenueResponseDto } from './dto/admin-game-revenue-response.dto';
 
 @Controller('admin/minigame')
 @UseGuards(AdminJwtAuthGuard, AdminPermissionGuard)
@@ -18,6 +20,7 @@ export class AdminMinigamePlayingController {
   constructor(
     private readonly getPlayingUsersUseCase: GetPlayingUsersUseCase,
     private readonly getAdminLeaderboardUseCase: GetAdminLeaderboardUseCase,
+    private readonly getAdminGameRevenueUseCase: GetAdminGameRevenueUseCase,
   ) {}
 
   @Get('playing')
@@ -66,6 +69,25 @@ export class AdminMinigamePlayingController {
       sortBy,
       orderBy,
       limit: limit != null ? parseInt(String(limit), 10) : undefined,
+    });
+
+    return ApiResponseUtil.success(result);
+  }
+
+  @Get('revenue')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('bet-history.read')
+  async getAdminGameRevenue(
+    @Query('date') date?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('gameType') gameType?: string,
+  ): Promise<ApiResponse<AdminGameRevenueResponseDto>> {
+    const result = await this.getAdminGameRevenueUseCase.execute({
+      date: date ? new Date(date) : undefined,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      gameType,
     });
 
     return ApiResponseUtil.success(result);

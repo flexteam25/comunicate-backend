@@ -80,6 +80,8 @@ export class GetAdminLeaderboardUseCase {
         countWin: r.countWin,
         countLose: r.countLose,
         countDraw: r.countDraw,
+        totalCancel: r.totalCancel,
+        countCancel: r.countCancel,
       };
     });
 

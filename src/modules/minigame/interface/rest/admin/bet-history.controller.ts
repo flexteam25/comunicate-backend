@@ -15,6 +15,7 @@ import { ApiResponse, ApiResponseUtil } from '../../../../../shared/dto/api-resp
 import { ConfigService } from '@nestjs/config';
 import { buildFullUrl } from '../../../../../shared/utils/url.util';
 import { ListAdminBetHistoriesUseCase } from '../../../application/handlers/admin/list-admin-bet-histories.use-case';
+import { GetAdminBetHistoryDetailUseCase } from '../../../application/handlers/admin/get-admin-bet-history-detail.use-case';
 import {
   AdminBetHistoryItemDto,
   AdminBetHistoryUserDto,
@@ -28,6 +29,7 @@ export class AdminBetHistoryController {
   constructor(
     private readonly listAdminBetHistoriesUseCase: ListAdminBetHistoriesUseCase,
     private readonly configService: ConfigService,
+    private readonly getAdminBetHistoryDetailUseCase: GetAdminBetHistoryDetailUseCase,
   ) {
     this.apiServiceUrl = this.configService.get<string>('API_SERVICE_URL') || '';
   }
@@ -77,6 +79,18 @@ export class AdminBetHistoryController {
       nextCursor: result.nextCursor,
       prevCursor: result.prevCursor ?? null,
     });
+  }
+
+  @Get('detail/:id')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission('bet-history.read')
+  async getDetail(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiResponse<AdminBetHistoryItemDto | null>> {
+    const item = await this.getAdminBetHistoryDetailUseCase.execute({ id });
+    const mapped =
+      item && item.user ? { ...item, user: this.mapUserAvatar(item.user) } : item;
+    return ApiResponseUtil.success(mapped);
   }
 
   @Get(':userId')

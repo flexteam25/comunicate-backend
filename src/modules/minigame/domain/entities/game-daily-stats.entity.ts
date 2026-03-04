@@ -41,6 +41,12 @@ export class GameDailyStats {
   @Column({ name: 'count_draw', type: 'integer', default: 0 })
   countDraw: number;
 
+  @Column({ name: 'total_cancel', type: 'numeric', default: 0 })
+  totalCancel: string;
+
+  @Column({ name: 'count_cancel', type: 'integer', default: 0 })
+  countCancel: number;
+
   @Column({ name: 'max_single_win', type: 'numeric', default: 0 })
   maxSingleWin: string;
 

@@ -1,12 +1,14 @@
 import {
-  Controller,
-  Post,
-  Get,
   Body,
-  Query,
-  UseGuards,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../../../shared/guards/jwt-auth.guard';
 import {
@@ -18,6 +20,7 @@ import { GameCallbackDto } from '../dto/game-callback.dto';
 import { LaunchGameUseCase } from '../../../application/handlers/launch-game.use-case';
 import { HandleGameCallbackUseCase } from '../../../application/handlers/handle-game-callback.use-case';
 import { GetSelfBetHistoryUseCase } from '../../../application/handlers/get-self-bet-history.use-case';
+import { GetSelfBetHistoryDetailUseCase } from '../../../application/handlers/get-self-bet-history-detail.use-case';
 import { GetLeaderboardUseCase } from '../../../application/handlers/get-leaderboard.use-case';
 import { GameCallbackGuard } from '../../../infrastructure/guards/game-callback.guard';
 import { BetHistoryItemDto } from '../dto/bet-history-response.dto';
@@ -34,6 +37,7 @@ export class MinigameController {
     private readonly launchGameUseCase: LaunchGameUseCase,
     private readonly handleGameCallbackUseCase: HandleGameCallbackUseCase,
     private readonly getSelfBetHistoryUseCase: GetSelfBetHistoryUseCase,
+    private readonly getSelfBetHistoryDetailUseCase: GetSelfBetHistoryDetailUseCase,
     private readonly getLeaderboardUseCase: GetLeaderboardUseCase,
     private readonly getGameBetLimitsService: GetGameBetLimitsService,
     private readonly logger: LoggerService,
@@ -82,6 +86,21 @@ export class MinigameController {
       nextCursor: result.nextCursor,
       prevCursor: result.prevCursor ?? null,
     });
+  }
+
+  @Get('bet-history/:id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getSelfBetHistoryDetail(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ApiResponse<BetHistoryItemDto | null>> {
+    const item = await this.getSelfBetHistoryDetailUseCase.execute({
+      userId: user.userId,
+      id,
+    });
+
+    return ApiResponseUtil.success(item);
   }
 
   @Get('bet-limits')

@@ -1,5 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { GameDailyStatsRepository, LeaderboardPeriod } from '../../infrastructure/persistence/typeorm/game-daily-stats.repository';
+import {
+  GameDailyStatsRepository,
+  LeaderboardEntry,
+} from '../../infrastructure/persistence/typeorm/game-daily-stats.repository';
 import { IUserRepository } from '../../../user/infrastructure/persistence/repositories/user.repository';
 import { User } from '../../../user/domain/entities/user.entity';
 import {
@@ -25,14 +28,16 @@ export class GetLeaderboardUseCase {
   ) {}
 
   async execute(command: GetLeaderboardCommand = {}): Promise<LeaderboardResponseDto> {
-    const type: LeaderboardPeriodType = command.type === 'week' || command.type === 'month' ? command.type : 'day';
-    const limit = Math.min(
-      Math.max(1, command.limit ?? DEFAULT_LIMIT),
-      MAX_LIMIT,
-    );
+    const type: LeaderboardPeriodType =
+      command.type === 'week' || command.type === 'month' ? command.type : 'day';
+    const limit = Math.min(Math.max(1, command.limit ?? DEFAULT_LIMIT), MAX_LIMIT);
 
-    const { dateFrom, dateTo } = this.gameDailyStatsRepository.getLeaderboardDateRange(type);
-    const { topWinners, topLosers } = await this.gameDailyStatsRepository.getLeaderboard(type, limit);
+    const { dateFrom, dateTo } =
+      this.gameDailyStatsRepository.getLeaderboardDateRange(type);
+    const { topWinners, topLosers } = await this.gameDailyStatsRepository.getLeaderboard(
+      type,
+      limit,
+    );
 
     const userIds = [
       ...topWinners.map((e) => e.userId),
@@ -45,13 +50,14 @@ export class GetLeaderboardUseCase {
     ]);
     const userMap = new Map<string, User>(users.map((u) => [u.id, u]));
 
-    const toItem = (
-      entry: { userId: string; totalNetWin: number; rank: number },
-    ): LeaderboardUserItemDto => {
+    const toItem = (entry: LeaderboardEntry): LeaderboardUserItemDto => {
       const user = userMap.get(entry.userId);
-      const activeBadge = user?.userBadges?.find(
-        (ub: any) => ub?.badge && ub.badge.isActive && !ub.badge.deletedAt && ub.active,
-      );
+      const activeBadge = (user?.userBadges ?? []).find((ub) => {
+        const badge = ub?.badge;
+        if (!badge) return false;
+        if (!badge.isActive || badge.deletedAt) return false;
+        return Boolean(ub.active);
+      });
 
       return {
         userId: entry.userId,

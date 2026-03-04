@@ -28,6 +28,7 @@ const SORT_ORDER = 'DESC' as const;
 
 function toItemDto(row: BetHistory): BetHistoryItemDto {
   return {
+    id: row.id,
     gameType: row.gameType,
     roundNumber: row.roundNumber ?? null,
     betAmount: row.betAmount,

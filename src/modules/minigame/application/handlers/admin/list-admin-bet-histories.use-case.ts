@@ -41,6 +41,7 @@ function toItemDto(row: BetHistory & { user?: { id: string; email: string; displ
     : { id: '', email: '', displayName: null };
 
   return {
+    id: row.id,
     user,
     gameType: row.gameType,
     roundNumber: row.roundNumber ?? null,
