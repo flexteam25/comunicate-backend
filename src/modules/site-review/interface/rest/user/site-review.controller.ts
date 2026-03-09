@@ -38,6 +38,7 @@ import { AddCommentUseCase } from '../../../application/handlers/add-comment.use
 import { UpdateCommentUseCase } from '../../../application/handlers/update-comment.use-case';
 import { DeleteCommentUseCase } from '../../../application/handlers/delete-comment.use-case';
 import { ListCommentsUseCase } from '../../../application/handlers/list-comments.use-case';
+import { ListFeaturedSiteReviewsUseCase } from '../../../application/handlers/list-featured-site-reviews.use-case';
 import { CreateSiteReviewDto } from '../dto/create-site-review.dto';
 import { UpdateSiteReviewDto } from '../dto/update-site-review.dto';
 import { ReactToSiteReviewDto } from '../dto/react-to-site-review.dto';
@@ -70,6 +71,7 @@ export class SiteReviewController {
     private readonly updateCommentUseCase: UpdateCommentUseCase,
     private readonly deleteCommentUseCase: DeleteCommentUseCase,
     private readonly listCommentsUseCase: ListCommentsUseCase,
+    private readonly listFeaturedSiteReviewsUseCase: ListFeaturedSiteReviewsUseCase,
     private readonly configService: ConfigService,
     private readonly uploadService: UploadService,
   ) {
@@ -229,6 +231,13 @@ export class SiteReviewController {
       nextCursor: result.nextCursor,
       prevCursor: result.prevCursor ?? null,
     });
+  }
+
+  @Get('featured')
+  @HttpCode(HttpStatus.OK)
+  async listFeaturedSiteReviews(): Promise<ApiResponse<SiteReviewResponseDto[]>> {
+    const reviews = await this.listFeaturedSiteReviewsUseCase.execute();
+    return ApiResponseUtil.success(reviews.map((review) => this.mapSiteReviewToResponse(review)));
   }
 
   @Get('my-site-reviews')

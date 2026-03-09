@@ -13,7 +13,7 @@ export interface LeaderboardUserItemDto {
     description: string | null;
     obtain: string | null;
   } | null;
-  totalNetWin: number;
+  totalWin: number;
   rank: number;
 }
 

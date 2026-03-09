@@ -187,6 +187,22 @@ export class UserSiteController {
     return ApiResponseUtil.success(categories);
   }
 
+  @Get('recent')
+  @HttpCode(HttpStatus.OK)
+  async listRecentSites(@Query('items') items?: number): Promise<ApiResponse<SiteResponse[]>> {
+    const requested = items != null ? parseInt(String(items), 10) : 4;
+    const safeRequested = Number.isNaN(requested) ? 4 : requested;
+    const limit = Math.min(Math.max(safeRequested, 1), 20);
+
+    const result = await this.listSitesUseCase.execute({
+      limit,
+      sortBy: 'createdAt',
+      sortOrder: 'DESC',
+    });
+
+    return ApiResponseUtil.success(result.data.map((site) => this.mapSiteToResponse(site)));
+  }
+
   @Get(':id/scam-reports')
   @HttpCode(HttpStatus.OK)
   async listSiteScamReports(

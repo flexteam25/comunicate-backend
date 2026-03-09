@@ -24,7 +24,7 @@ export interface GameDailyStatsRow {
 
 export interface LeaderboardEntry {
   userId: string;
-  totalNetWin: number;
+  totalWin: number;
   totalCancel: number;
   countCancel: number;
   rank: number;
@@ -35,6 +35,7 @@ export type LeaderboardPeriod = 'day' | 'week' | 'month';
 export type AdminLeaderboardSortBy =
   | 'win'
   | 'lose'
+  | 'netWin'
   | 'roundsPlayed'
   | 'countWin'
   | 'countLose';
@@ -290,8 +291,8 @@ export class GameDailyStatsRepository {
   }
 
   /**
-   * Leaderboard: top N winners (net_win DESC) and top N losers (net_win ASC)
-   * aggregated from game_daily_stats in the given date range.
+   * Leaderboard: top N winners/losers sorted by total_win.
+   * We intentionally avoid net_win for user leaderboard because net_win can be negative.
    */
   async getLeaderboard(
     period: LeaderboardPeriod,
@@ -303,7 +304,7 @@ export class GameDailyStatsRepository {
       this.gameDailyStatsRepo
         .createQueryBuilder('g')
         .select('g.user_id', 'userId')
-        .addSelect('SUM(g.net_win::numeric)', 'totalNetWin')
+        .addSelect('SUM(g.total_win::numeric)', 'totalWin')
         .addSelect('SUM(g.total_cancel::numeric)', 'totalCancel')
         .addSelect('SUM(g.count_cancel)', 'countCancel')
         .where('g.date >= :dateFrom', { dateFrom })
@@ -311,15 +312,15 @@ export class GameDailyStatsRepository {
         .groupBy('g.user_id');
 
     const [winnersRaw, losersRaw] = await Promise.all([
-      base().orderBy('SUM(g.net_win::numeric)', 'DESC').limit(limit).getRawMany<{
+      base().orderBy('SUM(g.total_win::numeric)', 'DESC').limit(limit).getRawMany<{
         userId: string;
-        totalNetWin: string;
+        totalWin: string;
         totalCancel: string;
         countCancel: string;
       }>(),
-      base().orderBy('SUM(g.net_win::numeric)', 'ASC').limit(limit).getRawMany<{
+      base().orderBy('SUM(g.total_win::numeric)', 'ASC').limit(limit).getRawMany<{
         userId: string;
-        totalNetWin: string;
+        totalWin: string;
         totalCancel: string;
         countCancel: string;
       }>(),
@@ -327,7 +328,7 @@ export class GameDailyStatsRepository {
 
     const topWinners: LeaderboardEntry[] = winnersRaw.map((r, i) => ({
       userId: r.userId,
-      totalNetWin: Number(r.totalNetWin) || 0,
+      totalWin: Number(r.totalWin) || 0,
       totalCancel: Number(r.totalCancel) || 0,
       countCancel: Number(r.countCancel) || 0,
       rank: i + 1,
@@ -335,7 +336,7 @@ export class GameDailyStatsRepository {
 
     const topLosers: LeaderboardEntry[] = losersRaw.map((r, i) => ({
       userId: r.userId,
-      totalNetWin: Number(r.totalNetWin) || 0,
+      totalWin: Number(r.totalWin) || 0,
       totalCancel: Number(r.totalCancel) || 0,
       countCancel: Number(r.countCancel) || 0,
       rank: i + 1,
@@ -346,7 +347,7 @@ export class GameDailyStatsRepository {
 
   /**
    * Admin leaderboard: aggregate stats per user in an arbitrary date range
-   * with sorting by win/lose, roundsPlayed, countWin, or countLose.
+   * with sorting by win/lose/netWin, roundsPlayed, countWin, or countLose.
    */
   async getAdminLeaderboard(params: {
     dateFrom: string;
@@ -381,6 +382,16 @@ export class GameDailyStatsRepository {
 
     let orderExpr: string;
     switch (sortBy) {
+      case 'win':
+        orderExpr = 'SUM(g.total_win::numeric)';
+        break;
+      case 'lose':
+        orderExpr =
+          '(SUM(g.total_bet::numeric) + SUM(g.total_deduct::numeric) - SUM(g.total_win::numeric))';
+        break;
+      case 'netWin':
+        orderExpr = 'SUM(g.net_win::numeric)';
+        break;
       case 'roundsPlayed':
         orderExpr = 'SUM(g.rounds_played)';
         break;
@@ -390,10 +401,8 @@ export class GameDailyStatsRepository {
       case 'countLose':
         orderExpr = 'SUM(g.count_lose)';
         break;
-      case 'win':
-      case 'lose':
       default:
-        orderExpr = 'SUM(g.net_win::numeric)';
+        orderExpr = 'SUM(g.total_win::numeric)';
         break;
     }
 

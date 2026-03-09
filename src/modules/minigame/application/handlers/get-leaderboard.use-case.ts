@@ -74,7 +74,7 @@ export class GetLeaderboardUseCase {
               obtain: activeBadge.badge.obtain || null,
             }
           : null,
-        totalNetWin: entry.totalNetWin,
+        totalWin: entry.totalWin,
         rank: entry.rank,
       };
     };

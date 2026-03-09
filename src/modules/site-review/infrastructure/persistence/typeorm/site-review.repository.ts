@@ -570,4 +570,88 @@ export class SiteReviewRepository implements ISiteReviewRepository {
 
     return reviews.map((review) => review.content);
   }
+
+  async findRecentHighRatingDistinctSiteReviews(limit: number): Promise<SiteReview[]> {
+    const realLimit = Math.min(Math.max(1, limit), 20);
+    const batchSize = Math.max(realLimit * 5, 30);
+    const seenSiteIds = new Set<string>();
+    const selected: SiteReview[] = [];
+    let offset = 0;
+
+    while (selected.length < realLimit) {
+      const queryBuilder = this.repository
+        .createQueryBuilder('review')
+        .leftJoinAndSelect('review.user', 'user')
+        .leftJoinAndSelect('user.userBadges', 'userBadges')
+        .leftJoinAndSelect('userBadges.badge', 'badge', 'badge.deletedAt IS NULL')
+        .leftJoinAndSelect('review.site', 'site')
+        .leftJoinAndSelect('review.images', 'images')
+        .addSelect(
+          (subQuery) =>
+            subQuery
+              .select('COUNT(reaction.id)', 'likeCount')
+              .from('site_review_reactions', 'reaction')
+              .where('reaction.review_id = review.id')
+              .andWhere("reaction.reaction_type = 'like'"),
+          'likeCount',
+        )
+        .addSelect(
+          (subQuery) =>
+            subQuery
+              .select('COUNT(reaction.id)', 'dislikeCount')
+              .from('site_review_reactions', 'reaction')
+              .where('reaction.review_id = review.id')
+              .andWhere("reaction.reaction_type = 'dislike'"),
+          'dislikeCount',
+        )
+        .loadRelationCountAndMap(
+          'review.commentCount',
+          'review.comments',
+          'comment',
+          (qb) => qb.andWhere('comment.deletedAt IS NULL'),
+        )
+        .where('review.deletedAt IS NULL')
+        .andWhere('review.isPublished = :isPublished', { isPublished: true })
+        .andWhere('review.rating >= :minRating', { minRating: 4 })
+        .andWhere('review.rating <= :maxRating', { maxRating: 5 })
+        .orderBy('review.createdAt', 'DESC', 'NULLS LAST')
+        .addOrderBy('review.id', 'DESC')
+        .skip(offset)
+        .take(batchSize);
+
+      const { entities, raw } = await queryBuilder.getRawAndEntities();
+      if (!entities.length) break;
+
+      const rawDataMap = new Map<string, Record<string, unknown>>();
+      raw.forEach((rawRow: Record<string, unknown>) => {
+        const reviewId =
+          (rawRow.review_id as string) ||
+          (rawRow.reviewId as string) ||
+          (rawRow['review_id'] as string) ||
+          (rawRow['reviewId'] as string);
+        if (reviewId && !rawDataMap.has(reviewId)) {
+          rawDataMap.set(reviewId, rawRow);
+        }
+      });
+
+      for (const review of entities) {
+        const rawData = rawDataMap.get(review.id);
+        (review as any).likeCount = parseInt(String(rawData?.likeCount || '0'), 10);
+        (review as any).dislikeCount = parseInt(String(rawData?.dislikeCount || '0'), 10);
+
+        if (!review.siteId || seenSiteIds.has(review.siteId)) {
+          continue;
+        }
+
+        seenSiteIds.add(review.siteId);
+        selected.push(review);
+        if (selected.length >= realLimit) break;
+      }
+
+      if (entities.length < batchSize) break;
+      offset += batchSize;
+    }
+
+    return selected;
+  }
 }

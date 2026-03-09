@@ -47,4 +47,5 @@ export interface ISiteReviewRepository {
     reviewCount: number;
   }>;
   findTopStarReviews(siteId: string): Promise<string[]>;
+  findRecentHighRatingDistinctSiteReviews(limit: number): Promise<SiteReview[]>;
 }

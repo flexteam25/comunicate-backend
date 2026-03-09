@@ -1,4 +1,10 @@
-export type AdminLeaderboardSortBy = 'win' | 'lose' | 'roundsPlayed' | 'countWin' | 'countLose';
+export type AdminLeaderboardSortBy =
+  | 'win'
+  | 'lose'
+  | 'netWin'
+  | 'roundsPlayed'
+  | 'countWin'
+  | 'countLose';
 
 export type AdminLeaderboardOrderBy = 'asc' | 'desc';
 
